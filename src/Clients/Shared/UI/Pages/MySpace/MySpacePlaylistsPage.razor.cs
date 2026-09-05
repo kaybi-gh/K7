@@ -18,8 +18,7 @@ public partial class MySpacePlaylistsPage : IAsyncDisposable
     private const string FilterStorageKey = "my-space-playlists";
     private const int PageSize = 500;
 
-    private List<LitePlaylistDto> _playlists = [];
-    private List<SharedPlaylistBrowseDto> _sharedPlaylists = [];
+    private List<MySpacePlaylistBrowseItem> _items = [];
     private bool _loading = true;
     private bool _showShared;
     private bool _canCreate;
@@ -30,14 +29,15 @@ public partial class MySpacePlaylistsPage : IAsyncDisposable
     private bool _selectionMode;
     private bool _deleting;
     private readonly HashSet<Guid> _selectedIds = [];
-    private BrowseView<LitePlaylistDto>? _browseView;
-    private K7DataTable<LitePlaylistDto>? _dataTable;
+    private BrowseView<MySpacePlaylistBrowseItem>? _browseView;
+    private K7DataTable<MySpacePlaylistBrowseItem>? _dataTable;
     private string? _activeSortKey = "lastListened";
     private K7SortDirection _activeSortDirection = K7SortDirection.Descending;
     private SelectionModeKeyboardBinder? _selectionKeys;
 
+    private int OwnedCount => _items.Count(item => item.IsOwned);
     private int SelectedCount => _selectedIds.Count;
-    private bool AllSelected => _playlists.Count > 0 && _selectedIds.Count == _playlists.Count;
+    private bool AllSelected => OwnedCount > 0 && _selectedIds.Count == OwnedCount;
 
     [Inject] private IK7DialogService DialogService { get; set; } = default!;
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
@@ -86,19 +86,18 @@ public partial class MySpacePlaylistsPage : IAsyncDisposable
     private async Task LoadPlaylistsAsync()
     {
         _loading = true;
-        if (_showShared)
-        {
-            _sharedPlaylists = (await SocialUserService.GetSharedPlaylistsAsync()).ToList();
-        }
-        else
-        {
-            var result = await K7ServerService.GetPlaylistsAsync(
-                pageSize: PageSize,
-                mediaType: _mediaTypeFilter,
-                orderBy: _selectedSort);
-            _playlists = result?.Items?.ToList() ?? [];
-        }
 
+        var result = await K7ServerService.GetPlaylistsAsync(
+            pageSize: PageSize,
+            mediaType: _mediaTypeFilter,
+            orderBy: _selectedSort);
+        var owned = result?.Items?.ToList() ?? [];
+
+        IReadOnlyList<SharedPlaylistBrowseDto>? shared = null;
+        if (_showShared)
+            shared = await SocialUserService.GetSharedPlaylistsAsync();
+
+        _items = MySpaceSharedBrowseHelper.BuildPlaylistItems(owned, shared, _mediaTypeFilter, _selectedSort).ToList();
         _loading = false;
 
         if (_dataTable is not null)
@@ -108,18 +107,18 @@ public partial class MySpacePlaylistsPage : IAsyncDisposable
             await _browseView.RefreshAsync();
     }
 
-    private Task<K7DataTableResult<LitePlaylistDto>> LoadTableDataAsync(
-        K7DataTableState<LitePlaylistDto> state, CancellationToken cancellationToken)
+    private Task<K7DataTableResult<MySpacePlaylistBrowseItem>> LoadTableDataAsync(
+        K7DataTableState<MySpacePlaylistBrowseItem> state, CancellationToken cancellationToken)
     {
         if (state.Count <= 0)
-            return Task.FromResult(new K7DataTableResult<LitePlaylistDto>([], 0));
+            return Task.FromResult(new K7DataTableResult<MySpacePlaylistBrowseItem>([], 0));
 
-        var items = _playlists
+        var items = _items
             .Skip(state.StartIndex)
             .Take(state.Count)
             .ToList();
 
-        return Task.FromResult(new K7DataTableResult<LitePlaylistDto>(items, _playlists.Count));
+        return Task.FromResult(new K7DataTableResult<MySpacePlaylistBrowseItem>(items, _items.Count));
     }
 
     private async Task SetMediaTypeFilter(MediaType? mediaType)
@@ -164,6 +163,7 @@ public partial class MySpacePlaylistsPage : IAsyncDisposable
     {
         ExitSelectionMode();
         _showShared = value;
+        await PersistFiltersAsync();
         await LoadPlaylistsAsync();
     }
 
@@ -204,8 +204,11 @@ public partial class MySpacePlaylistsPage : IAsyncDisposable
     private void SelectAll()
     {
         _selectedIds.Clear();
-        foreach (var playlist in _playlists)
-            _selectedIds.Add(playlist.Id);
+        foreach (var item in _items)
+        {
+            if (item.IsOwned)
+                _selectedIds.Add(item.Id);
+        }
     }
 
     private void OnSelectionEscape()
@@ -235,12 +238,12 @@ public partial class MySpacePlaylistsPage : IAsyncDisposable
         ToggleSelection(id);
     }
 
-    private void OnPlaylistActivated(LitePlaylistDto playlist)
+    private void OnPlaylistActivated(MySpacePlaylistBrowseItem item)
     {
-        if (_selectionMode)
-            ToggleSelection(playlist.Id);
+        if (_selectionMode && item.IsOwned)
+            ToggleSelection(item.Id);
         else
-            NavigateToPlaylist(playlist);
+            NavigateToPlaylist(item);
     }
 
     private async Task ConfirmDeleteSelectedAsync()
@@ -265,13 +268,13 @@ public partial class MySpacePlaylistsPage : IAsyncDisposable
         {
             foreach (var id in _selectedIds.ToList())
             {
-                var playlist = _playlists.FirstOrDefault(p => p.Id == id);
-                if (playlist is null)
+                var item = _items.FirstOrDefault(p => p.Id == id && p.IsOwned);
+                if (item is null)
                     continue;
 
                 try
                 {
-                    if (playlist.IsDynamicPlaylist)
+                    if (item.Playlist.IsDynamicPlaylist)
                         await K7ServerService.DeleteDynamicPlaylistAsync(id);
                     else
                         await K7ServerService.DeletePlaylistAsync(id);
@@ -298,8 +301,8 @@ public partial class MySpacePlaylistsPage : IAsyncDisposable
             Snackbar.Add(string.Format(L["DeleteSelectedPartial"], count - failed, failed), K7Severity.Warning);
     }
 
-    private void NavigateToPlaylist(LitePlaylistDto playlist) =>
-        NavigationManager.NavigateTo(GetPlaylistHref(playlist));
+    private void NavigateToPlaylist(MySpacePlaylistBrowseItem item) =>
+        NavigationManager.NavigateTo(GetPlaylistHref(item));
 
     private void OnColumnPickerRequested() =>
         _dataTable?.ToggleColumnPicker();
@@ -317,6 +320,8 @@ public partial class MySpacePlaylistsPage : IAsyncDisposable
 
             if (Enum.IsDefined(typeof(LibraryItemOrderingOption), state.Sort))
                 _selectedSort = (LibraryItemOrderingOption)state.Sort;
+
+            _showShared = state.ShowShared;
         }
         catch
         {
@@ -330,7 +335,7 @@ public partial class MySpacePlaylistsPage : IAsyncDisposable
         {
             await PageFilterStorage.SaveAsync(
                 FilterStorageKey,
-                new MySpacePlaylistsFilterState((int?)_mediaTypeFilter, (int)_selectedSort));
+                new MySpacePlaylistsFilterState((int?)_mediaTypeFilter, (int)_selectedSort, _showShared));
         }
         catch
         {
@@ -371,16 +376,24 @@ public partial class MySpacePlaylistsPage : IAsyncDisposable
         await dialog.Result;
     }
 
-    private string GetPlaylistHref(LitePlaylistDto playlist) =>
-        playlist.IsDynamicPlaylist
-            ? $"/dynamic-playlists/{playlist.Id}"
-            : $"/playlists/{playlist.Id}";
-
-    private string GetPlaylistSubtitle(LitePlaylistDto playlist)
+    private string GetPlaylistHref(MySpacePlaylistBrowseItem item)
     {
+        if (item.Owner is { IsFederated: true } owner)
+            return SocialUserNavigation.GetProfileHref(owner);
+
+        return item.Playlist.IsDynamicPlaylist
+            ? $"/dynamic-playlists/{item.Id}"
+            : $"/playlists/{item.Id}";
+    }
+
+    private string GetPlaylistSubtitle(MySpacePlaylistBrowseItem item)
+    {
+        var playlist = item.Playlist;
         var parts = new List<string> { $"{playlist.ItemCount} {GetItemLabel(playlist.MediaType)}" };
         if (playlist.LastListenedAt is { } lastListened)
             parts.Add(FormatLastListened(lastListened));
+        if (item.Owner is { } owner)
+            parts.Add(MySpaceSharedBrowseHelper.FormatOwner(owner));
         return string.Join(" · ", parts);
     }
 
@@ -389,6 +402,9 @@ public partial class MySpacePlaylistsPage : IAsyncDisposable
 
     private string FormatLastListenedOrDash(DateTimeOffset? lastListenedAt) =>
         lastListenedAt is { } lastListened ? FormatLastListened(lastListened) : "-";
+
+    private string GetOwnerLabel(MySpacePlaylistBrowseItem item) =>
+        item.Owner is { } owner ? MySpaceSharedBrowseHelper.FormatOwner(owner) : "-";
 
     private string GetItemLabel(MediaType mediaType) => mediaType switch
     {
@@ -410,5 +426,5 @@ public partial class MySpacePlaylistsPage : IAsyncDisposable
         return L["LastListenedDays", (int)diff.TotalDays];
     }
 
-    private sealed record MySpacePlaylistsFilterState(int? MediaType, int Sort);
+    private sealed record MySpacePlaylistsFilterState(int? MediaType, int Sort, bool ShowShared = false);
 }

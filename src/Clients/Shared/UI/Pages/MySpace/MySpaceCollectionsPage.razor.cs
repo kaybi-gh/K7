@@ -18,8 +18,7 @@ public partial class MySpaceCollectionsPage : IAsyncDisposable
     private const string FilterStorageKey = "my-space-collections";
     private const int PageSize = 500;
 
-    private List<LiteCollectionDto> _collections = [];
-    private List<SharedCollectionBrowseDto> _sharedCollections = [];
+    private List<MySpaceCollectionBrowseItem> _items = [];
     private bool _loading = true;
     private bool _showShared;
     private bool _canCreate;
@@ -27,14 +26,15 @@ public partial class MySpaceCollectionsPage : IAsyncDisposable
     private bool _deleting;
     private readonly HashSet<Guid> _selectedIds = [];
     private LibraryItemOrderingOption _selectedSort = LibraryItemOrderingOption.LastModifiedDesc;
-    private BrowseView<LiteCollectionDto>? _browseView;
-    private K7DataTable<LiteCollectionDto>? _dataTable;
+    private BrowseView<MySpaceCollectionBrowseItem>? _browseView;
+    private K7DataTable<MySpaceCollectionBrowseItem>? _dataTable;
     private string? _activeSortKey = "lastModified";
     private K7SortDirection _activeSortDirection = K7SortDirection.Descending;
     private SelectionModeKeyboardBinder? _selectionKeys;
 
+    private int OwnedCount => _items.Count(item => item.IsOwned);
     private int SelectedCount => _selectedIds.Count;
-    private bool AllSelected => _collections.Count > 0 && _selectedIds.Count == _collections.Count;
+    private bool AllSelected => OwnedCount > 0 && _selectedIds.Count == OwnedCount;
 
     [Inject] private IK7DialogService DialogService { get; set; } = default!;
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
@@ -65,16 +65,15 @@ public partial class MySpaceCollectionsPage : IAsyncDisposable
     private async Task LoadCollectionsAsync()
     {
         _loading = true;
-        if (_showShared)
-        {
-            _sharedCollections = (await SocialUserService.GetSharedCollectionsAsync()).ToList();
-        }
-        else
-        {
-            var result = await K7ServerService.GetCollectionsAsync(pageSize: PageSize, orderBy: _selectedSort);
-            _collections = result?.Items?.ToList() ?? [];
-        }
 
+        var result = await K7ServerService.GetCollectionsAsync(pageSize: PageSize, orderBy: _selectedSort);
+        var current = result?.Items?.ToList() ?? [];
+
+        IReadOnlyList<SharedCollectionBrowseDto>? shared = null;
+        if (_showShared)
+            shared = await SocialUserService.GetSharedCollectionsAsync();
+
+        _items = MySpaceSharedBrowseHelper.BuildCollectionItems(current, shared, _selectedSort).ToList();
         _loading = false;
 
         if (_dataTable is not null)
@@ -84,18 +83,18 @@ public partial class MySpaceCollectionsPage : IAsyncDisposable
             await _browseView.RefreshAsync();
     }
 
-    private Task<K7DataTableResult<LiteCollectionDto>> LoadTableDataAsync(
-        K7DataTableState<LiteCollectionDto> state, CancellationToken cancellationToken)
+    private Task<K7DataTableResult<MySpaceCollectionBrowseItem>> LoadTableDataAsync(
+        K7DataTableState<MySpaceCollectionBrowseItem> state, CancellationToken cancellationToken)
     {
         if (state.Count <= 0)
-            return Task.FromResult(new K7DataTableResult<LiteCollectionDto>([], 0));
+            return Task.FromResult(new K7DataTableResult<MySpaceCollectionBrowseItem>([], 0));
 
-        var items = _collections
+        var items = _items
             .Skip(state.StartIndex)
             .Take(state.Count)
             .ToList();
 
-        return Task.FromResult(new K7DataTableResult<LiteCollectionDto>(items, _collections.Count));
+        return Task.FromResult(new K7DataTableResult<MySpaceCollectionBrowseItem>(items, _items.Count));
     }
 
     private async Task OnSortChanged(LibraryItemOrderingOption value)
@@ -132,6 +131,7 @@ public partial class MySpaceCollectionsPage : IAsyncDisposable
     {
         ExitSelectionMode();
         _showShared = value;
+        await PersistFiltersAsync();
         await LoadCollectionsAsync();
     }
 
@@ -172,8 +172,11 @@ public partial class MySpaceCollectionsPage : IAsyncDisposable
     private void SelectAll()
     {
         _selectedIds.Clear();
-        foreach (var collection in _collections)
-            _selectedIds.Add(collection.Id);
+        foreach (var item in _items)
+        {
+            if (item.IsOwned)
+                _selectedIds.Add(item.Id);
+        }
     }
 
     private void OnSelectionEscape()
@@ -203,12 +206,12 @@ public partial class MySpaceCollectionsPage : IAsyncDisposable
         ToggleSelection(id);
     }
 
-    private void OnCollectionActivated(LiteCollectionDto collection)
+    private void OnCollectionActivated(MySpaceCollectionBrowseItem item)
     {
-        if (_selectionMode)
-            ToggleSelection(collection.Id);
+        if (_selectionMode && item.IsOwned)
+            ToggleSelection(item.Id);
         else
-            NavigateToCollection(collection);
+            NavigateToCollection(item);
     }
 
     private async Task ConfirmDeleteSelectedAsync()
@@ -233,6 +236,10 @@ public partial class MySpaceCollectionsPage : IAsyncDisposable
         {
             foreach (var id in _selectedIds.ToList())
             {
+                var item = _items.FirstOrDefault(c => c.Id == id && c.IsOwned);
+                if (item is null)
+                    continue;
+
                 try
                 {
                     await K7ServerService.DeleteCollectionAsync(id);
@@ -259,8 +266,8 @@ public partial class MySpaceCollectionsPage : IAsyncDisposable
             Snackbar.Add(string.Format(L["DeleteSelectedPartial"], count - failed, failed), K7Severity.Warning);
     }
 
-    private void NavigateToCollection(LiteCollectionDto collection) =>
-        NavigationManager.NavigateTo(GetCollectionHref(collection));
+    private void NavigateToCollection(MySpaceCollectionBrowseItem item) =>
+        NavigationManager.NavigateTo(GetCollectionHref(item));
 
     private void OnColumnPickerRequested() =>
         _dataTable?.ToggleColumnPicker();
@@ -275,6 +282,8 @@ public partial class MySpaceCollectionsPage : IAsyncDisposable
 
             if (Enum.IsDefined(typeof(LibraryItemOrderingOption), state.Sort))
                 _selectedSort = (LibraryItemOrderingOption)state.Sort;
+
+            _showShared = state.ShowShared;
         }
         catch
         {
@@ -288,7 +297,7 @@ public partial class MySpaceCollectionsPage : IAsyncDisposable
         {
             await PageFilterStorage.SaveAsync(
                 FilterStorageKey,
-                new MySpaceCollectionsFilterState((int)_selectedSort));
+                new MySpaceCollectionsFilterState((int)_selectedSort, _showShared));
         }
         catch
         {
@@ -312,16 +321,27 @@ public partial class MySpaceCollectionsPage : IAsyncDisposable
     private string GetCollectionItemCountLabel(LiteCollectionDto collection) =>
         $"{collection.ItemCount} {L["Items"]}";
 
-    private string GetCollectionHref(LiteCollectionDto collection) =>
-        $"/collections/{collection.Id}";
-
-    private string GetCollectionSubtitle(LiteCollectionDto collection)
+    private string GetCollectionHref(MySpaceCollectionBrowseItem item)
     {
+        if (item.Owner is { IsFederated: true } owner)
+            return SocialUserNavigation.GetProfileHref(owner);
+
+        return $"/collections/{item.Id}";
+    }
+
+    private string GetCollectionSubtitle(MySpaceCollectionBrowseItem item)
+    {
+        var collection = item.Collection;
         var parts = new List<string> { $"{collection.ItemCount} {L["Items"]}" };
         if (collection.IsPublic)
             parts.Add(L["Public"]);
+        if (item.Owner is { } owner)
+            parts.Add(MySpaceSharedBrowseHelper.FormatOwner(owner));
         return string.Join(" · ", parts);
     }
 
-    private sealed record MySpaceCollectionsFilterState(int Sort);
+    private string GetOwnerLabel(MySpaceCollectionBrowseItem item) =>
+        item.Owner is { } owner ? MySpaceSharedBrowseHelper.FormatOwner(owner) : "-";
+
+    private sealed record MySpaceCollectionsFilterState(int Sort, bool ShowShared = false);
 }

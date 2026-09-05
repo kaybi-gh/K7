@@ -161,7 +161,7 @@ Libraries are on Home (and library browse). What you see depends on admin librar
 | Stats / History / Reviews | Your activity and ratings. Watch stats (and home "Recommended for you") only count plays that met your completion threshold; brief opens do not. History still lists incomplete sessions. |
 | Downloads | Native apps only - see [Offline](#offline-downloads) |
 
-Playlist views can include a "show shared" option. What others see of your playlists, collections, reviews, and history is controlled under [Privacy](#privacy-and-visibility) (and per-item visibility where offered).
+**Shared with me** on playlists and collections keeps the same grid / list / table and adds items others have shared with you. The owner name is shown on those cards (and as a table column). What others see of your playlists, collections, reviews, and history is controlled under [Privacy](#privacy-and-visibility) (and per-item visibility where offered).
 
 ## Privacy and visibility
 

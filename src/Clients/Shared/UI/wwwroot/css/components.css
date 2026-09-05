@@ -393,11 +393,29 @@ button.k7-chip:hover { filter: brightness(1.1); cursor: pointer; }
   overflow-y: auto;
 }
 .k7-select-wrap--open > .k7-select-dropdown,
+.k7-select-dropdown.k7-select-dropdown--open.k7-select-dropdown--placed,
 .k7-select-dropdown--teleported.k7-select-dropdown--open {
   opacity: 1;
   visibility: visible;
   transform: translateY(0);
   z-index: calc(var(--z-dialog, 1300) + 10);
+}
+@media (min-width: 600px) {
+  .k7-select-dropdown.k7-select-dropdown--open:not(.k7-select-dropdown--placed),
+  .k7-select-wrap--open > .k7-select-dropdown:not(.k7-select-dropdown--placed),
+  .k7-select-dropdown--teleported.k7-select-dropdown--open:not(.k7-select-dropdown--placed) {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: none;
+    transition: none;
+  }
+  .k7-select-dropdown.k7-select-dropdown--open.k7-select-dropdown--placed,
+  .k7-select-wrap--open > .k7-select-dropdown.k7-select-dropdown--placed,
+  .k7-select-dropdown--teleported.k7-select-dropdown--open.k7-select-dropdown--placed {
+    transform: none;
+    transition: opacity 0.12s ease, visibility 0.12s ease;
+  }
 }
 .k7-select-option {
   display: flex;
@@ -888,6 +906,25 @@ details.k7-expansion[open] .k7-expansion-icon { transform: rotate(90deg); }
   visibility: visible;
   transform: translateY(0);
 }
+/* Desktop / TV: keep --open invisible until JS has written top/left.
+   Otherwise the panel paints at the in-flow origin, then blinks into place. */
+@media (min-width: 600px) {
+  .k7-menu-dropdown.k7-menu-dropdown--open:not(.k7-menu-dropdown--placed),
+  .k7-menu--open > .k7-menu-dropdown:not(.k7-menu-dropdown--placed),
+  .k7-menu-portal.k7-menu-dropdown.k7-menu-dropdown--open:not(.k7-menu-dropdown--placed) {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: none;
+    transition: none;
+  }
+  .k7-menu-dropdown.k7-menu-dropdown--open.k7-menu-dropdown--placed,
+  .k7-menu--open > .k7-menu-dropdown.k7-menu-dropdown--placed,
+  .k7-menu-portal.k7-menu-dropdown.k7-menu-dropdown--open.k7-menu-dropdown--placed {
+    transform: none;
+    transition: opacity 0.12s ease, visibility 0.12s ease;
+  }
+}
 .k7-menu--upward > .k7-menu-dropdown {
   transform: translateY(4px);
 }
@@ -899,7 +936,15 @@ details.k7-expansion[open] .k7-expansion-icon { transform: rotate(90deg); }
   overflow-y: auto;
 }
 .k7-menu-dropdown--card-corner {
+  --k7-media-card-menu-width: 17.5rem;
   box-shadow: var(--shadow-lg, 0 10px 25px -5px rgba(0, 0, 0, 0.55));
+  width: var(--k7-media-card-menu-width);
+  min-width: var(--k7-media-card-menu-width);
+  max-width: min(var(--k7-media-card-menu-width), calc(100vw - 16px));
+}
+.k7-menu-dropdown--card-corner .k7-menu-item-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .k7-menu-dropdown .k7-menu.k7-menu--open > .k7-menu-dropdown {
   opacity: 1;

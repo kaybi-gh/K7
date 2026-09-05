@@ -30,6 +30,7 @@
   <data name="Private" xml:space="preserve"><value>Private</value></data>
   <data name="Visibility" xml:space="preserve"><value>Visibility</value></data>
   <data name="ShowShared" xml:space="preserve"><value>Shared with me</value></data>
+  <data name="Owner" xml:space="preserve"><value>Owner</value></data>
   <data name="SharedTitle" xml:space="preserve"><value>Shared collections</value></data>
   <data name="SharedEmpty" xml:space="preserve"><value>No collections have been shared with you.</value></data>
   <data name="Select" xml:space="preserve"><value>Select</value></data>

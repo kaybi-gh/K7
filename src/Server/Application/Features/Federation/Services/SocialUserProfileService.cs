@@ -1,8 +1,8 @@
 using K7.Server.Application.Common;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Mappings;
-using K7.Server.Application.Features.Reviews;
 using K7.Server.Application.Features.DynamicPlaylists.Services;
+using K7.Server.Application.Features.Reviews;
 using K7.Server.Domain.Entities.Federation;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Playlists;
@@ -183,6 +183,8 @@ public class SocialUserProfileReader(
 
             var collections = await context.Collections
                 .AsNoTracking()
+                .Include(c => c.CoverPicture)
+                    .ThenInclude(c => c!.Variants)
                 .Include(c => c.Items)
                 .Where(c => c.UserId == owner.Id && c.VisibilityScope != VisibilityScope.Nobody)
                 .ToListAsync(cancellationToken);
@@ -208,7 +210,11 @@ public class SocialUserProfileReader(
                     Title = collection.Title,
                     Description = collection.Description,
                     MediaType = collection.MediaType,
-                    ItemCount = collection.Items.Count
+                    ItemCount = collection.Items.Count,
+                    IsPublic = collection.IsPublic,
+                    CoverPicture = collection.CoverPicture?.ToMetadataPictureDto(),
+                    Created = collection.Created,
+                    LastModified = collection.LastModified
                 });
             }
         }
@@ -266,6 +272,8 @@ public class SocialUserProfileReader(
 
                 var playlists = await context.Playlists
                     .AsNoTracking()
+                    .Include(p => p.CoverPicture)
+                        .ThenInclude(c => c!.Variants)
                     .Include(p => p.Items)
                     .Where(p => p.UserId == owner.Id && p.VisibilityScope != VisibilityScope.Nobody)
                     .ToListAsync(cancellationToken);
@@ -292,7 +300,10 @@ public class SocialUserProfileReader(
                         Description = playlist.Description,
                         MediaType = playlist.MediaType,
                         IsDynamic = false,
-                        ItemCount = playlist.Items.Count
+                        ItemCount = playlist.Items.Count,
+                        CoverPicture = playlist.CoverPicture?.ToMetadataPictureDto(),
+                        Created = playlist.Created,
+                        LastModified = playlist.LastModified
                     });
                 }
             }
@@ -340,6 +351,8 @@ public class SocialUserProfileReader(
                 var dynamicPlaylists = await context.Playlists
                     .OfType<DynamicPlaylist>()
                     .AsNoTracking()
+                    .Include(p => p.CoverPicture)
+                        .ThenInclude(c => c!.Variants)
                     .Where(p => p.UserId == owner.Id && p.VisibilityScope != VisibilityScope.Nobody)
                     .ToListAsync(cancellationToken);
 
@@ -365,7 +378,10 @@ public class SocialUserProfileReader(
                         Description = playlist.Description,
                         MediaType = playlist.MediaType,
                         IsDynamic = true,
-                        ItemCount = 0
+                        ItemCount = 0,
+                        CoverPicture = playlist.CoverPicture?.ToMetadataPictureDto(),
+                        Created = playlist.Created,
+                        LastModified = playlist.LastModified
                     });
                 }
             }

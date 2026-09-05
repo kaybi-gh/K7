@@ -2,8 +2,6 @@
 @layout MySpaceLayout
 @using K7.Clients.Shared.Mappings
 @using K7.Clients.Shared.UI.Helpers
-@using K7.Shared.Dtos.Entities.Collections
-@using K7.Shared.Dtos.Federation.Social
 @using K7.Shared.Dtos.Requests
 @inject ICollectionService K7ServerService
 @inject IK7ServerService ApiClient
@@ -14,43 +12,8 @@
 
 <PageTitle>@L["PageTitle"]</PageTitle>
 
-@if (_showShared)
-{
-    <div class="my-space-library-browse page-scrollable">
-        <div class="my-space-shared-toolbar">
-            <h5>@L["SharedTitle"]</h5>
-            <div class="flex-1"></div>
-            <K7Switch Value="_showShared" ValueChanged="OnShowSharedChanged" Label="@L["ShowShared"]" />
-        </div>
-        @if (_loading)
-        {
-            <K7Spinner />
-        }
-        else if (_sharedCollections.Count == 0)
-        {
-            <p class="text-secondary pa-8">@L["SharedEmpty"]</p>
-        }
-        else
-        {
-            <div class="my-space-shared-grid">
-                @foreach (var item in _sharedCollections)
-                {
-                    <article class="my-space-shared-card" @key="@($"{item.Owner.IsFederated}-{item.CollectionId}")">
-                        <button type="button" class="my-space-shared-card__link focusable" @onclick="@(() => NavigationManager.NavigateTo(SocialUserNavigation.GetProfileHref(item.Owner)))">
-                            <h6>@item.Title</h6>
-                            <p class="text-sm text-secondary">@item.Owner.DisplayName</p>
-                            <p class="text-sm">@item.ItemCount @L["Items"]</p>
-                        </button>
-                    </article>
-                }
-            </div>
-        }
-    </div>
-}
-else
-{
-<BrowseView TItem="LiteCollectionDto"
-              Items="_collections"
+<BrowseView TItem="MySpaceCollectionBrowseItem"
+              Items="_items"
               Loading="_loading"
               PersistenceKey="my-space-collections"
               Class="my-space-library-browse"
@@ -59,13 +22,14 @@ else
               DefaultItemWidth="160"
               DefaultSpacing="24"
               GridItemAspectRatio="1f"
+              GridCardVariant="MediaCardVariant.Cover"
               ListItemHeight="64">
     <ToolbarContent>
         @if (_selectionMode)
         {
             <h5>@string.Format(L["SelectedCount"], SelectedCount)</h5>
             <div class="flex-1"></div>
-            <K7Button Variant="text" OnClick="ToggleSelectAll" Disabled="@(_collections.Count == 0 || _deleting)">
+            <K7Button Variant="text" OnClick="ToggleSelectAll" Disabled="@(OwnedCount == 0 || _deleting)">
                 @(AllSelected ? L["DeselectAll"] : L["SelectAll"])
             </K7Button>
             <K7Button Variant="filled"
@@ -93,7 +57,7 @@ else
             </K7Select>
             <K7IconButton Icon="@Phosphor.ListChecks"
                           OnClick="EnterSelectionMode"
-                          Disabled="@(_collections.Count == 0)"
+                          Disabled="@(OwnedCount == 0)"
                           AriaLabel="@L["Select"]" />
             <K7Button Variant="filled" Color="primary" StartIcon="@Phosphor.Plus" OnClick="OpenCreateCollectionDialog" Disabled="@(!_canCreate)" Class="my-space-toolbar-new" AriaLabel="@L["New"]">
                 <span class="my-space-toolbar-new__label">@L["New"]</span>
@@ -103,12 +67,13 @@ else
     <EmptyContent>
         <K7EmptyState Icon="@Phosphor.BookmarkSimple" Title="@L["None"]" Subtitle="@L["EmptyHint"]" />
     </EmptyContent>
-    <GridTemplate Context="collection">
+    <GridTemplate Context="item">
         @{
-            var vm = collection.ToCardViewModel(ApiClient, GetCollectionSubtitle(collection));
+            var collection = item.Collection;
+            var vm = collection.ToCardViewModel(ApiClient, GetCollectionSubtitle(item));
             var selected = IsSelected(collection.Id);
         }
-        @if (_selectionMode)
+        @if (_selectionMode && item.IsOwned)
         {
             <div class="my-space-select-item focusable @(selected ? "is-selected" : null)"
                  role="checkbox"
@@ -141,7 +106,7 @@ else
         else
         {
             <MediaCard Model="vm"
-                       Href="@GetCollectionHref(collection)"
+                       Href="@GetCollectionHref(item)"
                        Variant="MediaCardVariant.Cover"
                        FooterVisible="true"
                        ContextMenuEnabled="false"
@@ -159,7 +124,7 @@ else
         }
     </GridTemplate>
     <TableContent>
-        <K7DataTable TItem="LiteCollectionDto"
+        <K7DataTable TItem="MySpaceCollectionBrowseItem"
                      ServerData="LoadTableDataAsync"
                      ActiveSortKey="@_activeSortKey"
                      ActiveSortDirection="@_activeSortDirection"
@@ -169,18 +134,24 @@ else
                      ShowToolbar="false"
                      Surface="false"
                      @ref="_dataTable">
-            <K7DataColumn TItem="LiteCollectionDto" Title="" Width="48px" Visible="@_selectionMode" Hideable="false" VisibleOnMobile="true">
-                <CellTemplate Context="collection">
+            <K7DataColumn TItem="MySpaceCollectionBrowseItem" Title="" Width="48px" Visible="@_selectionMode" Hideable="false" VisibleOnMobile="true">
+                <CellTemplate Context="item">
                     @{
-                        var selected = IsSelected(collection.Id);
+                        var selected = IsSelected(item.Id);
                     }
-                    <span class="k7-select-check @(selected ? "is-selected" : null)" aria-hidden="true">
-                        <K7Icon Icon="@(selected ? Phosphor.Fill.CheckCircle : Phosphor.Circle)" IconSize="@K7IconSize.Md" />
-                    </span>
+                    @if (item.IsOwned)
+                    {
+                        <span class="k7-select-check @(selected ? "is-selected" : null)" aria-hidden="true">
+                            <K7Icon Icon="@(selected ? Phosphor.Fill.CheckCircle : Phosphor.Circle)" IconSize="@K7IconSize.Md" />
+                        </span>
+                    }
                 </CellTemplate>
             </K7DataColumn>
-            <K7DataColumn TItem="LiteCollectionDto" Title="@S["Title"]" SortKey="title" Hideable="false">
-                <CellTemplate Context="collection">
+            <K7DataColumn TItem="MySpaceCollectionBrowseItem" Title="@S["Title"]" SortKey="title" Hideable="false">
+                <CellTemplate Context="item">
+                    @{
+                        var collection = item.Collection;
+                    }
                     <div class="library-table-title">
                         <LibraryItemCoverThumb CoverPicture="collection.CoverPicture"
                                                 PreviewPictures="collection.PreviewPictures"
@@ -191,29 +162,35 @@ else
                     </div>
                 </CellTemplate>
             </K7DataColumn>
-            <K7DataColumn TItem="LiteCollectionDto" Title="@L["ItemsColumn"]" Width="120px" VisibleOnMobile="false">
-                <CellTemplate Context="collection">
-                    <span>@GetCollectionItemCountLabel(collection)</span>
+            <K7DataColumn TItem="MySpaceCollectionBrowseItem" Title="@L["Owner"]" Width="180px" Visible="@_showShared" VisibleOnMobile="true">
+                <CellTemplate Context="item">
+                    <span>@GetOwnerLabel(item)</span>
                 </CellTemplate>
             </K7DataColumn>
-            <K7DataColumn TItem="LiteCollectionDto" Title="@L["Visibility"]" Width="120px" VisibleOnMobile="true">
-                <CellTemplate Context="collection">
-                    <span>@(collection.IsPublic ? L["Public"] : L["Private"])</span>
+            <K7DataColumn TItem="MySpaceCollectionBrowseItem" Title="@L["ItemsColumn"]" Width="120px" VisibleOnMobile="false">
+                <CellTemplate Context="item">
+                    <span>@GetCollectionItemCountLabel(item.Collection)</span>
                 </CellTemplate>
             </K7DataColumn>
-            <K7DataColumn TItem="LiteCollectionDto" Title="@LibrarySortL["SortRecentActivity"]" SortKey="lastModified" Width="180px" VisibleOnMobile="false" Visible="false">
-                <CellTemplate Context="collection">
-                    <span>@collection.LastModified.ToString("d")</span>
+            <K7DataColumn TItem="MySpaceCollectionBrowseItem" Title="@L["Visibility"]" Width="120px" VisibleOnMobile="true">
+                <CellTemplate Context="item">
+                    <span>@(item.Collection.IsPublic ? L["Public"] : L["Private"])</span>
+                </CellTemplate>
+            </K7DataColumn>
+            <K7DataColumn TItem="MySpaceCollectionBrowseItem" Title="@LibrarySortL["SortRecentActivity"]" SortKey="lastModified" Width="180px" VisibleOnMobile="false" Visible="false">
+                <CellTemplate Context="item">
+                    <span>@item.Collection.LastModified.ToString("d")</span>
                 </CellTemplate>
             </K7DataColumn>
         </K7DataTable>
     </TableContent>
-    <ListTemplate Context="collection">
+    <ListTemplate Context="item">
         @{
+            var collection = item.Collection;
             var selected = IsSelected(collection.Id);
         }
         <LibraryBrowseListRow>
-            @if (_selectionMode)
+            @if (_selectionMode && item.IsOwned)
             {
                 <button type="button"
                         class="library-list-item focusable my-space-select-list-item @(selected ? "is-selected" : null)"
@@ -228,13 +205,13 @@ else
                                             Alt="@collection.Title" />
                     <div class="library-list-item-info">
                         <p class="library-list-item-title">@collection.Title</p>
-                        <span class="library-list-item-secondary">@GetCollectionSubtitle(collection)</span>
+                        <span class="library-list-item-secondary">@GetCollectionSubtitle(item)</span>
                     </div>
                 </button>
             }
             else
             {
-                <a href="@GetCollectionHref(collection)" class="library-list-item focusable">
+                <a href="@GetCollectionHref(item)" class="library-list-item focusable">
                     <LibraryItemCoverThumb CoverPicture="collection.CoverPicture"
                                             PreviewPictures="collection.PreviewPictures"
                                             PreferPreviewWhenEmpty="@(collection.ItemCount == 0)"
@@ -242,11 +219,10 @@ else
                                             Alt="@collection.Title" />
                     <div class="library-list-item-info">
                         <p class="library-list-item-title">@collection.Title</p>
-                        <span class="library-list-item-secondary">@GetCollectionSubtitle(collection)</span>
+                        <span class="library-list-item-secondary">@GetCollectionSubtitle(item)</span>
                     </div>
                 </a>
             }
         </LibraryBrowseListRow>
     </ListTemplate>
 </BrowseView>
-}

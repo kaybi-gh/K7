@@ -1,4 +1,5 @@
 using K7.Server.Domain.Enums;
+using K7.Shared.Dtos.Entities;
 
 namespace K7.Shared.Dtos.Federation.Social;
 
@@ -98,6 +99,11 @@ public sealed record SharedCollectionBrowseDto
     public string? Description { get; init; }
     public MediaType? MediaType { get; init; }
     public int ItemCount { get; init; }
+    public bool IsPublic { get; init; }
+    public MetadataPictureDto? CoverPicture { get; init; }
+    public IReadOnlyList<MetadataPictureDto> PreviewPictures { get; init; } = [];
+    public DateTimeOffset Created { get; init; }
+    public DateTimeOffset LastModified { get; init; }
 }
 
 public sealed record SharedPlaylistBrowseDto
@@ -109,4 +115,8 @@ public sealed record SharedPlaylistBrowseDto
     public MediaType? MediaType { get; init; }
     public bool IsDynamic { get; init; }
     public int ItemCount { get; init; }
+    public MetadataPictureDto? CoverPicture { get; init; }
+    public IReadOnlyList<MetadataPictureDto> PreviewPictures { get; init; } = [];
+    public DateTimeOffset Created { get; init; }
+    public DateTimeOffset LastModified { get; init; }
 }
