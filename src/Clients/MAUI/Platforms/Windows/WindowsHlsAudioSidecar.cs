@@ -21,7 +21,7 @@ internal sealed class WindowsHlsAudioSidecar : IDisposable
     private static readonly HttpClient Http = CreateHttpClient();
 
     private CancellationTokenSource? _pumpCts;
-    private WasapiOut? _output;
+    private WasapiPlayer? _output;
     private BufferedWaveProvider? _buffer;
     private double _volume01 = 1;
     private bool _muted;
@@ -252,7 +252,7 @@ internal sealed class WindowsHlsAudioSidecar : IDisposable
 
             var bytes = new byte[reader.WaveFormat.AverageBytesPerSecond / 2];
             int read;
-            while ((read = reader.Read(bytes, 0, bytes.Length)) > 0)
+            while ((read = reader.Read(bytes)) > 0)
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 _buffer.AddSamples(bytes, 0, read);
@@ -280,12 +280,14 @@ internal sealed class WindowsHlsAudioSidecar : IDisposable
         if (epoch != _playEpoch || _disposed)
             return;
 
-        _buffer = new BufferedWaveProvider(format)
+        _buffer = new BufferedWaveProvider(format, TimeSpan.FromSeconds(MaxBufferedSeconds + 6))
         {
-            BufferDuration = TimeSpan.FromSeconds(MaxBufferedSeconds + 6),
             DiscardOnBufferOverflow = false,
         };
-        _output = new WasapiOut(NAudio.CoreAudioApi.AudioClientShareMode.Shared, 50);
+        _output = new WasapiPlayerBuilder()
+            .WithSharedMode()
+            .WithLatency(50)
+            .Build();
         _output.Init(_buffer);
         ApplyVolume();
         _output.Play();
