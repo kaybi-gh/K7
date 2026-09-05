@@ -170,4 +170,44 @@ public class MetadataImageUrlHelperTests
         filtered.Should().ContainSingle();
         filtered[0].Provider.Should().Be("tmdb");
     }
+
+    [Test]
+    public void ShouldReplaceEpisodeStillWithHdAlternate_ShouldReturnFalse_WhenDimensionsMeetHd()
+    {
+        MetadataImageUrlHelper.ShouldReplaceEpisodeStillWithHdAlternate(
+                1920,
+                1080,
+                new Uri("https://artworks.thetvdb.com/banners/episodes/1.jpg"))
+            .Should().BeFalse();
+    }
+
+    [Test]
+    public void ShouldReplaceEpisodeStillWithHdAlternate_ShouldReturnTrue_WhenDimensionsAreSd()
+    {
+        MetadataImageUrlHelper.ShouldReplaceEpisodeStillWithHdAlternate(640, 360, null)
+            .Should().BeTrue();
+    }
+
+    [Test]
+    public void ShouldReplaceEpisodeStillWithHdAlternate_ShouldReturnTrue_WhenUnknownSizeIsTvdbHost()
+    {
+        MetadataImageUrlHelper.ShouldReplaceEpisodeStillWithHdAlternate(
+                null,
+                null,
+                new Uri("https://artworks.thetvdb.com/banners/episodes/1.jpg"))
+            .Should().BeTrue();
+    }
+
+    [Test]
+    public void ShouldReplaceEpisodeStillWithHdAlternate_ShouldReturnFalse_WhenUnknownSizeIsTmdbOrLocal()
+    {
+        MetadataImageUrlHelper.ShouldReplaceEpisodeStillWithHdAlternate(
+                null,
+                null,
+                new Uri("https://image.tmdb.org/t/p/original/still.jpg"))
+            .Should().BeFalse();
+
+        MetadataImageUrlHelper.ShouldReplaceEpisodeStillWithHdAlternate(null, null, null)
+            .Should().BeFalse();
+    }
 }

@@ -1,3 +1,4 @@
+using K7.Server.Application.Common;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities.Metadatas;
 using K7.Shared.Helpers;
@@ -111,6 +112,25 @@ public static class MetadataImageUrlHelper
     public static bool MeetsHdStillThreshold(ProviderImageDto image) =>
         image.Width <= 0 && image.Height <= 0
         || MeetsHdStillThreshold(image.Width, image.Height);
+
+    /// <summary>
+    /// Auto numbering often keeps a TVDB screencap. Prefer a later HD still (typically TMDb)
+    /// when the current image is below 1280x720, or is a TVDB remote with unknown size.
+    /// Keep TMDb / local / source stills until dimensions prove they are not HD.
+    /// </summary>
+    public static bool ShouldReplaceEpisodeStillWithHdAlternate(
+        int? originalWidth,
+        int? originalHeight,
+        Uri? originalRemoteUri)
+    {
+        if (originalWidth is > 0 || originalHeight is > 0)
+            return !MeetsHdStillThreshold(originalWidth ?? 0, originalHeight ?? 0);
+
+        return string.Equals(
+            MetadataProviderHostMapper.FromUri(originalRemoteUri),
+            MetadataProviderNames.Tvdb,
+            StringComparison.OrdinalIgnoreCase);
+    }
 
     public static IReadOnlyList<ProviderImageDto> FilterProviderImages(IEnumerable<ProviderImageDto> images) =>
         images

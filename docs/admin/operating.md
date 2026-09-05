@@ -127,7 +127,7 @@ Adding a new episode to an existing series refreshes series-level fields (status
 
 **Series display language.** TMDb and TheTVDB often return the original-language title/overview (Japanese for anime) when the library language has no translation. K7 then uses the metadata fallback language (default `en`) when that text is still in a different script. Refresh existing series after this change.
 
-**Series libraries default to Auto.** Auto scores TVDB and TMDb search hits together (title, year, popularity), stores both external ids when known, then picks the **numbering canon** (which S/E grid matches your files best). The other provider still enriches gaps (stills, ratings, cast). Force **TMDb** or **TheTVDB** only when you need a fixed numbering scheme (for example Sonarr/TVDB-named packs).
+**Series libraries default to Auto.** Auto scores TVDB and TMDb search hits together (title, year, popularity), stores both external ids when known, then picks the **numbering canon** (which S/E grid matches your files best). The other provider still enriches gaps (ratings, cast). Episode stills prefer **HD** (at least 1280x720): TVDB numbering keeps a screencap only until TMDb (or a later HD image) can replace it. Force **TMDb** or **TheTVDB** only when you need a fixed numbering scheme (for example Sonarr/TVDB-named packs).
 
 Optional folder tokens improve matching: `Series Name (2023) [tmdbid-123]` or `[tvdbid-456]` / `[imdbid-tt...]`.
 

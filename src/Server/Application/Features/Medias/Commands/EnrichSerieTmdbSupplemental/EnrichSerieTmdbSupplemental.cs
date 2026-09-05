@@ -94,8 +94,7 @@ public class EnrichSerieTmdbSupplementalCommandHandler(
                 var needsTitle = string.IsNullOrWhiteSpace(episode.Title)
                     || episode.Title.StartsWith("Episode ", StringComparison.OrdinalIgnoreCase);
                 var needsOverview = string.IsNullOrWhiteSpace(episode.Overview);
-                var needsStill = !episode.Pictures.Any(p => p.Type == MetadataPictureType.Still)
-                    && !episode.IsPictureTypeLocked(MetadataPictureType.Still);
+                var needsStill = NeedsHdEpisodeStill(episode);
                 var needsRatings = !episode.Ratings.OfType<MetadataProviderRating>().Any();
 
                 if (!needsTitle && !needsOverview && !needsStill && !needsRatings)
@@ -164,6 +163,21 @@ public class EnrichSerieTmdbSupplementalCommandHandler(
         }
 
         await _context.SaveChangesAsync(cancellationToken);
+    }
+
+    private static bool NeedsHdEpisodeStill(SerieEpisode episode)
+    {
+        if (episode.IsPictureTypeLocked(MetadataPictureType.Still))
+            return false;
+
+        var still = episode.Pictures.FirstOrDefault(p => p.Type == MetadataPictureType.Still);
+        if (still is null)
+            return true;
+
+        return MetadataImageUrlHelper.ShouldReplaceEpisodeStillWithHdAlternate(
+            still.OriginalWidth,
+            still.OriginalHeight,
+            still.OriginalRemoteUri);
     }
 
     private async Task TryQueueEpisodeStillFromSourceFallbackAsync(

@@ -690,6 +690,21 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
 
                 SupplementalEpisodeMetadataResolver.MergeMetadataProviderRatings(episode, episodeRatings);
 
+                if (!episode.IsPictureTypeLocked(MetadataPictureType.Still))
+                {
+                    stillImageUrl = await PreferHdEpisodeStillUrlAsync(
+                        stillImageUrl,
+                        enrichmentProvider,
+                        enrichmentExternalId,
+                        enrichmentProviderName,
+                        season.SeasonNumber,
+                        episode.EpisodeNumber,
+                        request.Language,
+                        request.FallbackLanguage,
+                        request.Incremental,
+                        cancellationToken);
+                }
+
                 if (!string.IsNullOrEmpty(stillImageUrl)
                     && !episode.IsPictureTypeLocked(MetadataPictureType.Still)
                     && MetadataImageUrlHelper.TryCreateRemoteUri(stillImageUrl, out var stillUri))
@@ -1182,6 +1197,58 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
             _pictureDeletionService.Remove(role.PortraitPicture);
             role.PortraitPicture = null;
         }
+    }
+
+    private async Task<string?> PreferHdEpisodeStillUrlAsync(
+        string? canonStillUrl,
+        ISerieMetadataProvider? enrichmentProvider,
+        string? enrichmentExternalId,
+        string? enrichmentProviderName,
+        int seasonNumber,
+        int episodeNumber,
+        string language,
+        string? fallbackLanguage,
+        bool incremental,
+        CancellationToken cancellationToken)
+    {
+        if (!incremental
+            || enrichmentProvider is null
+            || string.IsNullOrWhiteSpace(enrichmentExternalId)
+            || !string.Equals(enrichmentProviderName, MetadataProviderNames.Tmdb, StringComparison.OrdinalIgnoreCase))
+            return canonStillUrl;
+
+        MetadataImageUrlHelper.TryCreateRemoteUri(canonStillUrl, out var canonUri);
+        var shouldFetchTmdb = string.IsNullOrWhiteSpace(canonStillUrl)
+            || MetadataImageUrlHelper.ShouldReplaceEpisodeStillWithHdAlternate(null, null, canonUri);
+        if (!shouldFetchTmdb)
+            return canonStillUrl;
+
+        try
+        {
+            var tmdbMetadata = await enrichmentProvider.TryBuildEpisodeMetadataFromCatalogAsync(
+                enrichmentExternalId,
+                seasonNumber,
+                episodeNumber,
+                language,
+                fallbackLanguage,
+                cancellationToken);
+
+            tmdbMetadata ??= await enrichmentProvider.FetchEpisodeMetadataAsync(
+                enrichmentExternalId,
+                seasonNumber,
+                episodeNumber,
+                language,
+                cancellationToken,
+                fallbackLanguage);
+
+            if (!string.IsNullOrWhiteSpace(tmdbMetadata?.StillImageUrl))
+                return tmdbMetadata.StillImageUrl;
+        }
+        catch (InvalidOperationException)
+        {
+        }
+
+        return canonStillUrl;
     }
 
     private async Task TryQueueEpisodeStillFromSourceFallbackAsync(
