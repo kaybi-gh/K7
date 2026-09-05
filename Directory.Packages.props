@@ -113,8 +113,8 @@
     <PackageVersion Include="SSH.NET" Version="2026.0.0" />
     <PackageVersion Include="TMDbLib" Version="2.3.0" />
     <PackageVersion Include="VideoLAN.LibVLC.Windows" Version="4.0.0-alpha-20260830" />
-    <PackageVersion Include="Xamarin.GooglePlayServices.Cast" Version="122.3.1.1" />
-    <PackageVersion Include="Xamarin.GooglePlayServices.Cast.Framework" Version="122.3.1.1" />
-    <PackageVersion Include="Xamarin.GooglePlayServices.Basement" Version="118.10.0.2" />
+    <PackageVersion Include="Xamarin.GooglePlayServices.Cast" Version="122.3.1.2" />
+    <PackageVersion Include="Xamarin.GooglePlayServices.Cast.Framework" Version="122.3.1.2" />
+    <PackageVersion Include="Xamarin.GooglePlayServices.Basement" Version="118.10.0.3" />
   </ItemGroup>
 </Project>
