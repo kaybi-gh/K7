@@ -161,3 +161,12 @@
         font-size: var(--text-xs);
     }
 }
+
+:global(html.platform-tv) .library-browse-filters__option {
+    min-height: 44px;
+    font-size: var(--text-base);
+}
+
+:global(html.platform-tv) .library-browse-filters__menu {
+    max-height: none;
+}

@@ -25,6 +25,8 @@ public partial class K7Select<TValue> : IAsyncDisposable
     [Parameter] public string Style { get; set; } = "";
 
     private bool _open;
+    private bool _dropdownPlaced;
+    private bool _dropdownTeleported;
     private ElementReference _root;
     private ElementReference _button;
     private ElementReference _dropdown;
@@ -88,6 +90,8 @@ public partial class K7Select<TValue> : IAsyncDisposable
     private async Task OpenAsync()
     {
         _open = true;
+        _dropdownPlaced = false;
+        _dropdownTeleported = false;
         StateHasChanged();
         await Task.Yield();
         _closeCallbackRef?.Dispose();
@@ -96,10 +100,13 @@ public partial class K7Select<TValue> : IAsyncDisposable
         {
             await JS.InvokeVoidAsync("K7.attachSelectPortal", _root, _dropdown, _backdrop);
             await JS.InvokeVoidAsync("K7.positionSelectDropdown", _button, _dropdown);
+            _dropdownTeleported = true;
+            _dropdownPlaced = true;
             await SpatialNav.PushLayerAsync(_dropdown, "popover", new SpatialNavLayerOptions
             {
                 OnClose = _closeCallbackRef
             });
+            StateHasChanged();
         }
         catch (Exception ex) when (ex is JSException or InvalidOperationException)
         {
@@ -110,6 +117,8 @@ public partial class K7Select<TValue> : IAsyncDisposable
     {
         if (!_open) return;
         _open = false;
+        _dropdownPlaced = false;
+        _dropdownTeleported = false;
         try
         {
             await JS.InvokeVoidAsync("K7.detachSelectPortal", _root, _dropdown, _backdrop);
@@ -128,6 +137,8 @@ public partial class K7Select<TValue> : IAsyncDisposable
     {
         if (!_open) return;
         _open = false;
+        _dropdownPlaced = false;
+        _dropdownTeleported = false;
         try
         {
             await JS.InvokeVoidAsync("K7.detachSelectPortal", _root, _dropdown, _backdrop);

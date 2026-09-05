@@ -1,4 +1,4 @@
-﻿using K7.Clients.Shared.Interfaces;
+using K7.Clients.Shared.Interfaces;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 
@@ -21,6 +21,8 @@ public partial class K7Menu : IAsyncDisposable
 
     private bool _open;
     private bool _layerPushed;
+    private bool _dropdownChromeReady;
+    private bool _dropdownPlaced;
     private bool _mobileMenuAttached;
     private bool _openParameterSeen;
     private bool _lastOpenParameter;
@@ -123,6 +125,8 @@ public partial class K7Menu : IAsyncDisposable
         if (!_open)
         {
             _layerPushed = false;
+            _dropdownChromeReady = false;
+            _dropdownPlaced = false;
             if (_mobileMenuAttached)
             {
                 try
@@ -132,6 +136,28 @@ public partial class K7Menu : IAsyncDisposable
                 catch (Exception ex) when (ex is JSException or InvalidOperationException)
                 {
                 }
+            }
+
+            return;
+        }
+
+        // Submenu swaps and parent re-renders (filter apply) must not teleport or
+        // re-anchor the panel. Restore --placed after Blazor rewrites the class
+        // attribute so a later render cannot hide an already-open menu.
+        if (_dropdownChromeReady)
+        {
+            if (!_dropdownPlaced)
+            {
+                _dropdownPlaced = true;
+                await InvokeAsync(StateHasChanged);
+            }
+
+            try
+            {
+                await JS.InvokeVoidAsync("K7.revealDropdown", _dropdown);
+            }
+            catch (Exception ex) when (ex is JSException or InvalidOperationException)
+            {
             }
 
             return;
@@ -156,10 +182,14 @@ public partial class K7Menu : IAsyncDisposable
                     OnClose = _closeCallbackRef
                 });
             }
+
+            _dropdownChromeReady = true;
+            _dropdownPlaced = true;
+            await InvokeAsync(StateHasChanged);
         }
         catch (Exception ex) when (ex is JSException or InvalidOperationException)
         {
-            // Element not yet rendered
+            // Element not yet rendered. Retry on the next render.
         }
     }
 
@@ -172,6 +202,8 @@ public partial class K7Menu : IAsyncDisposable
     private async Task CloseMenuInternalAsync()
     {
         _layerPushed = false;
+        _dropdownChromeReady = false;
+        _dropdownPlaced = false;
         try
         {
             await JS.InvokeVoidAsync("K7.clearMenuPositionAnchor");

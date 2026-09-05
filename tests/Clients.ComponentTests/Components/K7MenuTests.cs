@@ -56,6 +56,55 @@ public class K7MenuTests
     }
 
     [Test]
+    public async Task Open_ShouldPositionDropdownOnce_WhenRerenderedWhileOpen()
+    {
+        using var ctx = CreateContext();
+        ctx.JSInterop.Mode = JSRuntimeMode.Loose;
+
+        var cut = ctx.Render<K7Menu>(p => p.Add(m => m.ActivatorContent, "Test"));
+        var button = cut.Find(".k7-menu-activator-inner");
+
+        await cut.InvokeAsync(() => button.Click());
+        await cut.WaitForStateAsync(() => cut.Find(".k7-menu--open") is not null);
+        await cut.WaitForAssertionAsync(() =>
+            ctx.JSInterop.Invocations
+                .Count(i => i.Identifier == "K7.positionDropdownDeferred")
+                .Should().Be(1));
+
+        cut.Render();
+
+        ctx.JSInterop.Invocations
+            .Count(i => i.Identifier == "K7.positionDropdownDeferred")
+            .Should().Be(1);
+    }
+
+    [Test]
+    public async Task Toggle_ShouldPositionDropdownAgain_WhenReopened()
+    {
+        using var ctx = CreateContext();
+        ctx.JSInterop.Mode = JSRuntimeMode.Loose;
+
+        var cut = ctx.Render<K7Menu>(p => p.Add(m => m.ActivatorContent, "Test"));
+        var button = cut.Find(".k7-menu-activator-inner");
+
+        await cut.InvokeAsync(() => button.Click());
+        await cut.WaitForAssertionAsync(() =>
+            ctx.JSInterop.Invocations
+                .Count(i => i.Identifier == "K7.positionDropdownDeferred")
+                .Should().Be(1));
+
+        await cut.InvokeAsync(() => button.Click());
+        await cut.WaitForStateAsync(() => !cut.Find(".k7-menu").ClassList.Contains("k7-menu--open"));
+
+        await cut.InvokeAsync(() => button.Click());
+        await cut.WaitForAssertionAsync(() =>
+            ctx.JSInterop.Invocations
+                .Count(i => i.Identifier == "K7.positionDropdownDeferred")
+                .Should().Be(2));
+        cut.Find(".k7-menu-dropdown").ClassList.Should().Contain("k7-menu-dropdown--placed");
+    }
+
+    [Test]
     public async Task Toggle_ShouldCallPopLayer_WhenClosed()
     {
         using var ctx = CreateContext();

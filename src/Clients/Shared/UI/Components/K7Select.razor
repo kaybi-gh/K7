@@ -18,7 +18,7 @@
     }
     <div class="k7-select-wrap @(_open ? "k7-select-wrap--open" : "")" @ref="_root">
         @* Items must render before the trigger so DisplayText can resolve labels on first paint. *@
-        <div class="k7-select-dropdown @(_open ? "k7-select-dropdown--open" : "")" role="listbox" @ref="_dropdown" @onclick:stopPropagation="true"
+        <div class="k7-select-dropdown @(_open ? "k7-select-dropdown--open" : "") @(_dropdownPlaced ? "k7-select-dropdown--placed" : "") @(_dropdownTeleported ? "k7-select-dropdown--teleported" : "")" role="listbox" @ref="_dropdown" @onclick:stopPropagation="true"
              data-sn-layer="@(_open ? "popover" : null)">
             <CascadingValue Value="this" IsFixed="true">
                 @ChildContent

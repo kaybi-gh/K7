@@ -72,4 +72,54 @@ public class K7SelectTests
         // Assert
         cut.Find(".k7-field-helper").TextContent.Should().Be("Pick a value");
     }
+
+    [Test]
+    public async Task Toggle_ShouldKeepPlacedAndTeleportedClasses_WhenOpened()
+    {
+        using var ctx = new BunitContext();
+        ctx.Services.AddSingleton(Substitute.For<ISpatialNavService>());
+        ctx.JSInterop.Mode = JSRuntimeMode.Loose;
+
+        var cut = ctx.Render<K7Select<string>>(p => p.Add(c => c.Class, "library-toolbar-sort"));
+        var button = cut.Find("button.k7-select");
+
+        await cut.InvokeAsync(() => button.Click());
+        await cut.WaitForAssertionAsync(() =>
+        {
+            var dropdown = cut.Find(".k7-select-dropdown");
+            dropdown.ClassList.Should().Contain("k7-select-dropdown--open");
+            dropdown.ClassList.Should().Contain("k7-select-dropdown--placed");
+            dropdown.ClassList.Should().Contain("k7-select-dropdown--teleported");
+        });
+
+        cut.Render();
+
+        var afterRender = cut.Find(".k7-select-dropdown");
+        afterRender.ClassList.Should().Contain("k7-select-dropdown--placed");
+        afterRender.ClassList.Should().Contain("k7-select-dropdown--teleported");
+    }
+
+    [Test]
+    public async Task Toggle_ShouldDropPlacedAndTeleportedClasses_WhenClosed()
+    {
+        using var ctx = new BunitContext();
+        ctx.Services.AddSingleton(Substitute.For<ISpatialNavService>());
+        ctx.JSInterop.Mode = JSRuntimeMode.Loose;
+
+        var cut = ctx.Render<K7Select<string>>();
+        var button = cut.Find("button.k7-select");
+
+        await cut.InvokeAsync(() => button.Click());
+        await cut.WaitForAssertionAsync(() =>
+            cut.Find(".k7-select-dropdown").ClassList.Should().Contain("k7-select-dropdown--placed"));
+
+        await cut.InvokeAsync(() => button.Click());
+        await cut.WaitForAssertionAsync(() =>
+        {
+            var dropdown = cut.Find(".k7-select-dropdown");
+            dropdown.ClassList.Should().NotContain("k7-select-dropdown--open");
+            dropdown.ClassList.Should().NotContain("k7-select-dropdown--placed");
+            dropdown.ClassList.Should().NotContain("k7-select-dropdown--teleported");
+        });
+    }
 }

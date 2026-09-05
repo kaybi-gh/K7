@@ -18,7 +18,7 @@
             @ActivatorContent
         </div>
     </div>
-    <div class="k7-menu-dropdown @(_open ? "k7-menu-dropdown--open" : "")" role="menu" @ref="_dropdown" @onclick:stopPropagation="true"
+    <div class="k7-menu-dropdown @(_open ? "k7-menu-dropdown--open" : "") @(_dropdownPlaced ? "k7-menu-dropdown--placed" : "")" role="menu" @ref="_dropdown" @onclick:stopPropagation="true"
          data-sn-layer="@(_open ? "popover" : null)">
         @if (!string.IsNullOrEmpty(Title))
         {

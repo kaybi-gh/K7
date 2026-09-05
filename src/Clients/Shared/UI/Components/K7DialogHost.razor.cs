@@ -31,21 +31,28 @@ public partial class K7DialogHost : IDisposable
         UpdateOpenDialogs();
         await InvokeAsync(StateHasChanged);
         await UpdatePageInteractionLockAsync();
-
-        // Allow two render cycles so the backdrop element is available
-        await Task.Yield();
-        await Task.Delay(50);
-
-        try
-        {
-            if (entry.BackdropRef.Id is not null)
-                await SpatialNav.AttachLayerCallbackAsync(entry.BackdropRef, entry.CloseCallback);
-        }
-        catch (Exception ex) when (ex is JSException or InvalidOperationException)
-        {
-            // Element not yet rendered
-        }
         return entry;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        foreach (var entry in _dialogs)
+        {
+            if (entry.LayerAttached || entry.Result.IsCompleted)
+                continue;
+            if (entry.BackdropRef.Id is null)
+                continue;
+
+            try
+            {
+                await SpatialNav.AttachLayerCallbackAsync(entry.BackdropRef, entry.CloseCallback);
+                entry.LayerAttached = true;
+            }
+            catch (Exception ex) when (ex is JSException or InvalidOperationException)
+            {
+                // Element not yet rendered. Retry on the next host render.
+            }
+        }
     }
 
     private void OnDialogClosed(K7DialogEntry entry)
@@ -137,6 +144,7 @@ internal sealed class K7DialogEntry : IK7DialogInstance, IK7DialogReference, IDi
     public RenderFragment? HeaderActions { get; private set; }
     public Dictionary<string, object> ComponentParameters { get; }
     public ElementReference BackdropRef { get; set; }
+    public bool LayerAttached { get; set; }
     public DotNetObjectReference<LayerCloseCallback> CloseCallback { get; }
 
     public Task<K7DialogResult> Result => _tcs.Task;
