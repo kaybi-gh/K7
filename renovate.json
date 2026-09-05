@@ -13,6 +13,8 @@
   "prHourlyLimit": 0,
   "prCreation": "immediate",
   "rangeStrategy": "bump",
+  "commitMessageAction": "bump",
+  "commitMessageTopic": "{{depName}}",
   "osvVulnerabilityAlerts": true,
   "packageRules": [
     {

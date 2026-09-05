@@ -163,6 +163,8 @@ Renovate groups only packages that must bump together (OpenIddict, OpenTelemetry
 
 `Directory.Packages.props` also pins some transitive packages (`Azure.Identity`, `System.Drawing.Common`, `SSH.NET`) to patched versions. CI fails `dotnet list package --vulnerable` if those pins are removed.
 
+Commit messages use `chore(deps): bump <package> to vX.Y.Z`. Renovate always writes **one commit per PR** (it force-pushes that single commit when it rebases). Isolated per-package history therefore comes from ungrouped PRs, not from multiple commits inside a grouped PR.
+
 The job installs the `maui-android` workload on the runner so NuGet restore works for MAUI, including `android-arm` (Fire Stick / 32-bit). It uses the workflow `GITHUB_TOKEN` (no secret required).
 
 Repo **Settings -> Actions -> General** must allow Actions to create pull requests (write permissions). Without this, Renovate pushes branches but cannot open PRs.
