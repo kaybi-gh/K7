@@ -1,5 +1,6 @@
 using K7.Clients.Shared.Mappings;
 using K7.Clients.Shared.Models;
+using K7.Clients.Shared.UI.Helpers;
 using K7.Server.Domain.Enums;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
@@ -13,7 +14,9 @@ public partial class HomeTvHero : IAsyncDisposable
     private int _activeLayer;
     private int _swapGeneration;
     private bool _disposed;
+    private bool _hasRequestedBackdrop;
     private MediaCardViewModel? _focused;
+    private DebouncedActionRunner? _backdropSettleRunner;
 
     [Inject] private IJSRuntime JSRuntime { get; set; } = default!;
     [Inject] private IStringLocalizer<SharedResource> S { get; set; } = default!;
@@ -22,29 +25,93 @@ public partial class HomeTvHero : IAsyncDisposable
 
     private MediaCardViewModel? DisplayModel => _focused ?? Model;
 
+    protected override void OnInitialized()
+    {
+        _backdropSettleRunner = new DebouncedActionRunner(
+            SwapBackdropIfNeededAsync,
+            InvokeAsync,
+            TvHeroFocusSettle.DelayMs);
+    }
+
     protected override void OnParametersSet()
     {
-        if (_focused is null || Model?.Id == _focused.Id)
-            _focused = Model;
+        if (Model is null)
+            return;
 
-        _ = SwapBackdropIfNeededAsync();
+        if (_focused is null)
+        {
+            _focused = Model;
+            RequestBackdropSwap();
+            return;
+        }
+
+        if (_focused.Id == Model.Id)
+        {
+            var backdropChanged = !string.Equals(
+                _focused.ResolveHeroBackdropUrl(),
+                Model.ResolveHeroBackdropUrl(),
+                StringComparison.Ordinal)
+                || ShouldUseSoftBackdrop(_focused) != ShouldUseSoftBackdrop(Model);
+            _focused = Model;
+            if (backdropChanged)
+                RequestBackdropSwap();
+            return;
+        }
+
+        // Parent selected a different item (Explore TV hero).
+        _focused = Model;
+        RequestBackdropSwap();
     }
 
     /// <summary>
     /// Update the hero without a parent re-render (Home carousels stay mounted).
+    /// Title and meta follow D-pad immediately. Backdrop decode waits until focus settles.
     /// </summary>
     public void ApplyFocusedItem(MediaCardViewModel item)
     {
-        if (_focused?.Id == item.Id)
-            return;
+        var sameId = _focused?.Id == item.Id;
+        var sameBackdrop = sameId
+            && string.Equals(
+                item.ResolveHeroBackdropUrl(),
+                _focused!.ResolveHeroBackdropUrl(),
+                StringComparison.Ordinal)
+            && ShouldUseSoftBackdrop(item) == ShouldUseSoftBackdrop(_focused);
 
         _focused = item;
         StateHasChanged();
-        _ = SwapBackdropIfNeededAsync();
+
+        if (!sameBackdrop)
+            RequestBackdropSwap();
+    }
+
+    private bool NeedsBackdropSwap()
+    {
+        var newUrl = DisplayModel?.ResolveHeroBackdropUrl();
+        var newSoft = ShouldUseSoftBackdrop(DisplayModel);
+        return newUrl != _layerUrls[_activeLayer] || newSoft != _layerSoft[_activeLayer];
+    }
+
+    private void RequestBackdropSwap()
+    {
+        if (_disposed || !NeedsBackdropSwap())
+            return;
+
+        if (!_hasRequestedBackdrop)
+        {
+            _hasRequestedBackdrop = true;
+            _ = SwapBackdropIfNeededAsync();
+            return;
+        }
+
+        _swapGeneration++;
+        _backdropSettleRunner?.Schedule();
     }
 
     private async Task SwapBackdropIfNeededAsync()
     {
+        if (_disposed)
+            return;
+
         var newUrl = DisplayModel?.ResolveHeroBackdropUrl();
         var newSoft = ShouldUseSoftBackdrop(DisplayModel);
         if (newUrl == _layerUrls[_activeLayer] && newSoft == _layerSoft[_activeLayer])
@@ -139,6 +206,8 @@ public partial class HomeTvHero : IAsyncDisposable
     {
         _disposed = true;
         _swapGeneration++;
+        _backdropSettleRunner?.Dispose();
+        _backdropSettleRunner = null;
         return ValueTask.CompletedTask;
     }
 }

@@ -29,6 +29,9 @@ var SpatialNav = (function () {
     var _currentSectionId = null;
     var _pageFocusSettled = false;
     var _userChoseAppNav = false;
+    var _focusFirstGen = 0;
+    var _lastPageContentFocus = null;
+    var _lastPageContentFocusId = null;
     var _tvTextEditStartedAt = 0;
     var _tvEditDismissViaBack = false;
     var TV_TEXT_EDIT_BLUR_GRACE_MS = 400;
@@ -504,6 +507,8 @@ var SpatialNav = (function () {
         if (container.classList.contains('page-scrollable')) return true;
         if (container.classList.contains('app-main')) return true;
         if (container.hasAttribute('data-tv-scroll')) return true;
+        if (container.classList.contains('k7-virtual-grid')) return true;
+        if (container.classList.contains('k7-virtual-list')) return true;
         if (container.closest && container.closest('[data-carousel]')) return true;
         if (container.closest && container.closest('.k7-menu-dropdown')) return true;
         return false;
@@ -2024,7 +2029,9 @@ var SpatialNav = (function () {
     // Track intentional AppNav focus so delayed focusFirst / MutationObserver
     // retries do not yank the user back to the page carousel.
     document.addEventListener('focusin', function (e) {
-        if (!e.target || !isAppNavFocusable(e.target)) return;
+        if (!e.target) return;
+        rememberPageContentFocus(e.target);
+        if (!isAppNavFocusable(e.target)) return;
         var from = e.relatedTarget;
         if (from && from.closest && !from.closest('.app-nav') && !isInsideInactiveFeedHub(from)) {
             _userChoseAppNav = true;
@@ -2084,6 +2091,14 @@ var SpatialNav = (function () {
             if (!el.matches || !el.matches(FOCUSABLE)) return;
             // Mouse / touch focus must not auto-scroll the page (carousel drag, clicks).
             if (window.K7 && window.K7.isKeyboardNavMode && !window.K7.isKeyboardNavMode()) return;
+            // Virtual browse grids own vertical scroll (browseView.js). Generic
+            // scrollIntoView / near-top snap fights D-pad and yanks the list to 0.
+            if (el.closest('.k7-virtual-grid, .k7-virtual-list, .k7-data-table-scroll, .browse-view-table'))
+                return;
+            // Menus, selects, and dialogs are overlay layers. Auto-scroll of the page
+            // behind them moves the activator, then deferred positioning jumps the panel.
+            if (el.closest('.k7-menu-dropdown, .k7-select-dropdown, .k7-search-select-dropdown, .k7-dialog-backdrop, .k7-dialog-paper'))
+                return;
             // Hero pages: return to hero only via TvDetailScroll actions zone, never via
             // "near top" heuristics (that wrongly snaps when moving between below carousels).
             var tvScrollRootEarly = el.closest('[data-tv-scroll]');
@@ -2267,6 +2282,66 @@ var SpatialNav = (function () {
     function resetPageFocusSettled() {
         _pageFocusSettled = false;
         _userChoseAppNav = false;
+        _lastPageContentFocus = null;
+        _lastPageContentFocusId = null;
+        _focusFirstGen++;
+    }
+
+    function isOverlayFocus(el) {
+        return !!(el && el.closest && el.closest(
+            '.k7-menu-dropdown--open, .k7-select-dropdown, .k7-search-select-dropdown, .k7-dialog-backdrop, .k7-dialog-paper, [data-sn-layer]'
+        ));
+    }
+
+    function rememberPageContentFocus(el) {
+        if (!el || !el.closest) return;
+        if (isAppNavFocusable(el)) return;
+        if (isOverlayFocus(el)) return;
+        if (!el.matches || !el.matches(FOCUSABLE)) return;
+        if (isInsideInactiveFeedHub(el)) return;
+        _lastPageContentFocus = el;
+        var item = el.closest('[data-carousel-item]');
+        _lastPageContentFocusId = (item && item.id) || el.id || null;
+        // A real carousel card (has an id) means the user or a restore already
+        // owns focus. Cancel delayed focusFirst retries that would yank to card 1.
+        if (_lastPageContentFocusId) {
+            _focusFirstGen++;
+            markPageFocusSettled();
+        }
+    }
+
+    function restoreLastPageContentFocus() {
+        if (_lastPageContentFocus
+            && _lastPageContentFocus.isConnected
+            && isElementVisible(_lastPageContentFocus)
+            && !isInsideInactiveFeedHub(_lastPageContentFocus)) {
+            return focusTargetElement(_lastPageContentFocus);
+        }
+
+        if (_lastPageContentFocusId) {
+            var host = document.getElementById(_lastPageContentFocusId);
+            if (host && !isInsideInactiveFeedHub(host))
+                return focusTargetElement(host);
+        }
+
+        return false;
+    }
+
+    function shouldAbortFocusFirst(target) {
+        var active = document.activeElement;
+        if (!active || active === document.body || active === document.documentElement)
+            return false;
+        if (isInsideInactiveFeedHub(active))
+            return false;
+        if (isAppNavFocusable(active))
+            return _pageFocusSettled || _userChoseAppNav;
+        if (isOverlayFocus(active))
+            return true;
+        if (!active.matches || !active.matches(FOCUSABLE))
+            return false;
+        if (target && (active === target || target.contains(active) || active.contains(target)))
+            return false;
+        return true;
     }
 
     function isAppNavFocusable(el) {
@@ -2278,21 +2353,28 @@ var SpatialNav = (function () {
             ? (isStandaloneAuthPage() ? [100, 300, 600, 1200, 2000] : [100, 300, 600])
             : [100];
         var resolved = false;
+        var gen = ++_focusFirstGen;
 
         function attempt(index) {
-            if (resolved) return;
+            if (resolved || gen !== _focusFirstGen) return;
 
-            // After initial page focus landed, do not yank focus back from the navbar
-            // on delayed retries (user may have already moved up intentionally).
-            // Also stop retrying once the user has moved from page content to AppNav.
-            if (isAppNavFocusable(document.activeElement)
-                && (_pageFocusSettled || _userChoseAppNav || index > 0)) {
+            var el = selector ? queryFocusSelector(selector) : null;
+
+            // User already moved to another MediaCard / control. Do not yank back
+            // to data-initial-focus (usually the first carousel card).
+            if (shouldAbortFocusFirst(el)) {
                 resolved = true;
                 markPageFocusSettled();
                 return;
             }
 
-            var el = selector ? queryFocusSelector(selector) : null;
+            var pageLayer = peekLayer();
+            if ((!pageLayer || pageLayer.type === 'page') && restoreLastPageContentFocus()) {
+                resolved = true;
+                markPageFocusSettled();
+                return;
+            }
+
             if (el && focusTargetElement(el)) {
                 resolved = true;
                 markPageFocusSettled();
@@ -2387,6 +2469,11 @@ var SpatialNav = (function () {
         if (_layers.length > 0) return;
         if (document.querySelector('[data-sn-editing]')) return;
         if (!shouldRefocusPage(document.activeElement)) return;
+
+        if (restoreLastPageContentFocus()) {
+            markPageFocusSettled();
+            return;
+        }
 
         var pageTarget = getPageFocusTarget();
         if (pageTarget) {
@@ -3526,6 +3613,7 @@ K7.positionDropdown = function (root, dropdown) {
     dropdown.style.left = '';
     dropdown.style.right = '';
     dropdown.style.maxHeight = '';
+    dropdown.style.maxWidth = '';
     dropdown.style.width = '';
     dropdown.style.minWidth = '';
     dropdown.style.overflowY = '';
@@ -3588,6 +3676,13 @@ K7.positionDropdown = function (root, dropdown) {
 
         dropdown.classList.remove('k7-menu-dropdown--card-corner');
 
+        // TV toolbar menus (library filters / sort): keep them under the activator.
+        // Do not flip above the top chrome.
+        if (K7._isTvUi() && !inVideoPlayer && K7._isTvToolbarOverlay(root)) {
+            K7._positionBelowAnchor(dropdown, anchorRect, ddRect, cbOffset, vw, vh, gap);
+            return;
+        }
+
         // Root menu: open below/above the activator
         var spaceBelow = vh - anchorRect.bottom - gap;
         var spaceAbove = anchorRect.top - gap;
@@ -3630,68 +3725,78 @@ K7._positionMediaCardDropdown = function (dropdown, mediaCard, cardRect, ddRect,
 
     dropdown.style.transform = 'none';
     dropdown.style.zIndex = '100014';
-    dropdown.style.width = 'max-content';
-    dropdown.style.minWidth = '180px';
+    dropdown.style.width = '';
+    dropdown.style.minWidth = '';
+    dropdown.style.maxWidth = (vw - margin * 2) + 'px';
+
+    dropdown.style.visibility = 'hidden';
+    dropdown.style.display = 'block';
+    var box = dropdown.getBoundingClientRect();
+    dropdown.style.visibility = '';
+    dropdown.style.display = '';
+
+    var menuWidth = box.width || ddRect.width;
+    var menuHeight = box.height || ddRect.height;
 
     if (isTv) {
-        dropdown.style.maxWidth = Math.min(480, vw - margin * 2) + 'px';
         dropdown.style.maxHeight = 'none';
         dropdown.style.overflowY = 'visible';
 
-        dropdown.style.visibility = 'hidden';
-        dropdown.style.display = 'block';
-        var naturalRect = dropdown.getBoundingClientRect();
-        dropdown.style.visibility = '';
-        dropdown.style.display = '';
+        var tvTop = cardRect.top + (cardRect.height - menuHeight) / 2;
+        K7._clampMenuVertically(dropdown, tvTop, menuHeight, vh, margin, cbOffset);
 
-        var menuHeight = naturalRect.height;
-        var menuWidth = naturalRect.width;
+        var tvLeft = cardRect.left + (cardRect.width - menuWidth) / 2;
+        if (tvLeft < margin) tvLeft = margin;
+        if (tvLeft + menuWidth > vw - margin) tvLeft = Math.max(margin, vw - margin - menuWidth);
 
-        var top = cardRect.top + (cardRect.height - menuHeight) / 2;
-        if (top < margin) top = margin;
-        if (top + menuHeight > vh - margin) {
-            top = margin;
-            if (menuHeight > vh - margin * 2) {
-                dropdown.style.maxHeight = (vh - margin * 2) + 'px';
-                dropdown.style.overflowY = 'auto';
-            }
-        }
-
-        dropdown.style.top = (top - cbOffset.top) + 'px';
-        dropdown.style.bottom = '';
-
-        var left = cardRect.left + (cardRect.width - menuWidth) / 2;
-        if (left < margin) left = margin;
-        if (left + menuWidth > vw - margin) left = Math.max(margin, vw - margin - menuWidth);
-
-        dropdown.style.left = (left - cbOffset.left) + 'px';
+        dropdown.style.left = (tvLeft - cbOffset.left) + 'px';
         return;
     }
 
+    var maxBox = Math.min(320, vh - margin * 2);
     dropdown.style.overflowY = 'auto';
-    dropdown.style.maxWidth = Math.min(280, vw - margin * 2) + 'px';
-    dropdown.style.maxHeight = 'min(320px, calc(100vh - ' + (margin * 2) + 'px))';
+    dropdown.style.maxHeight = maxBox + 'px';
 
     var activator = mediaCard.querySelector('.media-card-menu .media-card-menu-trigger')
         || mediaCard.querySelector('.media-card-menu .k7-menu-activator-inner');
     var trigger = activator ? activator.getBoundingClientRect() : null;
     var triggerTop = trigger && trigger.height > 0 ? trigger.top : cardRect.bottom - 48;
+    var triggerBottom = trigger && trigger.height > 0 ? trigger.bottom : cardRect.bottom;
+    var cap = Math.min(menuHeight, maxBox);
+    var fitsAbove = triggerTop - gap - cap >= margin;
+    var fitsBelow = triggerBottom + gap + cap <= vh - margin;
+    var placeAbove = fitsAbove || (!fitsBelow && (triggerTop - margin) >= (vh - triggerBottom));
+    var preferredTop = placeAbove ? triggerTop - gap - cap : triggerBottom + gap;
 
-    // Anchor bottom edge just above the three-dots trigger (immune to height measure drift)
-    var menuBottom = triggerTop - gap;
-    dropdown.style.top = '';
-    dropdown.style.bottom = (vh - menuBottom - cbOffset.top) + 'px';
+    K7._clampMenuVertically(dropdown, preferredTop, cap, vh, margin, cbOffset);
 
     // Left-aligned to card when there is room on the right; otherwise right-aligned to card
     var left = cardRect.left;
-    if (left + ddRect.width > vw - margin) {
-        left = cardRect.right - ddRect.width;
+    if (left + menuWidth > vw - margin) {
+        left = cardRect.right - menuWidth;
     }
     if (left < margin) {
         left = margin;
     }
 
     dropdown.style.left = (left - cbOffset.left) + 'px';
+};
+
+K7._clampMenuVertically = function (dropdown, preferredTop, menuHeight, vh, margin, cbOffset) {
+    var maxBox = Math.max(80, vh - margin * 2);
+    var height = Math.min(menuHeight, maxBox);
+    var top = preferredTop;
+    if (top + height > vh - margin) {
+        top = vh - margin - height;
+    }
+    if (top < margin) {
+        top = margin;
+        height = Math.min(height, vh - margin - top);
+        dropdown.style.maxHeight = Math.max(80, height) + 'px';
+        dropdown.style.overflowY = 'auto';
+    }
+    dropdown.style.top = (top - cbOffset.top) + 'px';
+    dropdown.style.bottom = '';
 };
 
 K7._suppressEnterUntilKeyUp = false;
@@ -3843,13 +3948,72 @@ K7.replaceUrlHash = function (hash) {
     history.replaceState(null, '', window.location.pathname + window.location.search + normalized);
 };
 
+K7._isTvUi = function () {
+    return document.documentElement.classList.contains('platform-tv')
+        || window.__k7TvNativeRemote === true;
+};
+
+K7._isTvToolbarOverlay = function (fromEl) {
+    if (!fromEl || !fromEl.closest) return false;
+    return !!(fromEl.closest('.library-browse-filters')
+        || fromEl.closest('.library-toolbar-sort')
+        || fromEl.closest('.library-toolbar-selects')
+        || fromEl.closest('.browse-view-toolbar'));
+};
+
+K7._positionBelowAnchor = function (dropdown, anchorRect, ddRect, cbOffset, vw, vh, gap) {
+    gap = gap || 4;
+    var margin = 16;
+    dropdown.style.transform = 'none';
+    dropdown.style.zIndex = '100014';
+    dropdown.style.top = (anchorRect.bottom + gap - cbOffset.top) + 'px';
+    dropdown.style.bottom = '';
+    dropdown.style.right = '';
+    dropdown.style.maxHeight = Math.max(160, vh - anchorRect.bottom - gap - margin) + 'px';
+    dropdown.style.overflowY = 'auto';
+
+    var width = ddRect.width || anchorRect.width || 280;
+    var left = anchorRect.left;
+    if (left + width > vw - margin) {
+        left = Math.max(margin, vw - width - margin);
+    }
+    if (left < margin) {
+        left = margin;
+    }
+    dropdown.style.left = (left - cbOffset.left) + 'px';
+};
+
+K7.revealDropdown = function (dropdown) {
+    if (!dropdown || !dropdown.classList) return;
+    dropdown.classList.add('k7-menu-dropdown--placed');
+};
+
 K7.positionDropdownDeferred = function (root, dropdown) {
-    K7.positionDropdown(root, dropdown);
-    requestAnimationFrame(function () {
+    if (!dropdown) return;
+    dropdown.classList.remove('k7-menu-dropdown--placed');
+    var reveal = function () {
+        K7.revealDropdown(dropdown);
+    };
+
+    // Mobile bottom sheet is CSS-positioned. Reveal on the same turn.
+    if (window.innerWidth < 600) {
+        reveal();
+        return;
+    }
+
+    try {
+        K7.positionDropdown(root, dropdown);
         requestAnimationFrame(function () {
-            K7.positionDropdown(root, dropdown);
+            try {
+                K7.positionDropdown(root, dropdown);
+            } finally {
+                reveal();
+            }
         });
-    });
+    } catch (e) {
+        reveal();
+    }
+    setTimeout(reveal, 80);
 };
 
 K7._resolveMenuAnchor = function (root) {
@@ -3883,6 +4047,8 @@ K7._getFixedContainingBlockOffset = function (el) {
 K7.resetDropdown = function (root) {
     if (!root) return;
     root.classList.remove('k7-menu--open', 'k7-menu--upward');
+    var dropdown = root.querySelector && root.querySelector('.k7-menu-dropdown');
+    if (dropdown) dropdown.classList.remove('k7-menu-dropdown--placed');
     // Keep inline position styles intact during the CSS close transition (0.15s)
     // to prevent the dropdown from snapping to its default position before fading out.
     // They will be overwritten by positionDropdown on next open.
@@ -4058,7 +4224,11 @@ K7.detachMobileMenu = function (root, dropdown, backdrop) {
     if (root) K7._releaseMobileOverlayLock(root);
     if (dropdown && dropdown.classList) {
         K7._restoreMenuElement(dropdown, root);
-        dropdown.classList.remove('k7-menu-dropdown--video-player', 'k7-menu-dropdown--teleported', 'k7-menu-dropdown--open');
+        dropdown.classList.remove(
+            'k7-menu-dropdown--video-player',
+            'k7-menu-dropdown--teleported',
+            'k7-menu-dropdown--open',
+            'k7-menu-dropdown--placed');
     }
     if (backdrop && backdrop.classList) {
         K7._restoreMenuElement(backdrop, root);
@@ -4089,14 +4259,21 @@ K7.detachSelectPortal = function (root, dropdown, backdrop) {
         K7._restoreMenuElement(backdrop, root);
         backdrop.classList.remove('k7-backdrop--teleported');
     }
-    if (dropdown) dropdown.classList.remove('k7-select-dropdown--teleported');
+    if (dropdown) dropdown.classList.remove('k7-select-dropdown--teleported', 'k7-select-dropdown--placed');
 };
 
 K7.positionSelectDropdown = function (button, dropdown) {
     if (!button || !dropdown) return;
 
+    var reveal = function () {
+        dropdown.classList.add('k7-select-dropdown--placed');
+    };
+
     // On mobile, CSS bottom sheet handles positioning after teleport.
-    if (window.innerWidth < 600) return;
+    if (window.innerWidth < 600) {
+        reveal();
+        return;
+    }
 
     var rect = button.getBoundingClientRect();
     var gap = 4;
@@ -4124,6 +4301,12 @@ K7.positionSelectDropdown = function (button, dropdown) {
     var vh = window.innerHeight;
     var vw = window.innerWidth;
 
+    if (K7._isTvUi() && K7._isTvToolbarOverlay(button)) {
+        K7._positionBelowAnchor(dropdown, rect, ddRect, cbOffset, vw, vh, gap);
+        reveal();
+        return;
+    }
+
     var spaceBelow = vh - rect.bottom - gap;
     var spaceAbove = rect.top - gap;
     var placeAbove = spaceBelow < ddRect.height && spaceAbove > spaceBelow;
@@ -4145,6 +4328,7 @@ K7.positionSelectDropdown = function (button, dropdown) {
     dropdown.style.left = (left - cbOffset.left) + 'px';
     dropdown.style.width = width + 'px';
     dropdown.style.minWidth = rect.width + 'px';
+    reveal();
 };
 
 K7.TvDetailScroll = (function () {

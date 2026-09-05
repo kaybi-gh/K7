@@ -1,4 +1,5 @@
 using K7.Clients.Shared.Helpers;
+using K7.Clients.Shared.UI.Helpers;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 
@@ -64,13 +65,23 @@ public partial class MediaPageBackdrop : IAsyncDisposable
     private int _activeLayer;
     private int _swapGeneration;
     private bool _focusedLayerVisible;
+    private bool _hasRequestedFocusedSwap;
     private string? _pendingFocusedUrl;
     private bool _pendingFocusedSoft;
     private bool _hasPendingFocusedImage;
+    private DebouncedActionRunner? _focusedLayerSettleRunner;
     private DotNetObjectReference<MediaPageBackdrop>? _dotNetRef;
     private volatile bool _disposed;
 
     private string StyleAttribute => DominantColorCss.ToVariableStyle("--media-dominant-color", DominantColor);
+
+    protected override void OnInitialized()
+    {
+        _focusedLayerSettleRunner = new DebouncedActionRunner(
+            SwapPendingFocusedLayerAsync,
+            InvokeAsync,
+            TvHeroFocusSettle.DelayMs);
+    }
 
     protected override async Task OnParametersSetAsync()
     {
@@ -126,6 +137,7 @@ public partial class MediaPageBackdrop : IAsyncDisposable
                 var pendingUrl = _pendingFocusedUrl;
                 var pendingSoft = _pendingFocusedSoft;
                 _hasPendingFocusedImage = false;
+                _hasRequestedFocusedSwap = true;
                 await SwapFocusedLayerAsync(pendingUrl, pendingSoft);
             }
 
@@ -162,22 +174,50 @@ public partial class MediaPageBackdrop : IAsyncDisposable
     /// <summary>
     /// Crossfade a TV still without a parent re-render. Incoming JPEG is decoded
     /// off-screen first so D-pad moves do not paint progressive bands.
+    /// Rapid focus changes debounce the decode so skipped cards are not fetched.
     /// </summary>
     public void ApplyFocusedImage(string? url, bool soft = false)
     {
         if (_disposed)
             return;
 
+        _pendingFocusedUrl = url;
+        _pendingFocusedSoft = soft;
+
         if (_module is null)
         {
-            _pendingFocusedUrl = url;
-            _pendingFocusedSoft = soft;
             _hasPendingFocusedImage = true;
             return;
         }
 
-        _ = SwapFocusedLayerAsync(url, soft);
+        RequestFocusedLayerSwap();
     }
+
+    private void RequestFocusedLayerSwap()
+    {
+        var url = _pendingFocusedUrl;
+        var soft = _pendingFocusedSoft;
+
+        if (string.IsNullOrEmpty(url))
+        {
+            _swapGeneration++;
+            _ = SwapFocusedLayerAsync(url, soft);
+            return;
+        }
+
+        if (!_hasRequestedFocusedSwap)
+        {
+            _hasRequestedFocusedSwap = true;
+            _ = SwapFocusedLayerAsync(url, soft);
+            return;
+        }
+
+        _swapGeneration++;
+        _focusedLayerSettleRunner?.Schedule();
+    }
+
+    private Task SwapPendingFocusedLayerAsync() =>
+        SwapFocusedLayerAsync(_pendingFocusedUrl, _pendingFocusedSoft);
 
     private async Task RefreshResolvedUrlsAsync()
     {
@@ -304,6 +344,8 @@ public partial class MediaPageBackdrop : IAsyncDisposable
         _disposed = true;
         _swapGeneration++;
         _hasPendingFocusedImage = false;
+        _focusedLayerSettleRunner?.Dispose();
+        _focusedLayerSettleRunner = null;
 
         var module = _module;
         _module = null;
