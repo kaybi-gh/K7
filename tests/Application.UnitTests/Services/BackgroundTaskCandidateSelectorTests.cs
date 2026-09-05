@@ -1,5 +1,5 @@
 using System.Collections.Concurrent;
-using FluentAssertions;
+using AwesomeAssertions;
 using K7.Server.Application.Common;
 using K7.Server.Application.Services;
 using K7.Server.Domain.Constants;

@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
         <RootNamespace>K7.Tests.Helpers</RootNamespace>
@@ -20,7 +20,7 @@
         </PackageReference>
         <PackageReference Include="NUnit3TestAdapter" />
         <PackageReference Include="coverlet.collector" />
-        <PackageReference Include="FluentAssertions" />
+        <PackageReference Include="AwesomeAssertions" />
         <PackageReference Include="Respawn" />
         <PackageReference Include="Testcontainers.PostgreSql" />
         <!-- Force patched SSH.NET; Testcontainers still resolves an older vulnerable transitive. -->

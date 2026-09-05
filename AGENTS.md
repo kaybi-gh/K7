@@ -88,7 +88,7 @@ No `Result<T>` wrapper pattern.
 
 ## Testing (`tests/**`)
 
-NUnit, FluentAssertions, NSubstitute; bUnit for critical components. Naming: `{ClassUnderTest}Tests`, `{Method}_Should{Expected}_When{Condition}`. Full project list and CI filters: [docs/dev/developing.md](docs/dev/developing.md#testing).
+NUnit, AwesomeAssertions, NSubstitute; bUnit for critical components. Naming: `{ClassUnderTest}Tests`, `{Method}_Should{Expected}_When{Condition}`. Full project list and CI filters: [docs/dev/developing.md](docs/dev/developing.md#testing).
 
 ## Git Conventions
 

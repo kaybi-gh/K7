@@ -72,12 +72,6 @@
       "enabled": false
     },
     {
-      "description": "FluentAssertions 8+ changes license and assertion APIs",
-      "matchPackageNames": ["FluentAssertions"],
-      "matchUpdateTypes": ["major"],
-      "enabled": false
-    },
-    {
       "description": "Group GitHub Actions updates",
       "matchManagers": ["github-actions"],
       "groupName": "github actions"

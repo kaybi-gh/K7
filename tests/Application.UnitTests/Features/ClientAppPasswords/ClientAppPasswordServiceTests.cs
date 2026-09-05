@@ -1,6 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
-using FluentAssertions;
+using AwesomeAssertions;
 using K7.Server.Infrastructure.Database.Context.Services;
 using Microsoft.AspNetCore.DataProtection;
 

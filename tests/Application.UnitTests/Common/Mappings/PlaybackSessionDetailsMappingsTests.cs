@@ -1,4 +1,4 @@
-using FluentAssertions;
+using AwesomeAssertions;
 using K7.Server.Application.Common.Mappings;
 using K7.Server.Domain.Entities.Users;
 using K7.Server.Domain.Enums;

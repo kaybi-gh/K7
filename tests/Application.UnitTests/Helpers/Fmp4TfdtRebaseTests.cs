@@ -1,5 +1,5 @@
 using System.Buffers.Binary;
-using FluentAssertions;
+using AwesomeAssertions;
 using K7.Server.Application.Helpers;
 using K7.Server.Domain.Constants;
 
