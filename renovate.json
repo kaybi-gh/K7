@@ -16,16 +16,64 @@
   "osvVulnerabilityAlerts": true,
   "packageRules": [
     {
-      "description": "Group all other NuGet packages (CPM)",
+      "description": "Group OpenIddict packages (must bump together)",
       "matchManagers": ["nuget"],
-      "matchPackageNames": ["!/^Microsoft\\./", "!/^System\\./", "!/^Aspire\\./"],
-      "groupName": "nuget other"
+      "matchPackageNames": ["/^OpenIddict/"],
+      "groupName": "openiddict"
     },
     {
-      "description": "Group Microsoft / System / Aspire NuGet packages (CPM)",
+      "description": "Group OpenTelemetry packages",
       "matchManagers": ["nuget"],
-      "matchPackageNames": ["/^Microsoft\\./", "/^System\\./", "/^Aspire\\./"],
-      "groupName": "nuget microsoft"
+      "matchPackageNames": ["/^OpenTelemetry/"],
+      "groupName": "opentelemetry"
+    },
+    {
+      "description": "Group SkiaSharp family",
+      "matchManagers": ["nuget"],
+      "matchPackageNames": ["/^SkiaSharp/", "Svg.Skia"],
+      "groupName": "skiasharp"
+    },
+    {
+      "description": "Group LibVLCSharp alpha stack",
+      "matchManagers": ["nuget"],
+      "matchPackageNames": ["/^LibVLCSharp/", "VideoLAN.LibVLC.Windows"],
+      "groupName": "libvlc"
+    },
+    {
+      "description": "Group SQLite native pins",
+      "matchManagers": ["nuget"],
+      "matchPackageNames": ["/^SQLitePCLRaw/", "SourceGear.sqlite3"],
+      "groupName": "sqlite-native"
+    },
+    {
+      "description": "Group Google Play Services / Cast",
+      "matchManagers": ["nuget"],
+      "matchPackageNames": ["/^Xamarin.GooglePlayServices/"],
+      "groupName": "google-play-services"
+    },
+    {
+      "description": "Group ASP.NET / EF / Extensions / Aspire minors and patches only",
+      "matchManagers": ["nuget"],
+      "matchPackageNames": [
+        "/^Microsoft\\.(AspNetCore|EntityFrameworkCore|Extensions)\\./",
+        "/^System\\.(Text\\.Json|IdentityModel)/",
+        "Microsoft.IdentityModel.Protocols.OpenIdConnect",
+        "/^Aspire\\./"
+      ],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "microsoft runtime"
+    },
+    {
+      "description": "Microsoft.OpenApi 3.x is incompatible with Microsoft.AspNetCore.OpenApi 10",
+      "matchPackageNames": ["Microsoft.OpenApi"],
+      "matchUpdateTypes": ["major"],
+      "enabled": false
+    },
+    {
+      "description": "FluentAssertions 8+ changes license and assertion APIs",
+      "matchPackageNames": ["FluentAssertions"],
+      "matchUpdateTypes": ["major"],
+      "enabled": false
     },
     {
       "description": "Group GitHub Actions updates",
