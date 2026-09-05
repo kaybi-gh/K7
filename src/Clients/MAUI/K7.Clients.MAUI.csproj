@@ -111,7 +111,7 @@
     <PackageReference Include="LibVLCSharp.MAUI" />
     <PackageReference Include="NAudio" />
     <PackageReference Include="SharpDX.Direct3D11" />
-    <PackageReference Include="VideoLAN.LibVLC.Windows" />
+    <PackageReference Include="VideoLAN.LibVLC.Windows" GeneratePathProperty="true" />
   </ItemGroup>
 
   <ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">
