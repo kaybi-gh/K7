@@ -64,7 +64,7 @@ Output entry point is `K7.Clients.MAUI.exe` (plus `K7.Clients.MAUI.pri`). Releas
 
 Published Release assets (APK + Windows zip) are produced by [client-release](releasing.md#android-signing) on each GitHub Release.
 
-Android TV: leanback launcher category is registered - use a TV emulator for D-pad testing.
+Android TV: leanback launcher category is registered - use a TV emulator for D-pad testing. Fire TV Stick uses the same APK (leanback / Fire TV feature / AFT model, not UiMode alone).
 
 Shared UI placement: [architecture.md](architecture.md#ui-layout).
 

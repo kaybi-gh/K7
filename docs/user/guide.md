@@ -59,7 +59,7 @@ Same interface in the browser and in native apps.
 |---|---|
 | Web | Open the server URL in a browser - no separate install |
 | Android (phone) | Native app, also supports **Android Auto** (browse Home / Library / Playlists / Downloads, play radios from Home with the same names as in the app) |
-| Android TV | Native app for TV remotes. Admin pages use a lighter layout (numbers instead of live charts, and background tasks refresh more slowly). Active streams stay live. |
+| Android TV | Native app for TV remotes, including Fire TV Stick (same Android APK). Prefer the app over the Fire TV Silk browser. Admin pages use a lighter layout (numbers instead of live charts, and background tasks refresh more slowly). Active streams stay live. |
 | Windows | Native app |
 | iOS / Mac | Native apps exist but are **not tested** (no Apple hardware) |
 

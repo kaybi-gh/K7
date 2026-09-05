@@ -218,8 +218,9 @@ public class DeviceService(ICodecService codecHelper, IDeviceIdService deviceIdS
             return DeviceType.TV;
 
 #if ANDROID
-        // Many Android TV boxes report Tablet/Phone idiom; UiMode is authoritative.
-        if (IsAndroidTelevision())
+        // Many Android TV boxes report Tablet/Phone idiom. UiMode, leanback,
+        // and Fire TV features are authoritative.
+        if (K7.Clients.MAUI.Platforms.Android.AndroidTelevision.IsDeviceTelevision())
             return DeviceType.TV;
 #endif
 
@@ -238,16 +239,6 @@ public class DeviceService(ICodecService codecHelper, IDeviceIdService deviceIdS
             _ => DeviceType.Unknown,
         };
     }
-
-#if ANDROID
-    private static bool IsAndroidTelevision()
-    {
-        var context = global::Android.App.Application.Context;
-        var uiMode = context.Resources?.Configuration?.UiMode ?? 0;
-        return (uiMode & global::Android.Content.Res.UiMode.TypeMask)
-            == global::Android.Content.Res.UiMode.TypeTelevision;
-    }
-#endif
 
     private static OperatingSystem MapOperatingSystem(DevicePlatform devicePlatform)
     {

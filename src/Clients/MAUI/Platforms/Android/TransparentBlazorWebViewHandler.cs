@@ -1,15 +1,23 @@
 #if ANDROID
 using AndroidX.Core.View;
+using K7.Clients.Shared.Helpers;
 using Microsoft.AspNetCore.Components.WebView.Maui;
 
 namespace K7.Clients.MAUI.Platforms.Android;
 
 public class TransparentBlazorWebViewHandler : BlazorWebViewHandler
 {
-    private const string TvUserAgentMarker = "K7TV/1.0";
+    protected override global::Android.Webkit.WebView CreatePlatformView()
+    {
+        var platformView = base.CreatePlatformView();
+        // UA must be tagged before the first document load so tv-layout.js sees K7TV/.
+        ApplyTvScalingIfNeeded(platformView);
+        return platformView;
+    }
 
     protected override void ConnectHandler(global::Android.Webkit.WebView platformView)
     {
+        ApplyTvScalingIfNeeded(platformView);
         base.ConnectHandler(platformView);
 
         AndroidWebViewAccessor.Current = platformView;
@@ -30,7 +38,6 @@ public class TransparentBlazorWebViewHandler : BlazorWebViewHandler
             parentView.SetBackgroundResource(0);
         }
 
-        ApplyTvScalingIfNeeded(platformView);
         SetupSafeAreaInsets(platformView);
         AttachTvVideoBridges(platformView);
     }
@@ -110,17 +117,8 @@ public class TransparentBlazorWebViewHandler : BlazorWebViewHandler
         }
     }
 
-    private static bool IsAndroidTv(global::Android.Content.Context? context)
-    {
-        if (context is null)
-            return false;
-
-        var uiMode = context.Resources?.Configuration?.UiMode ?? 0;
-        return (uiMode & global::Android.Content.Res.UiMode.TypeMask) == global::Android.Content.Res.UiMode.TypeTelevision;
-    }
-
     private static bool ShouldUseTvMode(global::Android.Webkit.WebView webView) =>
-        DeviceInfo.Idiom == DeviceIdiom.TV || IsAndroidTv(webView.Context);
+        DeviceInfo.Idiom == DeviceIdiom.TV || AndroidTelevision.IsDeviceTelevision(webView.Context);
 
     private static void ApplyTvScalingIfNeeded(global::Android.Webkit.WebView webView)
     {
@@ -142,11 +140,11 @@ public class TransparentBlazorWebViewHandler : BlazorWebViewHandler
         // We can't rely on WebView.SetInitialScale here: Android ignores it whenever
         // the page declares its own viewport meta tag, which K7's index.html does.
         var currentUa = settings.UserAgentString ?? string.Empty;
-        if (!currentUa.Contains(TvUserAgentMarker, System.StringComparison.Ordinal))
+        if (!currentUa.Contains(TelevisionLayout.UserAgentMarker, System.StringComparison.Ordinal))
         {
             settings.UserAgentString = string.IsNullOrWhiteSpace(currentUa)
-                ? TvUserAgentMarker
-                : $"{currentUa} {TvUserAgentMarker}";
+                ? TelevisionLayout.UserAgentMarker
+                : $"{currentUa} {TelevisionLayout.UserAgentMarker}";
         }
     }
 

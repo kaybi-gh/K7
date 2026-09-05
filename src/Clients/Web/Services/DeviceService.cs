@@ -1,3 +1,4 @@
+using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
 using K7.Server.Domain.Enums;
 using K7.Shared;
@@ -25,7 +26,7 @@ public class DeviceService(IJSRuntime jsRuntime, IMediaService mediaService, IDe
         var displayWidth = await jsRuntime.InvokeAsync<int>("getDisplayWidth");
         var supportedMediaFormats = await GetSupportedMediaFormatsAsync();
         var webDeviceDetails = await GetWebDeviceDetailsAsync(parsedUserAgent);
-        var deviceType = CacheDeviceType(MapDeviceType(parsedUserAgent.PlatformType));
+        var deviceType = CacheDeviceType(ResolveDeviceType(parsedUserAgent.PlatformType, webDeviceDetails.RawUserAgent));
         var browser = MapBrowser(parsedUserAgent.BrowserName);
         var operatingSystem = MapOperatingSystem(parsedUserAgent.OsName);
         
@@ -79,7 +80,8 @@ public class DeviceService(IJSRuntime jsRuntime, IMediaService mediaService, IDe
     {
         var parsedUserAgent = await jsRuntime.InvokeAsync<ParsedUserAgent>("getParsedUserAgent")
             ?? new ParsedUserAgent();
-        return CacheDeviceType(MapDeviceType(parsedUserAgent.PlatformType));
+        var rawUserAgent = await jsRuntime.InvokeAsync<string>("getRawUserAgent");
+        return CacheDeviceType(ResolveDeviceType(parsedUserAgent.PlatformType, rawUserAgent));
     }
 
     private DeviceType CacheDeviceType(DeviceType deviceType)
@@ -154,6 +156,17 @@ public class DeviceService(IJSRuntime jsRuntime, IMediaService mediaService, IDe
             "safari" => Browser.Safari,
             _ => Browser.Unknown
         };
+    }
+
+    private static DeviceType ResolveDeviceType(string? platformType, string? rawUserAgent)
+    {
+        var mapped = MapDeviceType(platformType);
+        if (mapped == DeviceType.TV)
+            return DeviceType.TV;
+
+        return TelevisionLayout.UserAgentLooksLikeTelevision(rawUserAgent)
+            ? DeviceType.TV
+            : mapped;
     }
 
     private static DeviceType MapDeviceType(string? platformType)

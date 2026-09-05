@@ -305,19 +305,7 @@ internal static class AndroidExoHlsTuning
         }
     }
 
-    internal static bool IsAndroidTelevision()
-    {
-        var context = global::Android.App.Application.Context;
-        var uiMode = context.Resources?.Configuration?.UiMode ?? 0;
-        if ((uiMode & global::Android.Content.Res.UiMode.TypeMask)
-            == global::Android.Content.Res.UiMode.TypeTelevision)
-        {
-            return true;
-        }
-
-        return context.PackageManager?.HasSystemFeature(
-            global::Android.Content.PM.PackageManager.FeatureLeanback) == true;
-    }
+    internal static bool IsAndroidTelevision() => AndroidTelevision.IsDeviceTelevision();
 
     private static void TryBindMediaManagerPlayerWithoutListener(
         MediaElement mediaElement,

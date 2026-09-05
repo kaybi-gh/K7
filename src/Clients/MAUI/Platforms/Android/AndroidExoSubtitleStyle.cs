@@ -1,4 +1,3 @@
-using Android.Content.PM;
 using Android.Graphics;
 using Android.Util;
 using AndroidX.Media3.UI;
@@ -73,8 +72,7 @@ internal static class AndroidExoSubtitleStyle
 
         try
         {
-            if (global::Android.App.Application.Context.PackageManager?
-                    .HasSystemFeature(PackageManager.FeatureLeanback) == true)
+            if (AndroidTelevision.IsDeviceTelevision())
                 return DeviceType.TV;
         }
         catch
