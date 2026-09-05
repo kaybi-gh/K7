@@ -62,7 +62,7 @@
     <!-- MediaElement 9 pulls Compatibility 9.0.82; pin to 10 so Windows copy targets resolve. -->
     <PackageVersion Include="Microsoft.Maui.Controls.Compatibility" Version="10.0.100" />
     <PackageVersion Include="Microsoft.Maui.Essentials" Version="10.0.100" />
-    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.9.0" />
     <PackageVersion Include="MockQueryable.NSubstitute" Version="10.0.8" />
     <PackageVersion Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.23.0" />
     <PackageVersion Include="Microsoft.Web.LibraryManager.Build" Version="3.0.114" />
