@@ -159,6 +159,8 @@ Functional/integration tests need **Docker** (Testcontainers.PostgreSQL + Respaw
 
 K7 uses **[Renovate](https://docs.renovatebot.com/)** (self-hosted via GitHub Actions), not Dependabot version updates. Config: [`renovate.json`](../../renovate.json). Workflow: [`.github/workflows/renovate.yml`](../../.github/workflows/renovate.yml) (weekly Monday + `workflow_dispatch`).
 
+`Directory.Packages.props` also pins some transitive packages (`Azure.Identity`, `System.Drawing.Common`, `SSH.NET`) to patched versions. CI fails `dotnet list package --vulnerable` if those pins are removed.
+
 The job installs the `maui-android` workload on the runner so NuGet restore works for MAUI, including `android-arm` (Fire Stick / 32-bit). It uses the workflow `GITHUB_TOKEN` (no secret required).
 
 Repo **Settings -> Actions -> General** must allow Actions to create pull requests (write permissions). Without this, Renovate pushes branches but cannot open PRs.
