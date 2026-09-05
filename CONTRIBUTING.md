@@ -143,6 +143,8 @@ Also:
 
 ## Pull requests
 
+Opening a pull request pre-fills a short checklist from [`.github/PULL_REQUEST_TEMPLATE.md`](.github/PULL_REQUEST_TEMPLATE.md).
+
 1. Branch from `main` (`fix/...`, `feat/...`, etc.).
 2. [Conventional Commits](https://www.conventionalcommits.org/): `type(scope): description` in lowercase, subject only (no trailing period). Types: `feat`, `fix`, `refactor`, `perf`, `style`, `docs`, `test`, `chore`, `ci`, `build`.
 3. Ensure CI is green (`.github/workflows/build.yml` and related jobs).
