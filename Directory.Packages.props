@@ -18,8 +18,8 @@
     <PackageVersion Include="FFMpegCore" Version="5.4.0" />
     <PackageVersion Include="AwesomeAssertions" Version="9.6.0" />
     <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
-    <PackageVersion Include="LibVLCSharp" Version="4.0.0-alpha-20260828-10280" />
-    <PackageVersion Include="LibVLCSharp.MAUI" Version="4.0.0-alpha-20260828-10280" />
+    <PackageVersion Include="LibVLCSharp" Version="4.0.0-alpha-20260904-10299" />
+    <PackageVersion Include="LibVLCSharp.MAUI" Version="4.0.0-alpha-20260904-10299" />
     <PackageVersion Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="10.0.11" />
     <PackageVersion Include="Microsoft.AspNetCore.Components.Authorization" Version="10.0.11" />
     <PackageVersion Include="Microsoft.AspNetCore.Components.WebAssembly.Authentication" Version="10.0.11" />
@@ -112,7 +112,7 @@
     <PackageVersion Include="Testcontainers.PostgreSql" Version="4.14.0" />
     <PackageVersion Include="SSH.NET" Version="2026.0.0" />
     <PackageVersion Include="TMDbLib" Version="2.3.0" />
-    <PackageVersion Include="VideoLAN.LibVLC.Windows" Version="4.0.0-alpha-20260830" />
+    <PackageVersion Include="VideoLAN.LibVLC.Windows" Version="4.0.0-alpha-20260905" />
     <PackageVersion Include="Xamarin.GooglePlayServices.Cast" Version="122.3.1.2" />
     <PackageVersion Include="Xamarin.GooglePlayServices.Cast.Framework" Version="122.3.1.2" />
     <PackageVersion Include="Xamarin.GooglePlayServices.Basement" Version="118.10.0.3" />
