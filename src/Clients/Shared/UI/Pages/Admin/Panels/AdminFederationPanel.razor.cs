@@ -235,7 +235,12 @@ public partial class AdminFederationPanel : IDisposable
     private async Task AcceptRequest(PeerRequestDto request)
     {
         var options = new K7DialogOptions { MaxWidth = K7DialogMaxWidth.Small, FullWidth = true };
-        var dialog = await DialogService.ShowAsync<AcceptPeerRequestDialog>(L["AcceptTitle"], null, options);
+        var parameters = new K7DialogParameters<AcceptPeerRequestDialog>
+        {
+            { x => x.RequesterName, request.RequesterName },
+            { x => x.RequesterUrl, request.RequesterUrl }
+        };
+        var dialog = await DialogService.ShowAsync<AcceptPeerRequestDialog>(L["AcceptTitle"], parameters, options);
         var result = await dialog.Result;
 
         if (result is null || result.Canceled || result.Data is not AcceptPeerResult acceptResult)

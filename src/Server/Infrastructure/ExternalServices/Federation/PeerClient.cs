@@ -2,6 +2,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using K7.Server.Application.Common.Exceptions;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos;
@@ -30,8 +31,7 @@ public class PeerClient(
         peerUrlGuard.EnsureAllowedOutgoingUrl(remoteUrl);
         var url = $"{remoteUrl.TrimEnd('/')}/api/federation/peer-request";
         var payload = new { RequesterUrl = localServerUrl, RequesterName = localServerName, Token = token };
-        var response = await httpClient.PostAsJsonAsync(url, payload, cancellationToken);
-        response.EnsureSuccessStatusCode();
+        await PostHandshakeAsync(url, payload, cancellationToken);
     }
 
     public async Task SendPeerConfirmAsync(string remoteUrl, string token, string clientId, string clientSecret, string? federationAssertionSecret = null, CancellationToken cancellationToken = default)
@@ -39,8 +39,7 @@ public class PeerClient(
         peerUrlGuard.EnsureAllowedOutgoingUrl(remoteUrl);
         var url = $"{remoteUrl.TrimEnd('/')}/api/federation/peer-confirm";
         var payload = new { Token = token, ClientId = clientId, ClientSecret = clientSecret, FederationAssertionSecret = federationAssertionSecret };
-        var response = await httpClient.PostAsJsonAsync(url, payload, cancellationToken);
-        response.EnsureSuccessStatusCode();
+        await PostHandshakeAsync(url, payload, cancellationToken);
     }
 
     public async Task SendPeerRejectAsync(string requesterUrl, string providerUrl, CancellationToken cancellationToken = default)
@@ -48,8 +47,7 @@ public class PeerClient(
         peerUrlGuard.EnsureAllowedOutgoingUrl(requesterUrl);
         var url = $"{requesterUrl.TrimEnd('/')}/api/federation/peer-reject";
         var payload = new { ProviderUrl = providerUrl };
-        var response = await httpClient.PostAsJsonAsync(url, payload, cancellationToken);
-        response.EnsureSuccessStatusCode();
+        await PostHandshakeAsync(url, payload, cancellationToken);
     }
 
     public async Task<string?> GetAccessTokenAsync(string baseUrl, string clientId, string clientSecret, CancellationToken cancellationToken = default)
@@ -376,6 +374,25 @@ public class PeerClient(
             return [];
 
         return await response.Content.ReadFromJsonAsync<List<FederatedUserPlaybackEntryDto>>(_jsonOptions, cancellationToken) ?? [];
+    }
+
+    private async Task PostHandshakeAsync(string url, object payload, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var response = await httpClient.PostAsJsonAsync(url, payload, cancellationToken);
+            if (!response.IsSuccessStatusCode)
+                throw new PeerServerUnavailableException("The remote peer is unreachable.");
+        }
+        catch (PeerServerUnavailableException)
+        {
+            throw;
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or IOException)
+        {
+            logger.LogWarning(ex, "Peer handshake request to {Url} failed", url);
+            throw new PeerServerUnavailableException("The remote peer is unreachable.");
+        }
     }
 
     private sealed record TokenResponse(

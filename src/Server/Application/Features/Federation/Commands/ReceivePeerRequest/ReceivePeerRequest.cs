@@ -19,6 +19,8 @@ public class ReceivePeerRequestCommandHandler(
     IPeerUrlGuard peerUrlGuard)
     : IRequestHandler<ReceivePeerRequestCommand>
 {
+    public const int MaxPendingRequests = 25;
+
     public async Task Handle(ReceivePeerRequestCommand request, CancellationToken cancellationToken)
     {
         var flags = await serverSettingsService.GetFeatureFlagsAsync(cancellationToken);
@@ -38,6 +40,11 @@ public class ReceivePeerRequestCommandHandler(
         }
         else
         {
+            var pendingCount = await context.PeerRequests
+                .CountAsync(r => r.Status == PeerRequestStatus.Pending, cancellationToken);
+            if (pendingCount >= MaxPendingRequests)
+                throw new InvalidOperationException("Too many pending peer requests.");
+
             var peerRequest = new PeerRequest
             {
                 Id = Guid.NewGuid(),

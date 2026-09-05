@@ -7,6 +7,9 @@ public partial class AcceptPeerRequestDialog
 {
     [CascadingParameter] private IK7DialogInstance Dialog { get; set; } = default!;
 
+    [Parameter] public string RequesterName { get; set; } = "";
+    [Parameter] public string RequesterUrl { get; set; } = "";
+
     private bool _isLoading = true;
     private bool _autoShareNew;
     private List<LibraryDto> _libraries = [];

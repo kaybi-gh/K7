@@ -1,4 +1,6 @@
 using K7.Server.Application.Features.Federation.Commands.ReceivePeerRequest;
+using K7.Server.Web.Infrastructure;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace K7.Server.Web.Endpoints.Federation;
 
@@ -17,6 +19,7 @@ public class ReceivePeerRequestEndpoint : IEndpoint
             await sender.Send(command, cancellationToken);
             return Results.Ok();
         })
+        .RequireRateLimiting(RateLimitingExtensions.FederationInvitationPolicy)
         .WithName(type.Name)
         .WithTags(groupName);
     }

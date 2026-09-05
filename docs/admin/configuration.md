@@ -204,12 +204,12 @@ When `AutomaticAccountCreation` is `false`, unknown users hit `/sign-in?error=au
 - Leave registration disabled unless you want open sign-up; enable Guest only when needed.
 - Encourage 2FA for password accounts; prefer OIDC with MFA when available.
 - API keys (admin only): header `X-Api-Key` on the native API, and OpenSubsonic query `apiKey` on `/rest`. Admin CRUD at `/api/admin/api-keys`. Prefer least privilege (Read vs Write) and rotate unused keys. Keys are admin/automation credentials, not personal user tokens. `Security:ApiKeys:HashSecret` is required at startup (env/file). Request logs redact query strings that contain `apiKey`, `p`, or `t`.
-- Enable federation only when needed; treat peering as trust.
+- Enable federation only when needed; treat peering as trust. Inbound `peer-request` is public while invitations are enabled: it is rate-limited (10 / 10 min / IP) and capped at 25 pending requests. Set `BlockPrivatePeerUrls` to `true` on hosts that should not call RFC1918 peers.
 - Prefer VPN (Tailscale, WireGuard) over wide public exposure for friends.
 - Behind a reverse proxy: prefer not publishing K7 `:7080` on the LAN while `TrustPrivateProxies` is true (default).
 - Set a realistic Docker `mem_limit` on `k7-server` (see [Operating - Memory](operating.md#memory-and-container-sizing)).
 
-There is no comprehensive in-app rate limiting documented; put abusive-traffic controls at the reverse proxy if you expose K7 broadly.
+Auth, PIN verify, and inbound federation invitations are rate-limited in-app. Put broader abusive-traffic controls at the reverse proxy if you expose K7 widely.
 
 ## Paths
 

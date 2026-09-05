@@ -1,0 +1,36 @@
+.accept-dialog__peer {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 8px;
+}
+
+.accept-dialog__peer-name {
+    font-weight: 600;
+}
+
+.accept-dialog__peer-url {
+    font-size: var(--text-sm);
+    color: var(--color-text-secondary);
+    word-break: break-all;
+}
+
+.accept-dialog__libraries {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.accept-dialog__label {
+    font-size: var(--text-sm);
+    color: var(--color-text-secondary);
+}
+
+.accept-dialog__empty {
+    font-size: var(--text-sm);
+    color: var(--color-text-secondary);
+}
+
+.accept-dialog__option {
+    margin-top: 12px;
+}

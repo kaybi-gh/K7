@@ -7,6 +7,7 @@ public static class RateLimitingExtensions
 {
     public const string AuthPolicy = "auth";
     public const string PinVerifyPolicy = "pin-verify";
+    public const string FederationInvitationPolicy = "federation-invitation";
 
     public static IServiceCollection AddK7RateLimiting(this IServiceCollection services)
     {
@@ -31,6 +32,16 @@ public static class RateLimitingExtensions
                     {
                         PermitLimit = 10,
                         Window = TimeSpan.FromMinutes(1),
+                        QueueLimit = 0
+                    }));
+
+            options.AddPolicy(FederationInvitationPolicy, context =>
+                RateLimitPartition.GetFixedWindowLimiter(
+                    ResolveClientPartitionKey(context),
+                    _ => new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = 10,
+                        Window = TimeSpan.FromMinutes(10),
                         QueueLimit = 0
                     }));
         });

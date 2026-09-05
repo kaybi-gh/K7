@@ -234,7 +234,7 @@ Federation links two K7 instances so friends can share and stream remote media w
 
 1. Requester admin: Admin -> Federation -> request peering with the remote base URL.
 2. K7 POSTs to the remote peer-request endpoint and stores a pending peer + token.
-3. Remote admin accepts or rejects.
+3. Remote admin accepts or rejects. Check the requester URL in the accept dialog before confirming - credentials are sent to that URL.
 4. On accept: OpenIddict peer credentials, share agreements, library discovery. Optional **Automatically share new libraries** stores `AutoAddNewLibraries` on the peer.
 5. To disconnect: revoke / delete the peer (best-effort notify + local cleanup).
 
