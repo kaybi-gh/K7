@@ -1,11 +1,8 @@
 using System.Diagnostics;
 using K7.Clients.MAUI.Constants;
 using K7.Clients.MAUI.Services;
-using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
-using K7.Clients.Shared.Services;
 using K7.Shared.Interfaces;
-using Microsoft.AspNetCore.Components.Authorization;
 #if ANDROID
 using K7.Clients.MAUI.Platforms.Android;
 #endif
@@ -127,35 +124,16 @@ public partial class App : Application
     /// HttpClient with no base address, throw inside BlazorPage setup, then wipe the URL
     /// and trap the user on native server setup until a full app reset.
     /// </summary>
-    private void PrepareServerConnectionAndRestore()
+    private static void PrepareServerConnectionAndRestore()
     {
-        var k7ServerUrl = Preferences.Get(PreferenceKeys.K7_SERVER_URL, null);
-        if (string.IsNullOrEmpty(k7ServerUrl))
-            return;
-
         try
         {
-            _k7ServerManagerService.UpdateBaseAddress(k7ServerUrl);
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"K7 MAUI - UpdateBaseAddress failed: {ex}");
-        }
-
-        try
-        {
-            StartSessionRestore();
+            MauiSessionBootstrap.StartRestore();
         }
         catch (Exception ex)
         {
             Debug.WriteLine($"K7 MAUI - Session restore start failed: {ex}");
         }
-    }
-
-    private static void StartSessionRestore()
-    {
-        var auth = IPlatformApplication.Current?.Services.GetService<AuthenticationStateProvider>();
-        auth?.GetAuthenticationStateAsync().FireAndForget();
     }
 
     private ContentPage GetStartPage()

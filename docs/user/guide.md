@@ -58,7 +58,7 @@ Same interface in the browser and in native apps.
 | Platform | Notes |
 |---|---|
 | Web | Open the server URL in a browser - no separate install |
-| Android (phone) | Native app, also supports **Android Auto** (browse Home / Library / Playlists / Downloads, play radios from Home with the same names as in the app) |
+| Android (phone) | Native app, also supports **Android Auto** (browse Home / Library / Playlists / Downloads, play radios from Home with the same names as in the app). You can open K7 from the car without launching it on the phone first. It restores the last unlocked profile. |
 | Android TV | Native app for TV remotes, including Fire TV Stick (same Android APK). Prefer the app over the Fire TV Silk browser. Admin pages use a lighter layout (numbers instead of live charts, and background tasks refresh more slowly). Active streams stay live. |
 | Windows | Native app |
 | iOS / Mac | Native apps exist but are **not tested** (no Apple hardware) |

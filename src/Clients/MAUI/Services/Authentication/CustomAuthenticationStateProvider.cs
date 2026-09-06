@@ -93,6 +93,46 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
         return new AuthenticationState(_currentUser);
     }
 
+    /// <summary>
+    /// Android Auto / CarPlay start this process without <c>App.CreateWindow</c>. Wait for
+    /// network, restore (or retry a restore that ran before the server URL was applied),
+    /// then refresh so ExoPlayer can bake a live Bearer.
+    /// </summary>
+    public async Task EnsureReadyForHeadlessPlaybackAsync(CancellationToken cancellationToken = default)
+    {
+        await WaitForNetworkHintAsync(cancellationToken);
+
+        AllowRestoreRetryIfNeeded();
+        await GetAuthenticationStateAsync();
+
+        if (HasUsableOnlineAccessToken())
+            return;
+
+        var serverConfigured = _k7ServerService.HttpClient.BaseAddress is not null;
+        if (MauiSessionRestore.ShouldRestoreHeadless(_localUserService, serverConfigured)
+            && !MauiSessionRestore.ShouldRestore(_localUserService, serverConfigured))
+        {
+            var lastUser = _localUserService.GetLastActive();
+            if (lastUser is not null)
+            {
+                RestoreOnCallStack.Value = true;
+                try
+                {
+                    await RestoreUserInBackgroundAsync(lastUser);
+                }
+                finally
+                {
+                    RestoreOnCallStack.Value = false;
+                }
+            }
+        }
+
+        if (HasUsableOnlineAccessToken())
+            return;
+
+        await TryRefreshAsync(cancellationToken);
+    }
+
     public async Task LoginAsync(CancellationToken cancellationToken = default)
     {
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
@@ -315,6 +355,19 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
         {
             // Yield so CreateWindow is not blocked on SecureStorage during the sync prefix.
             await Task.Yield();
+            if (_k7ServerService.HttpClient.BaseAddress is null)
+            {
+                // CreateWindow / Android Auto may apply the URL a moment later. Do not
+                // consume the one-shot restore so the next caller can actually sign in.
+                lock (_initLock)
+                {
+                    Volatile.Write(ref _initialized, 0);
+                    _restoreTask = null;
+                }
+
+                return;
+            }
+
             await TryRestoreSessionCoreAsync();
         }
         finally
@@ -373,7 +426,6 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
             && !string.IsNullOrEmpty(_deviceStorageService.Get(PreferenceKeys.ACCESS_TOKEN)))
             return;
 
-        ClearStoredTokens();
         SignInOffline(lastUser);
     }
 
@@ -393,9 +445,13 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
 
         // Invalid grant / revoked family: stay anonymous so AuthorizeRouteView redirects to
         // select-profile. Signing in offline would satisfy [Authorize] with an empty online UI.
+        if (MauiSessionRestore.ShouldClearStoredTokens(invalidGrant: outcome == RefreshOutcome.InvalidGrant))
+            ClearStoredTokens();
+
+        // Invalid grant / revoked family: stay anonymous so AuthorizeRouteView redirects to
+        // select-profile. Signing in offline would satisfy [Authorize] with an empty online UI.
         if (outcome == RefreshOutcome.InvalidGrant)
         {
-            ClearStoredTokens();
             if (!string.IsNullOrEmpty(localUser.IdentityUserId))
                 _localUserService.ClearRefreshToken(localUser.IdentityUserId);
             _currentUser = new ClaimsPrincipal(new ClaimsIdentity());
@@ -405,7 +461,8 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
         }
 
         // Transient failure with network hiccups: keep an offline session for local media / AA.
-        ClearStoredTokens();
+        // The refresh token stays so a later retry (car Bluetooth/WiFi coming up) can go online.
+        // SignInOffline already drops the access token so ExoPlayer does not keep a dead Bearer.
         SignInOffline(localUser);
         await RestoreSharedProfileAsync();
     }
@@ -561,6 +618,13 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
         bool forceRefresh = false)
     {
         var refreshToken = _deviceStorageService.Get(PreferenceKeys.REFRESH_TOKEN);
+        if (string.IsNullOrEmpty(refreshToken))
+        {
+            var last = _localUserService.GetLastActive();
+            if (MauiSessionRestore.CanReuseLastRefreshToken(last, _localUserService))
+                refreshToken = last!.RefreshToken;
+        }
+
         if (string.IsNullOrEmpty(refreshToken))
         {
             // Online principal without a refresh token cannot recover - end session so the
@@ -816,6 +880,47 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
             return true;
 
         return !string.IsNullOrEmpty(_deviceStorageService.Get(PreferenceKeys.REFRESH_TOKEN));
+    }
+
+    private bool HasUsableOnlineAccessToken() =>
+        AuthIdentity.IsOnlineAuthenticated(_currentUser)
+        && IsAccessTokenValid(_deviceStorageService.Get(PreferenceKeys.ACCESS_TOKEN));
+
+    private void AllowRestoreRetryIfNeeded()
+    {
+        var restore = _restoreTask;
+        var restoreInFlight = restore is not null && !restore.IsCompleted;
+        if (!MauiSessionRestore.ShouldRetryHeadlessRestore(
+                serverConfigured: _k7ServerService.HttpClient.BaseAddress is not null,
+                restoreAlreadyAttempted: Volatile.Read(ref _initialized) != 0,
+                restoreInFlight: restoreInFlight,
+                hasUsableOnlineAccessToken: HasUsableOnlineAccessToken()))
+            return;
+
+        lock (_initLock)
+        {
+            restore = _restoreTask;
+            restoreInFlight = restore is not null && !restore.IsCompleted;
+            if (!MauiSessionRestore.ShouldRetryHeadlessRestore(
+                    serverConfigured: _k7ServerService.HttpClient.BaseAddress is not null,
+                    restoreAlreadyAttempted: Volatile.Read(ref _initialized) != 0,
+                    restoreInFlight: restoreInFlight,
+                    hasUsableOnlineAccessToken: HasUsableOnlineAccessToken()))
+                return;
+
+            Volatile.Write(ref _initialized, 0);
+            _restoreTask = null;
+        }
+    }
+
+    private static async Task WaitForNetworkHintAsync(CancellationToken cancellationToken)
+    {
+        if (Connectivity.Current.NetworkAccess != NetworkAccess.None)
+            return;
+
+        var deadline = DateTime.UtcNow.AddSeconds(2);
+        while (DateTime.UtcNow < deadline && Connectivity.Current.NetworkAccess == NetworkAccess.None)
+            await Task.Delay(200, cancellationToken);
     }
 
     private async Task TryAttachCurrentUserToDeviceAsync(CancellationToken cancellationToken)

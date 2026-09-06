@@ -1,5 +1,6 @@
 using CarPlay;
 using Foundation;
+using K7.Clients.MAUI.Services;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Shared.Interfaces;
@@ -44,6 +45,10 @@ public class CarPlaySceneDelegate : UIResponder, ICPTemplateApplicationSceneDele
 
         try
         {
+            var services = IPlatformApplication.Current?.Services;
+            if (services is not null)
+                await MauiSessionBootstrap.EnsureReadyAsync(services);
+
             var rootItems = await _mediaBrowseService.GetRootItemsAsync();
             var listItems = rootItems.Select(item => CreateListItem(item)).ToArray();
 

@@ -10,6 +10,7 @@ using AndroidX.Media3.ExoPlayer;
 using AndroidX.Media3.ExoPlayer.Source;
 using AndroidX.Media3.Session;
 using Google.Common.Util.Concurrent;
+using K7.Clients.MAUI.Services;
 using K7.Clients.Shared.Enums;
 using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
@@ -69,24 +70,51 @@ public class K7MediaLibraryService : MediaLibraryService,
     private bool _radioAwaitingMedia3Playlist;
     private CancellationTokenSource? _radioSyncDebounceCts;
     private static readonly TimeSpan RadioPlaylistSyncDebounce = TimeSpan.FromMilliseconds(400);
+    private Task _headlessReady = Task.CompletedTask;
+    private ICustomAuthenticationStateProvider? _authEvents;
 
     public override void OnCreate()
     {
         base.OnCreate();
         Log.Info(Tag, "K7MediaLibraryService created");
+        TryInitializeService();
+    }
+
+    public override MediaLibrarySession? OnGetSessionFromMediaLibraryService(
+        MediaSession.ControllerInfo? controllerInfo)
+    {
+        TryInitializeService();
+        return _session;
+    }
+
+    public override MediaSession? OnGetSession(MediaSession.ControllerInfo? controllerInfo)
+    {
+        TryInitializeService();
+        return _session;
+    }
+
+    private bool TryInitializeService()
+    {
+        if (_session is not null)
+            return true;
 
         try
         {
             InitializeService();
+            return _session is not null;
         }
         catch (Exception ex)
         {
             Log.Error(Tag, $"K7MediaLibraryService initialization failed: {ex}");
+            return false;
         }
     }
 
     private void InitializeService()
     {
+        if (_session is not null)
+            return;
+
         var services = IPlatformApplication.Current?.Services;
         if (services is null)
         {
@@ -100,8 +128,10 @@ public class K7MediaLibraryService : MediaLibraryService,
         _streamUriService = services.GetRequiredService<IStreamUriService>();
         _k7ServerService = services.GetRequiredService<IK7ServerService>();
 
-        // Ensure HttpClient BaseAddress is set (service may start before App.xaml.cs runs)
+        // Service may start from Android Auto before App.CreateWindow applies the URL.
         EnsureServerBaseAddress();
+        SubscribeToAuthEvents(services);
+        _headlessReady = PrepareHeadlessSessionAsync();
 
         _httpDataSourceFactory = new DefaultHttpDataSource.Factory();
         UpdateAuthHeaders();
@@ -172,19 +202,9 @@ public class K7MediaLibraryService : MediaLibraryService,
             _audioEqualizer.UpdateSettings(_audioPlayerService.EqEnabled, _audioPlayerService.EqBands);
     }
 
-    public override MediaLibrarySession? OnGetSessionFromMediaLibraryService(
-        MediaSession.ControllerInfo? controllerInfo)
-    {
-        return _session;
-    }
-
-    public override MediaSession? OnGetSession(MediaSession.ControllerInfo? controllerInfo)
-    {
-        return _session;
-    }
-
     public override void OnDestroy()
     {
+        UnsubscribeFromAuthEvents();
         UnsubscribeFromAudioPlayerEvents();
         UnsubscribeFromVideoPlayerEvents();
         CancelRadioPlaylistSyncDebounce();
@@ -1094,15 +1114,58 @@ public class K7MediaLibraryService : MediaLibraryService,
 
     private void EnsureServerBaseAddress()
     {
-        if (_k7ServerService is null || _k7ServerService.HttpClient.BaseAddress is not null)
+        var services = IPlatformApplication.Current?.Services;
+        if (services is null)
             return;
 
-        var serverUrl = Preferences.Get(Constants.PreferenceKeys.K7_SERVER_URL, null);
-        if (string.IsNullOrEmpty(serverUrl))
+        MauiSessionBootstrap.ApplyServerUrl(services);
+        if (_k7ServerService?.HttpClient.BaseAddress is not null)
+            Log.Info(Tag, $"BaseAddress set to {_k7ServerService.HttpClient.BaseAddress}");
+    }
+
+    private void SubscribeToAuthEvents(IServiceProvider services)
+    {
+        if (_authEvents is not null)
             return;
 
-        _k7ServerService.HttpClient.BaseAddress = new Uri(serverUrl);
-        Log.Info(Tag, $"BaseAddress set to {serverUrl}");
+        _authEvents = services.GetService<ICustomAuthenticationStateProvider>();
+        if (_authEvents is not null)
+            _authEvents.AccessTokenChanged += OnAccessTokenChanged;
+    }
+
+    private void UnsubscribeFromAuthEvents()
+    {
+        if (_authEvents is null)
+            return;
+
+        _authEvents.AccessTokenChanged -= OnAccessTokenChanged;
+        _authEvents = null;
+    }
+
+    private void OnAccessTokenChanged(object? sender, EventArgs e) => UpdateAuthHeaders();
+
+    private async Task PrepareHeadlessSessionAsync()
+    {
+        var services = IPlatformApplication.Current?.Services;
+        if (services is null)
+            return;
+
+        try
+        {
+            await MauiSessionBootstrap.EnsureReadyAsync(services);
+            UpdateAuthHeaders();
+        }
+        catch (Exception ex)
+        {
+            Log.Warn(Tag, $"Headless session restore failed: {ex}");
+        }
+    }
+
+    private async Task EnsureHeadlessSessionAsync()
+    {
+        TryInitializeService();
+        await _headlessReady;
+        UpdateAuthHeaders();
     }
 
     private void UpdateAuthHeaders()
@@ -1277,7 +1340,7 @@ public class K7MediaLibraryService : MediaLibraryService,
 
             try
             {
-                UpdateAuthHeaders();
+                await EnsureHeadlessSessionAsync();
 
                 if (parentId == RootId)
                     items = await _mediaBrowseService!.GetRootItemsAsync();
@@ -1486,6 +1549,8 @@ public class K7MediaLibraryService : MediaLibraryService,
 
             try
             {
+                await EnsureHeadlessSessionAsync();
+
                 foreach (var item in mediaItems)
                 {
                     var mediaId = item.MediaId;
