@@ -87,7 +87,7 @@
     <PackageVersion Include="OpenIddict.EntityFrameworkCore" Version="7.6.1" />
     <PackageVersion Include="OpenIddict.Server" Version="7.6.1" />
     <PackageVersion Include="OpenIddict.Server.AspNetCore" Version="7.6.1" />
-    <PackageVersion Include="Respawn" Version="6.2.1" />
+    <PackageVersion Include="Respawn" Version="7.0.0" />
     <PackageVersion Include="Scalar.AspNetCore.Microsoft" Version="2.17.2" />
     <PackageVersion Include="SkiaSharp" Version="3.119.4" />
     <PackageVersion Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="3.119.4" />
