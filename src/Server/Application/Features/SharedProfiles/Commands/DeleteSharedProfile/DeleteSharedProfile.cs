@@ -1,8 +1,6 @@
-using K7.Server.Application.Common.Exceptions;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Security;
 using K7.Server.Domain.Constants;
-using K7.Server.Domain.Entities.Users;
 
 namespace K7.Server.Application.Features.SharedProfiles.Commands.DeleteSharedProfile;
 
@@ -19,18 +17,13 @@ public class DeleteSharedProfileCommandHandler(
     {
         Guard.Against.Null(currentUser.Id);
 
-        var group = await context.SharedProfiles
-            .Include(g => g.Members)
-            .FirstOrDefaultAsync(g => g.Id == request.Id, cancellationToken);
-
-        Guard.Against.NotFound(request.Id, group);
-
-        var isMember = group.Members.Any(m => m.UserId == currentUser.Id.Value);
-        var isAdmin = !string.IsNullOrEmpty(currentUser.IdentityId)
-            && await identityService.IsInRoleAsync(currentUser.IdentityId, Roles.Administrator);
-
-        if (!isMember && !isAdmin)
-            throw new ForbiddenAccessException();
+        var group = await SharedProfileMemberValidator.GetGroupForHostAsync(
+            context,
+            identityService,
+            request.Id,
+            currentUser.Id.Value,
+            currentUser.IdentityId,
+            cancellationToken);
 
         var recipientIds = group.Members
             .Select(m => m.UserId)

@@ -29,15 +29,23 @@ public class UpdateSharedProfileCommandValidator : AbstractValidator<UpdateShare
     }
 }
 
-public class UpdateSharedProfileCommandHandler(IApplicationDbContext context, IUser currentUser)
+public class UpdateSharedProfileCommandHandler(
+    IApplicationDbContext context,
+    IUser currentUser,
+    IIdentityService identityService)
     : IRequestHandler<UpdateSharedProfileCommand>
 {
     public async Task Handle(UpdateSharedProfileCommand request, CancellationToken cancellationToken)
     {
         Guard.Against.Null(currentUser.Id);
 
-        var group = await SharedProfileMemberValidator.GetGroupForMemberAsync(
-            context, request.Id, currentUser.Id.Value, cancellationToken);
+        var group = await SharedProfileMemberValidator.GetGroupForHostAsync(
+            context,
+            identityService,
+            request.Id,
+            currentUser.Id.Value,
+            currentUser.IdentityId,
+            cancellationToken);
 
         if (request.Name is not null)
             group.Name = request.Name.Trim();
