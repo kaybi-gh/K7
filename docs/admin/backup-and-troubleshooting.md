@@ -121,6 +121,14 @@ Symptom in logs: `AntiforgeryOptions.Cookie.SecurePolicy = Always, but the curre
 - Or temporarily set `Security__ForceHttps=false` on a trusted LAN while debugging
 - `Failed to determine the https port for redirect` is expected on the sample Docker stack (HTTP :7080 only). TLS belongs on the reverse proxy. K7 does not redirect to HTTPS in Production.
 
+### Native Windows login stays on /sign-in
+
+The Windows app opens the system browser and waits for `http://localhost:{port}/`. After a successful password sign-in the server must redirect back to `/connect/authorize?...` (that URL is in `ReturnUrl`). If the browser never leaves `/sign-in?ReturnUrl=/connect/authorize...`, the app keeps spinning.
+
+- Use the same URL scheme the browser can store cookies on. `Security__ForceHttps=true` (default) issues Secure / `__Host-` cookies: they work on `https://` and on `http://localhost`, but **not** on `http://192.168.x.x` or other LAN hosts. Sample Compose sets `Security__ForceHttps=false` for plain HTTP on :7080.
+- Behind a TLS proxy, keep `ForceHttps=true` and send `X-Forwarded-Proto: https`. Nginx Proxy Manager does this by default when Force SSL is on and the proxy host is on a private IP (`TrustPrivateProxies`).
+- **Nginx Proxy Manager "Block Common Exploits":** can stay on. That rule 403s a raw `param=http://` (including `redirect_uri=http://localhost:{port}/`). Current K7 re-encodes the post-login authorize redirect (`http%3A%2F%2Flocalhost...`) so the rule does not match. On older builds, turn the option off for the K7 host or upgrade.
+
 ### OIDC login fails
 
 - `BaseUrl` must match the public URL registered at the IdP

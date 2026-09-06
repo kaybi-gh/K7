@@ -45,7 +45,12 @@
     private InputModel? Input { get; set; }
 
     [SupplyParameterFromQuery]
-    private string? ReturnUrl { get; set; }
+    private string? ReturnUrlQuery { get; set; }
+
+    [SupplyParameterFromForm(Name = "ReturnUrl")]
+    private string? ReturnUrlForm { get; set; }
+
+    private string? ReturnUrl => string.IsNullOrEmpty(ReturnUrlForm) ? ReturnUrlQuery : ReturnUrlForm;
 
     [SupplyParameterFromQuery]
     private bool RememberMe { get; set; }

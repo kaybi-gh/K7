@@ -7,6 +7,7 @@
 @using Microsoft.AspNetCore.Authentication
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.Extensions.Options
+@using K7.Server.Web.Components.Account
 
 @inject SignInManager<ApplicationUser> SignInManager
 @inject UserManager<ApplicationUser> UserManager
@@ -108,7 +109,12 @@
     private InputModel? Input { get; set; }
 
     [SupplyParameterFromQuery]
-    private string? ReturnUrl { get; set; }
+    private string? ReturnUrlQuery { get; set; }
+
+    [SupplyParameterFromForm(Name = "ReturnUrl")]
+    private string? ReturnUrlForm { get; set; }
+
+    private string? ReturnUrl => string.IsNullOrEmpty(ReturnUrlForm) ? ReturnUrlQuery : ReturnUrlForm;
 
     [SupplyParameterFromQuery]
     private string? Error { get; set; }
@@ -118,6 +124,14 @@
         if (HttpMethods.IsGet(HttpContext.Request.Method))
         {
             await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
+
+            if (HttpContext.User.Identity?.IsAuthenticated == true
+                && !string.IsNullOrEmpty(ReturnUrl)
+                && IdentityRedirectUri.IsLocalPath(ReturnUrl))
+            {
+                RedirectManager.RedirectTo(ReturnUrl);
+                return;
+            }
         }
 
         _auth = AuthConfig.Value;
