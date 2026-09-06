@@ -93,7 +93,12 @@ public class TMDbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
                 var show = await _tmdbClient.GetTvShowAsync(tmdbId, language: language, cancellationToken: cancellationToken);
                 if (show is not null)
                 {
-                    results.Add(MapToSearchResult(show.Id, show.Name, show.FirstAirDate, show.PosterPath, show.Overview));
+                    results.Add(MapToSearchResult(
+                        show.Id,
+                        show.Name ?? show.OriginalName ?? string.Empty,
+                        show.FirstAirDate,
+                        show.PosterPath,
+                        show.Overview));
                 }
 
                 return results;
@@ -136,7 +141,7 @@ public class TMDbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
                 query,
                 firstAirDateYear: year,
                 cancellationToken: cancellationToken);
-            return TmdbMultiLanguageSearchMerger.MergeTv([searchResult.Results ?? []]);
+            return TmdbMultiLanguageSearchMerger.MergeTv([searchResult?.Results ?? []]);
         }
 
         var tasks = languages
@@ -148,7 +153,7 @@ public class TMDbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
             .ToArray();
         var results = await Task.WhenAll(tasks);
         return TmdbMultiLanguageSearchMerger.MergeTv(
-            results.Select(r => (IReadOnlyList<TMDbLib.Objects.Search.SearchTv>)(r.Results ?? [])).ToList());
+            results.Select(r => (IReadOnlyList<TMDbLib.Objects.Search.SearchTv>)(r?.Results ?? [])).ToList());
     }
 
     public async Task<ExternalSerieMetadata> FetchSerieMetadataAsync(
@@ -161,7 +166,8 @@ public class TMDbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
             language: language,
             includeImageLanguage: $"{language},en,null",
             extraMethods: TvShowMethods.Credits | TvShowMethods.Images | TvShowMethods.ContentRatings | TvShowMethods.ExternalIds | TvShowMethods.Videos | TvShowMethods.Recommendations,
-            cancellationToken: cancellationToken);
+            cancellationToken: cancellationToken)
+            ?? throw new InvalidOperationException($"No TMDb series found for id '{providerId}'");
 
         var contentRating = ExtractContentRating(show.ContentRatings, language);
         var (title, overview) = await ResolveLocalizedTextAsync(
@@ -178,10 +184,11 @@ public class TMDbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
                 return (fallbackShow?.Name, fallbackShow?.Overview);
             });
 
+        var resolvedTitle = title ?? show.Name ?? show.OriginalName ?? string.Empty;
         var metadata = new ExternalSerieMetadata
         {
-            Title = title ?? show.Name,
-            SortTitle = MediaSortTitleHelper.Compute(title ?? show.Name),
+            Title = resolvedTitle,
+            SortTitle = MediaSortTitleHelper.Compute(resolvedTitle),
             OriginalTitle = show.OriginalName,
             ReleaseDate = show.FirstAirDate.HasValue ? DateOnly.FromDateTime(show.FirstAirDate.Value) : null,
             Overview = overview,
@@ -190,18 +197,9 @@ public class TMDbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
             ContentRating = contentRating,
             Network = show.Networks?.FirstOrDefault()?.Name,
             TotalSeasons = show.NumberOfSeasons,
-            Genres = [.. show.Genres?.Select(g => g.Name) ?? []],
-            Studios = [.. show.ProductionCompanies?.Select(c => c.Name) ?? []],
-            Trailers = [.. show.Videos?.Results?
-                .Where(v => v.Site == "YouTube" && v.Type is "Trailer" or "Teaser")
-                .Select(v => new TrailerInfo
-                {
-                    Key = v.Key,
-                    Name = v.Name,
-                    Site = v.Site,
-                    Type = v.Type,
-                    Language = v.Iso_639_1
-                }) ?? []],
+            Genres = [.. TmdbLibCompat.NonEmptyNames(show.Genres?.Select(g => g.Name))],
+            Studios = [.. TmdbLibCompat.NonEmptyNames(show.ProductionCompanies?.Select(c => c.Name))],
+            Trailers = TmdbLibCompat.MapYoutubeTrailers(show.Videos?.Results),
             RecommendedExternalIds = [.. show.Recommendations?.Results?.Select(r => r.Id.ToString()) ?? []],
             PersonRoles = await ConvertToPersonRolesAsync(show.Credits, language, cancellationToken),
             ExternalIds = BuildExternalIds(providerId, show.ExternalIds),
@@ -327,7 +325,7 @@ public class TMDbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
 
         return new ExternalEpisodeMetadata
         {
-            EpisodeNumber = episode.EpisodeNumber,
+            EpisodeNumber = TmdbLibCompat.ToEpisodeNumber(episode.EpisodeNumber),
             SeasonNumber = episode.SeasonNumber,
             Title = title,
             SortTitle = MediaSortTitleHelper.Compute(title),
@@ -355,12 +353,12 @@ public class TMDbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
                 extraMethods: TvShowMethods.EpisodeGroups,
                 cancellationToken: cancellationToken);
 
-            if (show.EpisodeGroups?.Results is not null)
+            if (show?.EpisodeGroups?.Results is not null)
             {
                 var absoluteGroup = show.EpisodeGroups.Results
                     .FirstOrDefault(g => g.Type == TvGroupType.Absolute);
 
-                if (absoluteGroup is not null)
+                if (absoluteGroup is not null && !string.IsNullOrEmpty(absoluteGroup.Id))
                 {
                     var groupDetails = await _tmdbClient.GetTvEpisodeGroupsAsync(
                         absoluteGroup.Id, cancellationToken: cancellationToken);
@@ -370,12 +368,12 @@ public class TMDbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
                         var counter = 0;
                         foreach (var group in groupDetails.Groups.OrderBy(g => g.Order))
                         {
-                            foreach (var ep in group.Episodes.OrderBy(e => e.Order))
+                            foreach (var ep in (group.Episodes ?? []).OrderBy(e => e.Order))
                             {
                                 counter++;
                                 if (counter == absoluteNumber)
                                 {
-                                    return (ep.SeasonNumber, ep.EpisodeNumber);
+                                    return (ep.SeasonNumber, TmdbLibCompat.ToEpisodeNumber(ep.EpisodeNumber));
                                 }
                             }
                         }
@@ -414,7 +412,7 @@ public class TMDbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
                     continue;
 
                 foreach (var episode in seasonData.Episodes)
-                    keys.Add((episode.SeasonNumber, episode.EpisodeNumber));
+                    keys.Add((episode.SeasonNumber, TmdbLibCompat.ToEpisodeNumber(episode.EpisodeNumber)));
             }
             catch (Exception ex)
             {
@@ -459,7 +457,7 @@ public class TMDbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
 
         return new ExternalEpisodeMetadata
         {
-            EpisodeNumber = episode.EpisodeNumber,
+            EpisodeNumber = TmdbLibCompat.ToEpisodeNumber(episode.EpisodeNumber),
             SeasonNumber = episode.SeasonNumber,
             Title = title,
             SortTitle = MediaSortTitleHelper.Compute(title),
@@ -572,7 +570,7 @@ public class TMDbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
             .ThenByDescending(b => b.VoteAverage)
             .FirstOrDefault();
 
-        if (bestBackdrop is not null)
+        if (bestBackdrop is not null && !string.IsNullOrEmpty(bestBackdrop.FilePath))
         {
             var uri = _tmdbClient.GetImageUrl("original", bestBackdrop.FilePath, true);
             if (uri is not null)
@@ -581,7 +579,7 @@ public class TMDbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
             }
         }
 
-        if (bestLogo is not null)
+        if (bestLogo is not null && !string.IsNullOrEmpty(bestLogo.FilePath))
         {
             var uri = _tmdbClient.GetImageUrl("original", bestLogo.FilePath, true);
             if (uri is not null)
@@ -590,7 +588,7 @@ public class TMDbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
             }
         }
 
-        if (bestPoster is not null)
+        if (bestPoster is not null && !string.IsNullOrEmpty(bestPoster.FilePath))
         {
             var uri = _tmdbClient.GetImageUrl("original", bestPoster.FilePath, true);
             if (uri is not null)
@@ -613,7 +611,7 @@ public class TMDbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
         if (credits is null)
             return Task.FromResult<IList<BasePersonRole>>(roles);
 
-        foreach (var role in credits.Cast)
+        foreach (var role in credits.Cast ?? [])
         {
             if (string.IsNullOrWhiteSpace(role.Name))
                 continue;
@@ -621,7 +619,7 @@ public class TMDbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
             var actor = new Actor
             {
                 Order = role.Order,
-                CharacterName = role.Character,
+                CharacterName = role.Character ?? string.Empty,
                 ExternalIds =
                 [
                     new ExternalId { ProviderName = "tmdb", Value = role.CreditId ?? $"{role.Id}:{role.Order}:{role.Character}" }
@@ -646,9 +644,12 @@ public class TMDbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
             roles.Add(actor);
         }
 
-        foreach (var role in credits.Crew.Where(x => _wantedCrewRoles.Contains((x.Department, x.Job))))
+        foreach (var role in credits.Crew ?? [])
         {
-            if (string.IsNullOrWhiteSpace(role.Name))
+            if (string.IsNullOrWhiteSpace(role.Name)
+                || role.Department is null
+                || role.Job is null
+                || !_wantedCrewRoles.Contains((role.Department, role.Job)))
                 continue;
 
             var crewMember = new CrewMember
@@ -657,7 +658,7 @@ public class TMDbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
                 Job = role.Job,
                 ExternalIds =
                 [
-                    new ExternalId { ProviderName = "tmdb", Value = role.CreditId }
+                    new ExternalId { ProviderName = "tmdb", Value = role.CreditId ?? role.Id.ToString() }
                 ],
                 Person = new Person
                 {
@@ -697,7 +698,7 @@ public class TMDbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
                 TMDbLib.Objects.People.PersonGender.NonBinary => PersonGender.NonBinary,
                 _ => PersonGender.NotSpecified,
             },
-            Name = tmdbPerson.Name,
+            Name = tmdbPerson.Name ?? string.Empty,
             Deathday = tmdbPerson.Deathday.HasValue ? DateOnly.FromDateTime(tmdbPerson.Deathday.Value) : null,
             ExternalIds =
             [
@@ -824,6 +825,9 @@ public class TMDbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
 
         foreach (var img in images.OrderByDescending(x => x.VoteAverage))
         {
+            if (string.IsNullOrEmpty(img.FilePath))
+                continue;
+
             var url = _tmdbClient.GetImageUrl("original", img.FilePath, true)?.ToString();
             var thumbUrl = _tmdbClient.GetImageUrl(thumbSize, img.FilePath, true)?.ToString();
             if (url is null || thumbUrl is null) continue;

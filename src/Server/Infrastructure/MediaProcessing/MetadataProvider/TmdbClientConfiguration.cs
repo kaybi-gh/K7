@@ -24,7 +24,8 @@ internal static class TmdbClientConfiguration
             if (client.HasConfig)
                 return;
 
-            var config = await client.GetConfigAsync().ConfigureAwait(false);
+            var config = await client.GetConfigAsync().ConfigureAwait(false)
+                ?? throw new InvalidOperationException("TMDb configuration was not returned.");
             if (!client.HasConfig)
                 client.SetConfig(config);
         }
