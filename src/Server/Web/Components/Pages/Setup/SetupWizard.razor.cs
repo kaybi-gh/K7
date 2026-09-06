@@ -2,6 +2,8 @@ using System.ComponentModel.DataAnnotations;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Infrastructure.Configuration;
 using K7.Server.Web.Components.Account;
+using K7.Shared.Dtos;
+using K7.Shared.Security;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Components;
 
@@ -12,6 +14,7 @@ public partial class SetupWizard
     private string? _statusMessage;
     private bool _requiresSetupToken;
     private AuthenticationScheme[] _externalProviders = [];
+    private PasswordPolicyDto _policy = PasswordPolicyDto.Defaults;
 
     [Inject]
     private ISetupTokenProvider SetupTokenProvider { get; set; } = default!;
@@ -22,6 +25,7 @@ public partial class SetupWizard
     protected override async Task OnInitializedAsync()
     {
         Input ??= new();
+        _policy = await PasswordPolicyService.GetAsync();
 
         _requiresSetupToken = await SetupService.RequiresSetupTokenAsync();
 
@@ -43,7 +47,25 @@ public partial class SetupWizard
             ? Input!.SetupToken ?? SetupTokenProvider.CurrentToken
             : null;
 
-        var email = string.IsNullOrWhiteSpace(Input!.Email) ? null : Input.Email.Trim();
+        if (!EmailFormat.IsValidOptional(Input!.Email))
+        {
+            _statusMessage = L["EmailInvalid"];
+            return;
+        }
+
+        if (!string.Equals(Input.Password, Input.ConfirmPassword, StringComparison.Ordinal))
+        {
+            _statusMessage = L["PasswordsMismatch"];
+            return;
+        }
+
+        if (!PasswordPolicy.IsSatisfiedBy(Input.Password, _policy))
+        {
+            _statusMessage = L["PasswordPolicyNotMet"];
+            return;
+        }
+
+        var email = string.IsNullOrWhiteSpace(Input.Email) ? null : Input.Email.Trim();
         var result = await SetupService.CompleteSetupAsync(Input.Username.Trim(), Input.Password, email, setupToken);
 
         if (result.Succeeded)
@@ -62,7 +84,6 @@ public partial class SetupWizard
         [Required(ErrorMessage = "Username is required.")]
         public string Username { get; set; } = string.Empty;
 
-        [EmailAddress(ErrorMessage = "Invalid email address.")]
         public string? Email
         {
             get;
@@ -72,8 +93,6 @@ public partial class SetupWizard
         [Required(ErrorMessage = "Password is required.")]
         public string Password { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "Password confirmation is required.")]
-        [Compare(nameof(Password), ErrorMessage = "Passwords do not match.")]
         public string ConfirmPassword { get; set; } = string.Empty;
 
         public string? SetupToken { get; set; }

@@ -74,4 +74,13 @@
   <data name="SignIn" xml:space="preserve">
     <value>Se connecter</value>
   </data>
+  <data name="PasswordPolicyNotMet" xml:space="preserve">
+    <value>Le mot de passe ne respecte pas les règles de complexité.</value>
+  </data>
+  <data name="InvalidEmail" xml:space="preserve">
+    <value>Adresse e-mail invalide.</value>
+  </data>
+  <data name="PasswordMismatch" xml:space="preserve">
+    <value>Les mots de passe ne correspondent pas.</value>
+  </data>
 </root>

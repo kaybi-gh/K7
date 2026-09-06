@@ -3,10 +3,13 @@
 @using K7.Server.Application.Common.Interfaces
 @using K7.Server.Infrastructure.Configuration
 @using K7.Server.Infrastructure.Database.Context.Identity
+@using K7.Server.Web.Components.Account.Shared
+@using K7.Shared.Dtos
 @using Microsoft.AspNetCore.Authentication
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.Extensions.Options
 @inject ISetupService SetupService
+@inject IPasswordPolicyService PasswordPolicyService
 @inject SignInManager<ApplicationUser> SignInManager
 @inject UserManager<ApplicationUser> UserManager
 @inject NavigationManager Navigation
@@ -29,7 +32,7 @@
             <div class="auth-alert auth-alert--error" style="margin-bottom:1rem;">@_statusMessage</div>
         }
 
-        <EditForm Model="Input" method="post" OnValidSubmit="OnSubmitAsync" FormName="setup">
+        <EditForm Model="Input" method="post" OnValidSubmit="OnSubmitAsync" FormName="setup" novalidate>
             <DataAnnotationsValidator />
             <ValidationSummary class="auth-alert auth-alert--error" role="alert" />
             <div class="auth-form-stack">
@@ -41,26 +44,28 @@
 
                 <div class="auth-form-field">
                     <label>@L["EmailOptional"]</label>
-                    <InputText @bind-Value="Input!.Email" type="email" class="auth-input focusable" placeholder="@L["EmailPlaceholder"]" autocomplete="email" />
-                    <ValidationMessage For="@(() => Input!.Email)" class="auth-validation" />
+                    <AuthEmailField Name="Input.Email"
+                                    Placeholder="@L["EmailPlaceholder"]"
+                                    Value="@(Input?.Email)"
+                                    @rendermode="InteractiveServer" />
                 </div>
 
                 <div class="auth-form-field">
                     <label>@L["Password"]</label>
-                    <div class="auth-input-row">
-                        <InputText @bind-Value="Input!.Password" id="pw-setup" type="password" class="auth-input focusable" placeholder="@L["PasswordPlaceholder"]" autocomplete="new-password" aria-required="true" />
-                        <button type="button" class="auth-input-action focusable" onclick="togglePw('pw-setup')" aria-label="@L["ShowPassword"]"><i class="ph ph-eye"></i></button>
-                    </div>
+                    <AuthPasswordField Name="Input.Password"
+                                       Id="pw-setup"
+                                       Placeholder="@L["PasswordPlaceholder"]"
+                                       Policy="@_policy"
+                                       Value="@(Input?.Password)"
+                                       ShowVisibilityToggle="true"
+                                       ToggleLabel="@L["ShowPassword"]"
+                                       ShowConfirm="true"
+                                       ConfirmId="pw-confirm-setup"
+                                       ConfirmLabel="@L["ConfirmPassword"]"
+                                       ConfirmPlaceholder="@L["PasswordPlaceholder"]"
+                                       ConfirmValue="@(Input?.ConfirmPassword)"
+                                       @rendermode="InteractiveServer" />
                     <ValidationMessage For="@(() => Input!.Password)" class="auth-validation" />
-                </div>
-
-                <div class="auth-form-field">
-                    <label>@L["ConfirmPassword"]</label>
-                    <div class="auth-input-row">
-                        <InputText @bind-Value="Input!.ConfirmPassword" id="pw-confirm-setup" type="password" class="auth-input focusable" placeholder="@L["PasswordPlaceholder"]" autocomplete="new-password" aria-required="true" />
-                        <button type="button" class="auth-input-action focusable" onclick="togglePw('pw-confirm-setup')" aria-label="@L["ShowPassword"]"><i class="ph ph-eye"></i></button>
-                    </div>
-                    <ValidationMessage For="@(() => Input!.ConfirmPassword)" class="auth-validation" />
                 </div>
 
                 @if (_requiresSetupToken)
@@ -94,9 +99,3 @@
     </div>
 </div>
 
-<script>
-    function togglePw(id) {
-        var el = document.getElementById(id);
-        if (el) el.type = el.type === 'password' ? 'text' : 'password';
-    }
-</script>

@@ -86,4 +86,7 @@
   <data name="Or" xml:space="preserve">
     <value>ou</value>
   </data>
+  <data name="PasswordPolicyNotMet" xml:space="preserve">
+    <value>Le mot de passe ne respecte pas les règles de complexité.</value>
+  </data>
 </root>

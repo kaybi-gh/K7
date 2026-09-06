@@ -2,10 +2,13 @@
 @layout K7.Server.Web.Components.Pages.Auth.AuthLayout
 
 @using System.ComponentModel.DataAnnotations
+@using K7.Server.Application.Common.Interfaces
 @using K7.Server.Domain.Constants
 @using K7.Server.Domain.Entities.Users
 @using K7.Server.Infrastructure.Configuration
 @using K7.Server.Infrastructure.Database.Context.Identity
+@using K7.Shared.Dtos
+@using K7.Shared.Security
 @using Microsoft.EntityFrameworkCore
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.Extensions.Options
@@ -16,7 +19,8 @@
 @inject ILogger<Register> Logger
 @inject NavigationManager NavigationManager
 @inject IdentityRedirectManager RedirectManager
-@inject K7.Server.Application.Common.Interfaces.IApplicationDbContext ApplicationDbContext
+@inject IApplicationDbContext ApplicationDbContext
+@inject IPasswordPolicyService PasswordPolicyService
 @inject IOptions<AuthenticationConfiguration> AuthConfig
 @inject IStringLocalizer<Register> L
 
@@ -29,7 +33,7 @@
     </div>
     <div class="auth-card-body">
         <StatusMessage Message="@Message" />
-        <EditForm Model="Input" asp-route-returnUrl="@ReturnUrl" method="post" OnValidSubmit="RegisterUser" FormName="register">
+        <EditForm Model="Input" asp-route-returnUrl="@ReturnUrl" method="post" OnValidSubmit="RegisterUser" FormName="register" Enhance="false" novalidate>
             <DataAnnotationsValidator />
             <div class="auth-form-stack">
                 <div class="auth-form-field">
@@ -39,31 +43,37 @@
                 </div>
                 <div class="auth-form-field">
                     <label>@L["EmailOptional"]</label>
-                    <InputText @bind-Value="Input!.Email" type="email" class="auth-input focusable" placeholder="@L["EmailPlaceholder"]" autocomplete="email" />
-                    <ValidationMessage For="@(() => Input!.Email)" class="auth-validation" />
+                    <AuthEmailField Name="Input.Email"
+                                    Placeholder="@L["EmailPlaceholder"]"
+                                    Value="@(Input?.Email)"
+                                    @rendermode="InteractiveServer" />
                 </div>
                 <div class="auth-form-field">
                     <label>@L["Password"]</label>
-                    <InputText @bind-Value="Input!.Password" type="password" class="auth-input focusable" placeholder="@L["PasswordPlaceholder"]" autocomplete="new-password" aria-required="true" />
+                    <AuthPasswordField Name="Input.Password"
+                                       Placeholder="@L["PasswordPlaceholder"]"
+                                       Policy="@_policy"
+                                       Value="@(Input?.Password)"
+                                       ShowConfirm="true"
+                                       ConfirmLabel="@L["ConfirmPassword"]"
+                                       ConfirmPlaceholder="@L["ConfirmPasswordPlaceholder"]"
+                                       ConfirmValue="@(Input?.ConfirmPassword)"
+                                       @rendermode="InteractiveServer" />
                     <ValidationMessage For="@(() => Input!.Password)" class="auth-validation" />
-                </div>
-                <div class="auth-form-field">
-                    <label>@L["ConfirmPassword"]</label>
-                    <InputText @bind-Value="Input!.ConfirmPassword" type="password" class="auth-input focusable" placeholder="@L["ConfirmPasswordPlaceholder"]" autocomplete="new-password" aria-required="true" />
-                    <ValidationMessage For="@(() => Input!.ConfirmPassword)" class="auth-validation" />
                 </div>
                 <button type="submit" class="k7-btn k7-btn--filled focusable" style="width:100%;">@L["Register"]</button>
             </div>
         </EditForm>
         <p class="auth-caption" style="text-align:center;margin-top:1rem;">
             @L["AlreadyHaveAccount"]
-            <a href="@(NavigationManager.GetUriWithQueryParameters("/sign-in", new Dictionary<string, object?> { ["ReturnUrl"] = ReturnUrl }))" class="auth-link focusable">@L["SignIn"]</a>
+            <a href="@(NavigationManager.GetUriWithQueryParameters("/sign-in", new Dictionary<string, object?> { ["ReturnUrl"] = ReturnUrl }))" class="auth-link focusable" data-enhance-nav="false">@L["SignIn"]</a>
         </p>
     </div>
 </div>
 
 @code {
     private IEnumerable<IdentityError>? identityErrors;
+    private PasswordPolicyDto _policy = PasswordPolicyDto.Defaults;
 
     [SupplyParameterFromForm]
     private InputModel? Input { get; set; }
@@ -76,9 +86,10 @@
     [CascadingParameter]
     private HttpContext HttpContext { get; set; } = default!;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
         Input ??= new();
+        _policy = await PasswordPolicyService.GetAsync();
 
         if (!AuthConfig.Value.Local.RegistrationEnabled)
         {
@@ -94,9 +105,27 @@
             return;
         }
 
+        if (!EmailFormat.IsValidOptional(Input!.Email))
+        {
+            identityErrors = [new IdentityError { Description = L["InvalidEmail"] }];
+            return;
+        }
+
+        if (!string.Equals(Input.Password, Input.ConfirmPassword, StringComparison.Ordinal))
+        {
+            identityErrors = [new IdentityError { Description = L["PasswordMismatch"] }];
+            return;
+        }
+
+        if (!PasswordPolicy.IsSatisfiedBy(Input.Password, _policy))
+        {
+            identityErrors = [new IdentityError { Description = L["PasswordPolicyNotMet"] }];
+            return;
+        }
+
         var user = CreateUser();
 
-        await UserStore.SetUserNameAsync(user, Input!.Username.Trim(), CancellationToken.None);
+        await UserStore.SetUserNameAsync(user, Input.Username.Trim(), CancellationToken.None);
         if (!string.IsNullOrWhiteSpace(Input.Email))
         {
             var emailStore = GetEmailStore();
@@ -160,7 +189,6 @@
         [Display(Name = "Username")]
         public string Username { get; set; } = "";
 
-        [EmailAddress]
         [Display(Name = "Email")]
         public string? Email
         {
@@ -169,14 +197,13 @@
         }
 
         [Required]
-        [StringLength(100, ErrorMessage = "The {0} must be at least {2} and at max {1} characters long.", MinimumLength = 6)]
+        [StringLength(PasswordPolicyDto.MaxRequiredLength)]
         [DataType(DataType.Password)]
         [Display(Name = "Password")]
         public string Password { get; set; } = "";
 
         [DataType(DataType.Password)]
         [Display(Name = "Confirm password")]
-        [Compare("Password", ErrorMessage = "The password and confirmation password do not match.")]
         public string ConfirmPassword { get; set; } = "";
     }
 }

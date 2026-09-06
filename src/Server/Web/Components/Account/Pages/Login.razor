@@ -72,7 +72,7 @@
         <div class="auth-card-footer">
             <span class="auth-caption">
                 @L["NoAccount"]
-                <a href="@(NavigationManager.GetUriWithQueryParameters("/sign-up", new Dictionary<string, object?> { ["ReturnUrl"] = ReturnUrl }))" class="auth-link focusable">@L["SignUp"]</a>
+                <a href="@(NavigationManager.GetUriWithQueryParameters("/sign-up", new Dictionary<string, object?> { ["ReturnUrl"] = ReturnUrl }))" class="auth-link focusable" data-enhance-nav="false">@L["SignUp"]</a>
             </span>
         </div>
     }

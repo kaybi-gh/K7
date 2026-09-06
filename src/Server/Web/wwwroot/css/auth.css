@@ -166,6 +166,10 @@
     gap: 0.25rem;
 }
 
+.auth-form-field--follow {
+    margin-top: 0.75rem;
+}
+
 .auth-form-field label {
     font-size: 0.8125rem;
     font-weight: 500;
@@ -220,7 +224,12 @@
 
 .auth-validation {
     font-size: 0.75rem;
-    color: var(--color-error, #e53e3e);
+    color: var(--color-error);
+    margin: 0.25rem 0 0;
+}
+
+.auth-validation--ok {
+    color: var(--color-success);
 }
 
 /* Toggle (checkbox replacement) */

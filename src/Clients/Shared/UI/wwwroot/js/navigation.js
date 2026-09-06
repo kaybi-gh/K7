@@ -1718,7 +1718,7 @@ var SpatialNav = (function () {
         }
 
         // Block back navigation on auth pages (no navbar flicker)
-        if (/^\/(sign-in|linkdevice|select-profile|select-user)(\/|$)/.test(path)) {
+        if (/^\/(sign-in|sign-up|linkdevice|select-profile|select-user)(\/|$)/.test(path)) {
             return;
         }
 
@@ -2184,7 +2184,7 @@ var SpatialNav = (function () {
     }
 
     function isStandaloneAuthPage() {
-        return /^\/(welcome|sign-in|linkdevice|select-profile|select-user)(\/|$)/.test(window.location.pathname);
+        return /^\/(welcome|sign-in|sign-up|linkdevice|select-profile|select-user)(\/|$)/.test(window.location.pathname);
     }
 
     function applyDomFocus(el) {

@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 @using K7.Server.Application.Common.Interfaces
 @using K7.Server.Domain.Settings
+@using Microsoft.AspNetCore.Components.Endpoints
 @using Microsoft.Extensions.DependencyInjection
 <html lang="@System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName">
 <head>
@@ -104,8 +105,10 @@
         : new InteractiveWebAssemblyRenderMode(false);
 
     private bool IsAuthSsrPath =>
-        HttpContext.Request.Path.StartsWithSegments("/welcome")
+        !HttpContext.AcceptsInteractiveRouting()
+        || HttpContext.Request.Path.StartsWithSegments("/welcome")
         || HttpContext.Request.Path.StartsWithSegments("/sign-in")
+        || HttpContext.Request.Path.StartsWithSegments("/sign-up")
         || HttpContext.Request.Path.StartsWithSegments("/setup")
         || HttpContext.Request.Path.StartsWithSegments("/account")
         || HttpContext.Request.Path.StartsWithSegments("/auth/complete");
