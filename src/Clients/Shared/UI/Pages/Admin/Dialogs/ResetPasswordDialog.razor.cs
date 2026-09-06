@@ -1,3 +1,4 @@
+using K7.Shared.Dtos;
 using K7.Shared.Dtos.Requests;
 using K7.Shared.Dtos.Users;
 using K7.Shared.Security;
@@ -8,6 +9,7 @@ namespace K7.Clients.Shared.UI.Pages.Admin.Dialogs;
 public partial class ResetPasswordDialog
 {
     [Inject] private IUserAdminService K7ServerService { get; set; } = default!;
+    [Inject] private IServerInfoService ServerInfoService { get; set; } = default!;
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
 
     [CascadingParameter] private IK7DialogInstance Dialog { get; set; } = null!;
@@ -16,8 +18,21 @@ public partial class ResetPasswordDialog
 
     private string _newPassword = "";
     private bool _isSubmitting;
+    private PasswordPolicyDto _policy = PasswordPolicyDto.Defaults;
 
-    private bool CanSubmit => PasswordPolicy.IsSatisfiedBy(_newPassword);
+    private bool CanSubmit => PasswordPolicy.IsSatisfiedBy(_newPassword, _policy);
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _policy = await ServerInfoService.GetPasswordPolicyAsync();
+        }
+        catch
+        {
+            _policy = PasswordPolicyDto.Defaults;
+        }
+    }
 
     private void Cancel() => Dialog.Cancel();
 

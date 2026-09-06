@@ -37,7 +37,7 @@ OIDC sign-in never attaches itself to an existing local account by email. Linkin
 
 ### Add a local password to an OIDC account
 
-If you signed in with OIDC and the server also allows username/password sign-in, open **Settings -> Account** and choose **Set a password**. Passwords must be at least 10 characters and include uppercase, lowercase, a digit, and at least 4 distinct characters. If username/password sign-in is disabled (OIDC-only), the page explains that an administrator must enable it first.
+If you signed in with OIDC and the server also allows username/password sign-in, open **Settings -> Account** and choose **Set a password**. The live complexity rules are shown under the password field (defaults: at least 10 characters, uppercase, lowercase, a digit, and 4 distinct characters). If username/password sign-in is disabled (OIDC-only), the page explains that an administrator must enable it first.
 
 Guest mode is limited: many Settings sections and personal features (My Space, offline, continue watching, personal history, and similar) are hidden. Playback sessions are still recorded so administrators can see Guest consumption under Admin -> Playback history.
 

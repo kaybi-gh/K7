@@ -10520,6 +10520,29 @@
         }
       }
     },
+    "/api/admin/password-policy": {
+      "put": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "UpdatePasswordPolicy",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasswordPolicyDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/about": {
       "get": {
         "tags": [
@@ -18143,6 +18166,39 @@
             "type": "boolean"
           },
           "hasNextPage": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PasswordPolicyDto": {
+        "type": "object",
+        "properties": {
+          "requiredLength": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "requiredUniqueChars": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "requireDigit": {
+            "type": "boolean"
+          },
+          "requireLowercase": {
+            "type": "boolean"
+          },
+          "requireUppercase": {
+            "type": "boolean"
+          },
+          "requireNonAlphanumeric": {
             "type": "boolean"
           }
         }

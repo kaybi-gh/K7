@@ -814,6 +814,8 @@ public sealed class MockServerInfoService : IServerInfoService
     public Task<AboutInfoDto?> GetAboutInfoAsync(CancellationToken cancellationToken = default) => Task.FromResult<AboutInfoDto?>(new AboutInfoDto { ServerVersion = "1.0.0" });
     public Task<ServerInfoDto?> GetServerInfoAsync(CancellationToken cancellationToken = default) => Task.FromResult<ServerInfoDto?>(null);
     public Task<AuthenticationInfoDto?> GetAuthenticationInfoAsync(CancellationToken cancellationToken = default) => Task.FromResult<AuthenticationInfoDto?>(null);
+    public Task<PasswordPolicyDto> GetPasswordPolicyAsync(CancellationToken cancellationToken = default) => Task.FromResult(PasswordPolicyDto.Defaults);
+    public Task UpdatePasswordPolicyAsync(PasswordPolicyDto policy, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task<WatchStatsDto?> GetWatchStatsAsync(string? mediaType = null, string period = "month", DateTime? from = null, DateTime? to = null, CancellationToken cancellationToken = default) => Task.FromResult<WatchStatsDto?>(null);
     public Task<PlaybackHistoryPageDto?> GetPlaybackHistoryAsync(int page = 1, int pageSize = 25, string? mediaType = null, string period = "month", DateTime? from = null, DateTime? to = null, CancellationToken cancellationToken = default) => Task.FromResult<PlaybackHistoryPageDto?>(null);
     public Task ReassignPlaybackHistoryAsync(Guid referenceId, Guid? sharedProfileId, CancellationToken cancellationToken = default) => Task.CompletedTask;

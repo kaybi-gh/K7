@@ -306,7 +306,7 @@ Admin Dashboard still shows a short health overview and active streams (encoder 
 - Guest playback is recorded in Admin -> Playback history (and active streams) without giving Guest continue watching or personal history.
 - Admin -> Playback history can reassign a play (personal or any shared profile) and delete rows. A personal delete updates that user's play/skip counts. A shared-profile delete removes the row for the whole group without un-watching members. Bulk select works like Admin -> Users. Delete requires `CanDeleteHistory`. Reassign requires `CanReassignHistory`.
 - `CanDeleteHistory` and `CanReassignHistory` are on by default for Administrator only (off for User and Guest). Enable them per User account when needed. Turning them off on an admin keeps history visible while blocking those actions.
-- Authentication panel: **read-only** view of local / OIDC flags from config.
+- Authentication panel: **read-only** view of local / OIDC flags from config, plus editable password complexity (length, unique characters, digit / case / special-character requirements). Password rules apply after save. They do not require a restart.
 
 ### Server defaults vs user overrides
 

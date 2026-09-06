@@ -1014,6 +1014,18 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         return await HttpClient.GetFromJsonAsync<AuthenticationInfoDto>("api/admin/authentication-info", _serializerOptions, cancellationToken);
     }
 
+    public async Task<PasswordPolicyDto> GetPasswordPolicyAsync(CancellationToken cancellationToken = default)
+    {
+        var info = await GetServerInfoAsync(cancellationToken);
+        return info?.PasswordPolicy ?? PasswordPolicyDto.Defaults;
+    }
+
+    public async Task UpdatePasswordPolicyAsync(PasswordPolicyDto policy, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PutAsJsonAsync("api/admin/password-policy", policy, _serializerOptions, cancellationToken);
+        await response.EnsureSuccessWithDetailsAsync(cancellationToken);
+    }
+
     public async Task<List<UserDto>> GetUsersAsync(CancellationToken cancellationToken = default)
     {
         var users = await HttpClient.GetFromJsonAsync<List<UserDto>>("api/users", _serializerOptions, cancellationToken);
@@ -1053,7 +1065,7 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
     public async Task<UserDto> CreateUserAsync(CreateUserRequest request, CancellationToken cancellationToken = default)
     {
         var response = await HttpClient.PostAsJsonAsync("api/users", request, _serializerOptions, cancellationToken);
-        response.EnsureSuccessStatusCode();
+        await response.EnsureSuccessWithDetailsAsync(cancellationToken);
         return (await response.Content.ReadFromJsonAsync<UserDto>(_serializerOptions, cancellationToken))!;
     }
 

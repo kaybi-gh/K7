@@ -32,4 +32,5 @@ public static class ServerSettingKeys
     public static readonly SettingKey<string> AudioMuseAi = new("AudioMuseAi");
     public static readonly SettingKey<string> TranscodeSettings = new("TranscodeSettings");
     public static readonly SettingKey<string> FederationSocialPolicy = new("FederationSocialPolicy");
+    public static readonly SettingKey<string> PasswordPolicy = new("PasswordPolicy");
 }

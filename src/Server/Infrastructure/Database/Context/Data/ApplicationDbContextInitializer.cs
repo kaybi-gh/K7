@@ -1,4 +1,4 @@
-﻿using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Security;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Settings;
@@ -28,6 +28,7 @@ public class ApplicationDbContextInitializer(
     RoleManager<IdentityRole> roleManager,
     UserManager<ApplicationUser> userManager,
     IServerSettingsService settingsService,
+    IPasswordPolicyService passwordPolicyService,
     ISetupService setupService,
     ISetupTokenProvider setupTokenProvider,
     IMediaLibraryAvailabilityService mediaLibraryAvailabilityService)
@@ -55,6 +56,7 @@ public class ApplicationDbContextInitializer(
             await MigrateExistingAdminAsync();
             await AutoSetupFromEnvAsync();
             await EnsureSetupTokenAsync();
+            await passwordPolicyService.GetAsync();
         }
         catch (Exception ex)
         {

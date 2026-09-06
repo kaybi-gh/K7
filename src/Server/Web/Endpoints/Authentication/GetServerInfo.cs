@@ -19,6 +19,7 @@ public class GetServerInfo : IEndpoint
         endpointRouteBuilder.MapGet("/api/server-info", async (
             [FromServices] IApplicationDbContext dbContext,
             [FromServices] IServerSettingsService serverSettings,
+            [FromServices] IPasswordPolicyService passwordPolicy,
             [FromServices] UserManager<ApplicationUser> userManager,
             CancellationToken cancellationToken) =>
         {
@@ -36,12 +37,14 @@ public class GetServerInfo : IEndpoint
 
             var defaultLanguage = await serverSettings.GetAsync(ServerSettingKeys.DefaultLanguage, cancellationToken) ?? "en";
             var defaultTheme = await serverSettings.GetAsync(ServerSettingKeys.DefaultTheme, cancellationToken) ?? "default-dark";
+            var policy = await passwordPolicy.GetAsync(cancellationToken);
 
             return Results.Ok(new ServerInfoDto
             {
                 GuestEnabled = guestEnabled,
                 DefaultLanguage = defaultLanguage,
-                DefaultTheme = defaultTheme
+                DefaultTheme = defaultTheme,
+                PasswordPolicy = policy
             });
         })
         .AllowAnonymous()

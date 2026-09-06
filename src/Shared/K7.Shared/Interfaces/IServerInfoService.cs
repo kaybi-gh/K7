@@ -9,6 +9,8 @@ public interface IServerInfoService
     Task<AboutInfoDto?> GetAboutInfoAsync(CancellationToken cancellationToken = default);
     Task<ServerInfoDto?> GetServerInfoAsync(CancellationToken cancellationToken = default);
     Task<AuthenticationInfoDto?> GetAuthenticationInfoAsync(CancellationToken cancellationToken = default);
+    Task<PasswordPolicyDto> GetPasswordPolicyAsync(CancellationToken cancellationToken = default);
+    Task UpdatePasswordPolicyAsync(PasswordPolicyDto policy, CancellationToken cancellationToken = default);
     Task<WatchStatsDto?> GetWatchStatsAsync(string? mediaType = null, string period = "month", DateTime? from = null, DateTime? to = null, CancellationToken cancellationToken = default);
     Task<PlaybackHistoryPageDto?> GetPlaybackHistoryAsync(int page = 1, int pageSize = 25, string? mediaType = null, string period = "month", DateTime? from = null, DateTime? to = null, CancellationToken cancellationToken = default);
     Task ReassignPlaybackHistoryAsync(Guid referenceId, Guid? sharedProfileId, CancellationToken cancellationToken = default);

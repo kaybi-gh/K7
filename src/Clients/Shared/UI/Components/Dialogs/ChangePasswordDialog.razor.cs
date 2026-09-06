@@ -1,3 +1,4 @@
+using K7.Shared.Dtos;
 using K7.Shared.Security;
 using Microsoft.AspNetCore.Components;
 
@@ -5,6 +6,8 @@ namespace K7.Clients.Shared.UI.Components.Dialogs;
 
 public partial class ChangePasswordDialog
 {
+    [Inject] private IServerInfoService ServerInfoService { get; set; } = default!;
+
     [CascadingParameter] private IK7DialogInstance Dialog { get; set; } = null!;
 
     [Parameter] public bool HasPassword { get; set; }
@@ -16,6 +19,19 @@ public partial class ChangePasswordDialog
     private string _newPassword = "";
     private string _confirmPassword = "";
     private string? _error;
+    private PasswordPolicyDto _policy = PasswordPolicyDto.Defaults;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _policy = await ServerInfoService.GetPasswordPolicyAsync();
+        }
+        catch
+        {
+            _policy = PasswordPolicyDto.Defaults;
+        }
+    }
 
     protected override void OnParametersSet()
     {
@@ -24,7 +40,7 @@ public partial class ChangePasswordDialog
     }
 
     private bool CanSubmit =>
-        PasswordPolicy.IsSatisfiedBy(_newPassword) &&
+        PasswordPolicy.IsSatisfiedBy(_newPassword, _policy) &&
         _newPassword == _confirmPassword &&
         (!_hasPassword || !string.IsNullOrWhiteSpace(_currentPassword));
 
@@ -32,7 +48,7 @@ public partial class ChangePasswordDialog
     {
         _error = null;
 
-        if (!PasswordPolicy.IsSatisfiedBy(_newPassword))
+        if (!PasswordPolicy.IsSatisfiedBy(_newPassword, _policy))
         {
             _error = L["PasswordPolicyNotMet"];
             return;

@@ -5,71 +5,111 @@
 
 @if (_isLoading)
 {
-    <K7ProgressBar Indeterminate="true" />
+    <div class="d-flex flex-col pa-16">
+        <K7Spinner />
+    </div>
 }
-else if (_authInfo is not null)
+else
 {
-    <div class="d-flex flex-col pa-4">
-        <K7Alert Severity="K7Severity.Info" Variant="outlined" NoIcon="true">
-            @L["ConfigInfo"]
-        </K7Alert>
+    <div class="settings-form-page">
+        <div class="settings-form-page__body pa-4 d-flex flex-col gap-6">
+            @if (_authInfo is not null)
+            {
+                <K7Alert Severity="K7Severity.Info" Variant="outlined">
+                    @L["ConfigInfo"]
+                </K7Alert>
 
-        <h6>@L["LocalAuthTitle"]</h6>
-        <table class="k7-table k7-table--dense">
-            <tbody>
-                <tr>
-                    <td style="width: 300px;"><p class="text-sm">@L["LocalSignin"]</p></td>
-                    <td>
-                        <K7Chip Size="sm" Color="@(_authInfo.LocalSignInEnabled ? "success" : "default")">
-                            @(_authInfo.LocalSignInEnabled ? S["EnabledFeminine"] : S["DisabledFeminine"])
-                        </K7Chip>
-                    </td>
-                </tr>
-                <tr>
-                    <td><p class="text-sm">@L["LocalRegistration"]</p></td>
-                    <td>
-                        <K7Chip Size="sm" Color="@(_authInfo.LocalRegistrationEnabled ? "success" : "default")">
-                            @(_authInfo.LocalRegistrationEnabled ? S["EnabledFeminine"] : S["DisabledFeminine"])
-                        </K7Chip>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
+                <section class="d-flex flex-col gap-4">
+                    <h6>@L["LocalAuthTitle"]</h6>
 
-        <h6>@L["OidcTitle"]</h6>
-        <table class="k7-table k7-table--dense">
-            <tbody>
-                <tr>
-                    <td style="width: 300px;"><p class="text-sm">@L["Oidc"]</p></td>
-                    <td>
-                        <K7Chip Size="sm" Color="@(_authInfo.OidcEnabled ? "success" : "default")">
-                            @(_authInfo.OidcEnabled ? S["Enabled"] : S["Disabled"])
-                        </K7Chip>
-                    </td>
-                </tr>
-                @if (_authInfo.OidcEnabled)
-                {
-                    <tr>
-                        <td><p class="text-sm">@L["Provider"]</p></td>
-                        <td><p class="text-sm">@_authInfo.OidcDisplayName</p></td>
-                    </tr>
-                    <tr>
-                        <td><p class="text-sm">@L["AutoAccountCreation"]</p></td>
-                        <td>
-                            <K7Chip Size="sm" Color="@(_authInfo.OidcAutomaticAccountCreation ? "success" : "default")">
-                                @(_authInfo.OidcAutomaticAccountCreation ? S["EnabledFeminine"] : S["DisabledFeminine"])
+                    <div class="d-flex flex-col gap-4">
+                        <div class="d-flex align-center justify-space-between gap-4">
+                            <p class="text-sm">@L["LocalSignin"]</p>
+                            <K7Chip Size="sm" Color="@(_authInfo.LocalSignInEnabled ? "success" : "default")">
+                                @(_authInfo.LocalSignInEnabled ? S["EnabledFeminine"] : S["DisabledFeminine"])
                             </K7Chip>
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
+                        </div>
+                        <div class="d-flex align-center justify-space-between gap-4">
+                            <p class="text-sm">@L["LocalRegistration"]</p>
+                            <K7Chip Size="sm" Color="@(_authInfo.LocalRegistrationEnabled ? "success" : "default")">
+                                @(_authInfo.LocalRegistrationEnabled ? S["EnabledFeminine"] : S["DisabledFeminine"])
+                            </K7Chip>
+                        </div>
+                    </div>
+                </section>
 
-        @if (!_authInfo.LocalSignInEnabled && _authInfo.OidcEnabled)
-        {
-            <K7Alert Severity="K7Severity.Warning" Variant="outlined">
-                @L["LocalSigninDisabledWarning"]
-            </K7Alert>
-        }
+                <K7Divider />
+
+                <section class="d-flex flex-col gap-4">
+                    <h6>@L["OidcTitle"]</h6>
+
+                    <div class="d-flex flex-col gap-4">
+                        <div class="d-flex align-center justify-space-between gap-4">
+                            <p class="text-sm">@L["Oidc"]</p>
+                            <K7Chip Size="sm" Color="@(_authInfo.OidcEnabled ? "success" : "default")">
+                                @(_authInfo.OidcEnabled ? S["Enabled"] : S["Disabled"])
+                            </K7Chip>
+                        </div>
+                        @if (_authInfo.OidcEnabled)
+                        {
+                            <div class="d-flex align-center justify-space-between gap-4">
+                                <p class="text-sm">@L["Provider"]</p>
+                                <p class="text-sm">@_authInfo.OidcDisplayName</p>
+                            </div>
+                            <div class="d-flex align-center justify-space-between gap-4">
+                                <p class="text-sm">@L["AutoAccountCreation"]</p>
+                                <K7Chip Size="sm" Color="@(_authInfo.OidcAutomaticAccountCreation ? "success" : "default")">
+                                    @(_authInfo.OidcAutomaticAccountCreation ? S["EnabledFeminine"] : S["DisabledFeminine"])
+                                </K7Chip>
+                            </div>
+                        }
+                    </div>
+
+                    @if (!_authInfo.LocalSignInEnabled && _authInfo.OidcEnabled)
+                    {
+                        <K7Alert Severity="K7Severity.Warning" Variant="outlined">
+                            @L["LocalSigninDisabledWarning"]
+                        </K7Alert>
+                    }
+                </section>
+
+                <K7Divider />
+            }
+
+            <section class="d-flex flex-col gap-4">
+                <div>
+                    <h6 class="mb-1">@L["PasswordPolicyTitle"]</h6>
+                    <span class="text-caption" Color="secondary">@L["PasswordPolicyHelp"]</span>
+                </div>
+
+                <div>
+                    <K7TextField TValue="int" Label="@L["RequiredLength"]" Value="_policy.RequiredLength"
+                                 ValueChanged="OnRequiredLengthChanged" Type="number" />
+                    <span class="text-caption mt-1" Color="secondary">@L["RequiredLengthHint"]</span>
+                </div>
+
+                <div>
+                    <K7TextField TValue="int" Label="@L["RequiredUniqueChars"]" Value="_policy.RequiredUniqueChars"
+                                 ValueChanged="OnRequiredUniqueCharsChanged" Type="number" />
+                    <span class="text-caption mt-1" Color="secondary">@L["RequiredUniqueCharsHint"]</span>
+                </div>
+
+                <K7Switch Label="@L["RequireDigit"]" Value="_policy.RequireDigit"
+                          ValueChanged="OnRequireDigitChanged" />
+                <K7Switch Label="@L["RequireLowercase"]" Value="_policy.RequireLowercase"
+                          ValueChanged="OnRequireLowercaseChanged" />
+                <K7Switch Label="@L["RequireUppercase"]" Value="_policy.RequireUppercase"
+                          ValueChanged="OnRequireUppercaseChanged" />
+                <K7Switch Label="@L["RequireNonAlphanumeric"]" Value="_policy.RequireNonAlphanumeric"
+                          ValueChanged="OnRequireNonAlphanumericChanged" />
+            </section>
+        </div>
+
+        <K7SettingsActionBar IsDirty="IsDirty"
+                             IsSaving="_saving"
+                             ResetDisabled="ResetDisabled"
+                             OnSave="SaveAsync"
+                             OnCancel="CancelChanges"
+                             OnResetToDefaults="ResetAsync" />
     </div>
 }

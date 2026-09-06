@@ -28,5 +28,17 @@
   <data name="Provider" xml:space="preserve"><value>Provider</value></data>
   <data name="AutoAccountCreation" xml:space="preserve"><value>Automatic account creation</value></data>
   <data name="LocalSigninDisabledWarning" xml:space="preserve"><value>Local sign-in is disabled. Users will be automatically redirected to the OIDC provider.</value></data>
+  <data name="PasswordPolicyTitle" xml:space="preserve"><value>Password complexity</value></data>
+  <data name="PasswordPolicyHelp" xml:space="preserve"><value>These rules apply to local account passwords (create user, reset, change, registration, and setup). Save to apply the new rules.</value></data>
+  <data name="RequiredLength" xml:space="preserve"><value>Minimum length</value></data>
+  <data name="RequiredLengthHint" xml:space="preserve"><value>Between 1 and 128 characters.</value></data>
+  <data name="RequiredUniqueChars" xml:space="preserve"><value>Minimum distinct characters</value></data>
+  <data name="RequiredUniqueCharsHint" xml:space="preserve"><value>Must not exceed the minimum length.</value></data>
+  <data name="RequireDigit" xml:space="preserve"><value>Require a digit</value></data>
+  <data name="RequireLowercase" xml:space="preserve"><value>Require a lowercase letter</value></data>
+  <data name="RequireUppercase" xml:space="preserve"><value>Require an uppercase letter</value></data>
+  <data name="RequireNonAlphanumeric" xml:space="preserve"><value>Require a special character</value></data>
+  <data name="SaveSuccess" xml:space="preserve"><value>Password policy saved</value></data>
+  <data name="ResetSuccess" xml:space="preserve"><value>Password policy reset</value></data>
 </root>
 

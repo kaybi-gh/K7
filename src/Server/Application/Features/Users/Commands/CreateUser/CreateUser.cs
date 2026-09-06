@@ -1,10 +1,12 @@
+using FluentValidation.Results;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Mappings;
 using K7.Server.Application.Common.Security;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities.Users;
 using K7.Shared.Dtos.Users;
-using Microsoft.EntityFrameworkCore;
+using K7.Shared.Security;
+using ValidationException = K7.Server.Application.Common.Exceptions.ValidationException;
 
 namespace K7.Server.Application.Features.Users.Commands.CreateUser;
 
@@ -17,19 +19,24 @@ public record CreateUserCommand : IRequest<UserDto>
     public string? Email { get; init; }
 }
 
-public class CreateUserCommandHandler(IApplicationDbContext context, IIdentityService identityService)
+public class CreateUserCommandHandler(
+    IApplicationDbContext context,
+    IIdentityService identityService,
+    IPasswordPolicyService passwordPolicy)
     : IRequestHandler<CreateUserCommand, UserDto>
 {
     public async Task<UserDto> Handle(CreateUserCommand request, CancellationToken cancellationToken)
     {
-        var password = request.Password ?? Guid.NewGuid().ToString("N") + "A!1";
+        var policy = await passwordPolicy.GetAsync(cancellationToken);
+        var password = string.IsNullOrWhiteSpace(request.Password)
+            ? PasswordPolicy.Generate(policy)
+            : request.Password;
         var email = string.IsNullOrWhiteSpace(request.Email) ? null : request.Email.Trim();
         var (result, identityUserId) = await identityService.CreateUserAsync(request.Username, password, email);
 
         if (!result.Succeeded)
         {
-            throw new ValidationException(result.Errors.Select(e =>
-                new FluentValidation.Results.ValidationFailure("Username", e)).ToList());
+            throw new ValidationException(result.Errors.Select(MapIdentityFailure));
         }
 
         await identityService.SetRoleAsync(identityUserId, request.Role);
@@ -54,5 +61,16 @@ public class CreateUserCommandHandler(IApplicationDbContext context, IIdentitySe
         created.Role = request.Role;
 
         return created.ToUserDto();
+    }
+
+    private static ValidationFailure MapIdentityFailure(string error)
+    {
+        var property = error.Contains("Password", StringComparison.OrdinalIgnoreCase)
+            ? "Password"
+            : error.Contains("Email", StringComparison.OrdinalIgnoreCase)
+                ? "Email"
+                : "Username";
+
+        return new ValidationFailure(property, error);
     }
 }

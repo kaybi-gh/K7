@@ -69,6 +69,8 @@ When using `POSTGRES_PASSWORD_FILE`, do not also set `POSTGRES_PASSWORD` on the 
 
 These flags are **config-only** (shown read-only under Admin -> Authentication). Changing them requires restart.
 
+**Password complexity** is not set in appsettings. Defaults are length 10, uppercase, lowercase, a digit, and 4 distinct characters (special characters optional). Administrators can change these under Admin -> Authentication. Save to apply the new rules to create / reset / change password, registration, and setup.
+
 **Username vs email:** the stable login id is `UserName`. Email is optional (setup, register, admin create, Settings). When an email is set it must be unique across users; empty emails are allowed for multiple users. Sign-in accepts username, and also email as a lookup fallback. Updating email does not rename the username.
 
 **Admin create / register / setup:** username required; email optional. No placeholder emails such as `user@local` are synthesized.

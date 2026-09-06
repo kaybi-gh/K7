@@ -28,5 +28,17 @@
   <data name="Provider" xml:space="preserve"><value>Fournisseur</value></data>
   <data name="AutoAccountCreation" xml:space="preserve"><value>Création automatique de compte</value></data>
   <data name="LocalSigninDisabledWarning" xml:space="preserve"><value>La connexion locale est désactivée. Les utilisateurs seront automatiquement redirigés vers le fournisseur OIDC.</value></data>
+  <data name="PasswordPolicyTitle" xml:space="preserve"><value>Complexité des mots de passe</value></data>
+  <data name="PasswordPolicyHelp" xml:space="preserve"><value>Ces règles s'appliquent aux mots de passe des comptes locaux (création, réinitialisation, changement, inscription et installation). Enregistrez pour appliquer les nouvelles règles.</value></data>
+  <data name="RequiredLength" xml:space="preserve"><value>Longueur minimale</value></data>
+  <data name="RequiredLengthHint" xml:space="preserve"><value>Entre 1 et 128 caractères.</value></data>
+  <data name="RequiredUniqueChars" xml:space="preserve"><value>Nombre minimal de caractères distincts</value></data>
+  <data name="RequiredUniqueCharsHint" xml:space="preserve"><value>Ne doit pas dépasser la longueur minimale.</value></data>
+  <data name="RequireDigit" xml:space="preserve"><value>Exiger un chiffre</value></data>
+  <data name="RequireLowercase" xml:space="preserve"><value>Exiger une minuscule</value></data>
+  <data name="RequireUppercase" xml:space="preserve"><value>Exiger une majuscule</value></data>
+  <data name="RequireNonAlphanumeric" xml:space="preserve"><value>Exiger un caractère spécial</value></data>
+  <data name="SaveSuccess" xml:space="preserve"><value>Politique de mot de passe enregistrée</value></data>
+  <data name="ResetSuccess" xml:space="preserve"><value>Politique de mot de passe réinitialisée</value></data>
 </root>
 
