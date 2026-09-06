@@ -1,3 +1,5 @@
+using System.Net;
+using System.Net.Http;
 using K7.Clients.Shared.Interfaces;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
@@ -7,6 +9,7 @@ namespace K7.Clients.Shared.UI.Layout;
 public class K7ErrorBoundary : ErrorBoundary
 {
     [Inject] private IClientErrorReporter ErrorReporter { get; set; } = default!;
+    [Inject] private NavigationManager Navigation { get; set; } = default!;
 
     private DateTime _lastErrorTime;
     private int _errorCount;
@@ -18,6 +21,20 @@ public class K7ErrorBoundary : ErrorBoundary
     {
         if (exception is OperationCanceledException)
         {
+            _ = InvokeAsync(Recover);
+            return Task.CompletedTask;
+        }
+
+        if (exception is HttpRequestException { StatusCode: HttpStatusCode.Forbidden })
+        {
+            try
+            {
+                Navigation.NavigateTo("/", replace: true);
+            }
+            catch
+            {
+            }
+
             _ = InvokeAsync(Recover);
             return Task.CompletedTask;
         }

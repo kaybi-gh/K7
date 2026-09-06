@@ -14,14 +14,7 @@
                 <NotAuthorized>
                     @if (context.User.Identity?.IsAuthenticated == true)
                     {
-                        <div class="container">
-                            <div class="d-flex flex-col">
-                                <K7Icon Icon="@Phosphor.Lock" IconSize="@K7IconSize.Lg" Color="warning" />
-                                <h5>Access denied</h5>
-                                <p Color="secondary">You don't have permission to access this page.</p>
-                                <K7Button Href="/" Variant="filled" Color="primary">Go to Home</K7Button>
-                            </div>
-                        </div>
+                        <AccessDenied />
                     }
                     else
                     {

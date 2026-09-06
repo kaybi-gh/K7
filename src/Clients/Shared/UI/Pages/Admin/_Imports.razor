@@ -1,3 +1,6 @@
 @using K7.Clients.Shared.UI.Pages.Admin.Panels
 @using K7.Clients.Shared.UI.Pages.Admin.Components
 @using K7.Clients.Shared.UI.Pages.Admin.Dialogs
+@using K7.Server.Domain.Constants
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = Roles.Administrator)]
