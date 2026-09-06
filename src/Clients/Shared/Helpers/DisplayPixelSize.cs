@@ -1,8 +1,8 @@
 namespace K7.Clients.Shared.Helpers;
 
 /// <summary>
-/// MAUI <c>DeviceDisplay</c> reports DIP. Direct Play compared that to video
-/// pixel height, so a 1080p panel at 150% scale looked like 720p.
+/// MAUI <c>DeviceDisplay</c> reports DIP in Width/Height. Physical pixels are
+/// DIP * Density. Keep both on the device: screen = DIP, resolution = pixels.
 /// </summary>
 public static class DisplayPixelSize
 {
@@ -18,5 +18,17 @@ public static class DisplayPixelSize
         return landscape
             ? (pixelWidth, pixelHeight)
             : (pixelHeight, pixelWidth);
+    }
+
+    public static (double ScreenWidth, double ScreenHeight, double ResolutionWidth, double ResolutionHeight) FromDisplay(
+        double dipWidth,
+        double dipHeight,
+        double density,
+        bool landscape)
+    {
+        var screenWidth = landscape ? dipWidth : dipHeight;
+        var screenHeight = landscape ? dipHeight : dipWidth;
+        var (resolutionWidth, resolutionHeight) = FromDip(dipWidth, dipHeight, density, landscape);
+        return (screenWidth, screenHeight, resolutionWidth, resolutionHeight);
     }
 }

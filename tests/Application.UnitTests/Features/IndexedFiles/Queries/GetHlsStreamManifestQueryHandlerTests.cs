@@ -7,6 +7,8 @@ using K7.Server.Domain.Entities.Metadatas.Files;
 using K7.Server.Domain.Entities.Metadatas.Files.Tracks;
 using K7.Server.Domain.Enums;
 using K7.Server.Infrastructure.Database.Context.Data;
+using K7.Shared.Dtos;
+using K7.Shared.Enums;
 using MediatR;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
@@ -174,6 +176,34 @@ public class GetHlsStreamManifestQueryHandlerTests
         playlist.Should().Contain("mp4a.");
         playlist.Should().Contain("CHANNELS=");
         playlist.Should().Contain("CLOSED-CAPTIONS=NONE");
+        playlist.Should().Contain("video/original/index.m3u8");
+    }
+
+    [Test]
+    public async Task Handle_ShouldApplyDisplayEncodeCap_WhenOriginalQualityAndDecisionIsCapped()
+    {
+        var sessionId = Guid.NewGuid();
+        _streamTracker.UpdateStreamDecision(sessionId, new StreamDecisionDto
+        {
+            Mode = PlaybackMode.Transcode,
+            Reason = TranscodeReason.VideoCodecNotSupported | TranscodeReason.QualityDownscale,
+            StreamVideoCodec = "h264",
+            StreamResolution = "1280x720"
+        });
+
+        var result = await _handler.Handle(new GetHlsStreamManifestQuery
+        {
+            Id = _indexedFileId,
+            StreamSessionId = sessionId,
+            TranscodingVideoCodec = "h264",
+            Quality = "original",
+            VideoCodecsOnly = true
+        }, CancellationToken.None);
+
+        var playlist = ((TextHttpContentResult)result).Content;
+        playlist.Should().Contain("video/720p/index.m3u8");
+        playlist.Should().Contain("RESOLUTION=1280x720");
+        playlist.Should().NotContain("video/original/index.m3u8");
     }
 
     [Test]

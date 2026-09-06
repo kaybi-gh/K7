@@ -291,10 +291,16 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Property<string>("DeviceUniqueId")
                         .HasColumnType("TEXT");
 
-                    b.Property<double>("DisplayHeight")
+                    b.Property<double>("DisplayResolutionHeight")
                         .HasColumnType("REAL");
 
-                    b.Property<double>("DisplayWidth")
+                    b.Property<double>("DisplayResolutionWidth")
+                        .HasColumnType("REAL");
+
+                    b.Property<double>("DisplayScreenHeight")
+                        .HasColumnType("REAL");
+
+                    b.Property<double>("DisplayScreenWidth")
                         .HasColumnType("REAL");
 
                     b.Property<string>("LastModified")

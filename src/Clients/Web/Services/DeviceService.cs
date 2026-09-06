@@ -22,8 +22,10 @@ public class DeviceService(IJSRuntime jsRuntime, IMediaService mediaService, IDe
     {
         var parsedUserAgent = await jsRuntime.InvokeAsync<ParsedUserAgent>("getParsedUserAgent")
             ?? new ParsedUserAgent();
-        var displayHeight = await jsRuntime.InvokeAsync<int>("getDisplayHeight");
-        var displayWidth = await jsRuntime.InvokeAsync<int>("getDisplayWidth");
+        var displayScreenHeight = await jsRuntime.InvokeAsync<int>("getDisplayScreenHeight");
+        var displayScreenWidth = await jsRuntime.InvokeAsync<int>("getDisplayScreenWidth");
+        var displayResolutionHeight = await jsRuntime.InvokeAsync<int>("getDisplayResolutionHeight");
+        var displayResolutionWidth = await jsRuntime.InvokeAsync<int>("getDisplayResolutionWidth");
         var supportedMediaFormats = await GetSupportedMediaFormatsAsync();
         var videoProfileTokens = await GetSupportedVideoProfilesAsync();
         var webDeviceDetails = await GetWebDeviceDetailsAsync(parsedUserAgent);
@@ -41,8 +43,10 @@ public class DeviceService(IJSRuntime jsRuntime, IMediaService mediaService, IDe
             DeviceType = deviceType,
             OperatingSystem = operatingSystem,
             OperatingSystemVersion = webDeviceDetails.RawOperatingSystemVersion,
-            DisplayHeight = displayHeight,
-            DisplayWidth = displayWidth,
+            DisplayScreenHeight = displayScreenHeight,
+            DisplayScreenWidth = displayScreenWidth,
+            DisplayResolutionHeight = displayResolutionHeight,
+            DisplayResolutionWidth = displayResolutionWidth,
             NativeDeviceDetails = null,
             WebDeviceDetails = webDeviceDetails,
             PlaybackCapabilities = new CreateDeviceRequestPlaybackCapibilities()

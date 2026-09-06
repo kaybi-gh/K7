@@ -10,8 +10,14 @@ public class Device : BaseAuditableEntity
     public DeviceType DeviceType { get; set; } = DeviceType.Unknown;
     public OperatingSystem OperatingSystem { get; set; } = OperatingSystem.Unknown;
     public string? OperatingSystemVersion { get; set; }
-    public double DisplayHeight { get; set; }
-    public double DisplayWidth { get; set; }
+    /// <summary>Logical screen size in CSS pixels (web) or DIP (native).</summary>
+    public double DisplayScreenHeight { get; set; }
+    /// <summary>Logical screen size in CSS pixels (web) or DIP (native).</summary>
+    public double DisplayScreenWidth { get; set; }
+    /// <summary>Physical pixel height (CSS * DPR, or DIP * density).</summary>
+    public double DisplayResolutionHeight { get; set; }
+    /// <summary>Physical pixel width (CSS * DPR, or DIP * density).</summary>
+    public double DisplayResolutionWidth { get; set; }
     public NativeDeviceDetails? NativeDeviceDetails { get; set; }
     public WebDeviceDetails? WebDeviceDetails { get; set; }
     public DevicePlaybackCapabilities PlaybackCapabilities { get; set; } = new();

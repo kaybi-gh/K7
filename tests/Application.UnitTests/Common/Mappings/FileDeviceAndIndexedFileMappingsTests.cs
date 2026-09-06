@@ -150,4 +150,26 @@ public class FileDeviceAndIndexedFileMappingsTests
         dto.SupportedMediaFormats.Should().HaveCount(2);
         dto.SupportedMediaFormats.Select(f => f.Id).Should().Contain(["audio-mp3-mp3", "video-mp4-aac-h264"]);
     }
+
+    [Test]
+    public void ToDeviceDto_ShouldMapScreenAndResolution()
+    {
+        var device = new Device
+        {
+            Id = Guid.NewGuid(),
+            ClientType = ClientType.Web,
+            DisplayScreenWidth = 1280,
+            DisplayScreenHeight = 720,
+            DisplayResolutionWidth = 1920,
+            DisplayResolutionHeight = 1080,
+            PlaybackCapabilities = new DevicePlaybackCapabilities()
+        };
+
+        var dto = device.ToDeviceDto();
+
+        dto.DisplayScreenWidth.Should().Be(1280);
+        dto.DisplayScreenHeight.Should().Be(720);
+        dto.DisplayResolutionWidth.Should().Be(1920);
+        dto.DisplayResolutionHeight.Should().Be(1080);
+    }
 }

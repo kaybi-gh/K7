@@ -11,8 +11,10 @@ public sealed record UpdateDeviceRequest
     public DeviceType DeviceType { get; init; }
     public OperatingSystem OperatingSystem { get; init; }
     public string? OperatingSystemVersion { get; init; }
-    public double DisplayHeight { get; init; }
-    public double DisplayWidth { get; init; }
+    public double DisplayScreenHeight { get; init; }
+    public double DisplayScreenWidth { get; init; }
+    public double DisplayResolutionHeight { get; init; }
+    public double DisplayResolutionWidth { get; init; }
     public NativeDeviceDetailsDto? NativeDeviceDetails { get; init; }
     public WebDeviceDetailsDto? WebDeviceDetails { get; init; }
     public required CreateDeviceRequestPlaybackCapibilities PlaybackCapabilities { get; init; }

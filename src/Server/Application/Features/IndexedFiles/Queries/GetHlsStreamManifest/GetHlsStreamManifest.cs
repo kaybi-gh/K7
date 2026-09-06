@@ -168,7 +168,12 @@ public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamMani
         }
 
         if (indexedFile.FileMetadata is VideoFileMetadata videoMetadataForQuality)
+        {
+            query.Quality = DisplayEncodeCap.ResolveJobQuality(
+                query.Quality,
+                _activeStreamTracker.GetStreamInfo(query.StreamSessionId)?.StreamDecision);
             ApplyQualityDownscaleIfRequested(videoMetadataForQuality, query);
+        }
 
         if (indexedFile.FileMetadata is VideoFileMetadata)
         {

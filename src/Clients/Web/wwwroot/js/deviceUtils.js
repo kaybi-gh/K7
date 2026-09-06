@@ -29,10 +29,16 @@ window.getParsedUserAgent = () => {
     }
 };
 
-window.getDisplayHeight = () => {
-    return window.screen.height;
+window.getDisplayScreenHeight = () => window.screen.height;
+
+window.getDisplayScreenWidth = () => window.screen.width;
+
+window.getDisplayResolutionHeight = () => {
+    const dpr = window.devicePixelRatio || 1;
+    return Math.round(window.screen.height * dpr);
 };
 
-window.getDisplayWidth = () => {
-    return window.screen.width;
+window.getDisplayResolutionWidth = () => {
+    const dpr = window.devicePixelRatio || 1;
+    return Math.round(window.screen.width * dpr);
 };

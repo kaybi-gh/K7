@@ -50,8 +50,10 @@ public class CreateDeviceCommandHandler : IRequestHandler<CreateDeviceCommand, H
             DeviceType = request.CreateDeviceRequest.DeviceType,
             OperatingSystem = request.CreateDeviceRequest.OperatingSystem,
             OperatingSystemVersion = request.CreateDeviceRequest.OperatingSystemVersion,
-            DisplayHeight = request.CreateDeviceRequest.DisplayHeight,
-            DisplayWidth = request.CreateDeviceRequest.DisplayWidth,
+            DisplayScreenHeight = request.CreateDeviceRequest.DisplayScreenHeight,
+            DisplayScreenWidth = request.CreateDeviceRequest.DisplayScreenWidth,
+            DisplayResolutionHeight = request.CreateDeviceRequest.DisplayResolutionHeight,
+            DisplayResolutionWidth = request.CreateDeviceRequest.DisplayResolutionWidth,
             PlaybackCapabilities = new DevicePlaybackCapabilities
             {
                 SupportedMediaFormatIds = request.CreateDeviceRequest.PlaybackCapabilities.SupportedMediaFormatIds?.ToList() ?? [],

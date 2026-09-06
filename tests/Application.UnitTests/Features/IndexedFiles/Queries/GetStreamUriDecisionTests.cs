@@ -257,7 +257,8 @@ public class GetStreamUriDecisionTests
             ["audio-matroska-aac", "video-matroska-aac-hevc"],
             ClientType.Native,
             OperatingSystem.Windows);
-        device.DisplayHeight = 720;
+        device.DisplayScreenHeight = 720;
+        device.DisplayResolutionHeight = 1080;
         var (indexedFile, metadata) = CreateVideoFile("matroska", "hevc", "aac");
         var videoTrack = metadata.VideoTracks.First();
         videoTrack.Width = 3840;
@@ -277,13 +278,14 @@ public class GetStreamUriDecisionTests
     }
 
     [Test]
-    public void GetVideoFileStreamUri_ShouldTranscode_WhenWebResolutionExceedsDisplayHeight()
+    public void GetVideoFileStreamUri_ShouldRemux_WhenWebResolutionExceedsDisplayHeight()
     {
         var device = CreateDevice(
             ["audio-mp4-aac", "video-mp4-aac-h264"],
             ClientType.Web,
             OperatingSystem.Unknown);
-        device.DisplayHeight = 720;
+        device.DisplayScreenHeight = 720;
+        device.DisplayResolutionHeight = 1080;
         var (indexedFile, metadata) = CreateVideoFile("mp4", "h264", "aac");
         var request = new GetStreamUriQuery
         {
@@ -292,12 +294,145 @@ public class GetStreamUriDecisionTests
             AudioTrackIndex = 0
         };
 
-        var (_, decision) = GetStreamUriQueryHandler.GetVideoFileStreamUri(
+        var (uri, decision) = GetStreamUriQueryHandler.GetVideoFileStreamUri(
+            device, indexedFile, metadata, request, hlsSegmentsAvailable: true, subtitleTrackIndex: null);
+
+        decision.Mode.Should().Be(PlaybackMode.Transmux);
+        decision.Reason.Should().Be(TranscodeReason.None);
+        decision.StreamVideoCodec.Should().Be("h264");
+        uri.Uri.ToString().Should().NotContain("TranscodingVideoCodec=");
+        uri.Uri.ToString().Should().NotContain("Quality=");
+    }
+
+    [Test]
+    public void GetVideoFileStreamUri_ShouldRemux4K_WhenWebDisplayIs1080pAndCodecSupported()
+    {
+        var device = CreateDevice(
+            ["audio-mp4-aac", "video-mp4-aac-h264", "video-mp4-aac-hevc"],
+            ClientType.Web,
+            OperatingSystem.Unknown);
+        device.DisplayScreenHeight = 1080;
+        device.DisplayResolutionHeight = 1080;
+        var (indexedFile, metadata) = CreateVideoFile("matroska", "hevc", "aac");
+        var videoTrack = metadata.VideoTracks.First();
+        videoTrack.Width = 3840;
+        videoTrack.Height = 2160;
+        videoTrack.Profile = "Main";
+        videoTrack.BitDepth = 8;
+        metadata.VideoResolution = VideoResolutionIdentifier._2160p;
+        var request = new GetStreamUriQuery
+        {
+            Id = indexedFile.Id,
+            StreamSessionId = Guid.NewGuid(),
+            AudioTrackIndex = 0
+        };
+
+        var (uri, decision) = GetStreamUriQueryHandler.GetVideoFileStreamUri(
+            device, indexedFile, metadata, request, hlsSegmentsAvailable: true, subtitleTrackIndex: null);
+
+        decision.Mode.Should().Be(PlaybackMode.Transmux);
+        decision.Reason.Should().Be(TranscodeReason.None);
+        decision.StreamVideoCodec.Should().Be("hevc");
+        uri.Uri.ToString().Should().NotContain("TranscodingVideoCodec=");
+    }
+
+    [Test]
+    public void GetVideoFileStreamUri_ShouldCapEncodeToDisplay_WhenWebMustTranscode4K()
+    {
+        var device = CreateDevice(
+            ["audio-mp4-aac", "video-mp4-aac-h264", "video-mp4-aac-hevc"],
+            ClientType.Web,
+            OperatingSystem.Unknown);
+        device.DisplayScreenHeight = 720;
+        device.DisplayResolutionHeight = 1080;
+        var (indexedFile, metadata) = CreateVideoFile("matroska", "hevc", "aac");
+        var main10Track = metadata.VideoTracks.First();
+        main10Track.Width = 3840;
+        main10Track.Height = 2160;
+        main10Track.Profile = "Main 10";
+        main10Track.BitDepth = 10;
+        metadata.VideoResolution = VideoResolutionIdentifier._2160p;
+        var request = new GetStreamUriQuery
+        {
+            Id = indexedFile.Id,
+            StreamSessionId = Guid.NewGuid(),
+            AudioTrackIndex = 0
+        };
+
+        var (uri, decision) = GetStreamUriQueryHandler.GetVideoFileStreamUri(
             device, indexedFile, metadata, request, hlsSegmentsAvailable: true, subtitleTrackIndex: null);
 
         decision.Mode.Should().Be(PlaybackMode.Transcode);
-        decision.Reason.Should().HaveFlag(TranscodeReason.ResolutionNotSupported);
+        decision.Reason.Should().HaveFlag(TranscodeReason.VideoCodecNotSupported);
+        decision.Reason.Should().HaveFlag(TranscodeReason.QualityDownscale);
+        decision.Reason.Should().NotHaveFlag(TranscodeReason.ResolutionNotSupported);
         decision.StreamVideoCodec.Should().Be("h264");
+        decision.StreamResolution.Should().Be("1920x1080");
+        uri.Uri.ToString().Should().Contain("Quality=1080p");
+        uri.Uri.ToString().Should().Contain("TranscodingVideoCodec=h264");
+    }
+
+    [Test]
+    public void GetVideoFileStreamUri_ShouldCapEncodeToResolution_WhenWindowsHlsMustTranscode4K()
+    {
+        var device = CreateDevice(
+            ["audio-mp4-aac", "video-mp4-aac-h264"],
+            ClientType.Native,
+            OperatingSystem.Windows);
+        device.DisplayScreenHeight = 720;
+        device.DisplayResolutionHeight = 1080;
+        var (indexedFile, metadata) = CreateVideoFile("matroska", "hevc", "aac");
+        var videoTrack = metadata.VideoTracks.First();
+        videoTrack.Width = 3840;
+        videoTrack.Height = 2160;
+        metadata.VideoResolution = VideoResolutionIdentifier._2160p;
+        var request = new GetStreamUriQuery
+        {
+            Id = indexedFile.Id,
+            StreamSessionId = Guid.NewGuid(),
+            AudioTrackIndex = 0
+        };
+
+        var (uri, decision) = GetStreamUriQueryHandler.GetVideoFileStreamUri(
+            device, indexedFile, metadata, request, hlsSegmentsAvailable: true, subtitleTrackIndex: null);
+
+        decision.Mode.Should().Be(PlaybackMode.Transcode);
+        decision.Reason.Should().HaveFlag(TranscodeReason.QualityDownscale);
+        decision.StreamResolution.Should().Be("1920x1080");
+        uri.Uri.ToString().Should().Contain("Quality=1080p");
+    }
+
+    [Test]
+    public void GetVideoFileStreamUri_ShouldNotCapEncode_WhenResolutionHeightIsMissing()
+    {
+        var device = CreateDevice(
+            ["audio-mp4-aac", "video-mp4-aac-h264", "video-mp4-aac-hevc"],
+            ClientType.Web,
+            OperatingSystem.Unknown);
+        device.DisplayScreenHeight = 720;
+        device.DisplayResolutionHeight = 0;
+        var (indexedFile, metadata) = CreateVideoFile("matroska", "hevc", "aac");
+        var main10Track = metadata.VideoTracks.First();
+        main10Track.Width = 3840;
+        main10Track.Height = 2160;
+        main10Track.Profile = "Main 10";
+        main10Track.BitDepth = 10;
+        metadata.VideoResolution = VideoResolutionIdentifier._2160p;
+        var request = new GetStreamUriQuery
+        {
+            Id = indexedFile.Id,
+            StreamSessionId = Guid.NewGuid(),
+            AudioTrackIndex = 0
+        };
+
+        var (uri, decision) = GetStreamUriQueryHandler.GetVideoFileStreamUri(
+            device, indexedFile, metadata, request, hlsSegmentsAvailable: true, subtitleTrackIndex: null);
+
+        decision.Mode.Should().Be(PlaybackMode.Transcode);
+        decision.Reason.Should().HaveFlag(TranscodeReason.VideoCodecNotSupported);
+        decision.Reason.Should().NotHaveFlag(TranscodeReason.QualityDownscale);
+        decision.StreamResolution.Should().BeNull();
+        uri.Uri.ToString().Should().NotContain("Quality=");
     }
 
     [Test]

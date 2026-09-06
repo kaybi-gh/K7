@@ -137,6 +137,12 @@ names. Labels not covered by `IStringLocalizer<SharedResource>` use hard-coded F
 Player quality options: **Original (Np)** is remux / bitstream copy when the client cannot
 Direct Play the file. The ladder also offers the same height as a bitrate-capped encode
 (e.g. `1080p` next to `Original (1080p)`), then lower rungs (`720p`, `480p`, ...).
+Web does not transcode just because the source is taller than the screen. The browser
+decodes and scales. Devices report both logical screen size (`DisplayScreenHeight`,
+CSS pixels or DIP) and physical pixels (`DisplayResolutionHeight`, CSS * DPR or DIP *
+density). When an encode is already required (unsupported codec, burn-in, missing HLS
+segments), GetStreamUri caps output to the largest ladder rung that fits
+`DisplayResolutionHeight` so a 4K file on a 1080p client is not re-encoded at 4K.
 
 Direct Play (muxed file, no ffmpeg) is used on native Android/iOS/Mac/Windows when the device
 reports the source container plus both codecs. Android also sends extra `vprofile:` tokens
@@ -164,7 +170,8 @@ or DASH instead:
 - [Audio Tracks](https://docs.videojs.com/tutorial-audio-tracks.html) (switch is not handled by Video.js, VHS/HLS only)
 
 The Web client always takes demuxed HLS (remux copy, or encode if the codec is not
-HLS-compatible). GetStreamUri starts the video and audio ffmpeg jobs as soon as the
+HLS-compatible). A 4K HEVC file on a 1080p monitor remuxes when MSE accepts the
+codec. Encode (when required) is capped to the display ladder rung. GetStreamUri starts the video and audio ffmpeg jobs as soon as the
 session is created so Video.js is not waiting on a cold `init.m4s` after its playlist
 waterfall. Web advertises video codecs from `MediaSource.isTypeSupported`
 on fMP4 strings (`hvc1...`), not `<video>.canPlayType` (progressive `hev1`). HEVC Main

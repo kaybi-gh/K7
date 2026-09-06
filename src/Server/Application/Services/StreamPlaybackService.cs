@@ -143,6 +143,11 @@ public sealed class StreamPlaybackService(
         GetHlsVideoStreamSegmentQuery query,
         CancellationToken cancellationToken = default)
     {
+        var quality = DisplayEncodeCap.ResolveJobQuality(
+            query.Quality,
+            activeStreamTracker.GetStreamInfo(query.StreamSessionId)?.StreamDecision);
+        query = query with { Quality = quality };
+
         if (query.Quality != "original")
         {
             var qualityDef = Constants.VideoQualities.FirstOrDefault(kvp => kvp.Value.Name == query.Quality);
@@ -563,11 +568,12 @@ public sealed class StreamPlaybackService(
             var burnIn = streamDecision.IsSubtitleBurnIn
                 ? streamDecision.SelectedSubtitleTrackIndex
                 : null;
+            var prefetchQuality = DisplayEncodeCap.ResolveJobQuality("original", streamDecision);
 
             var videoJob = await transcodeJobManager.GetOrStartJobAsync(
                 indexedFile.Id,
                 indexedFile.Path,
-                quality: "original",
+                quality: prefetchQuality,
                 videoCodec,
                 audioCodec: null,
                 audioTrackIndex: 0,

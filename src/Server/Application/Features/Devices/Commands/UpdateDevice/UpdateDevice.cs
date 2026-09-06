@@ -29,8 +29,10 @@ public class UpdateDeviceCommandHandler(
         entity.DeviceType = update.DeviceType;
         entity.OperatingSystem = update.OperatingSystem;
         entity.OperatingSystemVersion = update.OperatingSystemVersion;
-        entity.DisplayHeight = update.DisplayHeight;
-        entity.DisplayWidth = update.DisplayWidth;
+        entity.DisplayScreenHeight = update.DisplayScreenHeight;
+        entity.DisplayScreenWidth = update.DisplayScreenWidth;
+        entity.DisplayResolutionHeight = update.DisplayResolutionHeight;
+        entity.DisplayResolutionWidth = update.DisplayResolutionWidth;
         entity.PlaybackCapabilities = new DevicePlaybackCapabilities
         {
             SupportedMediaFormatIds = update.PlaybackCapabilities.SupportedMediaFormatIds?.ToList() ?? [],

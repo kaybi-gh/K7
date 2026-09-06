@@ -17,8 +17,10 @@ public class DeviceUpdatedEventDescriptor : INotificationEventDescriptor
         new("Device.ClientType", "Client Type", "String"),
         new("Device.OperatingSystem", "Operating System", "String"),
         new("Device.OperatingSystemVersion", "OS Version", "String"),
-        new("Device.DisplayWidth", "Display Width", "Float"),
-        new("Device.DisplayHeight", "Display Height", "Float"),
+        new("Device.DisplayScreenWidth", "Display Screen Width", "Float"),
+        new("Device.DisplayScreenHeight", "Display Screen Height", "Float"),
+        new("Device.DisplayResolutionWidth", "Display Resolution Width", "Float"),
+        new("Device.DisplayResolutionHeight", "Display Resolution Height", "Float"),
         new("Device.LastSeen", "Last Seen", "String"),
     ];
 }

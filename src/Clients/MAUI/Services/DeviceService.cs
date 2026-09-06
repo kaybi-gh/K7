@@ -35,7 +35,7 @@ public class DeviceService(ICodecService codecHelper, IDeviceIdService deviceIdS
         var nativeDeviceDetails = await GetNativeDeviceDetailsAsync();
         var displayInfo = await MainThread.InvokeOnMainThreadAsync(() => DeviceDisplay.MainDisplayInfo);
         var landscape = displayInfo.Orientation == DisplayOrientation.Landscape;
-        var (displayWidth, displayHeight) = DisplayPixelSize.FromDip(
+        var (screenWidth, screenHeight, resolutionWidth, resolutionHeight) = DisplayPixelSize.FromDisplay(
             displayInfo.Width,
             displayInfo.Height,
             displayInfo.Density,
@@ -50,8 +50,10 @@ public class DeviceService(ICodecService codecHelper, IDeviceIdService deviceIdS
             DeviceType = _cachedDeviceType,
             OperatingSystem = operatingSystem,
             OperatingSystemVersion = nativeDeviceDetails.RawVersion,
-            DisplayHeight = displayHeight,
-            DisplayWidth = displayWidth,
+            DisplayScreenHeight = screenHeight,
+            DisplayScreenWidth = screenWidth,
+            DisplayResolutionHeight = resolutionHeight,
+            DisplayResolutionWidth = resolutionWidth,
             NativeDeviceDetails = nativeDeviceDetails,
             WebDeviceDetails = null,
             PlaybackCapabilities = new CreateDeviceRequestPlaybackCapibilities()

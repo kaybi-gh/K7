@@ -290,10 +290,16 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.Property<string>("DeviceUniqueId")
                         .HasColumnType("text");
 
-                    b.Property<double>("DisplayHeight")
+                    b.Property<double>("DisplayResolutionHeight")
                         .HasColumnType("double precision");
 
-                    b.Property<double>("DisplayWidth")
+                    b.Property<double>("DisplayResolutionWidth")
+                        .HasColumnType("double precision");
+
+                    b.Property<double>("DisplayScreenHeight")
+                        .HasColumnType("double precision");
+
+                    b.Property<double>("DisplayScreenWidth")
                         .HasColumnType("double precision");
 
                     b.Property<DateTimeOffset>("LastModified")

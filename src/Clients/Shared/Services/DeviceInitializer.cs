@@ -99,8 +99,10 @@ public static class DeviceInitializer
             DeviceType = createRequest.DeviceType,
             OperatingSystem = createRequest.OperatingSystem,
             OperatingSystemVersion = createRequest.OperatingSystemVersion,
-            DisplayHeight = createRequest.DisplayHeight,
-            DisplayWidth = createRequest.DisplayWidth,
+            DisplayScreenHeight = createRequest.DisplayScreenHeight,
+            DisplayScreenWidth = createRequest.DisplayScreenWidth,
+            DisplayResolutionHeight = createRequest.DisplayResolutionHeight,
+            DisplayResolutionWidth = createRequest.DisplayResolutionWidth,
             NativeDeviceDetails = createRequest.NativeDeviceDetails,
             WebDeviceDetails = createRequest.WebDeviceDetails,
             PlaybackCapabilities = createRequest.PlaybackCapabilities

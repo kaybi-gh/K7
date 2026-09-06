@@ -88,9 +88,13 @@
 
                                         <p class="text-sm device-card-os" Color="secondary">
                                             @device.OperatingSystem @device.OperatingSystemVersion
-                                            @if (device.DisplayWidth > 0 && device.DisplayHeight > 0)
+                                            @if (device.DisplayResolutionWidth > 0 && device.DisplayResolutionHeight > 0)
                                             {
-                                                <text> - @($"{device.DisplayWidth:0}x{device.DisplayHeight:0}")</text>
+                                                <text> - @($"{device.DisplayResolutionWidth:0}x{device.DisplayResolutionHeight:0}")</text>
+                                            }
+                                            else if (device.DisplayScreenWidth > 0 && device.DisplayScreenHeight > 0)
+                                            {
+                                                <text> - @($"{device.DisplayScreenWidth:0}x{device.DisplayScreenHeight:0}")</text>
                                             }
                                         </p>
                                     </div>
@@ -143,9 +147,13 @@
 
                                     <p class="text-sm device-card-os" Color="secondary">
                                         @device.OperatingSystem @device.OperatingSystemVersion
-                                        @if (device.DisplayWidth > 0 && device.DisplayHeight > 0)
+                                        @if (device.DisplayResolutionWidth > 0 && device.DisplayResolutionHeight > 0)
                                         {
-                                            <text> - @($"{device.DisplayWidth:0}x{device.DisplayHeight:0}")</text>
+                                            <text> - @($"{device.DisplayResolutionWidth:0}x{device.DisplayResolutionHeight:0}")</text>
+                                        }
+                                        else if (device.DisplayScreenWidth > 0 && device.DisplayScreenHeight > 0)
+                                        {
+                                            <text> - @($"{device.DisplayScreenWidth:0}x{device.DisplayScreenHeight:0}")</text>
                                         }
                                     </p>
                                 </div>

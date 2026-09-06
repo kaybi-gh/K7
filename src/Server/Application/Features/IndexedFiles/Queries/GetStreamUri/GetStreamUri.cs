@@ -96,15 +96,9 @@ public class GetStreamUriQueryHandler(
         // https://docs.videojs.com/tutorial-audio-tracks.html
         var allowsVideoDirectPlay = AllowsVideoDirectPlay(device);
 
-        // Native players scale. Do not transcode just because DisplayHeight is DIP
-        // (Windows 1080p at 150% scale reports ~720) or smaller than the file.
-        var resolutionExceedsDevice = !allowsVideoDirectPlay
-            && device.DisplayHeight > 0
-            && selectedVideoTrack.Height > 0
-            && selectedVideoTrack.Height > device.DisplayHeight;
-
-        // If both audio and video are directly supported (container + codec), return a direct-stream URL
-        if (allowsVideoDirectPlay && audioDirectSupported && videoDirectSupported && !resolutionExceedsDevice)
+        // Browsers and native players scale. Do not refuse remux/Direct Play just because
+        // the file is taller than the screen. Encode output may still be capped later.
+        if (allowsVideoDirectPlay && audioDirectSupported && videoDirectSupported)
         {
             var mimeType = Constants.ContainerMimeTypeMapping.TryGetValue(videoFileMetadata.Container, out var directMime)
                 ? directMime
@@ -152,7 +146,7 @@ public class GetStreamUriQueryHandler(
             videoCodecSupported = false;
         }
 
-        var requiresVideoTranscoding = !videoCodecSupported || resolutionExceedsDevice;
+        var requiresVideoTranscoding = !videoCodecSupported;
 
         // When HLS segments aren't available, force transcoding to avoid the "original"
         // quality path which requires keyframe-based segments from the database
@@ -244,8 +238,7 @@ public class GetStreamUriQueryHandler(
             forcedByMissingSegments,
             videoCodecSupported,
             selectedAudioNeedsTranscode,
-            subtitleBurnInStreamIndex.HasValue,
-            resolutionExceedsDevice);
+            subtitleBurnInStreamIndex.HasValue);
         var mode = requiresVideoTranscoding ? PlaybackMode.Transcode : PlaybackMode.Transmux;
 
         var hlsDecision = new StreamDecisionDto
@@ -268,6 +261,20 @@ public class GetStreamUriQueryHandler(
             IsSubtitleBurnIn = subtitleBurnInStreamIndex.HasValue
         };
 
+        VideoResolution? displayEncodeQuality = null;
+        if (requiresVideoTranscoding)
+        {
+            displayEncodeQuality = DisplayEncodeCap.TryGetEncodeQuality(device, selectedVideoTrack.Height);
+            if (displayEncodeQuality is not null)
+            {
+                hlsDecision = StreamDecisionExtensions.ApplyQualityDownscale(
+                    hlsDecision,
+                    displayEncodeQuality,
+                    videoTranscodingMediaFormat?.VideoCodec,
+                    sourceResolution);
+            }
+        }
+
         return (new IndexedFileStreamUri
         {
             Uri = new Uri(GetHlsStreamManifestQueryUriBuilder.Build(new GetHlsStreamManifestQuery()
@@ -279,6 +286,7 @@ public class GetStreamUriQueryHandler(
                 DefaultAudioTrackIndex = request.AudioTrackIndex,
                 DefaultSubtitleTrackIndex = defaultTextSubtitleTrackIndex,
                 SubtitleBurnInStreamIndex = subtitleBurnInStreamIndex,
+                Quality = displayEncodeQuality?.Name,
                 // Video.js (Web + Windows HLS) needs video-only CODECS on STREAM-INF.
                 VideoCodecsOnly = usesVideoJsHls
             }), UriKind.Relative),
@@ -333,8 +341,7 @@ public class GetStreamUriQueryHandler(
         bool forcedByMissingSegments,
         bool videoCodecSupported,
         bool audioNeedsTranscode,
-        bool subtitlesBurnIn,
-        bool resolutionExceedsDevice)
+        bool subtitlesBurnIn)
     {
         var reason = TranscodeReason.None;
 
@@ -344,8 +351,6 @@ public class GetStreamUriQueryHandler(
                 reason |= TranscodeReason.SubtitlesBurnIn;
             else if (forcedByMissingSegments)
                 reason |= TranscodeReason.HlsSegmentsUnavailable;
-            else if (resolutionExceedsDevice)
-                reason |= TranscodeReason.ResolutionNotSupported;
             else if (!videoCodecSupported)
                 reason |= TranscodeReason.VideoCodecNotSupported;
         }
