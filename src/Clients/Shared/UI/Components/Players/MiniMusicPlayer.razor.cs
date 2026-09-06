@@ -30,6 +30,8 @@ public partial class MiniMusicPlayer : IAsyncDisposable
     private DateTime _lastProgressRenderUtc;
     private volatile bool _disposed;
 
+    private AudioQueueItem? DisplayedTrack => Audio.CurrentDisplayedTrack ?? Audio.CurrentPlayingTrack;
+
     private double DisplayPercent => _isScrubbing && Audio.Duration > 0
         ? (_scrubTime / Audio.Duration) * 100
         : CurrentPercent;
@@ -232,8 +234,8 @@ public partial class MiniMusicPlayer : IAsyncDisposable
 
     private void OnRatingChanged(int? value)
     {
-        if (Audio.CurrentTrack is not null)
-            Audio.CurrentTrack.UserRating = value;
+        if (DisplayedTrack is not null)
+            DisplayedTrack.UserRating = value;
     }
 
     private async Task OnProgressPointerDown(PointerEventArgs e)

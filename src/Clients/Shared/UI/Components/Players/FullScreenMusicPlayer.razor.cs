@@ -85,22 +85,24 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
     private bool IsRemoteMode => RemoteControl.IsControlling && RemoteControl.IsAudio;
     private bool IsSyncPlayMode => SyncPlay.IsInGroup;
 
+    private AudioQueueItem? DisplayedTrack => Audio.CurrentDisplayedTrack ?? Audio.CurrentPlayingTrack;
+
     private string? DisplayTitle { get => IsRemoteMode
         ? RemoteControl.Title
-        : _uiCommitted ? field : Audio.CurrentTrack?.Title; set;
+        : _uiCommitted ? field : DisplayedTrack?.Title; set;
     }
     private string? DisplayArtist { get => IsRemoteMode
         ? RemoteControl.Artist
-        : _uiCommitted ? field : Audio.CurrentTrack?.Artist; set;
+        : _uiCommitted ? field : DisplayedTrack?.Artist; set;
     }
     private string? DisplayAlbumTitle { get => IsRemoteMode
         ? RemoteControl.AlbumTitle
-        : _uiCommitted ? field : Audio.CurrentTrack?.AlbumTitle; set;
+        : _uiCommitted ? field : DisplayedTrack?.AlbumTitle; set;
     }
     private string? DisplayCoverUrl { get => ToFullscreenCoverUrl(
         IsRemoteMode
             ? RemoteControl.CoverUrl
-            : _uiCommitted ? field : Audio.CurrentTrack?.CoverUrl); set;
+            : _uiCommitted ? field : DisplayedTrack?.CoverUrl); set;
     }
     private DateOnly? DisplayReleaseDate { get => IsRemoteMode ? null : field; set; }
     private double DisplayPosition => IsRemoteMode ? RemoteControl.Position : Audio.CurrentTime;
@@ -114,7 +116,7 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
             if (IsRemoteMode)
                 return null;
 
-            var raw = _uiCommitted ? field : Audio.CurrentTrack?.CoverDominantColor;
+            var raw = _uiCommitted ? field : DisplayedTrack?.CoverDominantColor;
             if (raw is null)
                 return null;
 
@@ -130,7 +132,7 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
 
     private void CommitUiFromCurrentTrack(MusicTrackDto? details)
     {
-        var track = Audio.CurrentTrack;
+        var track = DisplayedTrack;
         DisplayTitle = track?.Title;
         DisplayArtist = track?.Artist;
         DisplayAlbumTitle = track?.AlbumTitle;
@@ -370,13 +372,13 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
 
     private async Task LoadTrackDetailsAsync()
     {
-        var mediaId = Audio.CurrentTrack?.MediaId;
+        var mediaId = DisplayedTrack?.MediaId;
         if (mediaId is null || mediaId == _detailsLoadedForMediaId) return;
 
         // Fetch first, then swap fields in one go so concurrent renders (seek ticks, etc.)
         // do not flash empty lyrics / info / year mid-transition.
         var media = await Server.GetMediaAsync(mediaId.Value);
-        if (Audio.CurrentTrack?.MediaId != mediaId)
+        if (DisplayedTrack?.MediaId != mediaId)
             return;
 
         _detailsLoadedForMediaId = mediaId;
@@ -647,7 +649,7 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
 
     private void OnRatingChanged(int? value)
     {
-        if (Audio.CurrentTrack is { } track)
+        if (DisplayedTrack is { } track)
             track.UserRating = value;
         _uiUserRating = value;
     }

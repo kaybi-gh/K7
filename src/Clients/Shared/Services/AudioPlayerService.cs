@@ -129,6 +129,7 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
 
     private bool _crossfadeTriggered;
     private bool _crossfadeUiDeferred;
+    private AudioQueueItem? _displayedTrack;
     /// <summary>
     /// Adaptive/gapless decided not to crossfade this track pair. Prevents re-arming
     /// on every timeupdate (which would drain shuffle via GetNextIndex).
@@ -159,7 +160,11 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
 
     public IReadOnlyList<AudioQueueItem> Queue => _queue;
     public IReadOnlyList<AudioQueueItem> PlayHistory => _playHistory;
-    public AudioQueueItem? CurrentTrack => CurrentIndex >= 0 && CurrentIndex < _queue.Count ? _queue[CurrentIndex] : null;
+    public AudioQueueItem? CurrentPlayingTrack => CurrentIndex >= 0 && CurrentIndex < _queue.Count ? _queue[CurrentIndex] : null;
+    public AudioQueueItem? CurrentDisplayedTrack => _crossfadeUiDeferred
+        ? _displayedTrack ?? CurrentPlayingTrack
+        : CurrentPlayingTrack;
+    public AudioQueueItem? CurrentTrack => CurrentPlayingTrack;
     public int CurrentIndex { get; private set; } = -1;
 
     public RepeatMode Repeat { get; private set; } = RepeatMode.Off;
@@ -486,7 +491,7 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
             _shufflePosition = _shuffleOrder.IndexOf(index);
 
         _crossfadeTriggered = false;
-        _crossfadeUiDeferred = false;
+        EndDeferredUi();
         _crossfadeDeclined = false;
         _gaplessPrebufferTriggered = false;
         ClearPreparedNextSource();
@@ -672,8 +677,9 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
 
         PushCurrentToPlayHistory();
         CurrentIndex = committedIndex.Value;
-        // Keep seek bar / title / waveform on the outgoing track during the blend.
+        // Keep seek bar / title / waveform / rating on the outgoing track during the blend.
         // Flipping UI at arm-time feels like an early cut even when audio overlaps.
+        _displayedTrack = outgoingTrack;
         _crossfadeUiDeferred = true;
         CrossfadeRequested?.Invoke(source, duration);
     }
@@ -684,12 +690,18 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
         if (!_crossfadeUiDeferred)
             return;
 
-        _crossfadeUiDeferred = false;
-        var track = CurrentTrack;
+        EndDeferredUi();
+        var track = CurrentPlayingTrack;
         if (Duration <= 0)
             Duration = track?.Duration ?? 0;
         // CurrentTime is already the incoming clock from JS; do not snap to 0 here.
         CurrentTrackChanged?.Invoke(track);
+    }
+
+    private void EndDeferredUi()
+    {
+        _crossfadeUiDeferred = false;
+        _displayedTrack = null;
     }
 
     private void ConsiderCrossfade()
@@ -941,7 +953,7 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
         if (track is null) return;
 
         _crossfadeTriggered = false;
-        _crossfadeUiDeferred = false;
+        EndDeferredUi();
         _crossfadeDeclined = false;
         _gaplessPrebufferTriggered = false;
         ClearPreparedNextSource();

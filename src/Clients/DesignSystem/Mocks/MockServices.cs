@@ -219,6 +219,8 @@ public sealed class MockAudioPlayerService : IAudioPlayerService, IDisposable
     public bool IsVisible { get; private set; }
     public IReadOnlyList<AudioQueueItem> Queue => _queue;
     public IReadOnlyList<AudioQueueItem> PlayHistory => _playHistory;
+    public AudioQueueItem? CurrentPlayingTrack => CurrentTrack;
+    public AudioQueueItem? CurrentDisplayedTrack => CurrentTrack;
     public AudioQueueItem? CurrentTrack { get; private set; }
     public int CurrentIndex { get; private set; }
     public RepeatMode Repeat => RepeatMode.Off;

@@ -69,6 +69,34 @@ public class AudioPlayerServiceCrossfadeSkipTests
     }
 
     [Test]
+    public async Task OnCrossfadeNeededAsync_ShouldKeepDisplayedTrackOnOutgoing_WhenPlayingAdvances()
+    {
+        var tracks = CreateTracks(2);
+        await _sut.PlayTracksAsync(tracks, 0);
+        _sut.CurrentTime = 170;
+
+        await _sut.OnCrossfadeNeededAsync();
+
+        _sut.CurrentPlayingTrack!.MediaId.Should().Be(tracks[1].MediaId);
+        _sut.CurrentDisplayedTrack!.MediaId.Should().Be(tracks[0].MediaId);
+        _sut.CurrentTrack!.MediaId.Should().Be(tracks[1].MediaId);
+    }
+
+    [Test]
+    public async Task NotifyCrossfadeCompleted_ShouldAlignDisplayedTrackWithPlaying()
+    {
+        var tracks = CreateTracks(2);
+        await _sut.PlayTracksAsync(tracks, 0);
+        _sut.CurrentTime = 170;
+        await _sut.OnCrossfadeNeededAsync();
+
+        _sut.NotifyCrossfadeCompleted();
+
+        _sut.CurrentPlayingTrack!.MediaId.Should().Be(tracks[1].MediaId);
+        _sut.CurrentDisplayedTrack!.MediaId.Should().Be(tracks[1].MediaId);
+    }
+
+    [Test]
     public async Task PreviousAsync_ShouldRestart_WhenNotInCrossfadeHandoffAndTimeElapsed()
     {
         var tracks = CreateTracks(2);

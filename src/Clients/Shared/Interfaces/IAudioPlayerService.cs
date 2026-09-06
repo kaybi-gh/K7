@@ -43,6 +43,17 @@ public interface IAudioPlayerService
     // Queue state
     IReadOnlyList<AudioQueueItem> Queue { get; }
     IReadOnlyList<AudioQueueItem> PlayHistory { get; }
+    /// <summary>
+    /// Queue / notification title. During a crossfade this is already the incoming track.
+    /// Prefer this over <see cref="CurrentDisplayedTrack"/> for skip, progress, and now-playing.
+    /// </summary>
+    AudioQueueItem? CurrentPlayingTrack { get; }
+    /// <summary>
+    /// Track shown in the in-app player (title, cover, rating). During a crossfade
+    /// blend this stays on the outgoing track until the handoff completes.
+    /// </summary>
+    AudioQueueItem? CurrentDisplayedTrack { get; }
+    /// <summary>Alias of <see cref="CurrentPlayingTrack"/>.</summary>
     AudioQueueItem? CurrentTrack { get; }
     int CurrentIndex { get; }
     RepeatMode Repeat { get; }

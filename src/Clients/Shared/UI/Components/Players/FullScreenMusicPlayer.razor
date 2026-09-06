@@ -11,7 +11,7 @@
 @inject IMusicIntelligenceClientService MusicIntelligence
 @inject IK7ServerService ApiClient
 
-@if (Audio.IsFullScreenVisible && Audio.CurrentTrack is not null)
+@if (Audio.IsFullScreenVisible && DisplayedTrack is not null)
 {
     <div class="fullscreen-player" @ref="_playerRef"
          id="fullscreen-music-player"
