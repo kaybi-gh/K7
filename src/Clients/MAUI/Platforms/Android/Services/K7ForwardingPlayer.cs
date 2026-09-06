@@ -64,7 +64,14 @@ public class K7ForwardingPlayer : ForwardingSimpleBasePlayer
             commands.Add(CommandSeekToNextMediaItem);
         }
 
-        return state.BuildUpon()!.SetAvailableCommands(commands.Build()!)!.Build()!;
+        var builder = state.BuildUpon()!.SetAvailableCommands(commands.Build()!)!;
+        // OEM lock screens hide Next when the forwarded player is ENDED, even if
+        // we added SEEK_TO_NEXT. READY keeps the action tappable during the
+        // outgoing-end / incoming-bind window of a crossfade.
+        if (state.PlaybackState == 4 && _hasNext is not null && _hasNext())
+            builder.SetPlaybackState(3);
+
+        return builder.Build()!;
     }
 
     protected override IListenableFuture HandleSeek(int mediaItemIndex, long positionMs, int seekCommand)

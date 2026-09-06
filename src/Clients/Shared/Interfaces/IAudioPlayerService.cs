@@ -76,7 +76,16 @@ public interface IAudioPlayerService
 
     // Navigation
     Task SkipToIndexAsync(int index, CancellationToken cancellationToken = default);
+    /// <summary>
+    /// Skip the current queue / notification title. During a crossfade handoff
+    /// that title is already the incoming track.
+    /// </summary>
     Task NextAsync(CancellationToken cancellationToken = default);
+    /// <summary>
+    /// Restart the displayed title if it has played more than 3s, otherwise go
+    /// to the previous title. During a crossfade handoff the displayed title is
+    /// the incoming track (notification), so Previous returns to the outgoing one.
+    /// </summary>
     Task PreviousAsync(CancellationToken cancellationToken = default);
     /// <summary>
     /// Align the in-memory queue index with an external player (ExoPlayer / Android Auto)

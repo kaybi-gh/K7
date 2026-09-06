@@ -435,6 +435,8 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
     {
         if (_queue.Count == 0) return;
 
+        // CurrentIndex is the notification / session title. During crossfade that
+        // is already the incoming track, so Next skips the displayed title.
         var nextIndex = GetNextIndex();
         if (nextIndex is null)
         {
@@ -451,8 +453,12 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
     {
         if (_queue.Count == 0) return;
 
-        // If more than 3s into the track, restart it
-        if (CurrentTime > 3)
+        // Restart only when the *displayed* track has been playing. During a
+        // crossfade handoff CurrentIndex is the incoming (notification) title
+        // but CurrentTime is still the outgoing clock (often > 3s). Treat that
+        // as the start of the displayed track: Previous returns to the last
+        // notification title instead of seeking the dying outgoing player.
+        if (!_crossfadeUiDeferred && CurrentTime > 3)
         {
             Seek(0);
             return;

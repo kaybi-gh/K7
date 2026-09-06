@@ -55,6 +55,7 @@ public class K7MediaLibraryService : MediaLibraryService,
     private readonly AndroidAudioEqualizer _audioEqualizer = new();
     private CancellationTokenSource? _fadeCts;
     private bool _crossfadeInProgress;
+    private bool _sessionOnIncoming;
     private string? _gaplessPrebufferedUrl;
     private float _loudnessLinearGain = 1f;
 
@@ -119,6 +120,8 @@ public class K7MediaLibraryService : MediaLibraryService,
 
         _player.AddListener(this);
 
+        // Session metadata is the incoming player during crossfade (the title on
+        // the notification). Next/Previous must skip relative to that title.
         _forwardingPlayer = new K7ForwardingPlayer(
             _player,
             hasNext: () => _audioPlayerService.CurrentIndex < _audioPlayerService.Queue.Count - 1,
@@ -481,8 +484,17 @@ public class K7MediaLibraryService : MediaLibraryService,
             if (!alreadyPrepared)
             {
                 await MainThread.InvokeOnMainThreadAsync(() =>
-                    PreparePlayerWithSource(_crossfadePlayer, source, volume: 0f, playWhenReady: false));
+                {
+                    PreparePlayerWithSource(_crossfadePlayer, source, volume: 0f, playWhenReady: false);
+                    // Bind before WaitUntilReady so an early outgoing ENDED cannot
+                    // disable lock-screen Next on the dying player.
+                    BindSessionToIncoming();
+                });
                 await WaitUntilReadyAsync(_crossfadePlayer, ct);
+            }
+            else
+            {
+                await MainThread.InvokeOnMainThreadAsync(BindSessionToIncoming);
             }
 
             await MainThread.InvokeOnMainThreadAsync(() =>
@@ -698,7 +710,6 @@ public class K7MediaLibraryService : MediaLibraryService,
     {
         if (_syncingFromExoPlayer) return;
         if (_player is null || string.IsNullOrEmpty(source.Url)) return;
-        if (_crossfadeInProgress) return;
 
         UpdateAuthHeaders();
 
@@ -706,6 +717,9 @@ public class K7MediaLibraryService : MediaLibraryService,
         {
             try
             {
+                if (_crossfadeInProgress)
+                    CancelCrossfadeForUserSkip();
+
                 var uri = source.Url.Contains("://") ? source.Url : $"file://{source.Url}";
                 var currentIndex = _audioPlayerService?.CurrentIndex ?? 0;
 
@@ -762,6 +776,24 @@ public class K7MediaLibraryService : MediaLibraryService,
         });
     }
 
+    private void BindSessionToIncoming()
+    {
+        if (_forwardingPlayer is null || _crossfadePlayer is null)
+            return;
+
+        _forwardingPlayer.SetActivePlayer(_crossfadePlayer);
+        _sessionOnIncoming = true;
+        _forwardingPlayer.NotifyQueueChanged();
+    }
+
+    private void CancelCrossfadeForUserSkip()
+    {
+        _fadeCts?.Cancel();
+        _crossfadeInProgress = false;
+        if (_sessionOnIncoming)
+            PromoteIncomingInPlace();
+    }
+
     private void PromoteIncomingInPlace()
     {
         if (_player is null || _crossfadePlayer is null || _forwardingPlayer is null)
@@ -782,6 +814,7 @@ public class K7MediaLibraryService : MediaLibraryService,
         _player = incoming;
         _crossfadePlayer = outgoing;
         _forwardingPlayer.SetActivePlayer(incoming);
+        _sessionOnIncoming = false;
 
         outgoing.Stop();
         outgoing.ClearMediaItems();
