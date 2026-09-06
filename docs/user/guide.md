@@ -137,6 +137,7 @@ Almost everything personal can be tuned under **Settings**. The administrator ma
 |---|---|---|
 | Profile | Settings -> Account | Avatar, display name (also password, email, PIN, 2FA for password accounts) |
 | Look and language | Settings -> General | Theme (light / dark), interface language, theme songs |
+| Device codecs | Settings -> About | Containers, video profiles (HEVC Main / Main 10), audio (including AC3/EAC3 when the browser reports them), and subtitles this device can play |
 | Home | Settings -> Home | Which rows appear on Home and in which order (with preview) |
 | Libraries | Settings -> Libraries | Hide libraries you do not want to browse (among those the admin already allows); per-group tap action on Explore (suggestions vs browse) |
 | Hidden media | Settings -> Hidden | Review and unhide titles you previously hid |

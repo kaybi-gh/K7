@@ -46,5 +46,6 @@
   <data name="CodecContainers" xml:space="preserve"><value>Containers</value></data>
   <data name="CodecVideo" xml:space="preserve"><value>Video</value></data>
   <data name="CodecAudio" xml:space="preserve"><value>Audio</value></data>
+  <data name="CodecSubtitles" xml:space="preserve"><value>Subtitles</value></data>
   <data name="CodecsUnavailable" xml:space="preserve"><value>Unavailable</value></data>
 </root>

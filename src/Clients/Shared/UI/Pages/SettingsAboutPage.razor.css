@@ -117,6 +117,10 @@
     font-style: italic;
 }
 
+.about-codec-panel {
+    margin-top: var(--space-6);
+}
+
 .about-codec-groups {
     display: flex;
     flex-direction: column;
@@ -133,4 +137,15 @@
 .about-codec-group ul {
     margin: 0;
     padding-left: 1.25rem;
+}
+
+.about-codec-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.about-codec-empty {
+    color: var(--k7-text-secondary);
+    font-size: var(--text-sm);
 }

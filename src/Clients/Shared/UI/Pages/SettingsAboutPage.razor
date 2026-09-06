@@ -26,58 +26,74 @@
             <span class="about-label">@Lg["Hdr"]</span>
             <span class="about-value">@_hdrSupport</span>
         </div>
-        <div class="k7-expansion-panels mt-3">
+        <div class="k7-expansion-panels about-codec-panel">
             <K7ExpansionPanel Text="@Lg["SupportedCodecs"]">
                 @if (_codecSummary is not null)
                 {
                     <div class="about-codec-groups">
                         <div class="about-codec-group">
                             <p class="about-codec-group-title">@L["CodecContainers"]</p>
-                            <ul>
-                                @if (_codecSummary.Containers.Length > 0)
+                            <div class="about-codec-chips">
+                                @if (DeviceCodecDisplay.FormatContainers(_codecSummary) is { Count: > 0 } containers)
                                 {
-                                    @foreach (var container in _codecSummary.Containers.Order())
+                                    @foreach (var value in containers)
                                     {
-                                        <li>@container</li>
+                                        <K7Chip Size="sm" Variant="outlined" Text="@value" />
                                     }
                                 }
                                 else
                                 {
-                                    <li>@L["CodecsUnavailable"]</li>
+                                    <span class="about-codec-empty">@L["CodecsUnavailable"]</span>
                                 }
-                            </ul>
+                            </div>
                         </div>
                         <div class="about-codec-group">
                             <p class="about-codec-group-title">@L["CodecVideo"]</p>
-                            <ul>
-                                @if (_codecSummary.VideoCodecs.Length > 0)
+                            <div class="about-codec-chips">
+                                @if (DeviceCodecDisplay.FormatVideo(_codecSummary) is { Count: > 0 } video)
                                 {
-                                    @foreach (var codec in _codecSummary.VideoCodecs.Order())
+                                    @foreach (var value in video)
                                     {
-                                        <li>@codec</li>
+                                        <K7Chip Size="sm" Variant="outlined" Text="@value" />
                                     }
                                 }
                                 else
                                 {
-                                    <li>@L["CodecsUnavailable"]</li>
+                                    <span class="about-codec-empty">@L["CodecsUnavailable"]</span>
                                 }
-                            </ul>
+                            </div>
                         </div>
                         <div class="about-codec-group">
                             <p class="about-codec-group-title">@L["CodecAudio"]</p>
-                            <ul>
-                                @if (_codecSummary.AudioCodecs.Length > 0)
+                            <div class="about-codec-chips">
+                                @if (DeviceCodecDisplay.FormatAudio(_codecSummary) is { Count: > 0 } audio)
                                 {
-                                    @foreach (var codec in _codecSummary.AudioCodecs.Order())
+                                    @foreach (var value in audio)
                                     {
-                                        <li>@codec</li>
+                                        <K7Chip Size="sm" Variant="outlined" Text="@value" />
                                     }
                                 }
                                 else
                                 {
-                                    <li>@L["CodecsUnavailable"]</li>
+                                    <span class="about-codec-empty">@L["CodecsUnavailable"]</span>
                                 }
-                            </ul>
+                            </div>
+                        </div>
+                        <div class="about-codec-group">
+                            <p class="about-codec-group-title">@L["CodecSubtitles"]</p>
+                            <div class="about-codec-chips">
+                                @if (DeviceCodecDisplay.FormatSubtitles(_codecSummary) is { Count: > 0 } subtitles)
+                                {
+                                    @foreach (var value in subtitles)
+                                    {
+                                        <K7Chip Size="sm" Variant="outlined" Text="@value" />
+                                    }
+                                }
+                                else
+                                {
+                                    <span class="about-codec-empty">@L["CodecsUnavailable"]</span>
+                                }
+                            </div>
                         </div>
                     </div>
                 }

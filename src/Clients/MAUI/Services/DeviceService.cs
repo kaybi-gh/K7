@@ -90,12 +90,23 @@ public class DeviceService(ICodecService codecHelper, IDeviceIdService deviceIdS
         var containers = await codecHelper.GetSupportedContainersAsync();
         var audioCodecs = await codecHelper.GetSupportedAudioCodecsAsync();
         var videoCodecs = await codecHelper.GetSupportedVideoCodecsAsync();
+        string[] videoProfiles;
+        try
+        {
+            videoProfiles = await codecHelper.GetSupportedVideoProfilesAsync() ?? [];
+        }
+        catch
+        {
+            videoProfiles = [];
+        }
 
         return new DeviceCodecSummaryDto
         {
             Containers = containers ?? [],
             AudioCodecs = audioCodecs ?? [],
-            VideoCodecs = videoCodecs ?? []
+            VideoCodecs = videoCodecs ?? [],
+            VideoProfiles = videoProfiles,
+            SubtitleCodecs = ["webvtt"]
         };
     }
 
