@@ -14,6 +14,12 @@ namespace K7.Clients.ComponentTests.Components;
 [TestFixture]
 public class MiniMusicPlayerTests
 {
+    [SetUp]
+    public void SetUp() => AppLifecycleGate.SetForeground(true);
+
+    [TearDown]
+    public void TearDown() => AppLifecycleGate.SetForeground(true);
+
     [Test]
     public void Render_ShouldDisplayTrackInfoAndFormattedTime_WhenTrackIsActive()
     {
@@ -53,6 +59,31 @@ public class MiniMusicPlayerTests
         cut.Markup.Should().BeEmpty();
     }
 
+    [Test]
+    public void TrackChange_ShouldNotRender_WhenHostIsBackgrounded()
+    {
+        var audio = CreateAudioService();
+        var first = CreateTrack();
+        var second = CreateTrack("Incoming Track", "Incoming Artist");
+        audio.IsVisible.Returns(true);
+        audio.CurrentTrack.Returns(first);
+        audio.PlaybackState = PlaybackState.Playing;
+
+        using var ctx = CreateContext(audio);
+        var cut = ctx.Render<MiniMusicPlayer>();
+        cut.Markup.Should().Contain("Test Track");
+
+        AppLifecycleGate.SetForeground(false);
+        audio.CurrentTrack.Returns(second);
+        audio.CurrentTrackChanged += Raise.Event<Action<AudioQueueItem?>>(second);
+
+        cut.Markup.Should().Contain("Test Track");
+        cut.Markup.Should().NotContain("Incoming Track");
+
+        AppLifecycleGate.SetForeground(true);
+        cut.WaitForAssertion(() => cut.Markup.Should().Contain("Incoming Track"));
+    }
+
     private static IAudioPlayerService CreateAudioService()
     {
         var audio = Substitute.For<IAudioPlayerService>();
@@ -60,12 +91,12 @@ public class MiniMusicPlayerTests
         return audio;
     }
 
-    private static AudioQueueItem CreateTrack() => new()
+    private static AudioQueueItem CreateTrack(string title = "Test Track", string artist = "Test Artist") => new()
     {
         IndexedFileId = Guid.NewGuid(),
         MediaId = Guid.NewGuid(),
-        Title = "Test Track",
-        Artist = "Test Artist",
+        Title = title,
+        Artist = artist,
         AlbumTitle = "Test Album"
     };
 

@@ -51,12 +51,6 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
     private string? _prevWaveformState;
     private double _waveformScale = 1;
     private double _waveformOpacity = 1;
-    private string? _uiTitle;
-    private string? _uiArtist;
-    private string? _uiAlbumTitle;
-    private string? _uiCoverUrl;
-    private string? _uiDominantColor;
-    private DateOnly? _uiReleaseDate;
     private Guid? _uiMediaId;
     private int? _uiUserRating;
     private bool _uiCommitted;
@@ -91,20 +85,24 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
     private bool IsRemoteMode => RemoteControl.IsControlling && RemoteControl.IsAudio;
     private bool IsSyncPlayMode => SyncPlay.IsInGroup;
 
-    private string? DisplayTitle => IsRemoteMode
+    private string? DisplayTitle { get => IsRemoteMode
         ? RemoteControl.Title
-        : _uiCommitted ? _uiTitle : Audio.CurrentTrack?.Title;
-    private string? DisplayArtist => IsRemoteMode
+        : _uiCommitted ? field : Audio.CurrentTrack?.Title; set;
+    }
+    private string? DisplayArtist { get => IsRemoteMode
         ? RemoteControl.Artist
-        : _uiCommitted ? _uiArtist : Audio.CurrentTrack?.Artist;
-    private string? DisplayAlbumTitle => IsRemoteMode
+        : _uiCommitted ? field : Audio.CurrentTrack?.Artist; set;
+    }
+    private string? DisplayAlbumTitle { get => IsRemoteMode
         ? RemoteControl.AlbumTitle
-        : _uiCommitted ? _uiAlbumTitle : Audio.CurrentTrack?.AlbumTitle;
-    private string? DisplayCoverUrl => ToFullscreenCoverUrl(
+        : _uiCommitted ? field : Audio.CurrentTrack?.AlbumTitle; set;
+    }
+    private string? DisplayCoverUrl { get => ToFullscreenCoverUrl(
         IsRemoteMode
             ? RemoteControl.CoverUrl
-            : _uiCommitted ? _uiCoverUrl : Audio.CurrentTrack?.CoverUrl);
-    private DateOnly? DisplayReleaseDate => IsRemoteMode ? null : _uiReleaseDate;
+            : _uiCommitted ? field : Audio.CurrentTrack?.CoverUrl); set;
+    }
+    private DateOnly? DisplayReleaseDate { get => IsRemoteMode ? null : field; set; }
     private double DisplayPosition => IsRemoteMode ? RemoteControl.Position : Audio.CurrentTime;
     private double DisplayDuration => IsRemoteMode ? RemoteControl.Duration : Audio.Duration;
     private double DisplayVolume => IsRemoteMode ? RemoteControl.Volume : Audio.Volume;
@@ -116,7 +114,7 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
             if (IsRemoteMode)
                 return null;
 
-            var raw = _uiCommitted ? _uiDominantColor : Audio.CurrentTrack?.CoverDominantColor;
+            var raw = _uiCommitted ? field : Audio.CurrentTrack?.CoverDominantColor;
             if (raw is null)
                 return null;
 
@@ -126,23 +124,25 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
             var accent = DominantColorCss.ToVariableStyle("--player-accent", raw);
             return string.IsNullOrEmpty(accent) ? null : accent;
         }
+
+        set;
     }
 
     private void CommitUiFromCurrentTrack(MusicTrackDto? details)
     {
         var track = Audio.CurrentTrack;
-        _uiTitle = track?.Title;
-        _uiArtist = track?.Artist;
-        _uiAlbumTitle = track?.AlbumTitle;
-        _uiCoverUrl = track?.CoverUrl;
-        _uiDominantColor = details?.Pictures?
+        DisplayTitle = track?.Title;
+        DisplayArtist = track?.Artist;
+        DisplayAlbumTitle = track?.AlbumTitle;
+        DisplayCoverUrl = track?.CoverUrl;
+        DominantColorStyle = details?.Pictures?
                 .FirstOrDefault(p => p.Type == MetadataPictureType.Cover)?.DominantColor
             ?? details?.Pictures?
                 .FirstOrDefault(p => p.Type == MetadataPictureType.Poster)?.DominantColor
             ?? track?.CoverDominantColor;
         _uiMediaId = track?.MediaId;
         _uiUserRating = track?.UserRating;
-        _uiReleaseDate = details?.ReleaseDate;
+        DisplayReleaseDate = details?.ReleaseDate;
         _uiCommitted = true;
     }
 
@@ -219,6 +219,7 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
         RemoteControl.SessionChanged += OnRemoteSessionChanged;
         SyncPlay.GroupUpdated += OnSyncPlayUpdated;
         SyncPlay.CommandReceived += OnSyncPlayCommandReceived;
+        AppLifecycleGate.ForegroundChanged += OnAppForegroundChanged;
 
         var deviceType = await DeviceService.GetDeviceTypeAsync();
         _isTv = deviceType == DeviceType.TV;
@@ -324,6 +325,7 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
         RemoteControl.SessionChanged -= OnRemoteSessionChanged;
         SyncPlay.GroupUpdated -= OnSyncPlayUpdated;
         SyncPlay.CommandReceived -= OnSyncPlayCommandReceived;
+        AppLifecycleGate.ForegroundChanged -= OnAppForegroundChanged;
 
         if (_dotNetRef is not null)
         {
@@ -779,44 +781,69 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
         }
     }
 
-    private void OnStateChanged(PlaybackState _) => InvokeAsync(StateHasChanged);
-    private void OnDurationChanged(double _) => InvokeAsync(StateHasChanged);
-    private void OnTimeChanged(double _) => InvokeAsync(async () =>
+    private void OnStateChanged(PlaybackState _) => QueueUiRefresh();
+    private void OnDurationChanged(double _) => QueueUiRefresh();
+    private void OnTimeChanged(double _)
     {
-        if (_visualizerEnabled)
-        {
-            try { await JS.InvokeVoidAsync("K7.Visualizer.setProgress", DisplayPercent / 100.0); }
-            catch (JSException) { }
-            catch (InvalidOperationException) { }
-        }
+        if (!AppLifecycleGate.IsForeground)
+            return;
 
-        StateHasChanged();
-    });
-    private void OnTrackChanged(AudioQueueItem? _) => InvokeAsync(async () =>
-    {
-        _detailsLoadedForMediaId = null;
-        _similarLoadedForTrackId = null;
-        _suggestionsLoadedForTrackId = null;
-        if (Audio.IsFullScreenVisible)
+        InvokeAsync(async () =>
         {
-            await MorphWaveformAsync(async () =>
+            if (_visualizerEnabled)
             {
-                await LoadTrackDetailsAsync();
-                CommitUiFromCurrentTrack(_trackDetails);
-            });
-        }
-        else
-        {
-            CommitUiFromCurrentTrack(null);
+                try { await JS.InvokeVoidAsync("K7.Visualizer.setProgress", DisplayPercent / 100.0); }
+                catch (JSException) { }
+                catch (InvalidOperationException) { }
+            }
+
             StateHasChanged();
-        }
-    });
-    private void OnQueueChanged() => InvokeAsync(StateHasChanged);
-    private void OnRadioChanged() => InvokeAsync(StateHasChanged);
-    private void OnShuffleChanged(bool _) => InvokeAsync(StateHasChanged);
-    private void OnRepeatChanged(RepeatMode _) => InvokeAsync(StateHasChanged);
-    private void OnVolumeStateChanged(double _) => InvokeAsync(StateHasChanged);
-    private void OnMutedStateChanged(bool _) => InvokeAsync(StateHasChanged);
+        });
+    }
+    private void OnTrackChanged(AudioQueueItem? _)
+    {
+        if (!AppLifecycleGate.IsForeground)
+            return;
+
+        InvokeAsync(async () =>
+        {
+            _detailsLoadedForMediaId = null;
+            _similarLoadedForTrackId = null;
+            _suggestionsLoadedForTrackId = null;
+            if (Audio.IsFullScreenVisible)
+            {
+                await MorphWaveformAsync(async () =>
+                {
+                    await LoadTrackDetailsAsync();
+                    CommitUiFromCurrentTrack(_trackDetails);
+                });
+            }
+            else
+            {
+                CommitUiFromCurrentTrack(null);
+                StateHasChanged();
+            }
+        });
+    }
+    private void OnQueueChanged() => QueueUiRefresh();
+    private void OnRadioChanged() => QueueUiRefresh();
+    private void OnShuffleChanged(bool _) => QueueUiRefresh();
+    private void OnRepeatChanged(RepeatMode _) => QueueUiRefresh();
+    private void OnVolumeStateChanged(double _) => QueueUiRefresh();
+    private void OnMutedStateChanged(bool _) => QueueUiRefresh();
+    private void OnAppForegroundChanged()
+    {
+        if (AppLifecycleGate.IsForeground)
+            OnTrackChanged(Audio.CurrentTrack);
+    }
+
+    private void QueueUiRefresh()
+    {
+        if (!AppLifecycleGate.IsForeground)
+            return;
+
+        InvokeAsync(StateHasChanged);
+    }
     private void OnSleepTimerChanged() => InvokeAsync(StateHasChanged);
     private void OnRemoteStateChanged() => InvokeAsync(StateHasChanged);
     private void OnRemoteSessionChanged() => InvokeAsync(StateHasChanged);

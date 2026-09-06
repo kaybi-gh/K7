@@ -1,12 +1,13 @@
-using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Helpers;
+using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
+using K7.Clients.Shared.Services;
+using K7.Clients.Shared.UI;
 using K7.Server.Domain.Enums;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.Localization;
 using Microsoft.JSInterop;
-using K7.Clients.Shared.UI;
 
 namespace K7.Clients.Shared.UI.Components.Players;
 
@@ -70,6 +71,7 @@ public partial class MiniMusicPlayer : IAsyncDisposable
         Audio.VolumeChanged += OnVolumeStateChanged;
         Audio.IsMutedChanged += OnMutedStateChanged;
         Audio.IsVisibleChanged += OnVisibilityChanged;
+        AppLifecycleGate.ForegroundChanged += OnAppForegroundChanged;
 
         var deviceType = await DeviceService.GetDeviceTypeAsync();
         _showVolumeControls = deviceType is not (DeviceType.TV or DeviceType.Phone);
@@ -118,6 +120,7 @@ public partial class MiniMusicPlayer : IAsyncDisposable
         Audio.VolumeChanged -= OnVolumeStateChanged;
         Audio.IsMutedChanged -= OnMutedStateChanged;
         Audio.IsVisibleChanged -= OnVisibilityChanged;
+        AppLifecycleGate.ForegroundChanged -= OnAppForegroundChanged;
 
         if (_dotNetRef is not null)
         {
@@ -277,6 +280,11 @@ public partial class MiniMusicPlayer : IAsyncDisposable
     private void OnVolumeStateChanged(double _) => RequestRender();
     private void OnMutedStateChanged(bool _) => RequestRender();
     private void OnVisibilityChanged() => RequestRender();
+    private void OnAppForegroundChanged()
+    {
+        if (AppLifecycleGate.IsForeground)
+            RequestRender();
+    }
 
     private void RequestProgressRender()
     {
@@ -289,7 +297,7 @@ public partial class MiniMusicPlayer : IAsyncDisposable
 
     private void RequestRender()
     {
-        if (_disposed)
+        if (_disposed || !AppLifecycleGate.IsForeground)
             return;
 
         _needsRender = true;

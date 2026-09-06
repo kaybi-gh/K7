@@ -70,17 +70,27 @@ public static partial class MauiProgram
                 });
             });
 #elif ANDROID
-            events.AddAndroid(android => android.OnResume(_ =>
+            events.AddAndroid(android =>
             {
-                if (IPlatformApplication.Current?.Services is { } services)
-                    services.GetService<AuthSessionKeeper>()?.OnAppResumed();
-            }));
+                android.OnPause(_ => AppLifecycleGate.SetForeground(false));
+                android.OnResume(_ =>
+                {
+                    AppLifecycleGate.SetForeground(true);
+                    if (IPlatformApplication.Current?.Services is { } services)
+                        services.GetService<AuthSessionKeeper>()?.OnAppResumed();
+                });
+            });
 #elif IOS || MACCATALYST
-            events.AddiOS(ios => ios.OnActivated(_ =>
+            events.AddiOS(ios =>
             {
-                if (IPlatformApplication.Current?.Services is { } services)
-                    services.GetService<AuthSessionKeeper>()?.OnAppResumed();
-            }));
+                ios.OnResignActivation(_ => AppLifecycleGate.SetForeground(false));
+                ios.OnActivated(_ =>
+                {
+                    AppLifecycleGate.SetForeground(true);
+                    if (IPlatformApplication.Current?.Services is { } services)
+                        services.GetService<AuthSessionKeeper>()?.OnAppResumed();
+                });
+            });
 #endif
         });
 
