@@ -10,6 +10,7 @@ using K7.Clients.Shared.Enums;
 using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
+using K7.Clients.Shared.Services;
 using K7.Shared.Dtos.Entities.Metadatas.Files.Tracks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.JSInterop;
@@ -26,6 +27,8 @@ public partial class BlazorPage
     private DefaultHttpDataSource.Factory? _exoHttpDataSourceFactory;
     private Dictionary<string, string>? _exoHttpRequestHeaders;
     private ExoPlaybackBridge? _exoPlaybackBridge;
+    private static DateTime _lastTvBridgeRestartUtc;
+    private bool _tvBridgeCheckPosted;
 
     partial void InitializePlayerPlatform()
     {
@@ -223,6 +226,123 @@ public partial class BlazorPage
         {
             return false;
         }
+    }
+
+    internal void RecoverAfterAndroidHostResume()
+    {
+        if (_playerService.IsVisible)
+            return;
+
+        if (MauiNativeVideoChrome.BackgroundUiPaused)
+        {
+            RestoreBlazorWebViewAfterNativeVideo();
+            if (MauiNativeVideoChrome.BackgroundUiPaused)
+                MauiNativeVideoChrome.SetBackgroundUiPaused(false);
+        }
+
+        if (AppReadySignal.IsSignaled)
+        {
+            if (AndroidStartupLottieOverlay.IsShown)
+                AndroidStartupLottieOverlay.Dismiss();
+
+            if (SplashOverlay is { IsVisible: true })
+            {
+                SplashOverlay.IsVisible = false;
+                RootGrid.Children.Remove(SplashOverlay);
+            }
+        }
+
+        blazorWebView.IsVisible = true;
+        blazorWebView.Opacity = 1;
+        blazorWebView.InputTransparent = false;
+
+        try
+        {
+            if (blazorWebView.Handler?.PlatformView is global::Android.Webkit.WebView webView)
+            {
+                webView.OnResume();
+                webView.Focusable = true;
+                webView.FocusableInTouchMode = true;
+                webView.RequestFocus();
+            }
+        }
+        catch
+        {
+        }
+
+        AndroidOverlayComposition.Reset(blazorWebView);
+
+        if (!AppReadySignal.IsSignaled)
+            return;
+
+        TryEvaluateWebViewJs(
+            "try{if(window.K7&&K7.recoverAfterHostResume)K7.recoverAfterHostResume();}catch(e){}");
+
+        if (AndroidTelevision.IsDeviceTelevision())
+            ScheduleTvBridgeHealthCheck();
+    }
+
+    private void ScheduleTvBridgeHealthCheck()
+    {
+        if (_tvBridgeCheckPosted)
+            return;
+
+        _tvBridgeCheckPosted = true;
+        if (blazorWebView.Handler?.PlatformView is not global::Android.Webkit.WebView webView)
+        {
+            _tvBridgeCheckPosted = false;
+            return;
+        }
+
+        webView.PostDelayed(() =>
+        {
+            _tvBridgeCheckPosted = false;
+            ProbeTvBridgeOrRestart(webView);
+        }, 400);
+    }
+
+    private void ProbeTvBridgeOrRestart(global::Android.Webkit.WebView webView)
+    {
+        if (!AppReadySignal.IsSignaled)
+            return;
+
+        try
+        {
+            webView.EvaluateJavascript(
+                "(function(){try{return !!(window.K7&&K7.isBridgeAlive&&K7.isBridgeAlive());}catch(e){return false;}})()",
+                new JsStringCallback(result =>
+                {
+                    if (IsJsBridgeAliveResult(result))
+                        return;
+
+                    if (DateTime.UtcNow - _lastTvBridgeRestartUtc < TimeSpan.FromSeconds(20))
+                        return;
+
+                    _lastTvBridgeRestartUtc = DateTime.UtcNow;
+                    if (Microsoft.Maui.Controls.Application.Current is App app)
+                        app.Restart();
+                }));
+        }
+        catch
+        {
+        }
+    }
+
+    private static bool IsJsBridgeAliveResult(string? result)
+    {
+        if (string.IsNullOrEmpty(result))
+            return false;
+
+        return result.Contains("true", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private sealed class JsStringCallback : Java.Lang.Object, Android.Webkit.IValueCallback
+    {
+        private readonly Action<string?> _onValue;
+
+        public JsStringCallback(Action<string?> onValue) => _onValue = onValue;
+
+        public void OnReceiveValue(Java.Lang.Object? value) => _onValue(value?.ToString());
     }
 
     private void NotifyTvRemoteDpad(Android.Views.KeyEvent e)
@@ -805,7 +925,7 @@ public partial class BlazorPage
 
         return player;
     }
-partial void OnAfterNativeVideoSeek()
+    partial void OnAfterNativeVideoSeek()
     {
         EnsureVideoSurfaceNotFocusable();
         if (MauiNativeVideoChrome.IsEnabled && _playerService.IsVisible)

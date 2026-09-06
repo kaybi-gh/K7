@@ -72,7 +72,7 @@ Shared UI placement: [architecture.md](architecture.md#ui-layout).
 
 Typical sequence for a returning multi-user device: Android DecorView Lottie plays once and holds, then `BlazorPage` is constructed under the overlay, then first paint of `/select-profile` (EmptyLayout) dismisses the overlay. Solo auto-login applies `BackendUrl` first, then restores the session, starts at `/`, and dismisses on MainLayout first paint. A `BlazorPage` construction failure keeps the stored server URL (it must not dump the user onto native setup). First-run TV with Guest disabled starts at `/linkdevice`. Player scripts (`video.min.js`, audioplayer) load after first paint on Windows / Web, and are awaited if play happens before the prefetch finishes.
 
-`AppLifecycleGate` suppresses music UI renders while the host is paused so the mini player does not replay every track change when the screen turns back on.
+Android `MainActivity` ignores restored instance state so a TV/process death cannot paint a frozen Blazor snapshot (visible select-profile, dead remote). `OnResume` re-enables the WebView, dismisses leftover splash overlays, re-inits spatial nav, and recreates the activity if the JS bridge is gone. `AppLifecycleGate` suppresses music UI renders while the host is paused so the mini player does not replay every track change when the screen turns back on.
 
 On Android the Lottie is attached to the activity DecorView so it stays above WebView / MediaElement and survives `BlazorPage` construction. Windows / iOS keep `SKLottieView` on the Blazor overlay.
 

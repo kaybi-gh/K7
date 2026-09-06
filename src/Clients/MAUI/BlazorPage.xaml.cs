@@ -130,6 +130,17 @@ public partial class BlazorPage : ContentPage
         TrySubscribeAccessTokenChanged();
     }
 
+    /// <summary>
+    /// Re-enable the Blazor WebView after Android pause (phone sleep / TV HDMI).
+    /// A paused or unrestored WebView paints select-profile but ignores the remote.
+    /// </summary>
+    internal void RecoverAfterHostResume()
+    {
+#if ANDROID
+        RecoverAfterAndroidHostResume();
+#endif
+    }
+
     private void OnWebResourceRequested(object? sender, Microsoft.Maui.Controls.WebViewWebResourceRequestedEventArgs e)
     {
         const string localFileHost = "https://k7-local-files/";

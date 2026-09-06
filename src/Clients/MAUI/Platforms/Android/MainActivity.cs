@@ -1,4 +1,4 @@
-﻿using Android.App;
+using Android.App;
 using Android.Content;
 using Android.Content.PM;
 using Android.OS;
@@ -20,7 +20,10 @@ public class MainActivity : MauiAppCompatActivity
 
     protected override void OnCreate(Bundle? savedInstanceState)
     {
-        base.OnCreate(savedInstanceState);
+        // Ignore restored view state. After TV/process death MAUI Blazor paints the
+        // last page (often select-profile) with a dead JS circuit: remote and taps
+        // do nothing until a force-stop. A clean start matches Restart().
+        base.OnCreate(null);
 
         if (Window is not null)
         {
@@ -187,6 +190,19 @@ public class MainActivity : MauiAppCompatActivity
             return window.Page as BlazorPage;
         }
         return null;
+    }
+
+    protected override void OnPause()
+    {
+        _selectDownTime = 0;
+        _selectLongPressFired = false;
+        base.OnPause();
+    }
+
+    protected override void OnResume()
+    {
+        base.OnResume();
+        GetBlazorPage()?.RecoverAfterHostResume();
     }
 
     protected override void OnDestroy()

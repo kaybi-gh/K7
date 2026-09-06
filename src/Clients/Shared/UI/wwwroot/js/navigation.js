@@ -2840,6 +2840,23 @@ var SpatialNav = (function () {
 
         window.K7 = window.K7 || {};
         window.K7.onTvRemoteSelect = handleTvRemoteSelect;
+        window.K7.isBridgeAlive = function () { return true; };
+        window.K7.recoverAfterHostResume = function () {
+            try {
+                if (window.K7.dismissPreload) K7.dismissPreload();
+                if (window.K7.setNativePlayerActive) K7.setNativePlayerActive(false, false);
+                if (window.K7.reInitAndRestoreCarousels) K7.reInitAndRestoreCarousels();
+                if (window.SpatialNav && SpatialNav.refresh) SpatialNav.refresh();
+                var initial = document.querySelector('[data-initial-focus]');
+                if (initial && window.SpatialNav && SpatialNav.focusElement) {
+                    SpatialNav.focusElement(initial);
+                } else if (window.SpatialNavigation && SpatialNavigation.focus) {
+                    var first = document.querySelector('.focusable');
+                    if (first) SpatialNavigation.focus(first);
+                }
+            } catch (e) { /* host resume best-effort */ }
+            return true;
+        };
         window.K7.cancelVideoSeekOrEdit = cancelVideoSeekBarScrubIfAny;
         // Native Activity Back while video is up - never wait on Blazor JSRuntime.
         window.K7.handleVideoTvBack = function () {

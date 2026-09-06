@@ -31,6 +31,9 @@ public class TransparentBlazorWebViewHandler : BlazorWebViewHandler
         // Allow ambient theme songs (HTML5 Audio) without a fresh user gesture.
         // Navigation into a media page already counts as intentional interaction.
         platformView.Settings.MediaPlaybackRequiresUserGesture = false;
+        // Restored WebView snapshots after process death leave a painted page
+        // with no Blazor circuit (TV sleep/wake freeze on select-profile).
+        platformView.SaveEnabled = false;
 
         if (platformView.Parent is global::Android.Views.View parentView)
         {
