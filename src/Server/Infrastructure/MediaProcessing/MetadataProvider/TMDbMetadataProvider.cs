@@ -1,9 +1,8 @@
 using System.Collections.Frozen;
-using K7.Server.Application.Features.Medias.Services;
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Features.Medias.Services;
 using K7.Server.Application.Helpers;
 using K7.Server.Domain.Entities;
-using K7.Shared.Dtos.Entities.Metadatas;
 using K7.Server.Domain.Entities.Metadatas;
 using K7.Server.Domain.Entities.Metadatas.External;
 using K7.Server.Domain.Entities.Metadatas.PersonRoles;
@@ -12,11 +11,13 @@ using K7.Server.Domain.Enums;
 using K7.Server.Domain.Events;
 using K7.Server.Domain.Interfaces;
 using K7.Server.Domain.Models;
+using K7.Shared.Dtos.Entities.Metadatas;
 using TMDbLib.Client;
 using TMDbLib.Objects.Find;
 using TMDbLib.Objects.Movies;
 
 namespace K7.Server.Infrastructure.MediaProcessing.MetadataProvider;
+
 public class TMDbMetadataProvider : IMetadataProvider<ExternalMovieMetadata>, ISearchableMetadataProvider, IMetadataProviderInfo, IPersonMetadataProvider, IMetadataImageProvider, IPersonImageProvider
 {
     public string ProviderName => "tmdb";
@@ -90,7 +91,12 @@ public class TMDbMetadataProvider : IMetadataProvider<ExternalMovieMetadata>, IS
                 var movie = await _tdmbClient.GetMovieAsync(tmdbId.ToString(), language, cancellationToken: cancellationToken);
                 if (movie != null)
                 {
-                    results.Add(MapToSearchResult(movie.Id, movie.Title, movie.ReleaseDate, movie.PosterPath, movie.Overview));
+                    results.Add(MapToSearchResult(
+                        movie.Id,
+                        movie.Title ?? movie.OriginalTitle ?? string.Empty,
+                        movie.ReleaseDate,
+                        movie.PosterPath,
+                        movie.Overview));
                 }
 
                 return results;
@@ -133,7 +139,7 @@ public class TMDbMetadataProvider : IMetadataProvider<ExternalMovieMetadata>, IS
                 query,
                 year: year,
                 cancellationToken: cancellationToken);
-            return TmdbMultiLanguageSearchMerger.MergeMovies([searchResult.Results ?? []]);
+            return TmdbMultiLanguageSearchMerger.MergeMovies([searchResult?.Results ?? []]);
         }
 
         var tasks = languages
@@ -145,13 +151,13 @@ public class TMDbMetadataProvider : IMetadataProvider<ExternalMovieMetadata>, IS
             .ToArray();
         var results = await Task.WhenAll(tasks);
         return TmdbMultiLanguageSearchMerger.MergeMovies(
-            results.Select(r => (IReadOnlyList<TMDbLib.Objects.Search.SearchMovie>)(r.Results ?? [])).ToList());
+            results.Select(r => (IReadOnlyList<TMDbLib.Objects.Search.SearchMovie>)(r?.Results ?? [])).ToList());
     }
 
     private MetadataSearchResult MapToSearchResult(int id, string title, DateTime? releaseDate, string? posterPath, string? overview, double? popularity = null)
     {
-        var posterUrl = !string.IsNullOrEmpty(posterPath) 
-            ? _tdmbClient.GetImageUrl("w500", posterPath, true)?.ToString() 
+        var posterUrl = !string.IsNullOrEmpty(posterPath)
+            ? _tdmbClient.GetImageUrl("w500", posterPath, true)?.ToString()
             : null;
 
         return new MetadataSearchResult
@@ -171,34 +177,27 @@ public class TMDbMetadataProvider : IMetadataProvider<ExternalMovieMetadata>, IS
         await TmdbClientConfiguration.EnsureConfiguredAsync(_tdmbClient, cancellationToken);
         try
         {
-            var tmdbMovie = await _tdmbClient.GetMovieAsync(metadataProviderExternalId, language, includeImageLanguage: $"{language},en,null", extraMethods: MovieMethods.ExternalIds | MovieMethods.Credits | MovieMethods.Images | MovieMethods.ReleaseDates | MovieMethods.Videos | MovieMethods.Recommendations, cancellationToken: cancellationToken);
+            var tmdbMovie = await _tdmbClient.GetMovieAsync(metadataProviderExternalId, language, includeImageLanguage: $"{language},en,null", extraMethods: MovieMethods.ExternalIds | MovieMethods.Credits | MovieMethods.Images | MovieMethods.ReleaseDates | MovieMethods.Videos | MovieMethods.Recommendations, cancellationToken: cancellationToken)
+                ?? throw new InvalidOperationException($"No TMDb movie found for id '{metadataProviderExternalId}'");
 
             var contentRating = ExtractContentRating(tmdbMovie.ReleaseDates, language);
+            var title = tmdbMovie.Title ?? tmdbMovie.OriginalTitle ?? string.Empty;
 
             var movie = new ExternalMovieMetadata
             {
-                Title = tmdbMovie.Title,
-                SortTitle = MediaSortTitleHelper.Compute(tmdbMovie.Title),
+                Title = title,
+                SortTitle = MediaSortTitleHelper.Compute(title),
                 OriginalTitle = tmdbMovie.OriginalTitle,
                 ReleaseDate = tmdbMovie.ReleaseDate.HasValue ? DateOnly.FromDateTime(tmdbMovie.ReleaseDate.Value) : null,
-                Genres = [.. tmdbMovie.Genres.Select(g => g.Name)],
-                Studios = [.. tmdbMovie.ProductionCompanies?.Select(c => c.Name) ?? []],
+                Genres = [.. TmdbLibCompat.NonEmptyNames(tmdbMovie.Genres?.Select(g => g.Name))],
+                Studios = [.. TmdbLibCompat.NonEmptyNames(tmdbMovie.ProductionCompanies?.Select(c => c.Name))],
                 OriginalLanguage = tmdbMovie.OriginalLanguage,
                 Overview = tmdbMovie.Overview,
                 Tagline = tmdbMovie.Tagline,
                 ContentRating = contentRating,
                 Budget = tmdbMovie.Budget > 0 ? tmdbMovie.Budget : null,
                 Revenue = tmdbMovie.Revenue > 0 ? tmdbMovie.Revenue : null,
-                Trailers = [.. tmdbMovie.Videos?.Results?
-                    .Where(v => v.Site == "YouTube" && v.Type is "Trailer" or "Teaser")
-                    .Select(v => new TrailerInfo
-                    {
-                        Key = v.Key,
-                        Name = v.Name,
-                        Site = v.Site,
-                        Type = v.Type,
-                        Language = v.Iso_639_1
-                    }) ?? []],
+                Trailers = TmdbLibCompat.MapYoutubeTrailers(tmdbMovie.Videos?.Results),
                 RecommendedExternalIds = [.. tmdbMovie.Recommendations?.Results?.Select(r => r.Id.ToString()) ?? []],
                 PersonRoles = await ConvertToPersonRolesAsync(tmdbMovie.Credits, language),
                 ExternalIds =
@@ -232,16 +231,27 @@ public class TMDbMetadataProvider : IMetadataProvider<ExternalMovieMetadata>, IS
         }
     }
 
-    private List<MetadataPicture> FetchMetadataPictures(TMDbLib.Objects.General.Images images, string language)
+    private List<MetadataPicture> FetchMetadataPictures(TMDbLib.Objects.General.Images? images, string language)
     {
         List<MetadataPicture> metadataPictures = [];
         if (images != null)
         {
-            var bestBackdrop = images.Backdrops.OrderByDescending(b => b.Iso_639_1 is null).ThenByDescending(b => b.VoteAverage).FirstOrDefault();
-            var bestLogo = images.Logos.OrderByDescending(b => b.Iso_639_1 == language).ThenByDescending(x => x.Iso_639_1 == "en").ThenByDescending(b => b.VoteAverage).FirstOrDefault();
-            var bestPoster = images.Posters.OrderByDescending(b => b.Iso_639_1 == language).ThenByDescending(x => x.Iso_639_1 == "en").ThenByDescending(b => b.VoteAverage).FirstOrDefault();
+            var bestBackdrop = images.Backdrops?
+                .OrderByDescending(b => b.Iso_639_1 is null)
+                .ThenByDescending(b => b.VoteAverage)
+                .FirstOrDefault();
+            var bestLogo = images.Logos?
+                .OrderByDescending(b => b.Iso_639_1 == language)
+                .ThenByDescending(x => x.Iso_639_1 == "en")
+                .ThenByDescending(b => b.VoteAverage)
+                .FirstOrDefault();
+            var bestPoster = images.Posters?
+                .OrderByDescending(b => b.Iso_639_1 == language)
+                .ThenByDescending(x => x.Iso_639_1 == "en")
+                .ThenByDescending(b => b.VoteAverage)
+                .FirstOrDefault();
 
-            if (bestBackdrop != null)
+            if (bestBackdrop != null && !string.IsNullOrEmpty(bestBackdrop.FilePath))
             {
                 var uri = _tdmbClient.GetImageUrl("original", bestBackdrop.FilePath);
                 if (uri != null)
@@ -255,7 +265,7 @@ public class TMDbMetadataProvider : IMetadataProvider<ExternalMovieMetadata>, IS
                 }
             }
 
-            if (bestLogo != null)
+            if (bestLogo != null && !string.IsNullOrEmpty(bestLogo.FilePath))
             {
                 var uri = _tdmbClient.GetImageUrl("original", bestLogo.FilePath);
                 if (uri != null)
@@ -269,7 +279,7 @@ public class TMDbMetadataProvider : IMetadataProvider<ExternalMovieMetadata>, IS
                 }
             }
 
-            if (bestPoster != null)
+            if (bestPoster != null && !string.IsNullOrEmpty(bestPoster.FilePath))
             {
                 var uri = _tdmbClient.GetImageUrl("original", bestPoster.FilePath);
                 if (uri != null)
@@ -292,16 +302,22 @@ public class TMDbMetadataProvider : IMetadataProvider<ExternalMovieMetadata>, IS
         return metadataPictures;
     }
 
-    private async Task<IList<BasePersonRole>> ConvertToPersonRolesAsync(Credits credits, string language)
+    private async Task<IList<BasePersonRole>> ConvertToPersonRolesAsync(Credits? credits, string language)
     {
         var roles = new List<BasePersonRole>();
-        foreach (var role in credits.Cast)
+        if (credits is null)
+            return roles;
+
+        foreach (var role in credits.Cast ?? [])
         {
             var imdbPerson = await _tdmbClient.GetPersonAsync(role.Id, language);
+            if (imdbPerson is null)
+                continue;
+
             var actor = new Actor()
             {
                 Order = role.Order,
-                CharacterName = role.Character,
+                CharacterName = role.Character ?? string.Empty,
                 ExternalIds =
                 [
                     new ExternalId()
@@ -329,9 +345,15 @@ public class TMDbMetadataProvider : IMetadataProvider<ExternalMovieMetadata>, IS
             roles.Add(actor);
         }
 
-        foreach (var role in credits.Crew.Where(x => _wantedCrewRoles.Contains((x.Department, x.Job))))
+        foreach (var role in credits.Crew ?? [])
         {
+            if (role.Department is null || role.Job is null || !_wantedCrewRoles.Contains((role.Department, role.Job)))
+                continue;
+
             var imdbPerson = await _tdmbClient.GetPersonAsync(role.Id, language);
+            if (imdbPerson is null)
+                continue;
+
             var crewMember = new CrewMember()
             {
                 Department = role.Department,
@@ -341,7 +363,7 @@ public class TMDbMetadataProvider : IMetadataProvider<ExternalMovieMetadata>, IS
                     new ExternalId()
                     {
                         ProviderName = "tmdb",
-                        Value = role.CreditId
+                        Value = role.CreditId ?? role.Id.ToString()
                     }
                 ],
                 Person = ConvertToPerson(imdbPerson)
@@ -422,7 +444,7 @@ public class TMDbMetadataProvider : IMetadataProvider<ExternalMovieMetadata>, IS
                 TMDbLib.Objects.People.PersonGender.NonBinary => PersonGender.NonBinary,
                 _ => PersonGender.NotSpecified,
             },
-            Name = tmdbPerson.Name,
+            Name = tmdbPerson.Name ?? string.Empty,
             Deathday = tmdbPerson.Deathday.HasValue ? DateOnly.FromDateTime(tmdbPerson.Deathday.Value) : null,
             ExternalIds =
             [
@@ -502,8 +524,11 @@ public class TMDbMetadataProvider : IMetadataProvider<ExternalMovieMetadata>, IS
             if (movie?.Images is null)
                 return results;
 
-            foreach (var img in movie.Images.Posters.OrderByDescending(x => x.VoteAverage))
+            foreach (var img in (movie.Images.Posters ?? []).OrderByDescending(x => x.VoteAverage))
             {
+                if (string.IsNullOrEmpty(img.FilePath))
+                    continue;
+
                 var url = _tdmbClient.GetImageUrl("original", img.FilePath, true)?.ToString();
                 var thumbUrl = _tdmbClient.GetImageUrl("w300", img.FilePath, true)?.ToString();
                 if (url is null || thumbUrl is null) continue;
@@ -520,8 +545,11 @@ public class TMDbMetadataProvider : IMetadataProvider<ExternalMovieMetadata>, IS
                 });
             }
 
-            foreach (var img in movie.Images.Backdrops.OrderByDescending(x => x.VoteAverage))
+            foreach (var img in (movie.Images.Backdrops ?? []).OrderByDescending(x => x.VoteAverage))
             {
+                if (string.IsNullOrEmpty(img.FilePath))
+                    continue;
+
                 var url = _tdmbClient.GetImageUrl("original", img.FilePath, true)?.ToString();
                 var thumbUrl = _tdmbClient.GetImageUrl("w780", img.FilePath, true)?.ToString();
                 if (url is null || thumbUrl is null) continue;
@@ -538,8 +566,11 @@ public class TMDbMetadataProvider : IMetadataProvider<ExternalMovieMetadata>, IS
                 });
             }
 
-            foreach (var img in movie.Images.Logos.OrderByDescending(x => x.VoteAverage))
+            foreach (var img in (movie.Images.Logos ?? []).OrderByDescending(x => x.VoteAverage))
             {
+                if (string.IsNullOrEmpty(img.FilePath))
+                    continue;
+
                 var url = _tdmbClient.GetImageUrl("original", img.FilePath, true)?.ToString();
                 var thumbUrl = _tdmbClient.GetImageUrl("w300", img.FilePath, true)?.ToString();
                 if (url is null || thumbUrl is null) continue;
@@ -581,8 +612,11 @@ public class TMDbMetadataProvider : IMetadataProvider<ExternalMovieMetadata>, IS
             if (person?.Images?.Profiles is null)
                 return results;
 
-            foreach (var img in person.Images.Profiles.OrderByDescending(x => x.VoteAverage))
+            foreach (var img in (person.Images.Profiles ?? []).OrderByDescending(x => x.VoteAverage))
             {
+                if (string.IsNullOrEmpty(img.FilePath))
+                    continue;
+
                 var url = _tdmbClient.GetImageUrl("original", img.FilePath, true)?.ToString();
                 var thumbUrl = _tdmbClient.GetImageUrl("w185", img.FilePath, true)?.ToString();
                 if (url is null || thumbUrl is null) continue;
