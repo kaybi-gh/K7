@@ -38,11 +38,11 @@ Ownership is either `UserId` or `SharedProfileId`, never both.
 |---|---|
 | `UpsertItemBookmarkAsync` | Save resume position during playback |
 | `RemoveItemBookmarkAsync` | Clear item bookmark (completed episode or manual clear) |
-| `OnEpisodeCompletedAsync` | Upsert series bookmark, resolve next playable episode, remove bookmark if none |
-| `RefreshSeriesBookmarksForSerieAsync` | After library scan / new episode, recalc `NextEpisodeId` for affected series bookmarks |
+| `OnEpisodeCompletedAsync` | Upsert series bookmark, resolve next playable episode, keep a dormant row (`NextEpisodeId` null) when caught up so a later scan can restore Keep Watching |
+| `RefreshSeriesBookmarksForSerieAsync` | After library scan / new episode, recalc `NextEpisodeId` for existing series bookmarks (including dormant), recreate missing bookmarks when a newly playable episode is that viewer's next-up (dismiss is unchanged) |
 | `BackfillMissingNextEpisodesAsync` | Fill `NextEpisodeId` for series bookmarks left empty by migration |
 | `ResolveNextPlayableEpisodeIdAsync` | Walk season/episode order, skip completed, require indexed or remote file |
-| `DismissAsync` / `DismissForSharedProfileAsync` | Remove series bookmark (and episode item bookmarks) or a single item bookmark |
+| `DismissAsync` / `DismissForSharedProfileAsync` | Remove series bookmark (and episode item bookmarks) for a serie, season, or episode id, or a single item bookmark for a movie |
 | `ExpireStaleSeriesBookmarksAsync` | Drop series bookmarks past max age when next episode was never started |
 | `GetItemBookmarksAsync` | Batch load for DTO projection |
 
@@ -64,19 +64,21 @@ Registered in `Application/DependencyInjection.cs`.
 
 ### Product rules
 
-- Caught up on season 1, then season 2 appears a year later: series returns to Keep Watching. The clock for ageing is `NextEpisodeAvailableAt`, not the old finish date.
+- Caught up on season 1, then season 2 appears a year later: series returns to Keep Watching. The clock for ageing is `NextEpisodeAvailableAt`, not the old finish date. Caught-up state is a dormant series bookmark (`NextEpisodeId` null), not a deleted row.
 - Season 2 appears but the user never starts it within the configured window: series leaves Keep Watching. Watch history and `IsCompleted` stay unchanged.
 - Several new episodes arrive in one scan: only the first playable episode after the cursor is next-up.
 - Mid-episode resume always beats series next-up for the same show. A library scan must not restart the in-progress episode from 00:00.
 
-Dismiss removes bookmarks. It does not change `IsCompleted` on media state.
+Dismiss removes bookmarks. It does not change `IsCompleted` on media state. A later scan does not undo dismiss, because the next-up was already playable.
+
+Mark series or season unwatched dismisses the series bookmark (serie and season ids are valid dismiss targets). Mark series watched completes every episode and leaves a dormant bookmark when there is no further next-up.
 
 ## Integration points
 
 | Area | Behavior |
 |---|---|
 | `UpdatePlaybackProgress` | Updates item bookmark. Calls `OnEpisodeCompletedAsync` on completion |
-| `SetMediaWatchState` | Bookmarks on watch/unwatch |
+| `SetMediaWatchState` | Bookmarks on watch/unwatch (item bookmarks are cleared on unwatch even when the title was only in progress) |
 | `DismissFromContinueWatching` | `DismissAsync` |
 | `BulkUpsertMediaStates` | Import writes item/series bookmarks (API unchanged for K7.Import) |
 | `MediaCreatedEvent` (SerieEpisode) | `SeriesPlaybackBookmarkRefreshEventHandler` refreshes series bookmarks |
@@ -101,8 +103,8 @@ Series and season list items do not store their own `IsCompleted`. `LiteMediaPro
 3. Copies latest completed episode per user/serie (or shared profile/serie) to series bookmarks
 4. Drops progress/exclusion columns from media state tables
 
-Series bookmarks migrated without `NextEpisodeId` are filled on the next Keep Watching load via `BackfillMissingNextEpisodesAsync`, or on the next library scan via `RefreshSeriesBookmarksForSerieAsync`.
+Series bookmarks migrated without `NextEpisodeId` are filled on the next Keep Watching load via `BackfillMissingNextEpisodesAsync`, or on the next library scan via `RefreshSeriesBookmarksForSerieAsync`. Backfill leaves dormant rows in place when there is still no next playable episode.
 
 ## Tests
 
-`PlaybackBookmarkServiceTests` (complete, dismiss, expire, late-season refresh, backfill, shared profile, batch next-up), `SeriesPlaybackBookmarkRefreshEventHandlerTests`, `ContinueWatchingEligibilityTests`, `ContinueWatchingFeedDeduperTests`, `MediaMappingsTests` (bookmark overlay), `GetMediaQueryHandlerTests`, and related handler tests in `tests/Application.UnitTests`.
+`PlaybackBookmarkServiceTests` (complete, dismiss including serie/season ids, expire, late-season refresh, recreate after caught-up, backfill, shared profile, batch next-up), `SetMediaWatchStateCommandHandlerTests`, `SeriesPlaybackBookmarkRefreshEventHandlerTests`, `ContinueWatchingEligibilityTests`, `ContinueWatchingFeedDeduperTests`, `MediaMappingsTests` (bookmark overlay), `GetMediaQueryHandlerTests`, and related handler tests in `tests/Application.UnitTests`.

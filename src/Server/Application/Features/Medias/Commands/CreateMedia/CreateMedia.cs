@@ -893,6 +893,8 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
             _context.Medias.Add(episode);
             episode.AddDomainEvent(new MediaCreatedEvent(episode));
             hasNewEpisodes = true;
+            refreshSeriesBookmarks = true;
+            becamePlayableEpisodeIds.Add(episode.Id);
 
             if (formerIdForNew is Guid formerNewId && formerNewId != episode.Id)
                 orphanTransfers.Add((formerNewId, episode.Id));
@@ -929,7 +931,13 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
         }
 
         if (refreshSeriesBookmarks)
-            await _bookmarkService.RefreshSeriesBookmarksForSerieAsync(serie.Id, DateTime.UtcNow, cancellationToken);
+        {
+            await _bookmarkService.RefreshSeriesBookmarksForSerieAsync(
+                serie.Id,
+                DateTime.UtcNow,
+                becamePlayableEpisodeIds,
+                cancellationToken);
+        }
 
         if (hasNewEpisodes && !string.IsNullOrEmpty(providerExternalId) && !string.IsNullOrEmpty(matchedProviderName))
         {

@@ -119,6 +119,30 @@ public class SeriesPlaybackBookmarkRefreshEventHandlerTests
     }
 
     [Test]
+    public async Task Handle_ShouldRecreateSeriesBookmark_WhenCaughtUpUserGetsNewEpisode()
+    {
+        _context.PlaybackBookmarks.RemoveRange(_context.PlaybackBookmarks);
+        _context.UserMediaStates.Add(new UserMediaState
+        {
+            UserId = _userId,
+            MediaId = _episode1Id,
+            IsCompleted = true,
+            LastInteractedAt = DateTime.UtcNow.AddDays(-20)
+        });
+        await _context.SaveChangesAsync();
+
+        var episode2 = await _context.Medias.OfType<SerieEpisode>().SingleAsync(e => e.Id == _episode2Id);
+        await _handler.Handle(new MediaCreatedEvent(episode2), CancellationToken.None);
+
+        var bookmark = await _context.PlaybackBookmarks
+            .OfType<SeriesPlaybackBookmark>()
+            .SingleAsync(b => b.UserId == _userId && b.SerieId == _serieId);
+
+        bookmark.LastCompletedEpisodeId.Should().Be(_episode1Id);
+        bookmark.NextEpisodeId.Should().Be(_episode2Id);
+    }
+
+    [Test]
     public async Task Handle_ShouldIgnoreNonEpisodeMedia()
     {
         var movie = new Movie { Id = Guid.NewGuid(), Title = "Film", SortTitle = "Film" };

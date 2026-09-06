@@ -96,12 +96,16 @@ public class SetMediaWatchStateCommandHandler(
                     }
                 }
             }
-            else if (wasCompleted)
+            else
             {
-                state.IsCompleted = false;
-                state.LastInteractedAt = timeNow;
+                if (wasCompleted)
+                {
+                    state.IsCompleted = false;
+                    state.LastInteractedAt = timeNow;
+                    notifications.Add((mediaId, 0, false, notifyType));
+                }
+
                 await bookmarkService.RemoveItemBookmarkAsync(userId, sharedProfileId: null, mediaId, cancellationToken);
-                notifications.Add((mediaId, 0, false, notifyType));
             }
         }
 

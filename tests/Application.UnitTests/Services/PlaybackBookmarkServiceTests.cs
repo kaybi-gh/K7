@@ -24,6 +24,9 @@ public class PlaybackBookmarkServiceTests
     private Guid _episode2Id;
     private Guid _episode3Id;
 
+    private Guid _libraryId;
+    private Guid _peerServerId;
+
     [SetUp]
     public void SetUp()
     {
@@ -63,6 +66,8 @@ public class PlaybackBookmarkServiceTests
 
         _context.Medias.AddRange(serie, season, episode1, episode2, episode3);
         var (libraryId, peerServerId) = RemoteIndexedFilesSamples.EnsureLibraryAndPeer(_context);
+        _libraryId = libraryId;
+        _peerServerId = peerServerId;
         _context.RemoteIndexedFiles.AddRange(
             RemoteIndexedFilesSamples.Create(_episode1Id, libraryId, peerServerId),
             RemoteIndexedFilesSamples.Create(_episode2Id, libraryId, peerServerId),
@@ -126,6 +131,48 @@ public class PlaybackBookmarkServiceTests
         await _context.SaveChangesAsync();
 
         (await _context.PlaybackBookmarks.CountAsync()).Should().Be(0);
+    }
+
+    [Test]
+    public async Task DismissAsync_ShouldRemoveSeriesBookmark_WhenMediaIsSerie()
+    {
+        await _sut.OnEpisodeCompletedAsync(_userId, null, _episode1Id, DateTime.UtcNow);
+        await _context.SaveChangesAsync();
+
+        await _sut.DismissAsync(_serieId, _userId);
+        await _context.SaveChangesAsync();
+
+        (await _context.PlaybackBookmarks.CountAsync()).Should().Be(0);
+    }
+
+    [Test]
+    public async Task DismissAsync_ShouldRemoveSeriesBookmark_WhenMediaIsSeason()
+    {
+        await _sut.OnEpisodeCompletedAsync(_userId, null, _episode1Id, DateTime.UtcNow);
+        await _context.SaveChangesAsync();
+
+        await _sut.DismissAsync(_seasonId, _userId);
+        await _context.SaveChangesAsync();
+
+        (await _context.PlaybackBookmarks.CountAsync()).Should().Be(0);
+    }
+
+    [Test]
+    public async Task OnEpisodeCompletedAsync_ShouldKeepDormantBookmark_WhenNoNextPlayable()
+    {
+        var timeNow = DateTime.UtcNow;
+        var policy = new VideoPlaybackPolicySettingsDto { MinResumePercent = 5 };
+
+        await _sut.OnEpisodeCompletedAsync(_userId, null, _episode3Id, timeNow);
+        await _context.SaveChangesAsync();
+
+        var bookmark = await _context.PlaybackBookmarks
+            .OfType<SeriesPlaybackBookmark>()
+            .SingleAsync(b => b.UserId == _userId && b.SerieId == _serieId);
+
+        bookmark.LastCompletedEpisodeId.Should().Be(_episode3Id);
+        bookmark.NextEpisodeId.Should().BeNull();
+        _sut.IsSeriesBookmarkEligible(bookmark, policy, timeNow, isNextPlayable: false).Should().BeFalse();
     }
 
     [Test]
@@ -251,6 +298,150 @@ public class PlaybackBookmarkServiceTests
     }
 
     [Test]
+    public async Task BackfillMissingNextEpisodesAsync_ShouldKeepDormant_WhenNoNextPlayable()
+    {
+        _context.PlaybackBookmarks.Add(new SeriesPlaybackBookmark
+        {
+            UserId = _userId,
+            SerieId = _serieId,
+            LastCompletedEpisodeId = _episode3Id,
+            NextEpisodeId = null,
+            ActivityAt = DateTime.UtcNow.AddDays(-10),
+            NextEpisodeAvailableAt = default,
+            UpdatedAt = DateTime.UtcNow.AddDays(-10)
+        });
+        await _context.SaveChangesAsync();
+
+        await _sut.BackfillMissingNextEpisodesAsync(_userId, null, DateTime.UtcNow);
+        await _context.SaveChangesAsync();
+
+        var bookmark = await _context.PlaybackBookmarks
+            .OfType<SeriesPlaybackBookmark>()
+            .SingleAsync(b => b.UserId == _userId);
+
+        bookmark.NextEpisodeId.Should().BeNull();
+        bookmark.LastCompletedEpisodeId.Should().Be(_episode3Id);
+    }
+
+    [Test]
+    public async Task RefreshSeriesBookmarksForSerieAsync_ShouldKeepDormant_WhenNoNextPlayable()
+    {
+        await _sut.OnEpisodeCompletedAsync(_userId, null, _episode3Id, DateTime.UtcNow);
+        await _context.SaveChangesAsync();
+
+        await _sut.RefreshSeriesBookmarksForSerieAsync(_serieId, DateTime.UtcNow);
+        await _context.SaveChangesAsync();
+
+        var bookmark = await _context.PlaybackBookmarks
+            .OfType<SeriesPlaybackBookmark>()
+            .SingleAsync(b => b.UserId == _userId && b.SerieId == _serieId);
+
+        bookmark.LastCompletedEpisodeId.Should().Be(_episode3Id);
+        bookmark.NextEpisodeId.Should().BeNull();
+    }
+
+    [Test]
+    public async Task RefreshSeriesBookmarksForSerieAsync_ShouldRecreate_WhenCaughtUpUserGetsNewEpisode()
+    {
+        _context.UserMediaStates.Add(new UserMediaState
+        {
+            UserId = _userId,
+            MediaId = _episode3Id,
+            IsCompleted = true,
+            LastInteractedAt = DateTime.UtcNow.AddDays(-20)
+        });
+        await _context.SaveChangesAsync();
+
+        var episode4Id = await AddPlayableEpisodeAsync(4);
+        var timeNow = DateTime.UtcNow;
+
+        await _sut.RefreshSeriesBookmarksForSerieAsync(_serieId, timeNow, [episode4Id]);
+        await _context.SaveChangesAsync();
+
+        var bookmark = await _context.PlaybackBookmarks
+            .OfType<SeriesPlaybackBookmark>()
+            .SingleAsync(b => b.UserId == _userId && b.SerieId == _serieId);
+
+        bookmark.LastCompletedEpisodeId.Should().Be(_episode3Id);
+        bookmark.NextEpisodeId.Should().Be(episode4Id);
+        bookmark.NextEpisodeAvailableAt.Should().Be(timeNow);
+
+        var policy = new VideoPlaybackPolicySettingsDto { ContinueWatchingMaxAgeDays = 14 };
+        _sut.IsSeriesBookmarkEligible(bookmark, policy, timeNow, isNextPlayable: true).Should().BeTrue();
+    }
+
+    [Test]
+    public async Task RefreshSeriesBookmarksForSerieAsync_ShouldNotRecreate_WhenUserDismissedAndLaterEpisodeArrives()
+    {
+        _context.UserMediaStates.Add(new UserMediaState
+        {
+            UserId = _userId,
+            MediaId = _episode1Id,
+            IsCompleted = true,
+            LastInteractedAt = DateTime.UtcNow.AddDays(-2)
+        });
+        await _sut.OnEpisodeCompletedAsync(_userId, null, _episode1Id, DateTime.UtcNow.AddDays(-2));
+        await _context.SaveChangesAsync();
+
+        await _sut.DismissAsync(_serieId, _userId);
+        await _context.SaveChangesAsync();
+
+        var episode4Id = await AddPlayableEpisodeAsync(4);
+        await _sut.RefreshSeriesBookmarksForSerieAsync(_serieId, DateTime.UtcNow, [episode4Id]);
+        await _context.SaveChangesAsync();
+
+        (await _context.PlaybackBookmarks.OfType<SeriesPlaybackBookmark>().CountAsync()).Should().Be(0);
+    }
+
+    [Test]
+    public async Task RefreshSeriesBookmarksForSerieAsync_ShouldRecreate_WhenSharedProfileCaughtUpGetsNewEpisode()
+    {
+        var sharedProfileId = await AddSharedProfileAsync();
+        _context.SharedProfileMediaStates.Add(new SharedProfileMediaState
+        {
+            SharedProfileId = sharedProfileId,
+            MediaId = _episode3Id,
+            IsCompleted = true,
+            LastInteractedAt = DateTime.UtcNow.AddDays(-20)
+        });
+        await _context.SaveChangesAsync();
+
+        var episode4Id = await AddPlayableEpisodeAsync(4);
+        var timeNow = DateTime.UtcNow;
+        await _sut.RefreshSeriesBookmarksForSerieAsync(_serieId, timeNow, [episode4Id]);
+        await _context.SaveChangesAsync();
+
+        var bookmark = await _context.PlaybackBookmarks
+            .OfType<SeriesPlaybackBookmark>()
+            .SingleAsync(b => b.SharedProfileId == sharedProfileId && b.SerieId == _serieId);
+
+        bookmark.LastCompletedEpisodeId.Should().Be(_episode3Id);
+        bookmark.NextEpisodeId.Should().Be(episode4Id);
+        bookmark.UserId.Should().BeNull();
+    }
+
+    [Test]
+    public async Task RefreshSeriesBookmarksForSerieAsync_ShouldSetNextOnDormant_WhenNewEpisodeAppears()
+    {
+        var oldActivity = DateTime.UtcNow.AddDays(-30);
+        await _sut.OnEpisodeCompletedAsync(_userId, null, _episode3Id, oldActivity);
+        await _context.SaveChangesAsync();
+
+        var episode4Id = await AddPlayableEpisodeAsync(4);
+        var timeNow = DateTime.UtcNow;
+        await _sut.RefreshSeriesBookmarksForSerieAsync(_serieId, timeNow, [episode4Id]);
+        await _context.SaveChangesAsync();
+
+        var bookmark = await _context.PlaybackBookmarks
+            .OfType<SeriesPlaybackBookmark>()
+            .SingleAsync(b => b.UserId == _userId);
+
+        bookmark.NextEpisodeId.Should().Be(episode4Id);
+        bookmark.NextEpisodeAvailableAt.Should().Be(timeNow);
+        bookmark.ActivityAt.Should().Be(oldActivity);
+    }
+
+    [Test]
     public async Task OnEpisodeCompletedAsync_ShouldWorkForSharedProfile()
     {
         var sharedProfileId = Guid.NewGuid();
@@ -295,6 +486,44 @@ public class PlaybackBookmarkServiceTests
         await _context.SaveChangesAsync();
 
         (await _context.PlaybackBookmarks.CountAsync()).Should().Be(0);
+    }
+
+    [Test]
+    public async Task DismissForSharedProfileAsync_ShouldRemoveSeriesBookmark_WhenMediaIsSerie()
+    {
+        var sharedProfileId = await AddSharedProfileAsync();
+        await _sut.OnEpisodeCompletedAsync(null, sharedProfileId, _episode1Id, DateTime.UtcNow);
+        await _context.SaveChangesAsync();
+
+        await _sut.DismissForSharedProfileAsync(_serieId, sharedProfileId);
+        await _context.SaveChangesAsync();
+
+        (await _context.PlaybackBookmarks.CountAsync()).Should().Be(0);
+    }
+
+    private async Task<Guid> AddSharedProfileAsync()
+    {
+        var sharedProfileId = Guid.NewGuid();
+        _context.SharedProfiles.Add(new SharedProfile
+        {
+            Id = sharedProfileId,
+            Name = "Couple",
+            HostUserId = _userId,
+            CreatedByUserId = _userId
+        });
+        await _context.SaveChangesAsync();
+        return sharedProfileId;
+    }
+
+    private async Task<Guid> AddPlayableEpisodeAsync(int number)
+    {
+        var serie = await _context.Medias.OfType<Serie>().SingleAsync(s => s.Id == _serieId);
+        var season = await _context.Medias.OfType<SerieSeason>().SingleAsync(s => s.Id == _seasonId);
+        var id = Guid.NewGuid();
+        _context.Medias.Add(CreateEpisode(id, serie, season, number));
+        _context.RemoteIndexedFiles.Add(RemoteIndexedFilesSamples.Create(id, _libraryId, _peerServerId));
+        await _context.SaveChangesAsync();
+        return id;
     }
 
     private static SerieEpisode CreateEpisode(Guid id, Serie serie, SerieSeason season, int number) =>

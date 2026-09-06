@@ -18,7 +18,11 @@ public class SeriesPlaybackBookmarkRefreshEventHandler(
             return;
 
         var timeNow = DateTime.UtcNow;
-        await bookmarkService.RefreshSeriesBookmarksForSerieAsync(episode.SerieId, timeNow, cancellationToken);
+        await bookmarkService.RefreshSeriesBookmarksForSerieAsync(
+            episode.SerieId,
+            timeNow,
+            [episode.Id],
+            cancellationToken);
         await context.SaveChangesAsync(cancellationToken);
         logger.LogDebug(
             "Series playback bookmarks refreshed for new episode {EpisodeId} in serie {SerieId}",

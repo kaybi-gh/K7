@@ -393,7 +393,13 @@ public class ReidentifyIndexedFileCommandHandler(
             existingEpisode.IndexedFiles ??= [];
             existingEpisode.IndexedFiles.Add(indexedFile);
             if (becamePlayable)
-                await bookmarkService.RefreshSeriesBookmarksForSerieAsync(serie.Id, DateTime.UtcNow, cancellationToken);
+            {
+                await bookmarkService.RefreshSeriesBookmarksForSerieAsync(
+                    serie.Id,
+                    DateTime.UtcNow,
+                    [existingEpisode.Id],
+                    cancellationToken);
+            }
             return;
         }
 

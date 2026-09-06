@@ -33,9 +33,16 @@ public interface IPlaybackBookmarkService
         DateTime timeNow,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// After a library scan or new episode, recalc next-up for existing series bookmarks.
+    /// Caught-up bookmarks stay dormant (null next) until a later episode is playable.
+    /// When <paramref name="newlyPlayableEpisodeIds"/> is set, also recreates bookmarks for viewers
+    /// whose next-up is one of those episodes. Dismissed next-up is not recreated because it is already playable.
+    /// </summary>
     Task RefreshSeriesBookmarksForSerieAsync(
         Guid serieId,
         DateTime timeNow,
+        IReadOnlyCollection<Guid>? newlyPlayableEpisodeIds = null,
         CancellationToken cancellationToken = default);
 
     Task<Guid?> ResolveNextPlayableEpisodeIdAsync(
@@ -169,32 +176,19 @@ public class PlaybackBookmarkService(
             episodeId,
             cancellationToken);
 
-        if (seriesBookmark.NextEpisodeId != nextEpisodeId)
-        {
-            seriesBookmark.NextEpisodeId = nextEpisodeId;
-            seriesBookmark.NextEpisodeAvailableAt = nextEpisodeId is not null ? timeNow : default;
-        }
-        else if (nextEpisodeId is not null && seriesBookmark.NextEpisodeAvailableAt == default)
-        {
-            seriesBookmark.NextEpisodeAvailableAt = timeNow;
-        }
-
-        if (nextEpisodeId is null)
-            context.PlaybackBookmarks.Remove(seriesBookmark);
+        ApplyNextEpisode(seriesBookmark, nextEpisodeId, timeNow);
     }
 
     public async Task RefreshSeriesBookmarksForSerieAsync(
         Guid serieId,
         DateTime timeNow,
+        IReadOnlyCollection<Guid>? newlyPlayableEpisodeIds = null,
         CancellationToken cancellationToken = default)
     {
         var seriesBookmarks = await context.PlaybackBookmarks
             .OfType<SeriesPlaybackBookmark>()
             .Where(b => b.SerieId == serieId)
             .ToListAsync(cancellationToken);
-
-        if (seriesBookmarks.Count == 0)
-            return;
 
         foreach (var bookmark in seriesBookmarks)
         {
@@ -204,29 +198,25 @@ public class PlaybackBookmarkService(
                 bookmark.LastCompletedEpisodeId,
                 cancellationToken);
 
-            if (nextEpisodeId is null)
-            {
-                context.PlaybackBookmarks.Remove(bookmark);
-                continue;
-            }
+            ApplyNextEpisode(bookmark, nextEpisodeId, timeNow);
+        }
 
-            if (bookmark.NextEpisodeId != nextEpisodeId)
-            {
-                bookmark.NextEpisodeId = nextEpisodeId;
-                bookmark.NextEpisodeAvailableAt = timeNow;
-            }
-            else if (bookmark.NextEpisodeAvailableAt == default)
-            {
-                bookmark.NextEpisodeAvailableAt = timeNow;
-            }
-
-            bookmark.UpdatedAt = timeNow;
+        var recreated = 0;
+        if (newlyPlayableEpisodeIds is { Count: > 0 })
+        {
+            recreated = await RecreateMissingSeriesBookmarksAsync(
+                serieId,
+                timeNow,
+                newlyPlayableEpisodeIds,
+                seriesBookmarks,
+                cancellationToken);
         }
 
         logger.LogDebug(
-            "Refreshed {Count} series playback bookmarks for serie {SerieId}",
+            "Refreshed {Count} series playback bookmarks for serie {SerieId} ({Recreated} recreated)",
             seriesBookmarks.Count,
-            serieId);
+            serieId,
+            recreated);
     }
 
     public async Task<Guid?> ResolveNextPlayableEpisodeIdAsync(
@@ -257,13 +247,10 @@ public class PlaybackBookmarkService(
 
     public async Task DismissAsync(Guid mediaId, Guid userId, CancellationToken cancellationToken = default)
     {
-        var media = await context.Medias
-            .AsNoTracking()
-            .FirstOrDefaultAsync(m => m.Id == mediaId, cancellationToken);
-
-        if (media is SerieEpisode episode)
+        var serieId = await ResolveSerieIdForDismissAsync(mediaId, cancellationToken);
+        if (serieId is { } id)
         {
-            await DismissSerieAsync(userId, sharedProfileId: null, episode.SerieId, cancellationToken);
+            await DismissSerieAsync(userId, sharedProfileId: null, id, cancellationToken);
             return;
         }
 
@@ -277,13 +264,10 @@ public class PlaybackBookmarkService(
         Guid sharedProfileId,
         CancellationToken cancellationToken = default)
     {
-        var media = await context.Medias
-            .AsNoTracking()
-            .FirstOrDefaultAsync(m => m.Id == mediaId, cancellationToken);
-
-        if (media is SerieEpisode episode)
+        var serieId = await ResolveSerieIdForDismissAsync(mediaId, cancellationToken);
+        if (serieId is { } id)
         {
-            await DismissSerieAsync(userId: null, sharedProfileId, episode.SerieId, cancellationToken);
+            await DismissSerieAsync(userId: null, sharedProfileId, id, cancellationToken);
             return;
         }
 
@@ -422,15 +406,171 @@ public class PlaybackBookmarkService(
                 cancellationToken);
 
             if (nextEpisodeId is null)
-            {
-                context.PlaybackBookmarks.Remove(bookmark);
                 continue;
-            }
 
             bookmark.NextEpisodeId = nextEpisodeId;
             bookmark.NextEpisodeAvailableAt = timeNow;
             bookmark.UpdatedAt = timeNow;
         }
+    }
+
+    private async Task<Guid?> ResolveSerieIdForDismissAsync(Guid mediaId, CancellationToken cancellationToken)
+    {
+        var media = await context.Medias
+            .AsNoTracking()
+            .FirstOrDefaultAsync(m => m.Id == mediaId, cancellationToken);
+
+        return media switch
+        {
+            SerieEpisode episode => episode.SerieId,
+            SerieSeason season => season.SerieId,
+            Serie => media.Id,
+            _ => null
+        };
+    }
+
+    private async Task<int> RecreateMissingSeriesBookmarksAsync(
+        Guid serieId,
+        DateTime timeNow,
+        IReadOnlyCollection<Guid> newlyPlayableEpisodeIds,
+        IReadOnlyCollection<SeriesPlaybackBookmark> existingBookmarks,
+        CancellationToken cancellationToken)
+    {
+        var newlyPlayable = newlyPlayableEpisodeIds.ToHashSet();
+        var existingUserIds = existingBookmarks
+            .Where(b => b.UserId.HasValue)
+            .Select(b => b.UserId!.Value)
+            .ToHashSet();
+        var existingProfileIds = existingBookmarks
+            .Where(b => b.SharedProfileId.HasValue)
+            .Select(b => b.SharedProfileId!.Value)
+            .ToHashSet();
+
+        var episodeRows = (await context.Medias
+            .OfType<SerieEpisode>()
+            .Where(e => e.SerieId == serieId)
+            .Select(e => new { e.Id, SeasonNumber = e.Season.SeasonNumber, e.EpisodeNumber })
+            .ToListAsync(cancellationToken))
+            .Select(e => (e.Id, e.SeasonNumber, e.EpisodeNumber))
+            .ToList();
+
+        if (episodeRows.Count == 0)
+            return 0;
+
+        var episodeIds = episodeRows.Select(e => e.Id).ToList();
+        var recreated = 0;
+
+        var userCompletions = await context.UserMediaStates
+            .Where(s => s.IsCompleted && episodeIds.Contains(s.MediaId))
+            .Select(s => new { s.UserId, s.MediaId, s.LastInteractedAt })
+            .ToListAsync(cancellationToken);
+
+        foreach (var group in userCompletions.GroupBy(c => c.UserId))
+        {
+            if (!existingUserIds.Add(group.Key))
+                continue;
+
+            if (await TryRecreateSeriesBookmarkAsync(
+                    userId: group.Key,
+                    sharedProfileId: null,
+                    serieId,
+                    timeNow,
+                    newlyPlayable,
+                    episodeRows,
+                    group.Select(c => (c.MediaId, c.LastInteractedAt)),
+                    cancellationToken))
+            {
+                recreated++;
+            }
+        }
+
+        var profileCompletions = await context.SharedProfileMediaStates
+            .Where(s => s.IsCompleted && episodeIds.Contains(s.MediaId))
+            .Select(s => new { s.SharedProfileId, s.MediaId, s.LastInteractedAt })
+            .ToListAsync(cancellationToken);
+
+        foreach (var group in profileCompletions.GroupBy(c => c.SharedProfileId))
+        {
+            if (!existingProfileIds.Add(group.Key))
+                continue;
+
+            if (await TryRecreateSeriesBookmarkAsync(
+                    userId: null,
+                    sharedProfileId: group.Key,
+                    serieId,
+                    timeNow,
+                    newlyPlayable,
+                    episodeRows,
+                    group.Select(c => (c.MediaId, c.LastInteractedAt)),
+                    cancellationToken))
+            {
+                recreated++;
+            }
+        }
+
+        return recreated;
+    }
+
+    private async Task<bool> TryRecreateSeriesBookmarkAsync(
+        Guid? userId,
+        Guid? sharedProfileId,
+        Guid serieId,
+        DateTime timeNow,
+        HashSet<Guid> newlyPlayable,
+        IReadOnlyCollection<(Guid Id, int SeasonNumber, int EpisodeNumber)> episodeRows,
+        IEnumerable<(Guid MediaId, DateTime? LastInteractedAt)> completions,
+        CancellationToken cancellationToken)
+    {
+        var last = completions
+            .Join(
+                episodeRows,
+                c => c.MediaId,
+                e => e.Id,
+                (c, e) => new { c.MediaId, c.LastInteractedAt, e.SeasonNumber, e.EpisodeNumber })
+            .OrderByDescending(x => x.SeasonNumber == 0 ? int.MinValue : x.SeasonNumber)
+            .ThenByDescending(x => x.EpisodeNumber)
+            .FirstOrDefault();
+
+        if (last is null)
+            return false;
+
+        var nextEpisodeId = await ResolveNextPlayableEpisodeIdAsync(
+            userId,
+            sharedProfileId,
+            last.MediaId,
+            cancellationToken);
+
+        if (nextEpisodeId is null || !newlyPlayable.Contains(nextEpisodeId.Value))
+            return false;
+
+        context.PlaybackBookmarks.Add(new SeriesPlaybackBookmark
+        {
+            UserId = userId,
+            SharedProfileId = sharedProfileId,
+            SerieId = serieId,
+            LastCompletedEpisodeId = last.MediaId,
+            NextEpisodeId = nextEpisodeId,
+            ActivityAt = last.LastInteractedAt ?? timeNow,
+            NextEpisodeAvailableAt = timeNow,
+            UpdatedAt = timeNow
+        });
+
+        return true;
+    }
+
+    private static void ApplyNextEpisode(SeriesPlaybackBookmark bookmark, Guid? nextEpisodeId, DateTime timeNow)
+    {
+        if (bookmark.NextEpisodeId != nextEpisodeId)
+        {
+            bookmark.NextEpisodeId = nextEpisodeId;
+            bookmark.NextEpisodeAvailableAt = nextEpisodeId is not null ? timeNow : default;
+        }
+        else if (nextEpisodeId is not null && bookmark.NextEpisodeAvailableAt == default)
+        {
+            bookmark.NextEpisodeAvailableAt = timeNow;
+        }
+
+        bookmark.UpdatedAt = timeNow;
     }
 
     private async Task DismissSerieAsync(
