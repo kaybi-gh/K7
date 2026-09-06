@@ -89,8 +89,8 @@
     <PackageVersion Include="OpenIddict.Server.AspNetCore" Version="7.6.1" />
     <PackageVersion Include="Respawn" Version="7.0.0" />
     <PackageVersion Include="Scalar.AspNetCore.Microsoft" Version="2.17.2" />
-    <PackageVersion Include="SkiaSharp" Version="3.119.4" />
-    <PackageVersion Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="3.119.4" />
+    <PackageVersion Include="SkiaSharp" Version="4.151.2" />
+    <PackageVersion Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="4.151.2" />
     <PackageVersion Include="SourceGear.sqlite3" Version="3.53.4" />
     <PackageVersion Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.5" />
     <PackageVersion Include="SQLitePCLRaw.config.e_sqlite3" Version="3.0.5" />
@@ -99,13 +99,13 @@
     <PackageVersion Include="SQLitePCLRaw.provider.e_sqlite3" Version="3.0.5" />
     <PackageVersion Include="Serilog" Version="4.4.0" />
     <PackageVersion Include="SkiaSharp.Extended.UI.Maui" Version="3.0.0" />
-    <PackageVersion Include="SkiaSharp.Skottie" Version="3.119.4" />
+    <PackageVersion Include="SkiaSharp.Skottie" Version="4.151.2" />
     <PackageVersion Include="Serilog.AspNetCore" Version="10.0.0" />
     <PackageVersion Include="SharpDX.Direct3D11" Version="4.2.0" />
     <PackageVersion Include="Serilog.Sinks.File" Version="7.0.0" />
     <PackageVersion Include="Serilog.Sinks.OpenTelemetry" Version="4.2.0" />
     <PackageVersion Include="Spectre.Console" Version="0.57.2" />
-    <PackageVersion Include="Svg.Skia" Version="3.7.0" />
+    <PackageVersion Include="Svg.Skia" Version="5.2.3" />
     <PackageVersion Include="System.CommandLine" Version="2.0.11" />
     <PackageVersion Include="System.Text.Json" Version="10.0.11" />
     <PackageVersion Include="TagLibSharp" Version="2.3.0" />
