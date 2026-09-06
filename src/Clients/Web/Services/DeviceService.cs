@@ -25,6 +25,7 @@ public class DeviceService(IJSRuntime jsRuntime, IMediaService mediaService, IDe
         var displayHeight = await jsRuntime.InvokeAsync<int>("getDisplayHeight");
         var displayWidth = await jsRuntime.InvokeAsync<int>("getDisplayWidth");
         var supportedMediaFormats = await GetSupportedMediaFormatsAsync();
+        var videoProfileTokens = await GetSupportedVideoProfilesAsync();
         var webDeviceDetails = await GetWebDeviceDetailsAsync(parsedUserAgent);
         var deviceType = CacheDeviceType(ResolveDeviceType(parsedUserAgent.PlatformType, webDeviceDetails.RawUserAgent));
         var browser = MapBrowser(parsedUserAgent.BrowserName);
@@ -46,7 +47,9 @@ public class DeviceService(IJSRuntime jsRuntime, IMediaService mediaService, IDe
             WebDeviceDetails = webDeviceDetails,
             PlaybackCapabilities = new CreateDeviceRequestPlaybackCapibilities()
             {
-                SupportedMediaFormatIds = supportedMediaFormats.Select(x => x.Id).ToList(),
+                SupportedMediaFormatIds = supportedMediaFormats.Select(x => x.Id)
+                    .Concat(videoProfileTokens)
+                    .ToList(),
                 SupportedSubtitlesCodecs = ["webvtt"],
                 SupportsHDR = await GetHdrSupportAsync()
             }
@@ -102,12 +105,15 @@ public class DeviceService(IJSRuntime jsRuntime, IMediaService mediaService, IDe
         var containers = await jsRuntime.InvokeAsync<string[]>("getSupportedContainersAsync");
         var audioCodecs = await jsRuntime.InvokeAsync<string[]>("getSupportedAudioCodecsAsync");
         var videoCodecs = await jsRuntime.InvokeAsync<string[]>("getSupportedVideoCodecsAsync");
+        var videoProfiles = await GetSupportedVideoProfilesAsync();
 
         return new DeviceCodecSummaryDto
         {
             Containers = containers ?? [],
             AudioCodecs = audioCodecs ?? [],
-            VideoCodecs = videoCodecs ?? []
+            VideoCodecs = videoCodecs ?? [],
+            VideoProfiles = [.. videoProfiles],
+            SubtitleCodecs = ["webvtt"]
         };
     }
 
@@ -138,6 +144,19 @@ public class DeviceService(IJSRuntime jsRuntime, IMediaService mediaService, IDe
         }).ToList();
 
         return supported;
+    }
+
+    private async Task<IReadOnlyList<string>> GetSupportedVideoProfilesAsync()
+    {
+        try
+        {
+            var tokens = await jsRuntime.InvokeAsync<string[]>("getSupportedVideoProfilesAsync");
+            return tokens ?? [];
+        }
+        catch (JSException)
+        {
+            return [];
+        }
     }
 
     public async Task<bool> GetHdrSupportAsync()

@@ -144,8 +144,13 @@ public class GetStreamUriQueryHandler(
             && VideoDecoderProfileMatching.AllowsDirectPlay(
                 device.PlaybackCapabilities.SupportedMediaFormatIds,
                 selectedVideoTrack);
-        if (usesVideoJsHls && !IsVideoJsHlsCopyTrack(selectedVideoTrack))
+        if (usesVideoJsHls
+            && !IsVideoJsHlsCopyTrack(
+                selectedVideoTrack,
+                device.PlaybackCapabilities.SupportedMediaFormatIds))
+        {
             videoCodecSupported = false;
+        }
 
         var requiresVideoTranscoding = !videoCodecSupported || resolutionExceedsDevice;
 
@@ -201,9 +206,18 @@ public class GetStreamUriQueryHandler(
                 continue;
             }
 
-            // Device may decode EAC3/DTS in Direct Play, but ffmpeg demuxed fMP4 remux
-            // of those codecs often never finishes init.m4s (Android Exo HLS promote).
-            if (canonicalCodec is "ac3" or "eac3" or "dts" or "truehd" or "dtshd" or "mlp")
+            // DTS/TrueHD fMP4 remux still hangs on empty init.m4s. AC3/EAC3 remux only
+            // on Video.js when the browser probed those codecs inside mp4 (MSE ac-3 / ec-3).
+            // Native HLS (Android Exo) still encodes: copy often never finishes init.m4s.
+            if (canonicalCodec is "dts" or "truehd" or "dtshd" or "mlp")
+            {
+                audioTrackTranscodings ??= [];
+                audioTrackTranscodings[audioTrack.Index] = "aac";
+                continue;
+            }
+
+            if (canonicalCodec is "ac3" or "eac3"
+                && !(usesVideoJsHls && hlsCompatibleAudioCodecSet.Contains(canonicalCodec)))
             {
                 audioTrackTranscodings ??= [];
                 audioTrackTranscodings[audioTrack.Index] = "aac";
@@ -296,13 +310,19 @@ public class GetStreamUriQueryHandler(
 
     /// <summary>
     /// Video.js VHS calls MediaSource.isTypeSupported on the master CODECS tag.
-    /// 10-bit HEVC/AV1 (Main 10) is advertised as hevc from 8-bit probes, then the
-    /// playlist is excluded (MEDIA_ERR_DECODE, no supported playlists).
+    /// Clients without profile tokens still block 10-bit HEVC/AV1: 8-bit hvc1 probes
+    /// advertise hevc, then VHS rejects the real Main 10 tag. Profile-aware Web
+    /// (vprofile:hevc:main10) already gated via <see cref="VideoDecoderProfileMatching"/>.
     /// </summary>
-    internal static bool IsVideoJsHlsCopyTrack(VideoFileTrack track)
+    internal static bool IsVideoJsHlsCopyTrack(
+        VideoFileTrack track,
+        IEnumerable<string>? formatIds = null)
     {
         var codec = MediaCodecNames.Canonical(track.Codec);
         if (codec is not ("hevc" or "av1"))
+            return true;
+
+        if (VideoDecoderProfileTokens.IsProfileAware(formatIds))
             return true;
 
         return !VideoDecoderProfileMatching.IsTenBit(track);

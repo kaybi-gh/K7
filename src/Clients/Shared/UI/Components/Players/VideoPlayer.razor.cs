@@ -30,7 +30,8 @@ public partial class VideoPlayer : IAsyncDisposable
     private static readonly TimeSpan DurationReadyTimeout = TimeSpan.FromSeconds(45);
     private static readonly TimeSpan WindowsWebDurationReadyTimeout = TimeSpan.FromSeconds(45);
     private static readonly TimeSpan RecoveryRoundTimeout = TimeSpan.FromSeconds(30);
-    private const int MaxWindowsWebRecoveryRounds = 3;
+    private const int MaxWebRecoveryRounds = 3;
+    private const int MediaErrDecode = 3;
     // Video.js MEDIA_ERR_SRC_NOT_SUPPORTED - hard failure only, not network stalls while burn-in runs.
     private const int MediaErrSrcNotSupported = 4;
     private DateTime _lastHardPlayerErrorReportUtc = DateTime.MinValue;
@@ -548,9 +549,9 @@ public partial class VideoPlayer : IAsyncDisposable
     {
         try
         {
-            var isWindowsWebPlayer = UsesWindowsWebHlsPlayer();
-            var maxRounds = isWindowsWebPlayer ? MaxWindowsWebRecoveryRounds : 1;
-            var waitTimeout = isWindowsWebPlayer
+            var usesWebPlayer = UsesWebVideoPlayer();
+            var maxRounds = usesWebPlayer ? MaxWebRecoveryRounds : 1;
+            var waitTimeout = UsesWindowsWebHlsPlayer()
                 ? WindowsWebDurationReadyTimeout
                 : DurationReadyTimeout;
 
@@ -608,7 +609,7 @@ public partial class VideoPlayer : IAsyncDisposable
                 if (IsPlaybackReady() || !PlayerService.IsVisible)
                     return;
 
-                if (isWindowsWebPlayer && round < maxRounds - 1)
+                if (usesWebPlayer && round < maxRounds - 1)
                 {
                     var recovered = await PlayerService.TryRecoverPlaybackStartAsync(
                         allowQualityLadder: true,
@@ -882,15 +883,24 @@ public partial class VideoPlayer : IAsyncDisposable
     [JSInvokable]
     public void OnPlayerError(int code, string message)
     {
-        // Soft errors (network/decode) are common while the server produces segment 0 for
-        // burn-in. Only hard SRC_NOT_SUPPORTED may step quality, and only after cooldown.
-
-        // Never recover while media is already demuxing - reloads cause the blink loop.
-        if (code != MediaErrSrcNotSupported
-            || !PlayerService.IsVisible
-            || IsPlaybackReady()
-            || IsFinitePositive(PlayerService.BufferedTime))
+        if (!PlayerService.IsVisible || PlayerService.PlaybackState is PlaybackState.Playing)
             return;
+
+        var isDecode = code == MediaErrDecode;
+        var isUnsupported = code == MediaErrSrcNotSupported;
+        if (!isDecode && !isUnsupported)
+            return;
+
+        // Decode on an encode rung is a common blip while segment 0 is produced.
+        if (isDecode && PlayerService.SelectedQuality is { IsOriginal: false })
+            return;
+
+        // SRC_NOT_SUPPORTED after buffer means VHS already joined; do not reload.
+        if (isUnsupported
+            && (IsPlaybackReady() || IsFinitePositive(PlayerService.BufferedTime)))
+        {
+            return;
+        }
 
         ReportHardVideoJsErrorToServer(code, message);
         OnHardPlayerErrorAsync().FireAndForget();

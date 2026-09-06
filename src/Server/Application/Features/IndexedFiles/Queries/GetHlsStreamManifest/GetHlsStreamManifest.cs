@@ -313,25 +313,15 @@ public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamMani
             ? new Dictionary<int, string>(query.AudioTrackTranscodings)
             : new Dictionary<int, string>();
 
-        // Video.js / MSE cannot remux EAC3/DTS into fMP4. ffmpeg -f segment also hangs on
-        // those remuxes (stuck empty_moov init.m4s ~453 bytes). Force AAC for unreliable
-        // bitstream-copy codecs even when the device can decode them in Direct Play.
-        // VideoCodecsOnly (Windows Video.js) forces AAC for every non-AAC track.
+        // GetStreamUri decides AC3/EAC3 remux vs AAC. Only force AAC here for codecs
+        // whose fMP4 remux still hangs on an empty init.m4s (DTS/TrueHD), including
+        // when AudioTrackTranscodings was omitted from the URL.
         foreach (var track in videoFileMetadata.AudioTracks)
         {
             if (audioTrackTranscodings.ContainsKey(track.Index))
                 continue;
 
-            if (query.VideoCodecsOnly)
-            {
-                if (MediaCodecNames.EqualsCodec(track.Codec, "aac"))
-                    continue;
-
-                audioTrackTranscodings[track.Index] = "aac";
-                continue;
-            }
-
-            if (IsUnreliableHlsFmp4AudioRemux(track.Codec))
+            if (IsAlwaysUnsafeHlsFmp4AudioRemux(track.Codec))
                 audioTrackTranscodings[track.Index] = "aac";
         }
 
@@ -537,11 +527,12 @@ public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamMani
     /// <summary>
     /// Bitstream-copy of these codecs into <c>-f segment</c> fMP4 often stalls on a
     /// size-zero empty_moov init (~453 bytes) until the client times out with 503.
+    /// AC3/EAC3 are allowed when GetStreamUri left them as remux (MSE probe passed).
     /// </summary>
-    private static bool IsUnreliableHlsFmp4AudioRemux(string? codec)
+    private static bool IsAlwaysUnsafeHlsFmp4AudioRemux(string? codec)
     {
         var canonical = MediaCodecNames.Canonical(codec);
-        return canonical is "ac3" or "eac3" or "dts" or "truehd" or "dtshd" or "mlp";
+        return canonical is "dts" or "truehd" or "dtshd" or "mlp";
     }
 
     private static string BoolToYesNo(bool value) => value ? "YES" : "NO";

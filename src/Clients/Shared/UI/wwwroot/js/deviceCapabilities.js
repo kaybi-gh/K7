@@ -45,9 +45,23 @@ window.getSupportedAudioCodecsAsync = async function () {
         wav: 'audio/wav'
     };
 
-    return Object.entries(codecsToTest)
+    const supported = Object.entries(codecsToTest)
         .filter(([_, mimeType]) => audioElement.canPlayType(mimeType) !== '')
         .map(([codec]) => codec);
+
+    // HLS audio playlists use MSE, not <audio>.canPlayType. Chrome/Edge can
+    // decode AC3/EAC3 in fMP4 even when canPlayType is empty.
+    const mseAudioCodecs = {
+        ac3: ['audio/mp4; codecs="ac-3"'],
+        eac3: ['audio/mp4; codecs="ec-3"']
+    };
+
+    Object.entries(mseAudioCodecs).forEach(([codec, mimeTypes]) => {
+        if (!supported.includes(codec) && anyMseTypeSupported(mimeTypes))
+            supported.push(codec);
+    });
+
+    return supported;
 };
 
 window.getSupportedContainersAsync = async function () {
@@ -107,6 +121,7 @@ window.getSupportedVideoCodecsAsync = async function () {
             'video/mp4; codecs="hvc1.1.4.L120.B0"',
             'video/mp4; codecs="hvc1.1.6.L93.B0"',
             'video/mp4; codecs="hvc1.2.4.L150.B0"',
+            'video/mp4; codecs="hvc1.2.4.L120.B0"',
             'video/mp4; codecs="hvc1.1.4.L120.B0,mp4a.40.2"'
         ],
         theora: [
@@ -117,6 +132,40 @@ window.getSupportedVideoCodecsAsync = async function () {
     return Object.entries(codecsToTest)
         .filter(([_, mimeTypes]) => anyMseTypeSupported(mimeTypes))
         .map(([codec]) => codec);
+};
+
+// Tokens match VideoDecoderProfileTokens. Do not flatten Main vs Main 10:
+// 8-bit hvc1 probes often pass when Main 10 playback will fail.
+window.getSupportedVideoProfilesAsync = async function () {
+    const tokens = [];
+
+    if (anyMseTypeSupported([
+        'video/mp4; codecs="hvc1.1.4.L120.B0"',
+        'video/mp4; codecs="hvc1.1.6.L93.B0"'
+    ])) {
+        tokens.push('vprofile:hevc:main');
+    }
+
+    if (anyMseTypeSupported([
+        'video/mp4; codecs="hvc1.2.4.L120.B0"',
+        'video/mp4; codecs="hvc1.2.4.L150.B0"'
+    ])) {
+        tokens.push('vprofile:hevc:main10');
+    }
+
+    if (anyMseTypeSupported([
+        'video/mp4; codecs="av01.0.05M.08"'
+    ])) {
+        tokens.push('vprofile:av1:main');
+    }
+
+    if (anyMseTypeSupported([
+        'video/mp4; codecs="av01.0.05M.10"'
+    ])) {
+        tokens.push('vprofile:av1:main10');
+    }
+
+    return tokens;
 };
 
 window.getHdrSupport = async function () {

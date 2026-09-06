@@ -167,11 +167,19 @@ The Web client always takes demuxed HLS (remux copy, or encode if the codec is n
 HLS-compatible). GetStreamUri starts the video and audio ffmpeg jobs as soon as the
 session is created so Video.js is not waiting on a cold `init.m4s` after its playlist
 waterfall. Web advertises video codecs from `MediaSource.isTypeSupported`
-on fMP4 strings (`hvc1...`), not `<video>.canPlayType` (progressive `hev1`). HEVC Main 10
-is encoded to H.264: MSE often accepts 8-bit `hvc1` (so About lists hevc) then Video.js
-rejects the real Main 10 tag. Demuxed `CODECS` is video-only (`hvc1` without `mp4a`) so
-VHS does not call `isTypeSupported` on a combined type. HEVC `CODECS` uses general_level_idc
-(`L120` for 4.0, not `L4`). Audio-only Direct Play is unchanged. Windows MAUI reports
+on fMP4 strings (`hvc1...`), not `<video>.canPlayType` (progressive `hev1`). HEVC Main
+vs Main 10 are separate `vprofile:hevc:main` / `vprofile:hevc:main10` tokens: an 8-bit
+`hvc1` probe must not unlock Main 10 remux. Settings -> About lists those profiles
+(and AC3/EAC3 when MSE reports `ac-3` / `ec-3`), not a flat `hevc` flag. When Main 10
+MSE passes, HLS copies HEVC.
+Otherwise GetStreamUri encodes to H.264. Demuxed `CODECS` is video-only (`hvc1` without
+`mp4a`) so VHS does not call `isTypeSupported` on a combined type. HEVC `CODECS` uses
+general_level_idc (`L120` for 4.0, not `L4`). AC3/EAC3 use the same MSE probe
+(`ac-3` / `ec-3`). If the browser reports them, HLS remuxes audio, else AAC.
+Native HLS (Android Exo) still encodes AC3/EAC3: copy often never finishes
+`init.m4s`. DTS/TrueHD still encode to AAC. Video.js
+`MEDIA_ERR_DECODE` / `MEDIA_ERR_SRC_NOT_SUPPORTED` on Original quality steps the
+encode ladder. Audio-only Direct Play is unchanged. Windows MAUI reports
 LibVLC Direct Play formats (`LibVlcWindowsCapabilities`) instead of MSE.
 
 Direct Play audio formats must exist for the file container (`audio-matroska-aac` and the

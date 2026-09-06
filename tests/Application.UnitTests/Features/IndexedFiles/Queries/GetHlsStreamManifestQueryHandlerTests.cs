@@ -193,7 +193,7 @@ public class GetHlsStreamManifestQueryHandlerTests
     }
 
     [Test]
-    public async Task Handle_ShouldForceAacAudioUris_WhenVideoCodecsOnlyAndSourceIsEac3()
+    public async Task Handle_ShouldForceAacAudioUris_WhenAudioTrackTranscodingsRequestAacForEac3()
     {
         var entity = await _context.IndexedFiles
             .Include(x => x.FileMetadata)
@@ -218,13 +218,46 @@ public class GetHlsStreamManifestQueryHandlerTests
             StreamSessionId = Guid.NewGuid(),
             TranscodingVideoCodec = "h264",
             Quality = "720p",
-            VideoCodecsOnly = true
+            VideoCodecsOnly = true,
+            AudioTrackTranscodings = new Dictionary<int, string> { [1] = "aac" }
         }, CancellationToken.None);
 
         var playlist = ((TextHttpContentResult)result).Content;
         playlist.Should().Contain("TranscodingAudioCodec=aac");
         playlist.Should().Contain("CODECS=\"avc1.");
         playlist.Should().NotContain("ec-3");
+    }
+
+    [Test]
+    public async Task Handle_ShouldKeepEac3AudioUris_WhenVideoCodecsOnlyAndNoAudioTranscodings()
+    {
+        var entity = await _context.IndexedFiles
+            .Include(x => x.FileMetadata)
+            .FirstAsync(x => x.Id == _indexedFileId);
+        var video = (VideoFileMetadata)entity.FileMetadata!;
+        await _context.Entry(video).Collection(v => v.AudioTracks).LoadAsync();
+        video.AudioTracks.Clear();
+        video.AudioTracks.Add(new AudioFileTrack
+        {
+            Index = 1,
+            Codec = "eac3",
+            Channels = 6,
+            IsDefault = true,
+            Language = "fra",
+            Name = "FR VFF"
+        });
+        await _context.SaveChangesAsync();
+
+        var result = await _handler.Handle(new GetHlsStreamManifestQuery
+        {
+            Id = _indexedFileId,
+            StreamSessionId = Guid.NewGuid(),
+            VideoCodecsOnly = true
+        }, CancellationToken.None);
+
+        var playlist = ((TextHttpContentResult)result).Content;
+        playlist.Should().NotContain("TranscodingAudioCodec=aac");
+        playlist.Should().Contain("audio/1/index.m3u8");
     }
 
     [Test]

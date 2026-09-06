@@ -301,6 +301,36 @@ public class GetStreamUriDecisionTests
     }
 
     [Test]
+    public void GetVideoFileStreamUri_ShouldRemuxHevcMain10_WhenWebClientReportsMain10()
+    {
+        var device = CreateDevice(
+            [
+                "audio-mp4-aac",
+                "video-mp4-aac-h264",
+                "video-mp4-aac-hevc",
+                VideoDecoderProfileTokens.HevcMain10
+            ],
+            ClientType.Web,
+            OperatingSystem.Unknown);
+        var (indexedFile, metadata) = CreateVideoFile("matroska", "hevc", "aac");
+        var main10Track = metadata.VideoTracks.First();
+        main10Track.Profile = "Main 10";
+        main10Track.BitDepth = 10;
+        var request = new GetStreamUriQuery
+        {
+            Id = indexedFile.Id,
+            StreamSessionId = Guid.NewGuid(),
+            AudioTrackIndex = 0
+        };
+
+        var (_, decision) = GetStreamUriQueryHandler.GetVideoFileStreamUri(
+            device, indexedFile, metadata, request, hlsSegmentsAvailable: true, subtitleTrackIndex: null);
+
+        decision.Mode.Should().Be(PlaybackMode.Transmux);
+        decision.StreamVideoCodec.Should().Be("hevc");
+    }
+
+    [Test]
     public void GetVideoFileStreamUri_ShouldTranscodeHevcMain10_WhenWebClient()
     {
         var device = CreateDevice(
@@ -348,6 +378,90 @@ public class GetStreamUriDecisionTests
 
         decision.Mode.Should().Be(PlaybackMode.Transmux);
         decision.StreamVideoCodec.Should().Be("hevc");
+    }
+
+    [Test]
+    public void GetVideoFileStreamUri_ShouldRemuxEac3_WhenWebClientProbedMp4Eac3()
+    {
+        var device = CreateDevice(
+            [
+                "audio-mp4-aac",
+                "audio-mp4-eac3",
+                "video-mp4-aac-h264",
+                "video-mp4-aac-hevc"
+            ],
+            ClientType.Web,
+            OperatingSystem.Unknown);
+        var (indexedFile, metadata) = CreateVideoFile("matroska", "hevc", "eac3");
+        var videoTrack = metadata.VideoTracks.First();
+        videoTrack.Profile = "Main";
+        videoTrack.BitDepth = 8;
+        var request = new GetStreamUriQuery
+        {
+            Id = indexedFile.Id,
+            StreamSessionId = Guid.NewGuid(),
+            AudioTrackIndex = 0
+        };
+
+        var (_, decision) = GetStreamUriQueryHandler.GetVideoFileStreamUri(
+            device, indexedFile, metadata, request, hlsSegmentsAvailable: true, subtitleTrackIndex: null);
+
+        decision.Mode.Should().Be(PlaybackMode.Transmux);
+        decision.StreamVideoCodec.Should().Be("hevc");
+        decision.StreamAudioCodec.Should().Be("eac3");
+    }
+
+    [Test]
+    public void GetVideoFileStreamUri_ShouldTranscodeEac3_WhenWebClientLacksMp4Eac3()
+    {
+        var device = CreateDevice(
+            ["audio-mp4-aac", "video-mp4-aac-h264", "video-mp4-aac-hevc"],
+            ClientType.Web,
+            OperatingSystem.Unknown);
+        var (indexedFile, metadata) = CreateVideoFile("matroska", "hevc", "eac3");
+        var videoTrack = metadata.VideoTracks.First();
+        videoTrack.Profile = "Main";
+        videoTrack.BitDepth = 8;
+        var request = new GetStreamUriQuery
+        {
+            Id = indexedFile.Id,
+            StreamSessionId = Guid.NewGuid(),
+            AudioTrackIndex = 0
+        };
+
+        var (_, decision) = GetStreamUriQueryHandler.GetVideoFileStreamUri(
+            device, indexedFile, metadata, request, hlsSegmentsAvailable: true, subtitleTrackIndex: null);
+
+        decision.Mode.Should().Be(PlaybackMode.Transmux);
+        decision.StreamVideoCodec.Should().Be("hevc");
+        decision.StreamAudioCodec.Should().Be("aac");
+    }
+
+    [Test]
+    public void GetVideoFileStreamUri_ShouldTranscodeEac3_WhenAndroidHlsEvenIfMp4Eac3Advertised()
+    {
+        var device = CreateDevice(
+            [
+                "audio-mp4-eac3",
+                "audio-mp4-aac",
+                "video-mp4-eac3-hevc",
+                "video-mp4-aac-hevc"
+            ],
+            ClientType.Native,
+            OperatingSystem.Android);
+        var (indexedFile, metadata) = CreateVideoFile("matroska", "hevc", "eac3");
+        var request = new GetStreamUriQuery
+        {
+            Id = indexedFile.Id,
+            StreamSessionId = Guid.NewGuid(),
+            AudioTrackIndex = 0
+        };
+
+        var (_, decision) = GetStreamUriQueryHandler.GetVideoFileStreamUri(
+            device, indexedFile, metadata, request, hlsSegmentsAvailable: true, subtitleTrackIndex: null);
+
+        decision.Mode.Should().Be(PlaybackMode.Transmux);
+        decision.StreamAudioCodec.Should().Be("aac");
     }
 
     [Test]

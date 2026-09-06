@@ -206,6 +206,9 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
     private string? _baseManifestUrl;
     private int _playGeneration;
     private CancellationTokenSource? _playCts;
+    private int _playbackStartRecoveryAttempts;
+    private const int MaxPlaybackStartRecoveryAttempts = 4;
+    private readonly SemaphoreSlim _playbackStartRecoveryLock = new(1, 1);
 
     public async Task PlayIndexedFileAsync(Guid indexedFileId, IEnumerable<AudioFileTrackDto> audioTracks, IEnumerable<SubtitleFileTrackDto>? subtitleTracks = null, int? audioTrackIndex = null, int? subtitleTrackIndex = null, VideoResolutionIdentifier? videoResolution = null, string? thumbnailsUrl = null, Guid? mediaId = null, string? title = null, string? coverUrl = null, double? startPosition = null, IReadOnlyList<ChapterMarkerDto>? chapters = null, double? durationSeconds = null, CancellationToken cancellationToken = default)
     {
@@ -216,6 +219,7 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
         var playToken = _playCts.Token;
 
         _currentIndexedFileId = indexedFileId;
+        _playbackStartRecoveryAttempts = 0;
         _lastKnownPlaybackTime = startPosition is > 1 ? startPosition.Value : 0;
         _audioTracks = audioTracks.ToList();
         SetSubtitleTracks(subtitleTracks);
@@ -308,6 +312,7 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
         var playToken = _playCts.Token;
 
         _currentIndexedFileId = null;
+        _playbackStartRecoveryAttempts = 0;
         _lastKnownPlaybackTime = startPosition is > 1 ? startPosition.Value : 0;
         _audioTracks = audioTracks.ToList();
         SetSubtitleTracks(subtitleTracks);
@@ -702,8 +707,74 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
         return end > 1 ? end : null;
     }
 
-    public Task<bool> TryRecoverPlaybackStartAsync(bool allowQualityLadder = false, CancellationToken cancellationToken = default) =>
-        Task.FromResult(false);
+    public async Task<bool> TryRecoverPlaybackStartAsync(bool allowQualityLadder = false, CancellationToken cancellationToken = default)
+    {
+        if (!IsVisible || string.IsNullOrEmpty(Source?.Url) || _baseManifestUrl is null)
+            return false;
+
+        await _playbackStartRecoveryLock.WaitAsync(cancellationToken);
+        try
+        {
+            if (_playbackStartRecoveryAttempts >= MaxPlaybackStartRecoveryAttempts)
+                return false;
+
+            if (PlaybackState is PlaybackState.Playing && CurrentTime > 0)
+                return true;
+
+            if (!allowQualityLadder)
+                return false;
+
+            // Transcoded rungs that already have media are still starting; do not step again.
+            if (SelectedQuality is { IsOriginal: false }
+                && (BufferedTime > 0 || CurrentTime > 0 || PlaybackState is PlaybackState.Playing))
+            {
+                return true;
+            }
+
+            _playbackStartRecoveryAttempts++;
+
+            if (SelectedQuality?.IsOriginal != false)
+            {
+                var fallbackQuality = _availableQualities.FirstOrDefault(q => !q.IsOriginal)
+                    ?? EnsureFallbackTranscodedQuality();
+                await ChangeQualityAsync(fallbackQuality, cancellationToken);
+                return true;
+            }
+
+            var nextQuality = GetNextLowerTranscodedQuality();
+            if (nextQuality is not null)
+            {
+                await ChangeQualityAsync(nextQuality, cancellationToken);
+                return true;
+            }
+
+            return false;
+        }
+        finally
+        {
+            _playbackStartRecoveryLock.Release();
+        }
+    }
+
+    private VideoQualityOption EnsureFallbackTranscodedQuality()
+    {
+        var fallback = new VideoQualityOption { Label = "720p", Height = 720 };
+        _availableQualities.Add(fallback);
+        return fallback;
+    }
+
+    private VideoQualityOption? GetNextLowerTranscodedQuality()
+    {
+        if (SelectedQuality is null || SelectedQuality.IsOriginal)
+            return null;
+
+        var transcodedQualities = _availableQualities.Where(q => !q.IsOriginal).ToList();
+        var currentIndex = transcodedQualities.FindIndex(q => q.Height == SelectedQuality.Height);
+        if (currentIndex < 0 || currentIndex >= transcodedQualities.Count - 1)
+            return null;
+
+        return transcodedQualities[currentIndex + 1];
+    }
 
     public async Task AbortPlaybackStartAsync(string? messageKey = null, CancellationToken cancellationToken = default)
     {
