@@ -13,19 +13,8 @@ public partial class AuthEmailField
     [Parameter] public string? Value { get; set; }
     [Parameter] public string Autocomplete { get; set; } = "email";
 
-    private string _email = "";
-
     private bool ShowInvalid =>
-        !string.IsNullOrWhiteSpace(_email) && !EmailFormat.IsValidRequired(_email);
+        !string.IsNullOrWhiteSpace(Value) && !EmailFormat.IsValidRequired(Value);
 
     private string InvalidId => $"{Name.Replace('.', '-')}-invalid";
-
-    protected override void OnParametersSet()
-    {
-        if (string.IsNullOrEmpty(_email) && !string.IsNullOrEmpty(Value))
-            _email = Value;
-    }
-
-    private void OnInput(ChangeEventArgs args) =>
-        _email = args.Value?.ToString() ?? "";
 }

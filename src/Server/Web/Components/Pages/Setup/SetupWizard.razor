@@ -32,7 +32,7 @@
             <div class="auth-alert auth-alert--error" style="margin-bottom:1rem;">@_statusMessage</div>
         }
 
-        <EditForm Model="Input" method="post" OnValidSubmit="OnSubmitAsync" FormName="setup" novalidate>
+        <EditForm Model="Input" method="post" OnValidSubmit="OnSubmitAsync" FormName="setup" Enhance="false" novalidate>
             <DataAnnotationsValidator />
             <ValidationSummary class="auth-alert auth-alert--error" role="alert" />
             <div class="auth-form-stack">
@@ -46,8 +46,7 @@
                     <label>@L["EmailOptional"]</label>
                     <AuthEmailField Name="Input.Email"
                                     Placeholder="@L["EmailPlaceholder"]"
-                                    Value="@(Input?.Email)"
-                                    @rendermode="InteractiveServer" />
+                                    Value="@(Input?.Email)" />
                 </div>
 
                 <div class="auth-form-field">
@@ -63,8 +62,7 @@
                                        ConfirmId="pw-confirm-setup"
                                        ConfirmLabel="@L["ConfirmPassword"]"
                                        ConfirmPlaceholder="@L["PasswordPlaceholder"]"
-                                       ConfirmValue="@(Input?.ConfirmPassword)"
-                                       @rendermode="InteractiveServer" />
+                                       ConfirmValue="@(Input?.ConfirmPassword)" />
                     <ValidationMessage For="@(() => Input!.Password)" class="auth-validation" />
                 </div>
 
@@ -77,7 +75,7 @@
                     </div>
                 }
 
-                <button type="submit" class="k7-btn k7-btn--filled focusable" style="width:100%;">@L["CompleteSetup"]</button>
+                <button type="submit" class="k7-btn k7-btn--filled focusable" style="width:100%;" data-k7-submit>@L["CompleteSetup"]</button>
             </div>
         </EditForm>
 

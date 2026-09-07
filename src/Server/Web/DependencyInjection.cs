@@ -42,7 +42,9 @@ public static class DependencyInjection
         {
             options.HeaderName = "X-XSRF-TOKEN";
             options.Cookie.Name = forceHttps ? "__Host-X-XSRF-TOKEN" : ".K7.Antiforgery";
-            options.Cookie.SameSite = SameSiteMode.Strict;
+            // Lax: native login 302s through http://localhost then back. Strict can drop
+            // the cookie on that hop so a later POST /sign-in is an empty 400 (Brave).
+            options.Cookie.SameSite = SameSiteMode.Lax;
             options.Cookie.SecurePolicy = cookieSecurePolicy;
         });
 
