@@ -15,19 +15,23 @@ namespace K7.Server.Application.Helpers;
 /// Detection is therefore the safety net: it flags suspicious medias without ever rejecting
 /// or merging anything (merging is a separate, deliberately postponed effort).
 ///
-/// Two heuristics, both translated to SQL (Postgres and Sqlite):
+/// Two heuristics, both translated to SQL (Postgres and Sqlite) then grouped in process:
 /// - DuplicateExternalId: two medias share the same (ProviderName, Value) external id. This is
 ///   the most reliable signal. A local media and its federated copy can legitimately carry the
 ///   same provider id, so only medias with the same PeerServerId are compared.
 /// - SuspectedDuplicateMedia: two top-level medias of the same type share a normalized title
 ///   (trim + case-insensitive) and release year within the same library. Scoped to Movie /
-///   Serie / MusicAlbum so generic episode/track titles cannot explode into a cartesian product.
+///   Serie / MusicAlbum so generic episode/track titles cannot form huge groups. Candidates
+///   are loaded as a slim projection (indexes on Type / Title / ReleaseDate stay usable);
+///   trim, case-fold and year are applied in process so Postgres never groups on
+///   lower(btrim(title)) / date_part (unindexable and previously timed out).
 /// </summary>
 public static class DuplicateMediaDiagnosticHelper
 {
     /// <summary>
     /// DateOnly legal range. Postgres accepts wider dates (including +/-infinity); extracting
     /// their year via date_part(...)::int throws 22003 (integer out of range / dtoi4).
+    /// Filtering here keeps infinity dates out of the in-memory year extraction.
     /// </summary>
     private static readonly DateOnly MinReleaseDate = new(1, 1, 1);
     private static readonly DateOnly MaxReleaseDate = new(9999, 12, 31);
@@ -39,46 +43,17 @@ public static class DuplicateMediaDiagnosticHelper
         MediaType.MusicAlbum
     ];
 
-    /// <summary>
-    /// Ids of medias sharing an external id (ProviderName, Value) with another media of the
-    /// same PeerServerId. Correlated EXISTS (semi-join) rather than a self-join to avoid
-    /// materializing a cartesian product; the database can serve it from the external id index.
-    /// </summary>
-    public static IQueryable<Guid> QueryDuplicateExternalIdMediaIds(IApplicationDbContext context) =>
-        context.Medias
-            .AsNoTracking()
-            .Where(m => m.ExternalIds.Any(e =>
-                context.ExternalIds.Any(other =>
-                    other.MediaId != null
-                    && other.MediaId != m.Id
-                    && other.ProviderName == e.ProviderName
-                    && other.Value == e.Value
-                    && other.Media!.PeerServerId == m.PeerServerId)))
-            .Select(m => m.Id);
-
-    /// <summary>
-    /// Ids of top-level medias sharing type + normalized title + release year with another media
-    /// available in the same (local) library. Lower-confidence signal.
-    /// </summary>
-    public static IQueryable<Guid> QuerySuspectedDuplicateMediaIds(
-        IApplicationDbContext context,
-        Guid? libraryId) =>
-        QuerySuspectedDuplicatePairs(context, libraryId)
-            .Select(p => p.MediaId)
-            .Distinct();
-
     public static async Task<HashSet<Guid>> GetDuplicateExternalIdMediaIdsAsync(
         IApplicationDbContext context,
         IReadOnlyCollection<Guid>? limitToMediaIds,
         CancellationToken cancellationToken = default)
     {
-        var query = QueryDuplicateExternalIdMediaIds(context);
+        var ids = await LoadDuplicateExternalIdMediaIdsAsync(context, cancellationToken);
 
         if (limitToMediaIds is not null)
-            query = query.Where(id => limitToMediaIds.Contains(id));
+            ids.IntersectWith(limitToMediaIds);
 
-        var ids = await query.ToListAsync(cancellationToken);
-        return ids.ToHashSet();
+        return ids;
     }
 
     public static async Task<HashSet<Guid>> GetSuspectedDuplicateMediaIdsAsync(
@@ -87,80 +62,118 @@ public static class DuplicateMediaDiagnosticHelper
         IReadOnlyCollection<Guid>? limitToMediaIds,
         CancellationToken cancellationToken = default)
     {
-        var query = QuerySuspectedDuplicateMediaIds(context, libraryId);
+        var flagged = await LoadSuspectedDuplicatePairsAsync(context, libraryId, cancellationToken);
+        var ids = flagged.Select(p => p.MediaId).ToHashSet();
 
         if (limitToMediaIds is not null)
-            query = query.Where(id => limitToMediaIds.Contains(id));
+            ids.IntersectWith(limitToMediaIds);
 
-        var ids = await query.ToListAsync(cancellationToken);
-        return ids.ToHashSet();
+        return ids;
     }
 
-    public static Task<Dictionary<Guid, int>> GetDuplicateExternalIdCountsByLibraryAsync(
+    public static async Task<Dictionary<Guid, int>> GetDuplicateExternalIdCountsByLibraryAsync(
         IApplicationDbContext context,
-        CancellationToken cancellationToken = default) =>
-        CountByLibraryAsync(context, QueryDuplicateExternalIdMediaIds(context), cancellationToken);
+        CancellationToken cancellationToken = default)
+    {
+        var ids = await LoadDuplicateExternalIdMediaIdsAsync(context, cancellationToken);
+        if (ids.Count == 0)
+            return [];
+
+        return await CountByLibraryAsync(
+            context,
+            context.Medias.AsNoTracking().Where(m => ids.Contains(m.Id)).Select(m => m.Id),
+            cancellationToken);
+    }
+
+    private static async Task<HashSet<Guid>> LoadDuplicateExternalIdMediaIdsAsync(
+        IApplicationDbContext context,
+        CancellationToken cancellationToken)
+    {
+        // Slim projection + in-process grouping: a correlated EXISTS self-scan of ExternalIds
+        // does not stay on the (ProviderName, Value) index once PeerServerId is pulled in.
+        var rows = await context.ExternalIds
+            .AsNoTracking()
+            .Where(e => e.MediaId != null)
+            .Select(e => new
+            {
+                e.ProviderName,
+                e.Value,
+                MediaId = e.MediaId!.Value,
+                e.Media!.PeerServerId
+            })
+            .ToListAsync(cancellationToken);
+
+        return rows
+            .GroupBy(r => (r.ProviderName, r.Value, r.PeerServerId))
+            .Where(g => g.Select(x => x.MediaId).Distinct().Count() > 1)
+            .SelectMany(g => g.Select(x => x.MediaId))
+            .ToHashSet();
+    }
 
     public static async Task<Dictionary<Guid, int>> GetSuspectedDuplicateCountsByLibraryAsync(
         IApplicationDbContext context,
         CancellationToken cancellationToken = default)
     {
-        // Count directly from (LibraryId, MediaId) pairs so we do not re-wrap the self-join in
-        // an IN (...) against availability (which re-planned poorly and resurfaced 22003).
-        var counts = await QuerySuspectedDuplicatePairs(context, libraryId: null)
-            .Distinct()
-            .GroupBy(p => p.LibraryId)
-            .Select(g => new { LibraryId = g.Key, Count = g.LongCount() })
-            .ToListAsync(cancellationToken);
+        var flagged = await LoadSuspectedDuplicatePairsAsync(context, libraryId: null, cancellationToken);
 
-        return counts.ToDictionary(
-            x => x.LibraryId,
-            x => x.Count > int.MaxValue ? int.MaxValue : (int)x.Count);
+        return flagged
+            .GroupBy(p => p.LibraryId)
+            .ToDictionary(g => g.Key, g => g.Count());
     }
 
-    private static IQueryable<SuspectedDuplicatePairProjection> QuerySuspectedDuplicatePairs(
+    private static async Task<List<SuspectedDuplicatePair>> LoadSuspectedDuplicatePairsAsync(
         IApplicationDbContext context,
-        Guid? libraryId)
+        Guid? libraryId,
+        CancellationToken cancellationToken)
     {
-        var availability = LocalAvailability(context, libraryId);
-
-        var keyed =
-            from a in availability
-            join m in context.Medias.AsNoTracking() on a.MediaId equals m.Id
-            where SuspectedDuplicateMediaTypes.Contains(m.Type)
-                && m.Title != null
-                && m.ReleaseDate != null
-                && m.ReleaseDate >= MinReleaseDate
-                && m.ReleaseDate <= MaxReleaseDate
+        // Slim join only: no SQL lower/trim/date_part, so Type / Title / ReleaseDate indexes
+        // remain usable. Grouping stays in process (movie / serie / album rows only).
+        var query =
+            from a in context.MediaLibraryAvailabilities.AsNoTracking()
+            join library in context.Libraries.AsNoTracking() on a.LibraryId equals library.Id
+            where library.PeerServerId == null
+            join media in context.Medias.AsNoTracking() on a.MediaId equals media.Id
+            where SuspectedDuplicateMediaTypes.Contains(media.Type)
+                && media.Title != null
+                && media.ReleaseDate != null
+                && media.ReleaseDate >= MinReleaseDate
+                && media.ReleaseDate <= MaxReleaseDate
             select new
             {
                 a.LibraryId,
-                MediaId = m.Id,
-                m.Type,
-                Title = m.Title!.Trim().ToLower(),
-                // long so Npgsql emits date_part::bigint instead of ::int (dtoi4 22003).
-                Year = (long)m.ReleaseDate!.Value.Year
+                MediaId = media.Id,
+                media.Type,
+                Title = media.Title!,
+                ReleaseDate = media.ReleaseDate!.Value
             };
 
-        return from left in keyed
-               join right in keyed
-                   on new { left.LibraryId, left.Type, left.Title, left.Year }
-                   equals new { right.LibraryId, right.Type, right.Title, right.Year }
-               where left.MediaId != right.MediaId
-               select new SuspectedDuplicatePairProjection
-               {
-                   LibraryId = left.LibraryId,
-                   MediaId = left.MediaId
-               };
+        if (libraryId.HasValue)
+            query = query.Where(r => r.LibraryId == libraryId.Value);
+
+        var rows = await query.ToListAsync(cancellationToken);
+        if (rows.Count == 0)
+            return [];
+
+        return rows
+            .GroupBy(r => (r.LibraryId, r.Type, Title: NormalizeTitle(r.Title), Year: r.ReleaseDate.Year))
+            .Where(g => g.Count() > 1)
+            .SelectMany(g => g)
+            .Select(r => new SuspectedDuplicatePair(r.LibraryId, r.MediaId))
+            .Distinct()
+            .ToList();
     }
+
+    private static string NormalizeTitle(string title) => title.Trim().ToLowerInvariant();
 
     private static IQueryable<MediaLibraryAvailability> LocalAvailability(
         IApplicationDbContext context,
         Guid? libraryId)
     {
-        var availability = context.MediaLibraryAvailabilities
-            .AsNoTracking()
-            .Where(a => !context.Libraries.Any(l => l.Id == a.LibraryId && l.PeerServerId != null));
+        var availability =
+            from a in context.MediaLibraryAvailabilities.AsNoTracking()
+            join library in context.Libraries.AsNoTracking() on a.LibraryId equals library.Id
+            where library.PeerServerId == null
+            select a;
 
         if (libraryId.HasValue)
             availability = availability.Where(a => a.LibraryId == libraryId.Value);
@@ -187,9 +200,5 @@ public static class DuplicateMediaDiagnosticHelper
             x => x.Count > int.MaxValue ? int.MaxValue : (int)x.Count);
     }
 
-    private sealed class SuspectedDuplicatePairProjection
-    {
-        public Guid LibraryId { get; set; }
-        public Guid MediaId { get; set; }
-    }
+    private readonly record struct SuspectedDuplicatePair(Guid LibraryId, Guid MediaId);
 }

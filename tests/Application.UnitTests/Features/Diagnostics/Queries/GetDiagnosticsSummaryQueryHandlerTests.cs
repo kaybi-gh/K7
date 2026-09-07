@@ -165,6 +165,64 @@ public class GetDiagnosticsSummaryQueryHandlerTests
     }
 
     [Test]
+    public async Task Handle_ShouldCountStaleMetadata_ForRefreshableMediasPastInterval()
+    {
+        var libraryId = SeedMovieLibrary();
+        _context.Libraries.Single(l => l.Id == libraryId).MetadataRefreshIntervalDays = 30;
+
+        var staleId = Guid.NewGuid();
+        var freshId = Guid.NewGuid();
+        _context.Medias.AddRange(
+            new Movie
+            {
+                Id = staleId,
+                Title = "Stale",
+                LastMetadataRefreshedAt = DateTimeOffset.UtcNow.AddDays(-60)
+            },
+            new Movie
+            {
+                Id = freshId,
+                Title = "Fresh",
+                LastMetadataRefreshedAt = DateTimeOffset.UtcNow
+            });
+        _context.MediaLibraryAvailabilities.AddRange(
+            new MediaLibraryAvailability { LibraryId = libraryId, MediaId = staleId },
+            new MediaLibraryAvailability { LibraryId = libraryId, MediaId = freshId });
+        await _context.SaveChangesAsync();
+
+        var summaries = await _handler.Handle(new GetDiagnosticsSummaryQuery(), CancellationToken.None);
+
+        summaries.Should().ContainSingle().Subject.StaleMetadataCount.Should().Be(1);
+    }
+
+    [Test]
+    public async Task Handle_ShouldCountMissingMetadata_WhenExternalIdExistsWithoutGenre()
+    {
+        var libraryId = SeedMovieLibrary();
+        var movieId = Guid.NewGuid();
+        _context.Medias.Add(new Movie { Id = movieId, Title = "Has Provider Id" });
+        _context.MediaLibraryAvailabilities.Add(new MediaLibraryAvailability
+        {
+            LibraryId = libraryId,
+            MediaId = movieId
+        });
+        _context.ExternalIds.Add(new ExternalId
+        {
+            Id = Guid.NewGuid(),
+            ProviderName = "tmdb",
+            Value = "42",
+            MediaId = movieId
+        });
+        await _context.SaveChangesAsync();
+
+        var summaries = await _handler.Handle(new GetDiagnosticsSummaryQuery(), CancellationToken.None);
+        var summary = summaries.Should().ContainSingle().Subject;
+
+        summary.MediaMissingExternalIdCount.Should().Be(0);
+        summary.MediaMissingMetadataCount.Should().Be(1);
+    }
+
+    [Test]
     public async Task Handle_ShouldCountMissingHlsSegments_ForLocalTransmuxLibraries()
     {
         var libraryId = SeedMovieLibrary();

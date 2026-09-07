@@ -28,6 +28,7 @@ public class DuplicateMediaDiagnosticsTests
     private GetDiagnosticsSummaryQueryHandler _summaryHandler = null!;
 
     private Guid _libraryId;
+    private Guid _libraryGroupId;
 
     [SetUp]
     public void SetUp()
@@ -119,7 +120,7 @@ public class DuplicateMediaDiagnosticsTests
     [Test]
     public async Task Handle_ShouldNotReportSuspectedDuplicate_ForEpisodesWithSameTitle()
     {
-        // Generic episode titles must not enter the self-join (cartesian bomb + Postgres 22003).
+        // Generic episode titles must not enter the grouping (huge clusters + Postgres 22003).
         var serieId = Guid.NewGuid();
         var seasonId = Guid.NewGuid();
         _context.Medias.Add(new Serie { Id = serieId, Title = "Serie", ReleaseDate = new DateOnly(2020, 1, 1) });
@@ -195,11 +196,154 @@ public class DuplicateMediaDiagnosticsTests
         summary.SuspectedDuplicateMediaCount.Should().Be(2);
     }
 
-    private async Task<List<DiagnosticItemDto>> QueryItemsAsync(DiagnosticIssue issue)
+    [Test]
+    public async Task Handle_ShouldCountEveryMediaInASuspectedDuplicateCluster()
+    {
+        AddMovie("Dune", 2021);
+        AddMovie("Dune", 2021);
+        AddMovie(" dune ", 2021);
+        await _context.SaveChangesAsync();
+
+        var summaries = await _summaryHandler.Handle(new GetDiagnosticsSummaryQuery(), CancellationToken.None);
+
+        var summary = summaries.Should().ContainSingle(s => s.LibraryId == _libraryId).Subject;
+        summary.SuspectedDuplicateMediaCount.Should().Be(3);
+
+        var items = await QueryItemsAsync(DiagnosticIssue.SuspectedDuplicateMedia);
+        items.Should().HaveCount(3);
+    }
+
+    [Test]
+    public async Task Handle_ShouldNotReportSuspectedDuplicate_WhenSameTitleLivesInDifferentLibraries()
+    {
+        var otherLibraryId = AddLocalLibrary("Other movies");
+        AddMovie("Dune", 2021);
+        AddMovie("Dune", 2021, libraryId: otherLibraryId);
+        await _context.SaveChangesAsync();
+
+        var summaries = await _summaryHandler.Handle(new GetDiagnosticsSummaryQuery(), CancellationToken.None);
+        summaries.Should().OnlyContain(s => s.SuspectedDuplicateMediaCount == 0);
+
+        var items = await QueryItemsAsync(DiagnosticIssue.SuspectedDuplicateMedia);
+        items.Should().BeEmpty();
+    }
+
+    [Test]
+    public async Task Handle_ShouldScopeSuspectedDuplicate_ToTheLibraryThatHasTheCluster()
+    {
+        var otherLibraryId = AddLocalLibrary("Other movies");
+        var shared = AddMovie("Dune", 2021);
+        var partner = AddMovie("Dune", 2021);
+        _context.MediaLibraryAvailabilities.Add(new MediaLibraryAvailability
+        {
+            LibraryId = otherLibraryId,
+            MediaId = shared
+        });
+        await _context.SaveChangesAsync();
+
+        var summaries = await _summaryHandler.Handle(new GetDiagnosticsSummaryQuery(), CancellationToken.None);
+        summaries.Should().ContainSingle(s => s.LibraryId == _libraryId).Subject
+            .SuspectedDuplicateMediaCount.Should().Be(2);
+        summaries.Should().ContainSingle(s => s.LibraryId == otherLibraryId).Subject
+            .SuspectedDuplicateMediaCount.Should().Be(0);
+
+        var inCluster = await QueryItemsAsync(DiagnosticIssue.SuspectedDuplicateMedia, _libraryId);
+        inCluster.Select(i => i.EntityId).Should().BeEquivalentTo([shared, partner]);
+
+        var elsewhere = await QueryItemsAsync(DiagnosticIssue.SuspectedDuplicateMedia, otherLibraryId);
+        elsewhere.Should().BeEmpty();
+    }
+
+    [Test]
+    public async Task Handle_ShouldNotReportSuspectedDuplicate_WhenTypesDiffer()
+    {
+        AddMovie("Dune", 2021);
+        var albumId = Guid.NewGuid();
+        _context.Medias.Add(new MusicAlbum
+        {
+            Id = albumId,
+            Title = "Dune",
+            ReleaseDate = new DateOnly(2021, 6, 15)
+        });
+        _context.MediaLibraryAvailabilities.Add(new MediaLibraryAvailability
+        {
+            LibraryId = _libraryId,
+            MediaId = albumId
+        });
+        await _context.SaveChangesAsync();
+
+        var items = await QueryItemsAsync(DiagnosticIssue.SuspectedDuplicateMedia);
+        items.Should().BeEmpty();
+    }
+
+    [Test]
+    public async Task Handle_ShouldIgnoreFederatedLibrary_ForSuspectedDuplicates()
+    {
+        var peer = PeerServer.CreatePending("peer", "https://peer.example", "token");
+        _context.PeerServers.Add(peer);
+        var federatedLibraryId = AddLocalLibrary("Remote movies", peer.Id);
+        AddMovie("Dune", 2021, libraryId: federatedLibraryId);
+        AddMovie("Dune", 2021, libraryId: federatedLibraryId);
+        await _context.SaveChangesAsync();
+
+        var summaries = await _summaryHandler.Handle(new GetDiagnosticsSummaryQuery(), CancellationToken.None);
+        summaries.Should().ContainSingle(s => s.LibraryId == federatedLibraryId).Subject
+            .SuspectedDuplicateMediaCount.Should().Be(0);
+
+        var items = await QueryItemsAsync(DiagnosticIssue.SuspectedDuplicateMedia);
+        items.Should().BeEmpty();
+    }
+
+    [Test]
+    public async Task Handle_ShouldKeepSuspectedDuplicateOnUnfilteredMediaRow()
+    {
+        var first = AddMovie("Dune", 2021);
+        var second = AddMovie("Dune", 2021);
+        await _context.SaveChangesAsync();
+
+        var result = await _itemsHandler.Handle(
+            new GetDiagnosticItemsQuery
+            {
+                EntityType = DiagnosticEntityType.Media,
+                PageNumber = 1,
+                PageSize = 50
+            },
+            CancellationToken.None);
+
+        result.Items.Should().HaveCount(2);
+        result.Items.Select(i => i.EntityId).Should().BeEquivalentTo([first, second]);
+        result.Items.Should().OnlyContain(i => i.Issues.Contains(DiagnosticIssue.SuspectedDuplicateMedia));
+    }
+
+    [Test]
+    public async Task Handle_ShouldPageSuspectedDuplicates_WithoutCountingUniqueTitles()
+    {
+        for (var i = 0; i < 5; i++)
+            AddMovie("Dune", 2021);
+        AddMovie("Unique Title", 2021);
+        await _context.SaveChangesAsync();
+
+        var page = await _itemsHandler.Handle(
+            new GetDiagnosticItemsQuery
+            {
+                EntityType = DiagnosticEntityType.Media,
+                Issue = DiagnosticIssue.SuspectedDuplicateMedia,
+                PageNumber = 2,
+                PageSize = 2
+            },
+            CancellationToken.None);
+
+        page.TotalCount.Should().Be(5);
+        page.Items.Should().HaveCount(2);
+        page.Items.Should().OnlyContain(i => i.EntityName == "Dune");
+    }
+
+    private async Task<List<DiagnosticItemDto>> QueryItemsAsync(DiagnosticIssue issue, Guid? libraryId = null)
     {
         var result = await _itemsHandler.Handle(
             new GetDiagnosticItemsQuery
             {
+                LibraryId = libraryId,
                 EntityType = DiagnosticEntityType.Media,
                 Issue = issue,
                 PageNumber = 1,
@@ -213,18 +357,18 @@ public class DuplicateMediaDiagnosticsTests
     private void SeedLibrary()
     {
         _libraryId = Guid.NewGuid();
-        var groupId = Guid.NewGuid();
+        _libraryGroupId = Guid.NewGuid();
 
         _context.LibraryGroups.Add(new LibraryGroup
         {
-            Id = groupId,
+            Id = _libraryGroupId,
             Title = "Movies",
             MediaType = LibraryMediaType.Movie
         });
         _context.Libraries.Add(new Library
         {
             Id = _libraryId,
-            LibraryGroupId = groupId,
+            LibraryGroupId = _libraryGroupId,
             Title = "Movies",
             MediaType = LibraryMediaType.Movie,
             RootPath = "/media",
@@ -234,7 +378,25 @@ public class DuplicateMediaDiagnosticsTests
         });
     }
 
-    private Guid AddMovie(string title, int year, Guid? peerServerId = null, bool withAvailability = true)
+    private Guid AddLocalLibrary(string title, Guid? peerServerId = null)
+    {
+        var libraryId = Guid.NewGuid();
+        _context.Libraries.Add(new Library
+        {
+            Id = libraryId,
+            LibraryGroupId = _libraryGroupId,
+            Title = title,
+            MediaType = LibraryMediaType.Movie,
+            RootPath = $"/media/{libraryId:N}",
+            MetadataProviderName = "tmdb",
+            MetadataLanguage = "fr",
+            MetadataFallbackLanguage = "en",
+            PeerServerId = peerServerId
+        });
+        return libraryId;
+    }
+
+    private Guid AddMovie(string title, int year, Guid? peerServerId = null, bool withAvailability = true, Guid? libraryId = null)
     {
         var movie = new Movie
         {
@@ -249,7 +411,7 @@ public class DuplicateMediaDiagnosticsTests
         {
             _context.MediaLibraryAvailabilities.Add(new MediaLibraryAvailability
             {
-                LibraryId = _libraryId,
+                LibraryId = libraryId ?? _libraryId,
                 MediaId = movie.Id
             });
         }

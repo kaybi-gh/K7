@@ -640,6 +640,12 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
         if (IsOnlyIssueFilter(request, DiagnosticIssue.MissingIntroOutro))
             return await GetMissingIntroOutroIssuePageAsync(request, cancellationToken);
 
+        if (IsOnlyIssueFilter(request, DiagnosticIssue.SuspectedDuplicateMedia))
+            return await GetSuspectedDuplicateIssuePageAsync(request, cancellationToken);
+
+        if (IsOnlyIssueFilter(request, DiagnosticIssue.DuplicateExternalId))
+            return await GetDuplicateExternalIdIssuePageAsync(request, cancellationToken);
+
         if (request.Issue is { } singleIssue && !IsMediaCatalogIssue(singleIssue))
             return EmptyPage(request);
 
@@ -652,9 +658,17 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
         if (request.LibraryId.HasValue)
             availability = availability.Where(a => a.LibraryId == request.LibraryId.Value);
 
-        var duplicateExternalIdMediaIds = DuplicateMediaDiagnosticHelper.QueryDuplicateExternalIdMediaIds(_context);
-        var suspectedDuplicateMediaIds = DuplicateMediaDiagnosticHelper.QuerySuspectedDuplicateMediaIds(_context, request.LibraryId);
         var activeIssues = GetRequestedMediaCatalogIssues(request);
+        var duplicateExternalIdMediaIds = activeIssues is null
+                || activeIssues.Contains(DiagnosticIssue.DuplicateExternalId)
+            ? await DuplicateMediaDiagnosticHelper.GetDuplicateExternalIdMediaIdsAsync(
+                _context, limitToMediaIds: null, cancellationToken)
+            : [];
+        var suspectedDuplicateMediaIds = activeIssues is null
+                || activeIssues.Contains(DiagnosticIssue.SuspectedDuplicateMedia)
+            ? await DuplicateMediaDiagnosticHelper.GetSuspectedDuplicateMediaIdsAsync(
+                _context, request.LibraryId, limitToMediaIds: null, cancellationToken)
+            : [];
         var staleMediaIds = await GetStaleRefreshableMediaIdsAsync(availability, cancellationToken);
 
         // When an issue filter is set, narrow candidates to that issue before Skip/Take.
@@ -720,8 +734,8 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
     private IQueryable<Guid> BuildBroadMediaCandidateIdQuery(
         IQueryable<MediaLibraryAvailability> availability,
         Guid? libraryId,
-        IQueryable<Guid> duplicateExternalIdMediaIds,
-        IQueryable<Guid> suspectedDuplicateMediaIds,
+        IReadOnlyCollection<Guid> duplicateExternalIdMediaIds,
+        IReadOnlyCollection<Guid> suspectedDuplicateMediaIds,
         IReadOnlyCollection<Guid> staleMediaIds)
     {
         // Tracks are linked via IndexedFiles, not MediaLibraryAvailability (albums are).
@@ -770,8 +784,8 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
         IQueryable<MediaLibraryAvailability> availability,
         Guid? libraryId,
         IReadOnlyCollection<DiagnosticIssue> activeIssues,
-        IQueryable<Guid> duplicateExternalIdMediaIds,
-        IQueryable<Guid> suspectedDuplicateMediaIds,
+        IReadOnlyCollection<Guid> duplicateExternalIdMediaIds,
+        IReadOnlyCollection<Guid> suspectedDuplicateMediaIds,
         IReadOnlyCollection<Guid> staleMediaIds)
     {
         var medias = _context.Medias
@@ -849,10 +863,10 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
         }
 
         if (activeIssues.Contains(DiagnosticIssue.DuplicateExternalId))
-            Add(duplicateExternalIdMediaIds.Where(id => availability.Any(a => a.MediaId == id)));
+            Add(medias.Where(m => duplicateExternalIdMediaIds.Contains(m.Id)).Select(m => m.Id));
 
         if (activeIssues.Contains(DiagnosticIssue.SuspectedDuplicateMedia))
-            Add(suspectedDuplicateMediaIds.Where(id => availability.Any(a => a.MediaId == id)));
+            Add(medias.Where(m => suspectedDuplicateMediaIds.Contains(m.Id)).Select(m => m.Id));
 
         return union ?? medias.Where(_ => false).Select(m => m.Id);
     }
@@ -938,6 +952,82 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
             .OrderBy(s => s.Title ?? "(untitled)")
             .ThenBy(s => s.Id)
             .Select(s => s.Id)
+            .ToListAsync(cancellationToken);
+
+        var totalCount = ordered.Count;
+        var pageIds = ordered
+            .Skip((request.PageNumber - 1) * request.PageSize)
+            .Take(request.PageSize)
+            .ToList();
+
+        if (pageIds.Count == 0)
+            return new PaginatedList<DiagnosticItemDto>([], totalCount, request.PageNumber, request.PageSize);
+
+        var items = await GetMediaIssuesAsync(request, cancellationToken, pageIds);
+        items = ApplyIssueFilters(items, request);
+        return new PaginatedList<DiagnosticItemDto>(items, totalCount, request.PageNumber, request.PageSize);
+    }
+
+    private async Task<PaginatedList<DiagnosticItemDto>> GetDuplicateExternalIdIssuePageAsync(
+        GetDiagnosticItemsQuery request,
+        CancellationToken cancellationToken)
+    {
+        var duplicateIds = await DuplicateMediaDiagnosticHelper.GetDuplicateExternalIdMediaIdsAsync(
+            _context, limitToMediaIds: null, cancellationToken);
+
+        if (duplicateIds.Count == 0)
+            return EmptyPage(request);
+
+        if (request.LibraryId.HasValue)
+        {
+            var inLibrary = await _context.MediaLibraryAvailabilities
+                .AsNoTracking()
+                .Where(a => a.LibraryId == request.LibraryId.Value && duplicateIds.Contains(a.MediaId))
+                .Select(a => a.MediaId)
+                .ToListAsync(cancellationToken);
+            duplicateIds = inLibrary.ToHashSet();
+            if (duplicateIds.Count == 0)
+                return EmptyPage(request);
+        }
+
+        var ordered = await _context.Medias
+            .AsNoTracking()
+            .Where(m => duplicateIds.Contains(m.Id))
+            .OrderBy(m => m.Title ?? "(untitled)")
+            .ThenBy(m => m.Id)
+            .Select(m => m.Id)
+            .ToListAsync(cancellationToken);
+
+        var totalCount = ordered.Count;
+        var pageIds = ordered
+            .Skip((request.PageNumber - 1) * request.PageSize)
+            .Take(request.PageSize)
+            .ToList();
+
+        if (pageIds.Count == 0)
+            return new PaginatedList<DiagnosticItemDto>([], totalCount, request.PageNumber, request.PageSize);
+
+        var items = await GetMediaIssuesAsync(request, cancellationToken, pageIds);
+        items = ApplyIssueFilters(items, request);
+        return new PaginatedList<DiagnosticItemDto>(items, totalCount, request.PageNumber, request.PageSize);
+    }
+
+    private async Task<PaginatedList<DiagnosticItemDto>> GetSuspectedDuplicateIssuePageAsync(
+        GetDiagnosticItemsQuery request,
+        CancellationToken cancellationToken)
+    {
+        var suspectedIds = await DuplicateMediaDiagnosticHelper.GetSuspectedDuplicateMediaIdsAsync(
+            _context, request.LibraryId, limitToMediaIds: null, cancellationToken);
+
+        if (suspectedIds.Count == 0)
+            return EmptyPage(request);
+
+        var ordered = await _context.Medias
+            .AsNoTracking()
+            .Where(m => suspectedIds.Contains(m.Id))
+            .OrderBy(m => m.Title ?? "(untitled)")
+            .ThenBy(m => m.Id)
+            .Select(m => m.Id)
             .ToListAsync(cancellationToken);
 
         var totalCount = ordered.Count;
