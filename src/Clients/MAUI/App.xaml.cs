@@ -2,6 +2,7 @@ using System.Diagnostics;
 using K7.Clients.MAUI.Constants;
 using K7.Clients.MAUI.Services;
 using K7.Clients.Shared.Interfaces;
+using K7.Clients.Shared.Services;
 using K7.Shared.Interfaces;
 #if ANDROID
 using K7.Clients.MAUI.Platforms.Android;
