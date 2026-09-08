@@ -1,18 +1,14 @@
 (function () {
     var revealTimeouts = {};
 
-    document.addEventListener("submit", function (e) {
-        var form = e.target;
-        if (!form || !form.querySelector)
-            return;
-        var btn = form.querySelector("[data-k7-submit]");
-        if (btn)
-            btn.disabled = true;
-    });
-
     document.addEventListener("click", function (e) {
+        // Never intercept the login/register submitter. Disabling it or calling
+        // preventDefault here aborts the POST/302 in Chromium.
+        if (e.target.closest("button[type=submit], input[type=submit]"))
+            return;
+
         var btn = e.target.closest("[data-k7-toggle-password]");
-        if (!btn)
+        if (!btn || btn.type === "submit")
             return;
         var input = resolveToggleInput(btn);
         if (!input)
