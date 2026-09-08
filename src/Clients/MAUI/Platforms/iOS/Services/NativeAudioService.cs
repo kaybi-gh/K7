@@ -131,6 +131,7 @@ public class NativeAudioService : NSObject, IDisposable
         var url = CreateAuthenticatedUrl(source.Url);
         var playerItem = new AVPlayerItem(AVAsset.FromUrl(url));
         player.Volume = startVolume;
+        player.Pause();
         player.ReplaceCurrentItemWithPlayerItem(playerItem);
         player.Play();
         _equalizer.AttachToPlayerItem(playerItem);

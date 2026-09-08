@@ -9,9 +9,9 @@ namespace K7.Clients.MAUI.Platforms.Android.Services;
 /// <summary>
 /// Session-facing player that forwards to the active ExoPlayer and can swap that
 /// instance in place after a crossfade (Media3 ForwardingSimpleBasePlayer.setPlayer).
-/// Next/previous from notifications go through IAudioPlayerService when ExoPlayer
-/// has a single item. Multi-item Android Auto playlists skip natively so artwork
-/// and audio stay aligned.
+/// Next/previous from notifications, lock screen, and Bluetooth AVRCP go through
+/// IAudioPlayerService when ExoPlayer has a single item. Multi-item Android Auto
+/// playlists skip natively so artwork and audio stay aligned.
 /// </summary>
 public class K7ForwardingPlayer : ForwardingSimpleBasePlayer
 {
@@ -78,8 +78,8 @@ public class K7ForwardingPlayer : ForwardingSimpleBasePlayer
     {
         // Tempus / Jellyfin / Media3 demo: when ExoPlayer already has a real
         // playlist, skip must seek that playlist. Intercepting next/prev and
-        // routing through IAudioPlayerService only patches now-playing metadata
-        // (artwork changes, URI stays) which is the Android Auto skip bug.
+        // routing through IAudioPlayerService used to patch now-playing metadata
+        // (artwork/title change, URI stays) which is the AA / Bluetooth skip bug.
         if (HasNativePlaylist())
             return base.HandleSeek(mediaItemIndex, positionMs, seekCommand)!;
 

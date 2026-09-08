@@ -662,6 +662,8 @@ window.audioChangeSource = async function (src, mimeType) {
     audioState.crossfadePending = false;
     audioState.crossfadeActive = false;
 
+    try { el.pause(); } catch { /* ignore */ }
+
     if (audioState.crossfadeElement) {
         try {
             audioState.crossfadeElement.pause();

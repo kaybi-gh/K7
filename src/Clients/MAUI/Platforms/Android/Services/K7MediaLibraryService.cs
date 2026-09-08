@@ -68,6 +68,7 @@ public class K7MediaLibraryService : MediaLibraryService,
     private readonly HashSet<Guid> _radioMediaIdsOnPlayer = [];
     private readonly SemaphoreSlim _radioPlaylistSync = new(1, 1);
     private bool _radioAwaitingMedia3Playlist;
+    private bool _ignorePlayerEnded;
     private CancellationTokenSource? _radioSyncDebounceCts;
     private static readonly TimeSpan RadioPlaylistSyncDebounce = TimeSpan.FromMilliseconds(400);
     private Task _headlessReady = Task.CompletedTask;
@@ -156,8 +157,8 @@ public class K7MediaLibraryService : MediaLibraryService,
             _player,
             hasNext: () => _audioPlayerService.CurrentIndex < _audioPlayerService.Queue.Count - 1,
             hasPrevious: () => _audioPlayerService.CurrentIndex > 0 || _audioPlayerService.CurrentTime > 3,
-            onSeekToNext: () => _ = _audioPlayerService.NextAsync(),
-            onSeekToPrevious: () => _ = _audioPlayerService.PreviousAsync());
+            onSeekToNext: () => QueueUserSkip(() => _audioPlayerService.NextAsync()),
+            onSeekToPrevious: () => QueueUserSkip(() => _audioPlayerService.PreviousAsync()));
 
         _videoSessionPlayer = new K7VideoSessionPlayer(MainLooper!, _playerService);
 
@@ -232,13 +233,55 @@ public class K7MediaLibraryService : MediaLibraryService,
     private IExoPlayer CreateExoPlayer(bool handleAudioFocus)
     {
 #pragma warning disable CS0618 // IMediaSourceFactory marked obsolete in .NET Android bindings but is the correct Media3 API
-        return new ExoPlayerBuilder(this)!
+        var player = new ExoPlayerBuilder(this)!
             .SetMediaSourceFactory(_mediaSourceFactory as AndroidX.Media3.ExoPlayer.Source.IMediaSourceFactory)!
             .SetAudioAttributes(_audioAttributes!, handleAudioFocus)!
             .SetHandleAudioBecomingNoisy(true)!
             .SetWakeMode(AndroidX.Media3.Common.C.WakeModeLocal)!
             .Build()!;
 #pragma warning restore CS0618
+        DisableAudioOffload(player);
+        return player;
+    }
+
+    private static void DisableAudioOffload(IExoPlayer exo)
+    {
+        try
+        {
+            var builder = exo.TrackSelectionParameters?.BuildUpon();
+            if (builder is null)
+                return;
+
+            var offload = new TrackSelectionParameters.AudioOffloadPreferences.Builder()!
+                .SetAudioOffloadMode(TrackSelectionParameters.AudioOffloadPreferences.AudioOffloadModeDisabled)!
+                .Build();
+            builder.SetAudioOffloadPreferences(offload);
+            exo.TrackSelectionParameters = builder.Build();
+        }
+        catch (Exception ex)
+        {
+            Log.Warn(Tag, $"Failed to disable audio offload: {ex.Message}");
+        }
+    }
+
+    private void QueueUserSkip(Func<Task> skip)
+    {
+        // Post after Media3 finishes HandleSeek so session state is not an optimistic
+        // next-item overlay on a single-item player (title changes, URI stays).
+        MainThread.BeginInvokeOnMainThread(async () =>
+        {
+            if (_crossfadeInProgress)
+                CancelCrossfadeForUserSkip();
+
+            try
+            {
+                await skip();
+            }
+            catch (Exception ex)
+            {
+                Log.Error(Tag, $"User skip failed: {ex.Message}");
+            }
+        });
     }
 
     public override IBinder? OnBind(Intent? intent)
@@ -261,10 +304,16 @@ public class K7MediaLibraryService : MediaLibraryService,
             // Multi-item Android Auto playlists auto-advance via OnMediaItemTransition instead;
             // STATE_ENDED only fires after the last playlist item.
             if (playbackState == 3)
+            {
+                _ignorePlayerEnded = false;
                 TryCompleteRadioPlaylistHandoff();
+            }
 
             if (playbackState == 4)
             {
+                if (_ignorePlayerEnded)
+                    return;
+
                 if (_crossfadeInProgress)
                 {
                     // Outgoing track finished during the blend. Incoming is already
@@ -339,6 +388,7 @@ public class K7MediaLibraryService : MediaLibraryService,
     public void OnPlayerError(PlaybackException? error)
     {
         Log.Error(Tag, $"ExoPlayer error: {error?.Message} (code={error?.ErrorCode})");
+        _ignorePlayerEnded = false;
         if (_crossfadeInProgress)
             return;
 
@@ -720,6 +770,12 @@ public class K7MediaLibraryService : MediaLibraryService,
 
         _resolvedQueueMediaItems = null;
         _gaplessPrebufferedUrl = null;
+        // Stop the current AudioTrack before replacing the item. On Bluetooth A2DP,
+        // SetMediaItem alone can publish new MediaSession metadata while the old
+        // decoder keeps pumping until the first song ends.
+        _ignorePlayerEnded = true;
+        _player.Stop();
+        _player.ClearMediaItems();
         PreparePlayerWithSource(_player, source, startVolume <= 0 ? startVolume : startVolume * _loudnessLinearGain, playWhenReady: true);
         if (startVolume > 0)
             _player.Volume = startVolume * _loudnessLinearGain;
@@ -922,8 +978,10 @@ public class K7MediaLibraryService : MediaLibraryService,
         _pendingTrack = track;
         RefreshLoudnessGain(applyToPlayer: !_crossfadeInProgress);
         // Crossfade defers this event until after promote; push metadata so
-        // Android Auto / notification never stay one track behind.
-        if (!_crossfadeInProgress && !_syncingFromExoPlayer)
+        // Android Auto / notification never stay one track behind. Skip this
+        // during a hard cut: ReplaceMediaItem on the old URI is the Bluetooth
+        // "title changed, audio did not" bug.
+        if (!_crossfadeInProgress && !_syncingFromExoPlayer && !_ignorePlayerEnded)
             SyncNowPlayingMetadata(track);
         _forwardingPlayer?.NotifyQueueChanged();
     }

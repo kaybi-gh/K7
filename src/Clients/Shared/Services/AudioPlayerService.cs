@@ -766,6 +766,7 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
     private bool _gaplessPrebufferTriggered;
     private PlayerSource? _preparedNextSource;
     private Guid? _preparedNextIndexedFileId;
+    private int _loadEpoch;
 
     private void ClearPreparedNextSource()
     {
@@ -952,6 +953,17 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
         var track = CurrentTrack;
         if (track is null) return;
 
+        var epoch = ++_loadEpoch;
+
+        // Keep the gapless/crossfade URL so native players can promote the already
+        // prepared secondary instead of opening a new stream on the audible player.
+        // A fresh session URI on Bluetooth leaves A2DP on the old AudioTrack while
+        // MediaSession metadata (and the in-app title) already show the next song.
+        var reusePrepared = _preparedNextSource is not null
+            && _preparedNextIndexedFileId == track.IndexedFileId
+            && !string.IsNullOrEmpty(_preparedNextSource.Url);
+        var preparedSource = reusePrepared ? _preparedNextSource : null;
+
         _crossfadeTriggered = false;
         EndDeferredUi();
         _crossfadeDeclined = false;
@@ -967,17 +979,25 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
 
         await ShowAsync();
 
+        if (epoch != _loadEpoch)
+            return;
+
         if (ShowFullscreenOnPlay && !IsFullScreenVisible)
             ToggleFullScreen();
 
         PlayerSource source;
 
-        if (!string.IsNullOrEmpty(track.LocalPath))
+        if (preparedSource is not null)
+        {
+            source = preparedSource;
+        }
+        else if (!string.IsNullOrEmpty(track.LocalPath))
         {
             source = new PlayerSource
             {
                 Url = track.LocalPath,
-                MimeType = "audio/mpeg"
+                MimeType = "audio/mpeg",
+                IndexedFileId = track.IndexedFileId
             };
         }
         else
@@ -985,6 +1005,8 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
             try
             {
                 var session = await GetSessionForTrackAsync(track, cancellationToken);
+                if (epoch != _loadEpoch)
+                    return;
 
                 if (session?.Source is null)
                 {
@@ -996,7 +1018,8 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
                 {
                     StreamSessionId = session.Id,
                     Url = session.Source.Uri.OriginalString,
-                    MimeType = session.Source.MimeType
+                    MimeType = session.Source.MimeType,
+                    IndexedFileId = track.IndexedFileId
                 };
             }
             catch (HttpRequestException)
@@ -1006,6 +1029,9 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
                 return;
             }
         }
+
+        if (epoch != _loadEpoch)
+            return;
 
         SourceChanged?.Invoke(source);
     }
