@@ -54,6 +54,13 @@ public class IdentityRedirectUriTests
     }
 
     [Test]
+    public void Normalize_ShouldSendEmptyUriToHome()
+    {
+        IdentityRedirectUri.Normalize(null).Should().Be("/");
+        IdentityRedirectUri.Normalize("").Should().Be("/");
+    }
+
+    [Test]
     public void IsLocalPath_ShouldRejectProtocolRelativeUrls()
     {
         IdentityRedirectUri.IsLocalPath("/connect/authorize").Should().BeTrue();

@@ -125,11 +125,12 @@
         {
             await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
 
-            if (HttpContext.User.Identity?.IsAuthenticated == true
-                && !string.IsNullOrEmpty(ReturnUrl)
-                && IdentityRedirectUri.IsLocalPath(ReturnUrl))
+            if (HttpContext.User.Identity?.IsAuthenticated == true)
             {
-                RedirectManager.RedirectTo(ReturnUrl);
+                var destination = !string.IsNullOrEmpty(ReturnUrl) && IdentityRedirectUri.IsLocalPath(ReturnUrl)
+                    ? ReturnUrl
+                    : "/";
+                RedirectManager.RedirectTo(destination);
                 return;
             }
         }

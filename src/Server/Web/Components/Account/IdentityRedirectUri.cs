@@ -15,7 +15,7 @@ internal static class IdentityRedirectUri
     {
         uri ??= "";
         if (uri.Length == 0)
-            return uri;
+            return "/";
 
         if (uri.StartsWith("k7://", StringComparison.OrdinalIgnoreCase)
             || IsLoopbackCallback(uri))
