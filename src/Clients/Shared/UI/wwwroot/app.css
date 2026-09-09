@@ -108,9 +108,9 @@ textarea[data-sn-editing="true"] {
 /* ============================================================
    Android TV / Leanback platform overrides
    The Android handler injects "K7TV/1.0" into the WebView
-   user-agent and tv-layout.js adds .platform-tv on <html>
-   before Blazor mounts, then rewrites the viewport to
-   compensate for the TV's high pixel density (1/dpr).
+   user-agent. tv-layout.js adds .platform-tv on <html> before
+   Blazor mounts. Viewport targets 1920 CSS px (10-foot). Do
+   not map 1 CSS px to 1 physical px on 4K (that shrinks the UI).
    ============================================================ */
 html.platform-tv {
     /* 10-foot: scale all rem-based type (tokens, utilities, most pages). */

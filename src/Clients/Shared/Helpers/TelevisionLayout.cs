@@ -1,12 +1,16 @@
 namespace K7.Clients.Shared.Helpers;
 
 /// <summary>
-/// Couch / 10-foot device detection. Keep UA tokens in sync with <c>tv-layout.js</c>.
+/// Couch / 10-foot device detection and viewport scale.
+/// Keep tokens and the 1920 CSS-px target in sync with <c>tv-layout.js</c>.
 /// </summary>
 public static class TelevisionLayout
 {
     public const string UserAgentMarker = "K7TV/1.0";
     public const string FireTvFeature = "amazon.hardware.fire_tv";
+    public const int TargetCssWidth = 1920;
+    public const int TenFootCssWidthMin = 1280;
+    public const int TenFootCssWidthMax = 2100;
 
     public static bool MatchesAndroidTelevision(
         bool uiModeTelevision,
@@ -41,6 +45,27 @@ public static class TelevisionLayout
             return true;
 
         return ContainsFireTvModelToken(userAgent);
+    }
+
+    /// <summary>
+    /// TV UI is designed around 1920 CSS px. <c>initial-scale = 1/dpr</c> maps
+    /// 1 CSS px to 1 physical px, which on a 4K framebuffer becomes 3840 CSS px
+    /// and the 10-foot layout looks tiny. Skip when the CSS width is already
+    /// in the 10-foot band (typical 1080p UI, including 4K HDMI with a 1080p
+    /// compositor). Zoom out when density reports a phone-sized CSS width.
+    /// Zoom in when the CSS width is a 4K physical pixel grid.
+    /// </summary>
+    public static bool TryGetViewportScale(double cssWidth, out double scale)
+    {
+        scale = 1;
+        if (cssWidth <= 0)
+            return false;
+
+        if (cssWidth >= TenFootCssWidthMin && cssWidth <= TenFootCssWidthMax)
+            return false;
+
+        scale = cssWidth / TargetCssWidth;
+        return Math.Abs(scale - 1) > 0.04;
     }
 
     private static bool ContainsFireTvModelToken(string userAgent)
