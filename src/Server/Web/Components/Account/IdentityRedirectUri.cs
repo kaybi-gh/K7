@@ -55,7 +55,10 @@ internal static class IdentityRedirectUri
 
     internal static string DescribeHost(string? uri)
     {
-        if (string.IsNullOrEmpty(uri) || !Uri.TryCreate(uri, UriKind.Absolute, out var absolute))
+        if (string.IsNullOrEmpty(uri)
+            || !Uri.TryCreate(uri, UriKind.Absolute, out var absolute)
+            || absolute.Scheme is not ("http" or "https")
+            || string.IsNullOrEmpty(absolute.Host))
             return "-";
 
         return absolute.IsDefaultPort ? absolute.Host : $"{absolute.Host}:{absolute.Port}";

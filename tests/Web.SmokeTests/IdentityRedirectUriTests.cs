@@ -89,6 +89,7 @@ public class IdentityRedirectUriTests
     public void DescribeHost_ShouldIncludeNonDefaultPort()
     {
         IdentityRedirectUri.DescribeHost("http://localhost:49152/").Should().Be("localhost:49152");
+        IdentityRedirectUri.DescribeHost("https://k7.example/connect/authorize").Should().Be("k7.example");
         IdentityRedirectUri.DescribeHost("/connect/authorize").Should().Be("-");
     }
 }
