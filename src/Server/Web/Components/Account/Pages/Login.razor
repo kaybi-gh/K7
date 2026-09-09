@@ -121,6 +121,8 @@
 
     protected override async Task OnInitializedAsync()
     {
+        Input ??= new();
+
         if (HttpMethods.IsGet(HttpContext.Request.Method))
         {
             await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
@@ -161,8 +163,6 @@
             RedirectManager.RedirectTo("/welcome");
             return;
         }
-
-        Input ??= new();
     }
 
     public async Task LoginUser()

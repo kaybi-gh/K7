@@ -60,6 +60,7 @@
 
     protected override async Task OnInitializedAsync()
     {
+        Input ??= new();
         var twoFactorUser = await SignInManager.GetTwoFactorAuthenticationUserAsync();
         if (twoFactorUser is null)
         {
@@ -72,7 +73,6 @@
         }
 
         user = twoFactorUser;
-        Input ??= new();
     }
 
     private async Task OnValidSubmitAsync()
