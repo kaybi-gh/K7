@@ -32,7 +32,7 @@
             <div class="auth-alert auth-alert--error" style="margin-bottom:1rem;">@_statusMessage</div>
         }
 
-        <EditForm Model="Input" method="post" OnValidSubmit="OnSubmitAsync" FormName="setup" Enhance="false" novalidate>
+        <EditForm Model="Input" method="post" OnValidSubmit="OnSubmitAsync" FormName="setup" novalidate>
             <DataAnnotationsValidator />
             <ValidationSummary class="auth-alert auth-alert--error" role="alert" />
             <div class="auth-form-stack">
@@ -46,7 +46,8 @@
                     <label>@L["EmailOptional"]</label>
                     <AuthEmailField Name="Input.Email"
                                     Placeholder="@L["EmailPlaceholder"]"
-                                    Value="@(Input?.Email)" />
+                                    Value="@(Input?.Email)"
+                                    @rendermode="InteractiveServer" />
                 </div>
 
                 <div class="auth-form-field">
@@ -62,7 +63,8 @@
                                        ConfirmId="pw-confirm-setup"
                                        ConfirmLabel="@L["ConfirmPassword"]"
                                        ConfirmPlaceholder="@L["PasswordPlaceholder"]"
-                                       ConfirmValue="@(Input?.ConfirmPassword)" />
+                                       ConfirmValue="@(Input?.ConfirmPassword)"
+                                       @rendermode="InteractiveServer" />
                     <ValidationMessage For="@(() => Input!.Password)" class="auth-validation" />
                 </div>
 

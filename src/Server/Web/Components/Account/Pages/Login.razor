@@ -43,7 +43,7 @@
                         <label>@L["Password"]</label>
                         <div class="auth-input-row">
                             <InputText @bind-Value="Input.Password" id="pw-login" type="password" class="auth-input focusable" placeholder="@L["PasswordPlaceholder"]" autocomplete="current-password" aria-required="true" />
-                            <button type="button" class="auth-input-action focusable" data-k7-toggle-password data-k7-toggle-for="pw-login" aria-label="@L["ShowPassword"]"><i class="ph ph-eye"></i></button>
+                            <button type="button" class="auth-input-action focusable" onclick="togglePwLogin()" aria-label="@L["ShowPassword"]"><i class="ph ph-eye"></i></button>
                         </div>
                         <ValidationMessage For="@(() => Input.Password)" class="auth-validation" />
                     </div>
@@ -78,6 +78,24 @@
         </div>
     }
 </div>
+
+<script>
+    (function () {
+        var timeoutId;
+        window.togglePwLogin = function () {
+            var el = document.getElementById('pw-login');
+            if (!el) return;
+            if (el.type === 'password') {
+                el.type = 'text';
+                clearTimeout(timeoutId);
+                timeoutId = setTimeout(function () { el.type = 'password'; }, 5000);
+            } else {
+                el.type = 'password';
+                clearTimeout(timeoutId);
+            }
+        };
+    })();
+</script>
 
 @code {
     private string? errorMessage;

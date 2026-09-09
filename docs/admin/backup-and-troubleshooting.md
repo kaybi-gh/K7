@@ -128,7 +128,6 @@ The Windows app opens the system browser and waits for `http://localhost:{port}/
 - Use the same URL scheme the browser can store cookies on. `Security__ForceHttps=true` (default) issues Secure / `__Host-` cookies: they work on `https://` and on `http://localhost`, but **not** on `http://192.168.x.x` or other LAN hosts. Sample Compose sets `Security__ForceHttps=false` for plain HTTP on :7080.
 - Behind a TLS proxy, keep `ForceHttps=true` and send `X-Forwarded-Proto: https`. Nginx Proxy Manager does this by default when Force SSL is on and the proxy host is on a private IP (`TrustPrivateProxies`).
 - **Nginx Proxy Manager "Block Common Exploits":** can stay on. That rule 403s a raw `param=http://` (including `redirect_uri=http://localhost:{port}/`). Current K7 re-encodes the post-login authorize redirect (`http%3A%2F%2Flocalhost...`) so the rule does not match. On older builds, turn the option off for the K7 host or upgrade.
-- **Browser "HTTP ERROR 400" on `/sign-in` after a successful login:** look for `POST /sign-in responded 400` a few seconds after `User logged in.` That empty 400 is antiforgery (duplicate submit, or the `__Host-` cookie dropped after the `localhost` hop). The error page can abort the redirect to `http://localhost:{port}/`, so Windows keeps spinning. Current K7 uses SameSite Lax for the antiforgery cookie, keeps auth pages on static SSR (no `blazor.web.js`), and turns that empty 400 into a GET of the same form. Rebuild the server image. The Windows app does not need an update for this.
 
 ### OIDC login fails
 

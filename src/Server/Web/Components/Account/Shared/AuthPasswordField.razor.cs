@@ -22,9 +22,35 @@ public partial class AuthPasswordField
     [Parameter] public string? ConfirmPlaceholder { get; set; }
     [Parameter] public string? ConfirmValue { get; set; }
 
-    private string PasswordId => Id ?? "pw-auth";
-    private string ResolvedConfirmId => ConfirmId ?? "pw-auth-confirm";
-    private string HintBase => ConfirmName.Replace('.', '-');
-    private string MismatchId => $"{HintBase}-mismatch";
-    private string MatchId => $"{HintBase}-match";
+    private string _password = "";
+    private string _confirm = "";
+    private bool _reveal;
+    private bool _revealConfirm;
+
+    private string InputType => _reveal ? "text" : "password";
+    private string ConfirmInputType => _revealConfirm ? "text" : "password";
+    private bool ShowMismatch =>
+        ShowConfirm && !string.IsNullOrEmpty(_confirm) && !string.Equals(_password, _confirm, StringComparison.Ordinal);
+    private bool ShowMatch =>
+        ShowConfirm && !string.IsNullOrEmpty(_confirm) && string.Equals(_password, _confirm, StringComparison.Ordinal);
+    private string? ConfirmHintId =>
+        ShowMismatch || ShowMatch ? $"{ConfirmName.Replace('.', '-')}-hint" : null;
+
+    protected override void OnParametersSet()
+    {
+        if (string.IsNullOrEmpty(_password) && !string.IsNullOrEmpty(Value))
+            _password = Value;
+        if (string.IsNullOrEmpty(_confirm) && !string.IsNullOrEmpty(ConfirmValue))
+            _confirm = ConfirmValue;
+    }
+
+    private void OnPasswordInput(ChangeEventArgs args) =>
+        _password = args.Value?.ToString() ?? "";
+
+    private void OnConfirmInput(ChangeEventArgs args) =>
+        _confirm = args.Value?.ToString() ?? "";
+
+    private void ToggleVisibility() => _reveal = !_reveal;
+
+    private void ToggleConfirmVisibility() => _revealConfirm = !_revealConfirm;
 }

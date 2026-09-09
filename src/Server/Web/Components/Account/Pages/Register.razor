@@ -45,7 +45,8 @@
                     <label>@L["EmailOptional"]</label>
                     <AuthEmailField Name="Input.Email"
                                     Placeholder="@L["EmailPlaceholder"]"
-                                    Value="@(Input?.Email)" />
+                                    Value="@(Input?.Email)"
+                                    @rendermode="InteractiveServer" />
                 </div>
                 <div class="auth-form-field">
                     <label>@L["Password"]</label>
@@ -56,7 +57,8 @@
                                        ShowConfirm="true"
                                        ConfirmLabel="@L["ConfirmPassword"]"
                                        ConfirmPlaceholder="@L["ConfirmPasswordPlaceholder"]"
-                                       ConfirmValue="@(Input?.ConfirmPassword)" />
+                                       ConfirmValue="@(Input?.ConfirmPassword)"
+                                       @rendermode="InteractiveServer" />
                     <ValidationMessage For="@(() => Input!.Password)" class="auth-validation" />
                 </div>
                 <button type="submit" class="k7-btn k7-btn--filled focusable" style="width:100%;">@L["Register"]</button>

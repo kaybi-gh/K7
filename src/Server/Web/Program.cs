@@ -116,7 +116,6 @@ try
     app.UseMiddleware<SignalRAccessTokenMiddleware>();
     app.UseAuthentication();
     app.UseAuthorization();
-    app.UseMiddleware<AuthFormBadRequestRecoveryMiddleware>();
     app.UseAntiforgery();
     app.UseMiddleware<FederationGuardMiddleware>();
 

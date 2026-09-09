@@ -1,14 +1,18 @@
 @using K7.Shared.Security
 
-<div data-k7-auth-email>
+<div>
     <input name="@Name"
            type="email"
            class="auth-input focusable"
            placeholder="@Placeholder"
            autocomplete="@Autocomplete"
            inputmode="email"
-           value="@Value"
+           value="@_email"
            aria-invalid="@(ShowInvalid ? "true" : "false")"
-           aria-describedby="@(ShowInvalid ? InvalidId : null)" />
-    <p id="@InvalidId" class="auth-validation" role="status" data-k7-auth-email-invalid hidden="@(!ShowInvalid)">@L["InvalidEmail"]</p>
+           aria-describedby="@(ShowInvalid ? InvalidId : null)"
+           @oninput="OnInput" />
+    @if (ShowInvalid)
+    {
+        <p id="@InvalidId" class="auth-validation" role="status">@L["InvalidEmail"]</p>
+    }
 </div>
