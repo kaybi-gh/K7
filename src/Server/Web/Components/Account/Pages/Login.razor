@@ -130,6 +130,9 @@
                 var destination = !string.IsNullOrEmpty(ReturnUrl) && IdentityRedirectUri.IsLocalPath(ReturnUrl)
                     ? ReturnUrl
                     : "/";
+                Logger.LogInformation(
+                    "Sign-in skipped, already authenticated. RedirectKind {RedirectKind}",
+                    IdentityRedirectUri.Classify(destination));
                 RedirectManager.RedirectTo(destination);
                 return;
             }
@@ -168,7 +171,9 @@
         var result = await SignInManager.PasswordSignInAsync(userName, Input.Password, Input.RememberMe, lockoutOnFailure: true);
         if (result.Succeeded)
         {
-            Logger.LogInformation("User logged in.");
+            Logger.LogInformation(
+                "User logged in. ReturnUrlKind {ReturnUrlKind}",
+                IdentityRedirectUri.Classify(ReturnUrl));
             RedirectManager.RedirectTo(ReturnUrl);
         }
         else if (result.RequiresTwoFactor)

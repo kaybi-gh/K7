@@ -29,6 +29,38 @@ internal static class IdentityRedirectUri
         return toBaseRelativePath is not null ? toBaseRelativePath(uri) : uri;
     }
 
+    /// <summary>
+    /// Safe label for logs. Never includes query strings, codes, or tokens.
+    /// </summary>
+    internal static string Classify(string? uri)
+    {
+        if (string.IsNullOrEmpty(uri))
+            return "empty";
+
+        if (uri.StartsWith("k7://", StringComparison.OrdinalIgnoreCase))
+            return "custom-scheme";
+
+        if (IsLoopbackCallback(uri))
+            return "loopback";
+
+        if (IsLocalPath(uri) || Uri.IsWellFormedUriString(uri, UriKind.Relative))
+            return ClassifyPath(uri);
+
+        if (Uri.TryCreate(uri, UriKind.Absolute, out var absolute)
+            && absolute.Scheme is "http" or "https")
+            return ClassifyPath(absolute.PathAndQuery);
+
+        return "other";
+    }
+
+    internal static string DescribeHost(string? uri)
+    {
+        if (string.IsNullOrEmpty(uri) || !Uri.TryCreate(uri, UriKind.Absolute, out var absolute))
+            return "-";
+
+        return absolute.IsDefaultPort ? absolute.Host : $"{absolute.Host}:{absolute.Port}";
+    }
+
     internal static bool IsLocalPath(string uri) =>
         uri.StartsWith('/') && !uri.StartsWith("//", StringComparison.Ordinal);
 
@@ -69,6 +101,27 @@ internal static class IdentityRedirectUri
         }
 
         return path + "?" + string.Join("&", encoded);
+    }
+
+    private static string ClassifyPath(string uri)
+    {
+        var path = uri;
+        var queryIndex = uri.IndexOf('?');
+        if (queryIndex >= 0)
+            path = uri[..queryIndex];
+
+        if (path.Length == 0 || path == "/")
+            return "home";
+        if (path.StartsWith("/connect/authorize", StringComparison.OrdinalIgnoreCase))
+            return "local-authorize";
+        if (path.StartsWith("/sign-in", StringComparison.OrdinalIgnoreCase))
+            return "sign-in";
+        if (path.StartsWith("/welcome", StringComparison.OrdinalIgnoreCase))
+            return "welcome";
+        if (path.StartsWith("/auth/complete", StringComparison.OrdinalIgnoreCase))
+            return "auth-complete";
+
+        return "local-other";
     }
 
     private static string EncodeQueryToken(string token)

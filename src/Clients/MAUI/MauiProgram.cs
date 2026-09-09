@@ -41,6 +41,7 @@ public static partial class MauiProgram
         // Also reports a rate-limited sample to the server via IClientErrorReporter once DI is ready.
         JsExceptionDebugListener.Install();
 #endif
+        NativeAuthTrace.Install();
 
         var builder = MauiApp.CreateBuilder();
         builder
@@ -258,6 +259,7 @@ public static partial class MauiProgram
 
         System.Diagnostics.Debug.WriteLine("K7 MAUI - Calling builder.Build()");
         var app = builder.Build();
+        NativeAuthTrace.Configure(app.Services);
         System.Diagnostics.Debug.WriteLine("K7 MAUI - builder.Build() completed");
 
         var offlineDbFactory = app.Services.GetRequiredService<IDbContextFactory<OfflineMediaDbContext>>();

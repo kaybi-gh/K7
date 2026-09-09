@@ -32,6 +32,7 @@ internal static class LoginCallbackResponseHandler
                     _ => "error"
                 };
 
+                NativeAuthTrace.Write("loopback", status);
                 response.Redirect($"{issuer}/auth/complete?status={status}");
                 response.Close();
 

@@ -67,4 +67,28 @@ public class IdentityRedirectUriTests
         IdentityRedirectUri.IsLocalPath("//evil.example").Should().BeFalse();
         IdentityRedirectUri.IsLocalPath("https://evil.example").Should().BeFalse();
     }
+
+    [Test]
+    public void Classify_ShouldLabelDestinationsWithoutQuery()
+    {
+        IdentityRedirectUri.Classify(null).Should().Be("empty");
+        IdentityRedirectUri.Classify("").Should().Be("empty");
+        IdentityRedirectUri.Classify("/").Should().Be("home");
+        IdentityRedirectUri.Classify("/connect/authorize?redirect_uri=http://localhost:9/&code=secret")
+            .Should().Be("local-authorize");
+        IdentityRedirectUri.Classify("/sign-in").Should().Be("sign-in");
+        IdentityRedirectUri.Classify("/welcome").Should().Be("welcome");
+        IdentityRedirectUri.Classify("/auth/complete?status=success").Should().Be("auth-complete");
+        IdentityRedirectUri.Classify("http://localhost:53333/?code=abc").Should().Be("loopback");
+        IdentityRedirectUri.Classify("k7://callback/login?code=abc").Should().Be("custom-scheme");
+        IdentityRedirectUri.Classify("https://k7.example/connect/authorize?x=1").Should().Be("local-authorize");
+        IdentityRedirectUri.Classify("/library").Should().Be("local-other");
+    }
+
+    [Test]
+    public void DescribeHost_ShouldIncludeNonDefaultPort()
+    {
+        IdentityRedirectUri.DescribeHost("http://localhost:49152/").Should().Be("localhost:49152");
+        IdentityRedirectUri.DescribeHost("/connect/authorize").Should().Be("-");
+    }
 }

@@ -10,6 +10,7 @@ using K7.Clients.Shared.Services;
 using K7.Shared;
 using K7.Shared.Interfaces;
 using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.Extensions.Logging;
 using OpenIddict.Client;
 using static OpenIddict.Abstractions.OpenIddictConstants;
 using static OpenIddict.Abstractions.OpenIddictExceptions;
@@ -32,6 +33,7 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
     private readonly ISharedProfileSessionService? _viewingGroupSession;
     private readonly ISharedProfileLocalCache? _viewingGroupCache;
     private readonly K7HubClient? _hubClient;
+    private readonly ILogger<CustomAuthenticationStateProvider> _logger;
     private readonly SemaphoreSlim _refreshLock = new(1, 1);
     private ClaimsPrincipal _currentUser = new(new ClaimsIdentity());
     private int _initialized; // 0 = not started, 1 = started
@@ -60,7 +62,8 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
         ILocalUserService localUserService,
         ISharedProfileSessionService? viewingGroupSession = null,
         ISharedProfileLocalCache? viewingGroupCache = null,
-        K7HubClient? hubClient = null)
+        K7HubClient? hubClient = null,
+        ILogger<CustomAuthenticationStateProvider>? logger = null)
     {
         _openIddictClientService = openIddictClientService;
         _k7ServerService = k7ServerService;
@@ -71,6 +74,7 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
         _viewingGroupSession = viewingGroupSession;
         _viewingGroupCache = viewingGroupCache;
         _hubClient = hubClient;
+        _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<CustomAuthenticationStateProvider>.Instance;
     }
 
     public override async Task<AuthenticationState> GetAuthenticationStateAsync()
@@ -138,6 +142,10 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         timeout.CancelAfter(TimeSpan.FromMinutes(3));
 
+        var issuerHost = _k7ServerService.HttpClient.BaseAddress?.Host ?? "-";
+        NativeAuthTrace.Write("login-start", issuerHost);
+        _logger.LogInformation("Interactive login started for host {IssuerHost}", issuerHost);
+
         try
         {
             // Run interactive auth off the Blazor sync context so the WebView UI
@@ -154,15 +162,26 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
                     }
                 }).ConfigureAwait(false);
 
+                NativeAuthTrace.Write("challenge-ready");
+                _logger.LogInformation("Interactive login challenge issued");
+
                 var result = await _openIddictClientService.AuthenticateInteractivelyAsync(new()
                 {
                     CancellationToken = timeout.Token,
                     Nonce = challenge.Nonce
                 }).ConfigureAwait(false);
 
+                var accessToken = ResolveInteractiveAccessToken(result);
+                NativeAuthTrace.Write(
+                    "authenticate-ready",
+                    $"access={(string.IsNullOrEmpty(accessToken) ? "no" : "yes")} refresh={(string.IsNullOrEmpty(result.RefreshToken) ? "no" : "yes")}");
+                _logger.LogInformation(
+                    "Interactive login tokens received access {HasAccess} refresh {HasRefresh}",
+                    !string.IsNullOrEmpty(accessToken),
+                    !string.IsNullOrEmpty(result.RefreshToken));
+
                 _currentUser = new ClaimsPrincipal(new ClaimsIdentity(result.Principal.Claims, "OpenIddict", Claims.Name, Claims.Role));
 
-                var accessToken = ResolveInteractiveAccessToken(result);
                 StoreAccessToken(accessToken);
 
                 if (!string.IsNullOrEmpty(result.RefreshToken))
@@ -170,24 +189,41 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
 
                 if (!HasPersistedSessionTokens())
                 {
+                    NativeAuthTrace.Write("persist-missing");
+                    _logger.LogWarning("Interactive login produced no persisted session tokens");
                     _currentUser = new ClaimsPrincipal(new ClaimsIdentity());
                     ClearStoredTokens();
                     _k7ServerService.HttpClient.DefaultRequestHeaders.Authorization = null;
                 }
                 else
                 {
+                    NativeAuthTrace.Write("persist-ok");
                     await SaveLocalUserFromCurrentUserAsync(timeout.Token).ConfigureAwait(false);
                     await TryAttachCurrentUserToDeviceAsync(timeout.Token).ConfigureAwait(false);
                 }
             }, timeout.Token).ConfigureAwait(false);
+
+            NativeAuthTrace.Write(
+                "login-complete",
+                _currentUser.Identity?.IsAuthenticated == true ? "authenticated" : "anonymous");
         }
         catch (OperationCanceledException)
         {
+            NativeAuthTrace.Write("login-timeout");
+            _logger.LogWarning("Interactive login canceled or timed out");
             _currentUser = new ClaimsPrincipal(new ClaimsIdentity());
         }
         catch (ProtocolException exception) when (exception.Error is Errors.AccessDenied)
         {
+            NativeAuthTrace.Write("login-denied");
+            _logger.LogInformation("Interactive login denied");
             _currentUser = new ClaimsPrincipal(new ClaimsIdentity());
+        }
+        catch (Exception ex)
+        {
+            NativeAuthTrace.Write("login-error", ex.GetType().Name);
+            _logger.LogWarning(ex, "Interactive login failed");
+            throw;
         }
 
         NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());

@@ -68,6 +68,29 @@ Keep `.env` / OIDC secrets out of git and back them up separately.
 
 Raise levels via Serilog env vars - see [configuration.md](configuration.md#logging-serilog).
 
+### Native Windows login hangs
+
+After a login attempt, grep server logs for `Auth ` and `Native auth`.
+
+Typical sequence for a healthy native login:
+
+1. `GET /connect/authorize` -> `location welcome` or `sign-in` (cookie missing)
+2. `POST /sign-in` -> `returnUrl local-authorize` and `location local-authorize`
+3. `GET /connect/authorize` -> `location loopback` (`locationHost localhost:port`)
+4. `POST /connect/token` -> 200, `grant authorization_code`, `client k7-native`
+5. `GET /auth/complete` -> 200
+6. Client breadcrumbs: `login-start` -> `challenge-ready` -> `loopback` -> `authenticate-ready` -> `persist-ok` -> `login-complete`
+
+How to read a stuck attempt:
+
+- `POST /sign-in` with `returnUrl empty` or `location home`: the authorize ReturnUrl was lost (web home, not native callback)
+- Authorize 302 to `welcome`/`sign-in` after password: the session cookie did not stick
+- Token 200 but no `loopback` / no `/auth/complete`: the system browser never hit `http://localhost:port/`
+- `login-timeout` in client breadcrumbs: the app waited 3 minutes for the loopback callback
+- `login-complete authenticated` while the Welcome spinner stays: hang is in the MAUI WebView after tokens
+
+On the Windows PC, the client also writes `%TEMP%\k7-auth.log` (and a copy under the app data directory). That file is the source of `Native auth` lines if the POST to `/api/diagnostics/auth-trace` was blocked.
+
 ### Cannot connect to the database
 
 - Check `POSTGRES_PASSWORD` matches `Database__Password`

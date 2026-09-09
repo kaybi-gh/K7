@@ -8521,6 +8521,35 @@
         }
       }
     },
+    "/api/diagnostics/auth-trace": {
+      "post": {
+        "tags": [
+          "Diagnostics"
+        ],
+        "operationId": "ReportAuthTrace",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/AuthTraceReport"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/diagnostics/client-errors": {
       "post": {
         "tags": [
@@ -11187,6 +11216,31 @@
               "string"
             ],
             "format": "int32"
+          }
+        }
+      },
+      "AuthTraceReport": {
+        "required": [
+          "stage",
+          "detail",
+          "deviceId"
+        ],
+        "type": "object",
+        "properties": {
+          "stage": {
+            "type": "string"
+          },
+          "detail": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "deviceId": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
