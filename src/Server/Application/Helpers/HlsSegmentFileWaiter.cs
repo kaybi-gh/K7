@@ -60,7 +60,16 @@ internal static class HlsSegmentFileWaiter
                 return failedTask.Exception?.GetBaseException()
                     ?? new InvalidOperationException("FFmpeg exited without generating the requested segment.");
 
-            var ffmpegRunning = job.FfmpegTask is { IsCompleted: false };
+            foreach (var head in job.RemuxHeads.Values)
+            {
+                if (head.Task is not { IsFaulted: true } faultedHead)
+                    continue;
+
+                return faultedHead.Exception?.GetBaseException()
+                    ?? new InvalidOperationException("FFmpeg remux head exited without generating the requested segment.");
+            }
+
+            var ffmpegRunning = job.IsFfmpegRunning;
             if (!ffmpegRunning && (DateTime.UtcNow - lastKick).TotalSeconds >= 1.5)
             {
                 lastKick = DateTime.UtcNow;

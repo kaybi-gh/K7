@@ -409,24 +409,24 @@ public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamMani
 
         foreach (var track in textSubtitleTracks)
         {
-            var isDefault = query.DefaultSubtitleTrackIndex is { } defaultSubIdx
-                ? track.Index == defaultSubIdx
-                : track == textSubtitleTracks[0] && track.IsDefault;
-            var trackName = !string.IsNullOrEmpty(track.Name) ? track.Name : $"Subtitle {track.Index}";
             var trackSlug = $"sub-{track.Index}";
             var language = !string.IsNullOrEmpty(track.Language) ? track.Language : "und";
-
             var subtitleUri = GetHlsSubtitleStreamIndexQueryUriBuilder.BuildManifestRelativePath(track.Index)
                 + subtitleQueryString;
 
+            // Never DEFAULT/AUTOSELECT text subs in the master: Video.js VHS disables the
+            // whole subtitle track on the first segment error (503 while VTT extracts) with
+            // no native retry. Clients enable explicitly (sidecar on Video.js, Exo track API
+            // on Android). Forced tracks stay selectable via FORCED=.
+            var isForced = track.IsForced;
             playlist.AppendLine(
                 $"#EXT-X-MEDIA:TYPE=SUBTITLES," +
                 $"GROUP-ID=\"subs\"," +
                 $"NAME=\"{EscapeHlsAttribute(trackSlug)}\"," +
                 $"LANGUAGE=\"{language}\"," +
-                $"DEFAULT={BoolToYesNo(isDefault)}," +
-                $"AUTOSELECT={BoolToYesNo(isDefault)}," +
-                $"FORCED={BoolToYesNo(track.IsForced)}," +
+                $"DEFAULT=NO," +
+                $"AUTOSELECT={BoolToYesNo(isForced)}," +
+                $"FORCED={BoolToYesNo(isForced)}," +
                 $"URI=\"{subtitleUri}\"");
         }
 

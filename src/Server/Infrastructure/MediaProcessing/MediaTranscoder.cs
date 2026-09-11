@@ -407,7 +407,8 @@ public class MediaTranscoder : IMediaTranscoder
                     ffmpegStartIndex,
                     ffmpegEndIndex,
                     cutOrigin,
-                    endTime);
+                    endTime,
+                    remuxAbsoluteTimeline: !needsTranscode);
             })
             .Configure(options => options.WorkingDirectory = outputDirectory)
             .Configure(options => options.TemporaryFilesFolder = outputDirectory)
@@ -424,7 +425,7 @@ public class MediaTranscoder : IMediaTranscoder
             alignPresentationTime: needsTranscode,
             paddingGuard,
             ffmpegEndIndex,
-            demoteOpenGopSync: !needsTranscode,
+            demoteOpenGopSync: false,
             cancellationToken);
 
         if (!result && !cancellationToken.IsCancellationRequested)
@@ -785,7 +786,8 @@ public class MediaTranscoder : IMediaTranscoder
         TimeSpan timelineOrigin,
         TimeSpan endTime,
         TimeSpan encoderDelay = default,
-        bool resetTimelineToZero = true)
+        bool resetTimelineToZero = true,
+        bool remuxAbsoluteTimeline = false)
     {
         foreach (var arg in FfmpegStreamingArgs.BuildKeyframeAlignedSegmentArguments(
                      allSegments,
@@ -794,7 +796,8 @@ public class MediaTranscoder : IMediaTranscoder
                      timelineOrigin,
                      endTime,
                      encoderDelay,
-                     resetTimelineToZero))
+                     resetTimelineToZero,
+                     remuxAbsoluteTimeline))
         {
             options.WithCustomArgument(arg);
         }

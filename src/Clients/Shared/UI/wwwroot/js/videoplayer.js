@@ -9,20 +9,152 @@ function isVttSubtitleUrl(uri) {
     if (!uri || typeof uri !== 'string')
         return false;
 
-    return /\.vtt(\?|#|$)/i.test(uri);
+    // Segment cues (.../segments/N.vtt) and any other sidecar VTT URL.
+    if (/\.vtt(\?|#|$)/i.test(uri))
+        return true;
+
+    return /\/hls-stream\/subtitles\/\d+\/segments\//i.test(uri);
 }
 
-function getXhrStatusCode(response) {
-    if (!response)
-        return 0;
+function vtt503RetryDelayMs(attemptOneBased) {
+    const exponent = Math.min(Math.max(attemptOneBased, 1) - 1, 4);
+    return Math.min(500 * (1 << exponent), K7_VTT_503_MAX_BACKOFF_MS);
+}
 
-    if (typeof response.statusCode === 'number')
-        return response.statusCode;
+function getXhrStatusCode(err, response) {
+    if (response) {
+        if (typeof response.statusCode === 'number')
+            return response.statusCode;
 
-    if (typeof response.status === 'number')
-        return response.status;
+        if (typeof response.status === 'number')
+            return response.status;
+
+        if (response.rawRequest && typeof response.rawRequest.status === 'number')
+            return response.rawRequest.status;
+    }
+
+    if (err && typeof err.statusCode === 'number')
+        return err.statusCode;
 
     return 0;
+}
+
+// Native XHR patch: VHS / @videojs/xhr often bypass module wrappers. Retry 503 on
+// .vtt before onload / onreadystatechange see the failure (so VHS does not disable).
+function installNativeXhrVtt503Retry() {
+    if (typeof XMLHttpRequest === 'undefined')
+        return false;
+
+    if (XMLHttpRequest.prototype.__k7Vtt503Patched)
+        return true;
+
+    XMLHttpRequest.prototype.__k7Vtt503Patched = true;
+
+    const nativeOpen = XMLHttpRequest.prototype.open;
+    const nativeSend = XMLHttpRequest.prototype.send;
+    const nativeSetRequestHeader = XMLHttpRequest.prototype.setRequestHeader;
+
+    XMLHttpRequest.prototype.open = function (method, url, async, user, password) {
+        this.__k7Method = method;
+        this.__k7Url = url == null ? '' : String(url);
+        this.__k7Async = async !== false;
+        this.__k7User = user;
+        this.__k7Password = password;
+        this.__k7Headers = [];
+        this.__k7VttHooked = false;
+        return nativeOpen.apply(this, arguments);
+    };
+
+    XMLHttpRequest.prototype.setRequestHeader = function (name, value) {
+        if (this.__k7Headers)
+            this.__k7Headers.push([name, value]);
+
+        return nativeSetRequestHeader.apply(this, arguments);
+    };
+
+    XMLHttpRequest.prototype.send = function (body) {
+        const xhr = this;
+        if (!isVttSubtitleUrl(xhr.__k7Url) || xhr.__k7VttHooked)
+            return nativeSend.apply(xhr, arguments);
+
+        xhr.__k7VttHooked = true;
+        xhr.__k7VttAttempt = 0;
+        xhr.__k7VttBody = body;
+
+        const userOnLoad = xhr.onload;
+        const userOnError = xhr.onerror;
+        const userOnReady = xhr.onreadystatechange;
+        const userOnLoadEnd = xhr.onloadend;
+        const userOnTimeout = xhr.ontimeout;
+
+        const clearUserHandlers = function () {
+            xhr.onload = null;
+            xhr.onerror = null;
+            xhr.onreadystatechange = null;
+            xhr.onloadend = null;
+            xhr.ontimeout = null;
+        };
+
+        const finishWithUserHandlers = function () {
+            xhr.onload = userOnLoad;
+            xhr.onerror = userOnError;
+            xhr.onreadystatechange = userOnReady;
+            xhr.onloadend = userOnLoadEnd;
+            xhr.ontimeout = userOnTimeout;
+
+            // Prefer onreadystatechange (video.js sets it and schedules the real callback).
+            if (typeof userOnReady === 'function')
+                userOnReady.call(xhr);
+            else if (xhr.status >= 200 && xhr.status < 300 && typeof userOnLoad === 'function')
+                userOnLoad.call(xhr);
+            else if (typeof userOnError === 'function')
+                userOnError.call(xhr);
+
+            if (typeof userOnLoadEnd === 'function')
+                userOnLoadEnd.call(xhr);
+        };
+
+        const armHandlers = function () {
+            clearUserHandlers();
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState !== 4)
+                    return;
+
+                xhr.__k7VttAttempt += 1;
+                if (xhr.status === 503 && xhr.__k7VttAttempt < K7_VTT_503_MAX_ATTEMPTS) {
+                    const delay = vtt503RetryDelayMs(xhr.__k7VttAttempt);
+                    setTimeout(function () {
+                        try {
+                            nativeOpen.call(
+                                xhr,
+                                xhr.__k7Method,
+                                xhr.__k7Url,
+                                xhr.__k7Async,
+                                xhr.__k7User,
+                                xhr.__k7Password);
+                            const headers = xhr.__k7Headers || [];
+                            for (let i = 0; i < headers.length; i++)
+                                nativeSetRequestHeader.call(xhr, headers[i][0], headers[i][1]);
+
+                            armHandlers();
+                            nativeSend.call(xhr, xhr.__k7VttBody);
+                        }
+                        catch (e) {
+                            finishWithUserHandlers();
+                        }
+                    }, delay);
+                    return;
+                }
+
+                finishWithUserHandlers();
+            };
+        };
+
+        armHandlers();
+        return nativeSend.apply(xhr, arguments);
+    };
+
+    return true;
 }
 
 function wrapXhrForVtt503Retry(originalXhr) {
@@ -58,19 +190,29 @@ function wrapXhrForVtt503Retry(originalXhr) {
                 if (aborted)
                     return;
 
-                const status = getXhrStatusCode(response);
+                const status = getXhrStatusCode(err, response);
                 if (status === 503 && attempt < K7_VTT_503_MAX_ATTEMPTS) {
-                    const exponent = Math.min(attempt - 1, 4);
-                    const delay = Math.min(500 * (1 << exponent), K7_VTT_503_MAX_BACKOFF_MS);
                     pendingTimer = setTimeout(function () {
                         pendingTimer = null;
                         tryRequest();
-                    }, delay);
+                    }, vtt503RetryDelayMs(attempt));
                     return;
                 }
 
                 callback(err, response);
             });
+
+            if (activeRequest && typeof activeRequest.abort === 'function') {
+                const innerAbort = activeRequest.abort.bind(activeRequest);
+                request.abort = function () {
+                    aborted = true;
+                    if (pendingTimer !== null) {
+                        clearTimeout(pendingTimer);
+                        pendingTimer = null;
+                    }
+                    innerAbort();
+                };
+            }
         };
 
         tryRequest();
@@ -85,32 +227,34 @@ function wrapXhrForVtt503Retry(originalXhr) {
         wrappedXhr[key] = typeof value === 'function' ? value.bind(originalXhr) : value;
     });
 
-    // Keep VHS on this xhr (same as the Windows stream bridge).
-    wrappedXhr.original = false;
     wrappedXhr.__k7Vtt503Retry = true;
     return wrappedXhr;
 }
 
 function ensureVtt503RetryXhr() {
-    if (!window.videojs)
+    installNativeXhrVtt503Retry();
+
+    if (!window.videojs || !videojs.xhr)
         return false;
 
-    const wrapHolder = function (holder) {
-        if (!holder || !holder.xhr || holder.xhr.__k7Vtt503Retry)
-            return;
+    // VHS picks (!0 === Vhs.xhr.original ? videojs : Vhs).xhr.
+    // Only wrap videojs.xhr. Wrapping Vhs.xhr and forcing original=false makes the
+    // default Vhs xhr factory re-enter itself (no retries, request dies).
+    if (!videojs.xhr.__k7Vtt503Retry)
+        videojs.xhr = wrapXhrForVtt503Retry(videojs.xhr);
 
-        holder.xhr = wrapXhrForVtt503Retry(holder.xhr);
-    };
+    const vhs = videojs.Vhs || videojs.VHS;
+    if (vhs && vhs.xhr)
+        vhs.xhr.original = true;
 
-    wrapHolder(videojs);
-    wrapHolder(videojs.Vhs || videojs.VHS);
     return true;
 }
 
 window.K7 = window.K7 || {};
 K7.ensureVtt503RetryXhr = ensureVtt503RetryXhr;
 
-// Install as soon as video.js is present (DesignSystem loads scripts sequentially).
+// Native patch installs immediately (before video.js). Module wrap when available.
+installNativeXhrVtt503Retry();
 ensureVtt503RetryXhr();
 
 // Optional Windows MAUI stream bridge hooks (defined by MAUI wwwroot/js/windowsStreamFetch.js).
@@ -255,6 +399,11 @@ window.initVideoJs = function (id, videoPlayer, videoContainer, options, dotNetR
             .catch((error) => console.error('Error invoking C# method', error));
     });
 
+    // Remux seek keeps the same HLS source; VHS often drops EXT-X-MEDIA text tracks.
+    player.on('seeked', function () {
+        window.reapplyActiveSubtitleTrack(id);
+    });
+
     // Fired when the current playback position has changed * During playback this is fired every 15-250 milliseconds, depending on the playback technology in use.
     player.on('timeupdate', function () {
         dotNetRef.invokeMethodAsync('OnTimeUpdated', player.currentTime())
@@ -346,8 +495,10 @@ window.changeSource = function (id, src, type, subtitleSlug) {
                 });
             }
         });
-        // VHS adds EXT-X-MEDIA subtitle tracks after master parse - often after loadedmetadata.
-        window.switchSubtitleTrackWhenReady(id, subtitleSlug);
+        // Sidecar path (C# passes null): do not disable tracks here. loadSidecar /
+        // loadedmetadata re-apply owns text subs. HLS-only slug still waits for VHS.
+        if (subtitleSlug)
+            window.switchSubtitleTrackWhenReady(id, subtitleSlug);
     }
 }
 
@@ -369,7 +520,8 @@ window.changeSourceAndSeek = function (id, src, type, seekTime, subtitleSlug) {
                 console.warn('Auto-play was prevented after seek', error);
             });
         }
-        window.switchSubtitleTrackWhenReady(id, subtitleSlug);
+        if (subtitleSlug)
+            window.switchSubtitleTrackWhenReady(id, subtitleSlug);
     };
 
     // Seek as soon as duration/playlist metadata is known - before VHS buffers segment 0.
@@ -438,6 +590,9 @@ window.switchSubtitleTrack = function (id, slug) {
     const textTracks = player.textTracks();
     if (!textTracks) return false;
 
+    // Remember selection so seek / VHS track resets can re-apply.
+    player._k7ActiveSubtitleSlug = slug || null;
+
     // null/undefined/empty slug disables all subtitle tracks
     if (!slug) {
         for (let i = 0; i < textTracks.length; i++) {
@@ -465,11 +620,49 @@ window.switchSubtitleTrack = function (id, slug) {
     return found;
 }
 
+function isActiveSubtitleShowing(player, slug) {
+    if (!player || !slug)
+        return false;
+
+    const textTracks = player.textTracks && player.textTracks();
+    if (!textTracks)
+        return false;
+
+    for (let i = 0; i < textTracks.length; i++) {
+        if (!isSelectableTextTrack(textTracks[i]))
+            continue;
+
+        if (textTrackMatchesSlug(textTracks[i], slug) && textTracks[i].mode === 'showing')
+            return true;
+    }
+
+    return false;
+}
+
+// VHS often disables EXT-X-MEDIA subs after seek / segment errors. Re-bind the
+// last selected slug when the track is no longer showing.
+window.reapplyActiveSubtitleTrack = function (id) {
+    const player = players[id];
+    if (!player)
+        return;
+
+    const slug = player._k7ActiveSubtitleSlug;
+    if (!slug)
+        return;
+
+    if (isActiveSubtitleShowing(player, slug))
+        return;
+
+    window.switchSubtitleTrackWhenReady(id, slug);
+}
+
 // VHS registers EXT-X-MEDIA text tracks asynchronously; retry until the slug appears.
 window.switchSubtitleTrackWhenReady = function (id, slug, maxAttempts) {
     const player = players[id];
     if (!player)
         return;
+
+    player._k7ActiveSubtitleSlug = slug || null;
 
     if (player._k7SubtitleReadyToken)
         player._k7SubtitleReadyToken += 1;
@@ -525,19 +718,155 @@ window.switchSubtitleTrackWhenReady = function (id, slug, maxAttempts) {
     trySwitch(0);
 }
 
+// Mirror of WebVttCueParser.cs - inject cues without a second Video.js XHR.
+// blob: + addRemoteTextTrack fails when the media element uses credentials
+// (ProgressEvent statusCode 0). preloadTextTracks only delays load, it does not fix that.
+function k7ParseVttTimestamp(timestamp) {
+    const parts = String(timestamp || '').trim().split(':');
+    try {
+        if (parts.length === 3)
+            return parseFloat(parts[0]) * 3600 + parseFloat(parts[1]) * 60 + parseFloat(parts[2]);
+        if (parts.length === 2)
+            return parseFloat(parts[0]) * 60 + parseFloat(parts[1]);
+    } catch (e) {
+    }
+    return 0;
+}
+
+function k7StripVttCueMarkup(line) {
+    let out = '';
+    let inTag = false;
+    for (let i = 0; i < line.length; i++) {
+        const c = line[i];
+        if (c === '<') {
+            inTag = true;
+            continue;
+        }
+        if (c === '>') {
+            inTag = false;
+            continue;
+        }
+        if (!inTag)
+            out += c;
+    }
+    return out
+        .replace(/&nbsp;/gi, ' ')
+        .replace(/&amp;/gi, '&')
+        .replace(/&lt;/gi, '<')
+        .replace(/&gt;/gi, '>')
+        .trim();
+}
+
+function k7ParseWebVttCues(vtt) {
+    if (!vtt || typeof vtt !== 'string')
+        return [];
+
+    const lines = vtt.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+    const cues = [];
+    let i = 0;
+
+    while (i < lines.length) {
+        if (lines[i].indexOf('-->') !== -1)
+            break;
+        i++;
+    }
+
+    while (i < lines.length) {
+        const line = lines[i].trim();
+        if (line.indexOf('-->') === -1) {
+            i++;
+            continue;
+        }
+
+        const parts = line.split('-->');
+        if (parts.length < 2) {
+            i++;
+            continue;
+        }
+
+        let endPart = parts[1].trim();
+        const endSpace = endPart.indexOf(' ');
+        if (endSpace > 0)
+            endPart = endPart.slice(0, endSpace);
+
+        const start = k7ParseVttTimestamp(parts[0]);
+        const end = k7ParseVttTimestamp(endPart);
+        i++;
+
+        const textLines = [];
+        while (i < lines.length && lines[i].trim().length > 0) {
+            const text = k7StripVttCueMarkup(lines[i].replace(/\s+$/, ''));
+            if (text.length > 0)
+                textLines.push(text);
+            i++;
+        }
+
+        const body = textLines.join('\n');
+        if (end > start && body.length > 0)
+            cues.push({ start: start, end: end, text: body });
+    }
+
+    return cues;
+}
+
+function k7NormalizeWebVttText(text) {
+    if (typeof text !== 'string')
+        return null;
+
+    // Strip UTF-8 BOM if present.
+    if (text.charCodeAt(0) === 0xfeff)
+        text = text.slice(1);
+
+    const trimmed = text.replace(/^\uFEFF/, '');
+    if (trimmed.indexOf('#EXTM3U') === 0)
+        return null;
+
+    if (trimmed.indexOf('WEBVTT') === 0 || trimmed.toLowerCase().indexOf('webvtt') === 0)
+        return trimmed;
+
+    return null;
+}
+
+function k7EnsureSidecarSourceHook(player, id) {
+    if (!player || player._k7SidecarSourceHooked)
+        return;
+
+    player._k7SidecarSourceHooked = true;
+    // Quality / encode swaps call player.src(). Video.js drops auto remote text tracks
+    // on source change - re-apply pending sidecar after the new master is ready.
+    player.on('loadedmetadata', function () {
+        const pending = player._k7PendingSidecar;
+        if (!pending || !pending.slug || !pending.vttUrl)
+            return;
+        window.loadSidecarSubtitleTrack(id, pending.vttUrl, pending.slug);
+    });
+}
+
 // Windows MAUI HLS: VHS EXT-X-MEDIA subtitle playlists often never surface cues in WebView2.
-// Load the full sidecar VTT (same endpoint as native Direct) via the auth bridge instead.
+// Load the full sidecar VTT (same endpoint as native Direct), then inject cues in-memory.
+// Do not set track.src (blob or https): Video.js emulated tracks re-XHR and can fail
+// (503 disable, or blob + withCredentials -> ProgressEvent status 0).
 window.loadSidecarSubtitleTrack = async function (id, vttUrl, slug) {
     const player = players[id];
     if (!player)
         return false;
 
     ensurePlatformStreamBridge();
+    k7EnsureSidecarSourceHook(player, id);
 
-    if (player._k7SidecarObjectUrl) {
-        try { URL.revokeObjectURL(player._k7SidecarObjectUrl); } catch (e) { }
-        player._k7SidecarObjectUrl = null;
+    const intendedSlug = slug || null;
+    if (!intendedSlug || !vttUrl) {
+        player._k7PendingSidecar = null;
+        player._k7SidecarVttCache = null;
+    } else {
+        player._k7PendingSidecar = { vttUrl: vttUrl, slug: intendedSlug };
     }
+
+    if (player._k7SidecarLoadToken)
+        player._k7SidecarLoadToken += 1;
+    else
+        player._k7SidecarLoadToken = 1;
+    const loadToken = player._k7SidecarLoadToken;
 
     try {
         const remoteTracks = player.remoteTextTracks && player.remoteTextTracks();
@@ -553,11 +882,18 @@ window.loadSidecarSubtitleTrack = async function (id, vttUrl, slug) {
 
     // Prefer sidecar over HLS group tracks so we do not race two sources.
     window.switchSubtitleTrack(id, null);
+    player._k7ActiveSubtitleSlug = intendedSlug;
 
-    if (!slug || !vttUrl)
+    if (!intendedSlug || !vttUrl)
         return true;
 
     const fetchVttText = async function () {
+        if (player._k7SidecarVttCache
+            && player._k7SidecarVttCache.url === vttUrl
+            && typeof player._k7SidecarVttCache.text === 'string') {
+            return player._k7SidecarVttCache.text;
+        }
+
         const maxAttempts = 12;
         for (let attempt = 1; attempt <= maxAttempts; attempt++) {
             let status = 0;
@@ -592,28 +928,27 @@ window.loadSidecarSubtitleTrack = async function (id, vttUrl, slug) {
                 return null;
 
             if (typeof body === 'string') {
-                if (body.indexOf('#EXTM3U') === 0)
-                    return null;
+                const normalized = k7NormalizeWebVttText(body);
+                if (normalized)
+                    return normalized;
                 // Bridge may return base64 for byte[]; decode if it does not look like WEBVTT.
-                if (body.indexOf('WEBVTT') === 0 || body.indexOf('webvtt') === 0)
-                    return body;
                 try {
                     const binary = atob(body);
-                    return new TextDecoder('utf-8').decode(
-                        Uint8Array.from(binary, function (c) { return c.charCodeAt(0); }));
+                    return k7NormalizeWebVttText(new TextDecoder('utf-8').decode(
+                        Uint8Array.from(binary, function (c) { return c.charCodeAt(0); })));
                 } catch (e) {
-                    return body;
+                    return k7NormalizeWebVttText(body);
                 }
             }
 
             if (body instanceof ArrayBuffer)
-                return new TextDecoder('utf-8').decode(new Uint8Array(body));
+                return k7NormalizeWebVttText(new TextDecoder('utf-8').decode(new Uint8Array(body)));
 
             if (body instanceof Uint8Array)
-                return new TextDecoder('utf-8').decode(body);
+                return k7NormalizeWebVttText(new TextDecoder('utf-8').decode(body));
 
             if (Array.isArray(body))
-                return new TextDecoder('utf-8').decode(new Uint8Array(body));
+                return k7NormalizeWebVttText(new TextDecoder('utf-8').decode(new Uint8Array(body)));
 
             return null;
         }
@@ -623,32 +958,68 @@ window.loadSidecarSubtitleTrack = async function (id, vttUrl, slug) {
 
     try {
         const text = await fetchVttText();
-        if (!text || text.indexOf('WEBVTT') !== 0 && text.toLowerCase().indexOf('webvtt') !== 0) {
+        if (player._k7SidecarLoadToken !== loadToken)
+            return false;
+
+        if (!text) {
             console.warn('loadSidecarSubtitleTrack: no WEBVTT body for', vttUrl);
             return false;
         }
 
-        const blob = new Blob([text], { type: 'text/vtt' });
-        const objectUrl = URL.createObjectURL(blob);
-        player._k7SidecarObjectUrl = objectUrl;
+        player._k7SidecarVttCache = { url: vttUrl, text: text };
 
-        const handle = player.addRemoteTextTrack({
-            kind: 'subtitles',
-            src: objectUrl,
-            srclang: 'und',
-            label: slug,
-            id: 'k7-sidecar-' + slug,
-            mode: 'showing',
-            default: true
-        }, false);
-
-        const track = handle && (handle.track || handle);
-        if (track) {
-            track.mode = 'showing';
-            if (!track.id)
-                track.id = 'k7-sidecar-' + slug;
+        const cues = k7ParseWebVttCues(text);
+        if (cues.length === 0) {
+            console.warn('loadSidecarSubtitleTrack: zero cues for', vttUrl);
+            return false;
         }
 
+        // No src: avoid Video.js TextTrack XHR (blob fails with credentials, https can 503 once).
+        // manualCleanup true: quality/encode src swaps must not auto-drop the sidecar before
+        // loadedmetadata can re-apply (we remove k7-sidecar-* ourselves).
+        const handle = player.addRemoteTextTrack({
+            kind: 'subtitles',
+            srclang: 'und',
+            label: intendedSlug,
+            id: 'k7-sidecar-' + intendedSlug,
+            mode: 'showing',
+            default: true
+        }, true);
+
+        if (player._k7SidecarLoadToken !== loadToken) {
+            try {
+                if (handle)
+                    player.removeRemoteTextTrack(handle.track || handle);
+            } catch (e) {
+            }
+            return false;
+        }
+
+        const track = handle && (handle.track || handle);
+        if (!track) {
+            console.warn('loadSidecarSubtitleTrack: no text track handle');
+            return false;
+        }
+
+        if (!track.id)
+            track.id = 'k7-sidecar-' + intendedSlug;
+
+        const CueType = typeof VTTCue !== 'undefined'
+            ? VTTCue
+            : (typeof TextTrackCue !== 'undefined' ? TextTrackCue : null);
+        if (!CueType) {
+            console.warn('loadSidecarSubtitleTrack: VTTCue unavailable');
+            return false;
+        }
+
+        for (let i = 0; i < cues.length; i++) {
+            try {
+                track.addCue(new CueType(cues[i].start, cues[i].end, cues[i].text));
+            } catch (cueErr) {
+            }
+        }
+
+        track.mode = 'showing';
         k7AttachSubtitleStyleHooks(player);
         k7RefreshSubtitleStylesForAllPlayers();
         return true;
@@ -819,6 +1190,11 @@ window.seek = function (id, seconds) {
 
     const doSeek = function () {
         player.currentTime(seconds);
+        // seeked handler also re-applies; call once here for players that skip seeked
+        // when the target equals the current time within tolerance.
+        setTimeout(function () {
+            window.reapplyActiveSubtitleTrack(id);
+        }, 0);
     };
 
     if (player.readyState() >= 1) {

@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Globalization;
 using K7.Server.Application.Common.Configuration;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Helpers;
@@ -90,6 +91,18 @@ public class TranscodeJobManager(
                     }
                 }
 
+                foreach (var headDir in Directory.EnumerateDirectories(outputDir, "head-*"))
+                {
+                    try
+                    {
+                        Directory.Delete(headDir, recursive: true);
+                    }
+                    catch (IOException ex)
+                    {
+                        logger.LogWarning(ex, "Failed to delete stale remux head {Dir}", headDir);
+                    }
+                }
+
                 logger.LogInformation("Cleared stale segments from {OutputDir}", outputDir);
             }
 
@@ -156,6 +169,7 @@ public class TranscodeJobManager(
             return;
         }
 
+        job.LastClientMediaSegmentRequest = requestedSegmentIndex;
         job.LastRequestedSegmentIndex = Math.Max(job.LastRequestedSegmentIndex, requestedSegmentIndex);
 
         // Advertise the real target early so a racing init request does not assume cold start at 0.
@@ -166,27 +180,29 @@ public class TranscodeJobManager(
             allSegments.Count,
             job.IsCopyRemux);
 
-        var currentIndex = job.GetCurrentSegmentIndex();
-        var gap = requestedSegmentIndex - currentIndex;
+        if (job.IsCopyRemux)
+        {
+            await EnsureRemuxSegmentWillBeGeneratedAsync(job, requestedSegmentIndex, allSegments, cancellationToken);
+            return;
+        }
 
-        // Check if requested segment already exists on disk (for backward seeks).
-        // FFmpeg may create zero-byte placeholders before writing fMP4 init/media data.
+        await EnsureEncodeSegmentWillBeGeneratedAsync(job, requestedSegmentIndex, allSegments, cancellationToken);
+    }
+
+    private async Task EnsureRemuxSegmentWillBeGeneratedAsync(
+        TranscodeJob job,
+        int requestedSegmentIndex,
+        List<HlsSegment> allSegments,
+        CancellationToken cancellationToken)
+    {
         var segmentExists = HlsSegmentFileWaiter.IsSegmentReadyOnDisk(job.OutputDirectory, requestedSegmentIndex);
-
-        // Calculate gap duration
-        var gapDuration = CalculateGapDuration(currentIndex, requestedSegmentIndex, allSegments);
-
         logger.LogDebug(
-            "Job {JobId}: Requested segment {RequestedIndex}, current {CurrentIndex}, gap {Gap} segments ({GapSeconds}s), exists: {Exists}",
-            jobId,
+            "Job {JobId}: Remux requested segment {RequestedIndex}, exists: {Exists}, heads: {HeadCount}",
+            job.JobId,
             requestedSegmentIndex,
-            currentIndex,
-            gap,
-            gapDuration.TotalSeconds,
-            segmentExists);
+            segmentExists,
+            job.RemuxHeads.Count);
 
-        // Segment ready: still continue if Target was bumped past the last ready index while
-        // ffmpeg was idle (GETs for existing .m4s used to return without starting the next window).
         if (segmentExists)
         {
             await job.FfmpegStartLock.WaitAsync(cancellationToken);
@@ -202,11 +218,93 @@ public class TranscodeJobManager(
             return;
         }
 
-        // Acquire per-job lock to prevent concurrent FFmpeg starts from parallel segment requests
         await job.FfmpegStartLock.WaitAsync(cancellationToken);
         try
         {
-            // Re-check after acquiring lock - another request may have already started FFmpeg
+            segmentExists = HlsSegmentFileWaiter.IsSegmentReadyOnDisk(job.OutputDirectory, requestedSegmentIndex);
+            if (segmentExists)
+            {
+                await ContinueTowardClientTargetIfNeededAsync(job, allSegments, cancellationToken);
+                return;
+            }
+
+            var liveHeads = job.RemuxHeads.Values
+                .Select(h => (TipIndex: h.TipIndex, From: h.From, UntilInclusive: h.UntilInclusive, Running: h.IsRunning))
+                .ToList();
+            var covered = liveHeads.Any(h =>
+                h.Running && requestedSegmentIndex >= h.From && requestedSegmentIndex <= h.UntilInclusive);
+            var distance = FfmpegRemuxSeekPolicy.MinDistanceSecondsToLiveHead(
+                requestedSegmentIndex,
+                liveHeads.Select(h => (h.TipIndex, h.UntilInclusive, h.Running)),
+                allSegments);
+
+            if (!FfmpegRemuxSeekPolicy.ShouldSpawnRemuxHead(
+                    remuxCopy: true,
+                    segmentReady: false,
+                    covered,
+                    distance))
+            {
+                logger.LogDebug(
+                    "Job {JobId}: Waiting on remux head for segment {RequestedIndex} (covered={Covered}, distance={Distance}s)",
+                    job.JobId,
+                    requestedSegmentIndex,
+                    covered,
+                    distance);
+                return;
+            }
+
+            logger.LogInformation(
+                "Job {JobId}: Spawning remux head at segment {RequestedIndex} (covered={Covered}, distance={Distance}s)",
+                job.JobId,
+                requestedSegmentIndex,
+                covered,
+                distance);
+            await SpawnRemuxHeadAsync(job, requestedSegmentIndex, allSegments, cancellationToken);
+        }
+        finally
+        {
+            job.FfmpegStartLock.Release();
+        }
+    }
+
+    private async Task EnsureEncodeSegmentWillBeGeneratedAsync(
+        TranscodeJob job,
+        int requestedSegmentIndex,
+        List<HlsSegment> allSegments,
+        CancellationToken cancellationToken)
+    {
+        var currentIndex = job.GetCurrentSegmentIndex();
+        var gap = requestedSegmentIndex - currentIndex;
+        var segmentExists = HlsSegmentFileWaiter.IsSegmentReadyOnDisk(job.OutputDirectory, requestedSegmentIndex);
+        var gapDuration = CalculateGapDuration(currentIndex, requestedSegmentIndex, allSegments);
+
+        logger.LogDebug(
+            "Job {JobId}: Encode requested segment {RequestedIndex}, current {CurrentIndex}, gap {Gap} segments ({GapSeconds}s), exists: {Exists}",
+            job.JobId,
+            requestedSegmentIndex,
+            currentIndex,
+            gap,
+            gapDuration.TotalSeconds,
+            segmentExists);
+
+        if (segmentExists)
+        {
+            await job.FfmpegStartLock.WaitAsync(cancellationToken);
+            try
+            {
+                await ContinueTowardClientTargetIfNeededAsync(job, allSegments, cancellationToken);
+            }
+            finally
+            {
+                job.FfmpegStartLock.Release();
+            }
+
+            return;
+        }
+
+        await job.FfmpegStartLock.WaitAsync(cancellationToken);
+        try
+        {
             segmentExists = HlsSegmentFileWaiter.IsSegmentReadyOnDisk(job.OutputDirectory, requestedSegmentIndex);
             if (segmentExists)
             {
@@ -216,24 +314,7 @@ public class TranscodeJobManager(
 
             currentIndex = job.GetCurrentSegmentIndex();
             gap = requestedSegmentIndex - currentIndex;
-
             var ffmpegRunning = job.FfmpegTask is { IsCompleted: false };
-            if (FfmpegRemuxSeekPolicy.ShouldKeepRunningProcess(
-                    job.IsCopyRemux,
-                    segmentReady: false,
-                    ffmpegRunning,
-                    requestedSegmentIndex,
-                    job.GeneratingFromSegmentIndex,
-                    job.GeneratingUntilSegmentIndex))
-            {
-                logger.LogDebug(
-                    "Job {JobId}: Remux still covering segment {RequestedIndex} (from {From} until {Until}), keeping ffmpeg",
-                    job.JobId,
-                    requestedSegmentIndex,
-                    job.GeneratingFromSegmentIndex,
-                    job.GeneratingUntilSegmentIndex);
-                return;
-            }
 
             var missingWithLaterSegments = HlsSegmentFileWaiter.HasReadyMediaSegmentAfter(
                 job.OutputDirectory,
@@ -244,11 +325,9 @@ public class TranscodeJobManager(
                     missingWithLaterSegments))
             {
                 logger.LogInformation(
-                    "Job {JobId}: Filling hole at segment {RequestedIndex} after ffmpeg idle (generating from {From} until {Until})",
+                    "Job {JobId}: Filling encode hole at segment {RequestedIndex}",
                     job.JobId,
-                    requestedSegmentIndex,
-                    job.GeneratingFromSegmentIndex,
-                    job.GeneratingUntilSegmentIndex);
+                    requestedSegmentIndex);
                 await RestartJobWithSeekAsync(
                     job,
                     requestedSegmentIndex,
@@ -258,7 +337,6 @@ public class TranscodeJobManager(
                 return;
             }
 
-            // Restart threshold: 30 segments or 60 seconds
             if (gap > 30 || gapDuration.TotalSeconds > 60)
             {
                 var startSegmentIndex = Math.Clamp(requestedSegmentIndex - 5, 0, allSegments.Count - 1);
@@ -266,7 +344,6 @@ public class TranscodeJobManager(
             }
             else if (gap < 0)
             {
-                // Backward seek: segment should exist but doesn't, restart with seek
                 var startSegmentIndex = Math.Clamp(requestedSegmentIndex - 5, 0, allSegments.Count - 1);
                 await RestartJobWithSeekAsync(job, startSegmentIndex, allSegments, cancellationToken);
             }
@@ -278,33 +355,245 @@ public class TranscodeJobManager(
                 if (job.FfmpegTask is { IsCompleted: true, IsFaulted: true })
                 {
                     var fault = job.FfmpegTask.Exception?.GetBaseException();
-                    logger.LogError(fault, "Job {JobId}: ffmpeg task faulted", jobId);
+                    logger.LogError(fault, "Job {JobId}: ffmpeg task faulted", job.JobId);
                     job.FfmpegTask = null;
                 }
 
-                // Extend the target or start/restart ffmpeg
                 var newTarget = FfmpegWindowAutoContinue.ResolveAdvertisedTarget(
                     requestedSegmentIndex,
                     job.TargetSegmentIndex,
                     job.BufferSize,
                     allSegments.Count,
-                    job.IsCopyRemux);
+                    remuxToEnd: false);
 
                 if (newTarget != job.TargetSegmentIndex || job.FfmpegTask == null || job.FfmpegTask.IsCompleted)
                 {
                     job.TargetSegmentIndex = newTarget;
-
-                    // If ffmpeg has finished or not started, continue/start
                     if (job.FfmpegTask == null || job.FfmpegTask.IsCompleted)
-                    {
                         await ContinueJobAsync(job, allSegments, cancellationToken);
-                    }
                 }
             }
         }
         finally
         {
             job.FfmpegStartLock.Release();
+        }
+    }
+
+    private async Task SpawnRemuxHeadAsync(
+        TranscodeJob job,
+        int startSegmentIndex,
+        List<HlsSegment> allSegments,
+        CancellationToken cancellationToken)
+    {
+        if (startSegmentIndex < 0 || startSegmentIndex >= allSegments.Count)
+            return;
+
+        job.TargetSegmentIndex = FfmpegWindowAutoContinue.ResolveAdvertisedTarget(
+            startSegmentIndex,
+            job.TargetSegmentIndex,
+            job.BufferSize,
+            allSegments.Count,
+            remuxToEnd: true);
+
+        var endSegmentIndex = Math.Min(job.TargetSegmentIndex + 1, allSegments.Count);
+        var untilInclusive = endSegmentIndex - 1;
+        var headId = job.AllocateRemuxHeadId();
+        var stagingDirectory = Path.Combine(job.OutputDirectory, "head-" + headId.ToString(CultureInfo.InvariantCulture));
+        Directory.CreateDirectory(stagingDirectory);
+
+        var settings = await transcodeSettingsProvider.GetSettingsAsync(cancellationToken);
+        await WaitForTranscodeSlotAsync(settings.MaxConcurrentTranscodes, cancellationToken);
+
+        var cts = new CancellationTokenSource();
+        var head = new TranscodeRemuxHead
+        {
+            Id = headId,
+            From = startSegmentIndex,
+            UntilInclusive = untilInclusive,
+            StagingDirectory = stagingDirectory,
+            Cancellation = cts,
+            TipIndex = startSegmentIndex
+        };
+        job.RemuxHeads[headId] = head;
+        job.RemuxRapSegmentIndices[startSegmentIndex] = 0;
+        job.GeneratingFromSegmentIndex = startSegmentIndex;
+        job.GeneratingUntilSegmentIndex = untilInclusive;
+
+        var videoCodec = job.VideoCodec != "copy" ? job.VideoCodec : null;
+        var audioCodec = job.AudioCodec != "copy" ? job.AudioCodec : null;
+
+        var ffmpegTask = Task.Run(async () =>
+        {
+            var promoteTask = PromoteRemuxHeadLoopAsync(job, head, allSegments, cts.Token);
+            try
+            {
+                if (job.IsAudioOnly)
+                {
+                    await mediaTranscoder.StartAudioStreamingTranscodeAsync(
+                        job.InputFilePath,
+                        stagingDirectory,
+                        allSegments,
+                        startSegmentIndex,
+                        endSegmentIndex,
+                        cts.Token,
+                        job.AudioTrackIndex,
+                        audioCodec);
+                }
+                else
+                {
+                    await mediaTranscoder.StartVideoStreamingTranscodeAsync(
+                        job.InputFilePath,
+                        stagingDirectory,
+                        allSegments,
+                        startSegmentIndex,
+                        endSegmentIndex,
+                        cts.Token,
+                        videoCodec,
+                        job.Quality,
+                        job.SubtitleBurnInStreamIndex);
+                }
+            }
+            finally
+            {
+                try
+                {
+                    await cts.CancelAsync();
+                }
+                catch (ObjectDisposedException)
+                {
+                }
+
+                try
+                {
+                    await promoteTask;
+                }
+                catch (OperationCanceledException)
+                {
+                }
+
+                // Final promote pass after ffmpeg exits.
+                PromoteRemuxHeadOnce(job, head);
+            }
+        }, CancellationToken.None);
+
+        head.Task = ffmpegTask;
+        // Compatibility for waiters that still inspect FfmpegTask.
+        if (job.FfmpegTask is not { IsCompleted: false })
+            job.FfmpegTask = ffmpegTask;
+
+        _ = ffmpegTask.ContinueWith(t =>
+        {
+            job.RemuxHeads.TryRemove(headId, out _);
+            try
+            {
+                cts.Dispose();
+            }
+            catch (ObjectDisposedException)
+            {
+            }
+
+            if (t.IsFaulted)
+            {
+                var fault = t.Exception?.GetBaseException();
+                if (fault is not null and not OperationCanceledException)
+                {
+                    _ = PublishTranscodeFailedAsync(
+                        job.IndexedFileId,
+                        Path.GetFileName(job.InputFilePath),
+                        fault.Message);
+                }
+            }
+        }, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default);
+
+        logger.LogInformation(
+            "Job {JobId}: Remux head {HeadId} started at {From} until {Until} staging={Staging}",
+            job.JobId,
+            headId,
+            startSegmentIndex,
+            untilInclusive,
+            stagingDirectory);
+    }
+
+    private async Task PromoteRemuxHeadLoopAsync(
+        TranscodeJob job,
+        TranscodeRemuxHead head,
+        List<HlsSegment> allSegments,
+        CancellationToken cancellationToken)
+    {
+        while (!cancellationToken.IsCancellationRequested)
+        {
+            PromoteRemuxHeadOnce(job, head);
+
+            // Stop this head when the next shared segment is already ready.
+            var next = head.TipIndex + 1;
+            if (next <= head.UntilInclusive
+                && next > head.From
+                && HlsSegmentFileWaiter.IsSegmentReadyOnDisk(job.OutputDirectory, next)
+                && !File.Exists(Path.Combine(head.StagingDirectory, next + ".m4s")))
+            {
+                logger.LogInformation(
+                    "Job {JobId}: Stopping remux head {HeadId} because segment {Next} is already ready",
+                    job.JobId,
+                    head.Id,
+                    next);
+                try
+                {
+                    await head.Cancellation.CancelAsync();
+                }
+                catch (ObjectDisposedException)
+                {
+                }
+
+                return;
+            }
+
+            try
+            {
+                await Task.Delay(50, cancellationToken);
+            }
+            catch (OperationCanceledException)
+            {
+                return;
+            }
+        }
+    }
+
+    private void PromoteRemuxHeadOnce(TranscodeJob job, TranscodeRemuxHead head)
+    {
+        // Promote closed media first so shared init can satisfy sibling-ready checks.
+        for (var i = head.From; i <= head.UntilInclusive; i++)
+        {
+            var stagingPath = Path.Combine(
+                head.StagingDirectory,
+                i.ToString(CultureInfo.InvariantCulture) + ".m4s");
+            if (!HlsSegmentFileWaiter.IsSegmentFileReady(stagingPath))
+                continue;
+
+            if (RemuxSegmentPromoter.TryPromoteMediaSegment(head.StagingDirectory, job.OutputDirectory, i))
+            {
+                job.RemuxSegmentOwners.TryAdd(i, head.Id);
+                if (i >= head.TipIndex)
+                    head.TipIndex = i;
+            }
+            else if (HlsSegmentFileWaiter.IsSegmentReadyOnDisk(job.OutputDirectory, i) && i >= head.TipIndex)
+            {
+                job.RemuxSegmentOwners.TryAdd(i, head.Id);
+                head.TipIndex = i;
+            }
+        }
+
+        var stagingInit = Path.Combine(head.StagingDirectory, HlsSegmentFileWaiter.InitSegmentFileName);
+        if (HlsSegmentFileWaiter.IsSegmentFileReady(stagingInit)
+            || File.Exists(stagingInit))
+        {
+            // Init may still be empty_moov until a media sibling exists; promote once media is shared.
+            if (HlsSegmentFileWaiter.IsSegmentReadyOnDisk(job.OutputDirectory, head.From)
+                || HlsSegmentFileWaiter.IsSegmentFileReady(
+                    Path.Combine(head.StagingDirectory, head.From.ToString(CultureInfo.InvariantCulture) + ".m4s")))
+            {
+                RemuxSegmentPromoter.TryPromoteInit(head.StagingDirectory, job.OutputDirectory);
+            }
         }
     }
 
@@ -322,8 +611,8 @@ public class TranscodeJobManager(
             if (HlsSegmentFileWaiter.IsInitReadyOnDisk(job.OutputDirectory))
                 return;
 
-            // Active ffmpeg window will write init.m4s; do not restart from segment 0.
-            if (job.FfmpegTask is { IsCompleted: false })
+            // Active remux head or encode ffmpeg will write init.m4s; do not restart from segment 0.
+            if (job.IsFfmpegRunning)
             {
                 logger.LogDebug(
                     "Job {JobId}: Waiting for init.m4s from running ffmpeg (generating until {GeneratingUntil})",
@@ -367,7 +656,10 @@ public class TranscodeJobManager(
                 job.TargetSegmentIndex,
                 currentIndex);
 
-            await RestartJobWithSeekAsync(job, startSegmentIndex, allSegments, cancellationToken);
+            if (job.IsCopyRemux)
+                await SpawnRemuxHeadAsync(job, startSegmentIndex, allSegments, cancellationToken);
+            else
+                await RestartJobWithSeekAsync(job, startSegmentIndex, allSegments, cancellationToken);
         }
         finally
         {
@@ -616,18 +908,23 @@ public class TranscodeJobManager(
         if (startIndex >= allSegments.Count)
             return;
 
-        job.TargetSegmentIndex = job.IsCopyRemux
-            ? FfmpegWindowAutoContinue.ResolveAdvertisedTarget(
+        if (job.IsCopyRemux)
+        {
+            job.TargetSegmentIndex = FfmpegWindowAutoContinue.ResolveAdvertisedTarget(
                 startIndex,
                 job.TargetSegmentIndex,
                 job.BufferSize,
                 allSegments.Count,
-                remuxToEnd: true)
-            : FfmpegWindowAutoContinue.ResolveContinueTarget(
-                startIndex,
-                job.TargetSegmentIndex,
-                job.BufferSize,
-                allSegments.Count);
+                remuxToEnd: true);
+            await SpawnRemuxHeadAsync(job, startIndex, allSegments, cancellationToken);
+            return;
+        }
+
+        job.TargetSegmentIndex = FfmpegWindowAutoContinue.ResolveContinueTarget(
+            startIndex,
+            job.TargetSegmentIndex,
+            job.BufferSize,
+            allSegments.Count);
 
         await StartFfmpegAsync(job, startIndex, allSegments, cancellationToken);
     }
@@ -677,6 +974,12 @@ public class TranscodeJobManager(
                 job.JobId,
                 startSegmentIndex,
                 allSegments.Count);
+            return;
+        }
+
+        if (job.IsCopyRemux)
+        {
+            await SpawnRemuxHeadAsync(job, startSegmentIndex, allSegments, cancellationToken);
             return;
         }
 
@@ -819,7 +1122,7 @@ public class TranscodeJobManager(
         List<HlsSegment> allSegments,
         CancellationToken cancellationToken)
     {
-        if (job.FfmpegTask is { IsCompleted: false })
+        if (job.IsFfmpegRunning)
             return;
 
         if (job.FfmpegTask is { IsCompleted: true, IsFaulted: true })
@@ -830,7 +1133,8 @@ public class TranscodeJobManager(
         }
 
         var currentIndex = job.GetCurrentSegmentIndex();
-        if (FfmpegWindowAutoContinue.ShouldKeepLookahead(
+        if (!job.IsCopyRemux
+            && FfmpegWindowAutoContinue.ShouldKeepLookahead(
                 currentIndex,
                 job.TargetSegmentIndex,
                 job.LastRequestedSegmentIndex,
@@ -942,12 +1246,40 @@ public class TranscodeJobManager(
 
     private async Task StopFfmpegAsync(TranscodeJob job)
     {
-        if (job.FfmpegCancellation is null)
+        var remuxHeads = job.RemuxHeads.Values.ToList();
+        foreach (var head in remuxHeads)
+        {
+            try
+            {
+                if (!head.Cancellation.IsCancellationRequested)
+                    await head.Cancellation.CancelAsync();
+            }
+            catch (ObjectDisposedException)
+            {
+            }
+        }
+
+        foreach (var head in remuxHeads)
+        {
+            if (head.Task is null)
+                continue;
+
+            try
+            {
+                await head.Task;
+            }
+            catch (Exception ex)
+            {
+                logger.LogDebug(ex, "Remux head ended with error for job {JobId}", job.JobId);
+            }
+        }
+
+        if (job.FfmpegCancellation is null && remuxHeads.Count == 0)
             return;
 
         try
         {
-            if (!job.FfmpegCancellation.IsCancellationRequested)
+            if (job.FfmpegCancellation is not null && !job.FfmpegCancellation.IsCancellationRequested)
                 job.FfmpegCancellation.Cancel();
 
             if (job.FfmpegTask is not null)
@@ -964,10 +1296,11 @@ public class TranscodeJobManager(
         }
         finally
         {
-            job.FfmpegCancellation.Dispose();
+            job.FfmpegCancellation?.Dispose();
             job.FfmpegCancellation = null;
             job.FfmpegTask = null;
             job.GeneratingUntilSegmentIndex = -1;
+            job.RemuxHeads.Clear();
         }
     }
 

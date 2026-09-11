@@ -25,6 +25,19 @@ internal static class FfmpegStreamingArgs
         "frag_keyframe+empty_moov+default_base_moof+skip_trailer";
 
     /// <summary>
+    /// Remux segment muxer options: stable init across heads.
+    /// Absolute decode times come from serve/finalize <c>Fmp4TfdtRebase</c> (this ffmpeg
+    /// build has no <c>absolute_tfdt</c> movflag - that option fails header write).
+    /// </summary>
+    public const string RemuxSegmentFormatOptions =
+        "use_editlist=0:movflags=+frag_keyframe+empty_moov+default_base_moof+skip_trailer";
+
+    public static string SegmentFormatOptions(bool remuxAbsoluteTimeline) =>
+        remuxAbsoluteTimeline
+            ? RemuxSegmentFormatOptions
+            : "movflags=+" + SegmentFmp4MovFlags;
+
+    /// <summary>
     /// ffmpeg WorkingDirectory is the output folder and -segment_header_filename is
     /// relative (init.m4s). The %d.m4s pattern must be absolute: a relative
     /// Paths:Transcoding value would otherwise nest (ENOENT on header write).
@@ -234,7 +247,8 @@ internal static class FfmpegStreamingArgs
         TimeSpan timelineOrigin,
         TimeSpan endTime,
         TimeSpan encoderDelay = default,
-        bool resetTimelineToZero = true)
+        bool resetTimelineToZero = true,
+        bool remuxAbsoluteTimeline = false)
     {
         var args = new List<string>();
         if (resetTimelineToZero)
@@ -253,7 +267,7 @@ internal static class FfmpegStreamingArgs
         args.Add(SegmentTimeDeltaArgument);
         args.Add("-segment_format mp4");
         args.Add("-segment_header_filename init.m4s");
-        args.Add($"-segment_format_options movflags=+{SegmentFmp4MovFlags}");
+        args.Add($"-segment_format_options {SegmentFormatOptions(remuxAbsoluteTimeline)}");
         args.Add($"-segment_start_number {startSegmentIndex}");
 
         AppendSegmentTimesOrFallback(args, allSegments, startSegmentIndex, endSegmentIndex, timelineOrigin);
@@ -294,7 +308,7 @@ internal static class FfmpegStreamingArgs
         args.Add(SegmentTimeDeltaArgument);
         args.Add("-segment_format mp4");
         args.Add("-segment_header_filename init.m4s");
-        args.Add($"-segment_format_options movflags=+{SegmentFmp4MovFlags}");
+        args.Add($"-segment_format_options {SegmentFormatOptions(remuxAbsoluteTimeline: true)}");
         args.Add($"-segment_start_number {startSegmentIndex}");
 
         AppendSegmentTimesOrFallback(args, allSegments, startSegmentIndex, endSegmentIndex, timelineOrigin);

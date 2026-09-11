@@ -85,14 +85,41 @@ public class TranscodeJob
     /// </summary>
     public int LastRequestedSegmentIndex { get; set; } = -1;
     /// <summary>
-    /// First deliver segment index the currently running ffmpeg process will produce.
+    /// Most recent media segment index from a client GET (not max).
+    /// </summary>
+    public int LastClientMediaSegmentRequest { get; set; } = -1;
+    /// <summary>
+    /// First deliver segment index the currently running encode ffmpeg will produce.
+    /// Remux multi-head RAP starts are tracked in <see cref="RemuxRapSegmentIndices"/>.
     /// </summary>
     public int GeneratingFromSegmentIndex { get; set; } = -1;
     /// <summary>
-    /// Highest segment index the currently running ffmpeg process will produce (inclusive).
+    /// Highest segment index the currently running encode ffmpeg will produce (inclusive).
     /// </summary>
     public int GeneratingUntilSegmentIndex { get; set; } = -1;
     public int BufferSize { get; init; } = 10;
+    /// <summary>
+    /// Cooperative remux heads. Encode jobs leave this empty.
+    /// </summary>
+    public ConcurrentDictionary<int, TranscodeRemuxHead> RemuxHeads { get; } = new();
+    /// <summary>
+    /// Segment indices that opened a remux RAP window (head deliver start). Used for Exo demote-on-serve.
+    /// </summary>
+    public ConcurrentDictionary<int, byte> RemuxRapSegmentIndices { get; } = new();
+    /// <summary>
+    /// Immutable owner of each ready remux media segment (head id). Set once on promote.
+    /// </summary>
+    public ConcurrentDictionary<int, int> RemuxSegmentOwners { get; } = new();
+    private int _nextRemuxHeadId;
+
+    public int AllocateRemuxHeadId() => Interlocked.Increment(ref _nextRemuxHeadId);
+
+    public bool IsFfmpegRunning =>
+        FfmpegTask is { IsCompleted: false }
+        || RemuxHeads.Values.Any(static h => h.IsRunning);
+
+    public bool IsRemuxRapSegment(int segmentIndex) =>
+        RemuxRapSegmentIndices.ContainsKey(segmentIndex);
 
     /// <summary>
     /// Video or audio bitstream copy. Remux jobs run to EOF; encode jobs stay windowed.
@@ -178,4 +205,21 @@ public class TranscodeJob
             return false;
         }
     }
+}
+
+/// <summary>
+/// One cooperative remux ffmpeg window. Writes to staging then promotes
+/// immutable shared <c>N.m4s</c> files.
+/// </summary>
+public sealed class TranscodeRemuxHead
+{
+    public required int Id { get; init; }
+    public required int From { get; init; }
+    public required int UntilInclusive { get; set; }
+    public required string StagingDirectory { get; init; }
+    public required CancellationTokenSource Cancellation { get; init; }
+    public Task? Task { get; set; }
+    public int TipIndex { get; set; }
+
+    public bool IsRunning => Task is { IsCompleted: false };
 }

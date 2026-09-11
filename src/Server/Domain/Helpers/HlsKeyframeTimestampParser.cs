@@ -11,6 +11,19 @@ public static class HlsKeyframeTimestampParser
     public static bool TryParsePacketLine(string line, out long timestampMs)
     {
         timestampMs = 0;
+        if (!TryParsePacket(line, out timestampMs, out var isKeyframe))
+            return false;
+
+        return isKeyframe;
+    }
+
+    /// <summary>
+    /// Parses any video packet line (keyframe or not) for open-GOP cut filtering.
+    /// </summary>
+    public static bool TryParsePacket(string line, out long timestampMs, out bool isKeyframe)
+    {
+        timestampMs = 0;
+        isKeyframe = false;
         if (string.IsNullOrWhiteSpace(line))
             return false;
 
@@ -19,9 +32,10 @@ public static class HlsKeyframeTimestampParser
             return false;
 
         var flags = parts[^1];
-        if (flags.IndexOf('K', StringComparison.Ordinal) < 0)
+        if (!LooksLikeFlags(flags))
             return false;
 
+        isKeyframe = flags.IndexOf('K', StringComparison.Ordinal) >= 0;
         return TryParseFirstTimestampMs(parts, out timestampMs);
     }
 

@@ -85,9 +85,10 @@ public partial class VideoPlayer : IAsyncDisposable
                             SourceUri,
                             SourceMimeType,
                             seekTime,
-                            UsesWindowsWebHlsPlayer() ? null : subtitleSlug);
-                        if (UsesWindowsWebHlsPlayer())
-                            await ApplyWindowsHlsSubtitleAsync(subtitleSlug);
+                            // Video.js VHS disables EXT-X-MEDIA subs on the first segment
+                            // error (503 while VTT extracts). Use full sidecar VTT instead.
+                            null);
+                        await ApplyVideoJsSidecarSubtitleAsync(subtitleSlug);
                     }
                     else if (_sourceApplyPending || !string.IsNullOrEmpty(SourceUri))
                     {
@@ -451,10 +452,9 @@ public partial class VideoPlayer : IAsyncDisposable
                 source.Url,
                 source.MimeType ?? SourceMimeType,
                 seekTime,
-                UsesWindowsWebHlsPlayer() ? null : subtitleSlug);
+                null);
             await ApplyWebPlayerVolumeAsync();
-            if (UsesWindowsWebHlsPlayer())
-                await ApplyWindowsHlsSubtitleAsync(subtitleSlug);
+            await ApplyVideoJsSidecarSubtitleAsync(subtitleSlug);
             return;
         }
 
@@ -464,10 +464,9 @@ public partial class VideoPlayer : IAsyncDisposable
             _player.Id,
             source.Url,
             source.MimeType ?? SourceMimeType,
-            UsesWindowsWebHlsPlayer() ? null : slug);
+            null);
         await ApplyWebPlayerVolumeAsync();
-        if (UsesWindowsWebHlsPlayer())
-            await ApplyWindowsHlsSubtitleAsync(slug);
+        await ApplyVideoJsSidecarSubtitleAsync(slug);
     }
 
     private async Task ApplyWebPlayerVolumeAsync()
@@ -675,16 +674,18 @@ public partial class VideoPlayer : IAsyncDisposable
         if (!_isInitialized || string.IsNullOrEmpty(_player.Id))
             return;
 
-        if (UsesWindowsWebHlsPlayer())
+        // Web + Windows Video.js: sidecar full VTT. VHS has no native retry for
+        // EXT-X-MEDIA subtitle errors - it disables the track on the first failure.
+        if (UsesWebVideoPlayer())
         {
-            await ApplyWindowsHlsSubtitleAsync(slug);
+            await ApplyVideoJsSidecarSubtitleAsync(slug);
             return;
         }
 
         await JSRuntime.InvokeVoidAsync("switchSubtitleTrackWhenReady", _player.Id, slug);
     }
 
-    private async Task ApplyWindowsHlsSubtitleAsync(string? slug)
+    private async Task ApplyVideoJsSidecarSubtitleAsync(string? slug)
     {
         if (!_isInitialized || string.IsNullOrEmpty(_player.Id))
             return;

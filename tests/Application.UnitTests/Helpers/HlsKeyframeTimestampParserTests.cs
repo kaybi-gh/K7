@@ -31,6 +31,24 @@ public class HlsKeyframeTimestampParserTests
     }
 
     [Test]
+    public void TryParsePacket_ShouldReadNonKeyframe()
+    {
+        HlsKeyframeTimestampParser.TryParsePacket("1.500000,_", out var timestampMs, out var isKeyframe)
+            .Should().BeTrue();
+        timestampMs.Should().Be(1500);
+        isKeyframe.Should().BeFalse();
+    }
+
+    [Test]
+    public void TryParsePacket_ShouldReadKeyframe()
+    {
+        HlsKeyframeTimestampParser.TryParsePacket("28.028000,27.694000,K_", out var timestampMs, out var isKeyframe)
+            .Should().BeTrue();
+        timestampMs.Should().Be(28028);
+        isKeyframe.Should().BeTrue();
+    }
+
+    [Test]
     public void TryParsePacketLine_ShouldRejectKeyframeWithoutTimestamp()
     {
         HlsKeyframeTimestampParser.TryParsePacketLine("N/A,N/A,K_", out _)

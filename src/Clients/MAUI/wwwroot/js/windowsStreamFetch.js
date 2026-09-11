@@ -296,16 +296,15 @@
         if (window.__k7WindowsStreamXhrInstalled)
             return true;
 
-        if (!vhsModule.xhr.__k7WindowsStreamBridge) {
-            vhsModule.xhr = wrapXhrForBridge(vhsModule.xhr, dotNetRef);
-        }
-
-        // Default VHS routing uses videojs.xhr when Vhs.xhr.original is true.
-        if (videojs.xhr && !videojs.xhr.__k7WindowsStreamBridge) {
+        // VHS uses videojs.xhr when Vhs.xhr.original is true. Put the auth bridge there
+        // (not on Vhs.xhr) so Shared VTT 503 retry can wrap the same entry point.
+        if (videojs.xhr && !videojs.xhr.__k7WindowsStreamBridge)
             videojs.xhr = wrapXhrForBridge(videojs.xhr, dotNetRef);
-        }
 
-        // Shared videoplayer.js must wrap again so VTT 503 retries stay outermost.
+        if (vhsModule.xhr)
+            vhsModule.xhr.original = true;
+
+        // Shared videoplayer.js wraps videojs.xhr again so VTT 503 retries stay outermost.
         if (typeof K7.ensureVtt503RetryXhr === 'function')
             K7.ensureVtt503RetryXhr();
 

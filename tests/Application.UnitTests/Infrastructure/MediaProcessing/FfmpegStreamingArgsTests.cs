@@ -226,12 +226,28 @@ public class FfmpegStreamingArgsTests
         args.Should().Contain("-muxdelay 0");
         args.Should().Contain("-output_ts_offset 2.000000");
         args.Should().Contain("-segment_times 2.000000,4.000000");
+        args.Should().Contain($"-segment_format_options {FfmpegStreamingArgs.RemuxSegmentFormatOptions}");
         args.Should().NotContain("-start_at_zero");
         args.Should().NotContain(a => a.StartsWith("-avoid_negative_ts", StringComparison.Ordinal));
         var ssIndex = Array.FindIndex(args.ToArray(), a => a.StartsWith("-ss ", StringComparison.Ordinal));
         var tIndex = Array.FindIndex(args.ToArray(), a => a.StartsWith("-t ", StringComparison.Ordinal));
         ssIndex.Should().BeGreaterThanOrEqualTo(0);
         tIndex.Should().BeGreaterThan(ssIndex);
+    }
+
+    [Test]
+    public void BuildKeyframeAlignedSegmentArguments_ShouldUseRemuxAbsoluteTimelineOptions()
+    {
+        var segments = BuildSegments((0, 2000), (2000, 2000));
+        var args = FfmpegStreamingArgs.BuildKeyframeAlignedSegmentArguments(
+            segments,
+            startSegmentIndex: 0,
+            endSegmentIndex: 2,
+            timelineOrigin: TimeSpan.Zero,
+            endTime: TimeSpan.FromSeconds(4),
+            remuxAbsoluteTimeline: true);
+
+        args.Should().Contain($"-segment_format_options {FfmpegStreamingArgs.RemuxSegmentFormatOptions}");
     }
 
     [Test]

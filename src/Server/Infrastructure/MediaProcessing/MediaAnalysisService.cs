@@ -142,18 +142,40 @@ public class MediaAnalysisService : IMediaAnalysisService
         CancellationToken cancellationToken = default)
     {
         var quotedPath = $"\"{path}\"";
-        var packetTimestamps = await RunKeyframeProbeAsync(
+        var openGopSafe = await RunOpenGopSafeKeyframeProbeAsync(
             $"-loglevel error -show_entries packet=pts_time,dts_time,flags -of csv=print_section=0 -select_streams v:0 {quotedPath}",
-            HlsKeyframeTimestampParser.TryParsePacketLine,
             cancellationToken);
 
-        if (packetTimestamps.Count > 0)
-            return packetTimestamps;
+        if (openGopSafe.Count > 0)
+            return openGopSafe;
 
+        // Frame fallback cannot detect open-GOP-unsafe CRAs (no trailing packet PTS).
         return await RunKeyframeProbeAsync(
             $"-loglevel error -skip_frame nokey -select_streams v:0 -show_entries frame=pts_time,pkt_pts_time,pkt_dts_time -of csv=print_section=0 {quotedPath}",
             HlsKeyframeTimestampParser.TryParseKeyframeFrameLine,
             cancellationToken);
+    }
+
+    private static async Task<List<long>> RunOpenGopSafeKeyframeProbeAsync(
+        string arguments,
+        CancellationToken cancellationToken)
+    {
+        var packets = new List<(long PtsMs, bool IsKeyframe)>();
+        var exitCode = await SafeProcessRunner.RunAsync(
+            GlobalFFOptions.GetFFProbeBinaryPath(),
+            arguments,
+            onStdout: line =>
+            {
+                if (HlsKeyframeTimestampParser.TryParsePacket(line, out var timestampMs, out var isKeyframe))
+                    packets.Add((timestampMs, isKeyframe));
+            },
+            timeout: TimeSpan.FromSeconds(300),
+            cancellationToken: cancellationToken);
+
+        if (exitCode != 0)
+            throw new InvalidOperationException($"ffprobe failed while extracting keyframes (exit {exitCode}).");
+
+        return HlsOpenGopKeyframeFilter.FilterSafeKeyframeTimestamps(packets);
     }
 
     private static async Task<List<long>> RunKeyframeProbeAsync(

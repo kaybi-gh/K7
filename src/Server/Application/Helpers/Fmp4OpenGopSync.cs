@@ -99,6 +99,36 @@ internal static class Fmp4OpenGopSync
         }
     }
 
+    /// <summary>
+    /// True when the first sample is a CRA already marked non-sync (not a RAP).
+    /// Used to decide remux seek restarts for Video.js / MSE.
+    /// </summary>
+    public static bool IsDemotedCraFirstSample(string segmentPath)
+    {
+        try
+        {
+            if (!File.Exists(segmentPath))
+                return false;
+
+            var bytes = File.ReadAllBytes(segmentPath);
+            if (!TryReadFirstHevcVclNalType(bytes, out var nalType) || nalType != HevcCra)
+                return false;
+
+            if (!TryFindFirstSampleFlagsOffset(bytes, out _, out var currentFlags))
+                return false;
+
+            return (currentFlags & SampleIsNonSyncFlag) != 0;
+        }
+        catch (IOException)
+        {
+            return false;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return false;
+        }
+    }
+
     private static bool TryReadFirstHevcVclNalType(ReadOnlySpan<byte> data, out int nalType)
     {
         nalType = -1;

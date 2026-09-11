@@ -205,7 +205,14 @@ public sealed class StreamPlaybackService(
         var segmentPath = Path.Combine(job.OutputDirectory, query.SegmentNumber == -1 ? "init.m4s" : $"{query.SegmentNumber}.m4s");
         // Keep -1 for init.m4s so EnsureSegmentWillBeGeneratedAsync does not treat it as a seek to media segment 0.
         return await GetSegmentResultAsync(
-            segmentPath, job, query.SegmentNumber, allSegments, query.SegmentNumber, "video/mp4", cancellationToken);
+            segmentPath,
+            job,
+            query.SegmentNumber,
+            allSegments,
+            query.SegmentNumber,
+            "video/mp4",
+            query.StreamSessionId,
+            cancellationToken);
     }
 
     public async Task<HttpContentResult> GetHlsAudioSegmentAsync(
@@ -244,7 +251,14 @@ public sealed class StreamPlaybackService(
         var segmentPath = Path.Combine(job.OutputDirectory, query.SegmentNumber == -1 ? "init.m4s" : $"{query.SegmentNumber}.m4s");
         // Keep -1 for init.m4s so EnsureSegmentWillBeGeneratedAsync does not treat it as a seek to media segment 0.
         return await GetSegmentResultAsync(
-            segmentPath, job, query.SegmentNumber, allSegments, query.SegmentNumber, "audio/mp4", cancellationToken);
+            segmentPath,
+            job,
+            query.SegmentNumber,
+            allSegments,
+            query.SegmentNumber,
+            "audio/mp4",
+            query.StreamSessionId,
+            cancellationToken);
     }
 
     private async Task<string?> ApplyVideoStreamDecisionAsync(
@@ -302,6 +316,7 @@ public sealed class StreamPlaybackService(
         List<HlsSegment> allSegments,
         int segmentNumber,
         string contentType,
+        Guid streamSessionId,
         CancellationToken cancellationToken)
     {
         // Demuxed HLS: if the paired video job already exists but init.m4s is not ready yet,
@@ -329,7 +344,7 @@ public sealed class StreamPlaybackService(
                 "Segment {SegmentNumber} was not generated for job {JobId} (ffmpeg running: {FfmpegRunning}, unreadiness: {Unreadiness})",
                 segmentNumber,
                 job.JobId,
-                job.FfmpegTask is { IsCompleted: false },
+                job.IsFfmpegRunning,
                 HlsSegmentFileWaiter.DescribeUnreadiness(segmentPath));
             return new TextHttpContentResult(
                 $"Transcoding failed: {generationFailure.Message}",
@@ -379,7 +394,7 @@ public sealed class StreamPlaybackService(
                     segmentNumber,
                     job.JobId,
                     rebaseDetail);
-                var ffmpegRunning = job.FfmpegTask is { IsCompleted: false };
+                var ffmpegRunning = job.IsFfmpegRunning;
                 if (!ffmpegRunning)
                 {
                     try
@@ -401,9 +416,12 @@ public sealed class StreamPlaybackService(
                     rebaseDetail);
             }
 
+            // Remux open-GOP: keep sync RAP on disk for Video.js seek reuse. Demote CRA
+            // in-memory only for Android Exo (not Video.js HLS), never rewrite shared files.
             if (!job.IsAudioOnly
                 && !IsVideoEncodeJob(job)
-                && segmentNumber != job.GeneratingFromSegmentIndex
+                && !job.IsRemuxRapSegment(segmentNumber)
+                && await ShouldDemoteOpenGopCraOnServeAsync(streamSessionId, cancellationToken)
                 && Fmp4OpenGopSync.TryDemoteCraFirstSample(
                     segmentBytes,
                     out var demotedBytes,
@@ -411,27 +429,36 @@ public sealed class StreamPlaybackService(
             {
                 segmentBytes = demotedBytes;
                 logger.LogDebug(
-                    "Demoted open-GOP CRA sync flag for segment {SegmentNumber} job {JobId}: {Detail}",
+                    "Demoted open-GOP CRA sync flag on serve for segment {SegmentNumber} job {JobId}: {Detail}",
                     segmentNumber,
                     job.JobId,
                     demoteDetail);
-                var ffmpegRunning = job.FfmpegTask is { IsCompleted: false };
-                if (!ffmpegRunning)
-                {
-                    try
-                    {
-                        await File.WriteAllBytesAsync(segmentPath, segmentBytes, cancellationToken);
-                    }
-                    catch (IOException)
-                    {
-                    }
-                }
             }
         }
 
         // Serve a snapshot - never stream a live ffmpeg output file (partial init.m4s
         // parses as ISO BMFF garbage; ExoPlayer reports "Top bit not zero").
         return new BytesHttpContentResult(segmentBytes, contentType);
+    }
+
+    private async Task<bool> ShouldDemoteOpenGopCraOnServeAsync(
+        Guid streamSessionId,
+        CancellationToken cancellationToken)
+    {
+        if (streamSessionId == Guid.Empty)
+            return false;
+
+        var deviceId = activeStreamTracker.GetStreamInfo(streamSessionId)?.DeviceId;
+        if (deviceId is null)
+            return false;
+
+        var device = await context.Devices.AsNoTracking()
+            .FirstOrDefaultAsync(d => d.Id == deviceId.Value, cancellationToken);
+        if (device is null)
+            return false;
+
+        // Inverse of Video.js HLS: Android Exo (and other non-Video.js natives).
+        return !GetStreamUriQueryHandler.UsesVideoJsHlsManifest(device);
     }
 
     private async Task WaitForExistingPairedVideoInitAsync(

@@ -218,8 +218,9 @@ LibVLC Direct Play uses D3D11 callbacks bound after `VideoView.Initialized` (Lib
 
 Pipeline swaps are exclusive. Direct to HLS fully disposes LibVLC (`StopWindowsVlc` + recreate
 next Direct). HLS to Direct disposes Video.js (`DisposeWebPlayerAsync`). Text subtitles on
-Windows HLS use a full sidecar VTT (`/subtitles/{index}.vtt` via the stream-fetch bridge +
-Video.js `addRemoteTextTrack`), not VHS `EXT-X-MEDIA` segments (unreliable in WebView2).
+Windows HLS use a full sidecar VTT (`/subtitles/{index}.vtt` via the stream-fetch bridge,
+parsed into in-memory `VTTCue`s - no `track.src` / blob XHR), not VHS `EXT-X-MEDIA` segments
+(unreliable in WebView2).
 Volume is shared via `IPlayerService.Volume`. On Windows Direct, LibVLC maps UI 0-1 to software
 volume 0-200 so perceived loudness matches Video.js/WebView2 (HTML5 0-1). The WASAPI "K7"
 session is left alone (mmdevice owns it). Do not also drive it from `VolumeService` or Direct
@@ -247,11 +248,21 @@ Android ExoPlayer (Media3) uses fMP4 `tfdt`. Encode playlists keep
 Many remux sources (Heroes HEVC Main 10) are **open GOP**: one IDR at t=0, then CRA
 at every playlist keyframe. ffmpeg marks each CRA as a sync sample. ExoPlayer flushes
 the decoder at that flag, so linear play cuts at every GOP even with a single ffmpeg
-process and correct `tfdt` (ggg/hhh). Remux serve/finalize clears the first-sample
-sync flag on intra-window CRA `.m4s`. The first file of each ffmpeg window keeps
-sync: that bitstream has no prior refs, and demoting it froze ExoPlayer (iii).
-IDR files stay sync. Android Original seek uses EXACT so PREVIOUS_SYNC does not
-snap back to t=0. After a window fills Target, keep one BufferSize lookahead while
+process and correct `tfdt`. Remux keeps sync RAP flags on disk so Video.js / MSE can
+seek into the shared cache. Android Exo demotes CRA sync **in memory on serve only**
+(never rewrite shared `.m4s`). Head-start RAP segments keep sync. IDR files stay sync.
+Android Original seek uses EXACT so PREVIOUS_SYNC does not snap back to t=0.
+
+Remux copy uses **multi-head** ffmpeg: ready `N.m4s` files are immutable
+(staging `head-{id}/` then atomic promote, never overwrite). A seek/resume that lands
+on a ready segment is served as-is. If a live head already covers the request (or the
+nearest tip is within ~60s), wait on that head. Otherwise spawn a new head at the
+landing index. First successful head owns shared `init.m4s`. Remux mux options use
+`use_editlist=0` for stable init across heads. Absolute playlist `tfdt` still comes
+from serve/finalize rebase (`absolute_tfdt` is not available on current ffmpeg builds).
+Encode ladder stays windowed single-process for now.
+
+After a window fills Target, keep one BufferSize lookahead while
 the last GET is still near the ready frontier (pause stops further remux).
 
 A lazy ffmpeg window that resets timestamps to ~0, or an audio-copy
@@ -298,20 +309,34 @@ not past mid-GOP. Do not micro-rebase **audio copy** onto `#EXTINF`.
 - remux continue after a ready `N-1.m4s` must not rewrite `N-1` as a seek pad (that forced
   1-2 segment windows and video micro-freezes). It must still past-IDR seek: accurate remux
   `-ss` replays the previous GOP (rewind). Seek windows still pad
-- remux copy runs one ffmpeg from the play/seek point to EOF. A seek does not kill
-  that process when the requested segment is already on disk or still inside the
-  running window (rewind into written .m4s, or jump ahead while ffmpeg is catching up).
-  Restart only if the segment is missing and outside that window (seek before the
-  remux start, or ffmpeg already idle)
+- remux copy keeps cooperative heads to EOF. Seek never purges ready shared `.m4s`.
+  Missing far targets spawn another head. Near targets wait on an existing tip
+  (~60s). Ready segments stay immutable across clients
+
 - encode keeps `EncoderThrottleBufferSegments` (`requested + BufferSize` windows)
 - when `HlsSegments` rows exist they drive copy and transcode (shared audio group / ABR).
   Without them, playback starts immediately on a 6s equal-length transcode grid
 - new keyframe HLS rows collapse bursts from `RemuxSeekClearanceMs` (250ms) up to 1s
   (ExoPlayer). Keyframes closer than 250ms stay as boundaries so remux seek cannot land
-  on a hidden IDR. Existing rows stay until HLS is recomputed
+  on a hidden IDR. Open-GOP CRAs that are followed (in decode order) by packets with
+  lower PTS are also excluded: ffmpeg `-f segment` drops those trailing B-frames and
+  leaves multi-frame holes in remux playlists. Existing rows stay until HLS is recomputed
+
 - sidecar WebVTT extract must not block `.vtt` HTTP. A cache miss returns 503 and ffmpeg
   fills the cache in the background. Do not return empty WEBVTT 200: ExoPlayer caches that
   and never shows cues. Waiting on extract (~10s) stalled A/V prefetch.
+- Web Video.js remembers the selected subtitle slug and re-applies it on `seeked` (and after
+  plain `seek()`). VHS often disables EXT-X-MEDIA text tracks after a seek discontinuity
+  even when A/V remux continues on the same master.
+- Video.js / VHS has **no native retry** for HLS `EXT-X-MEDIA` subtitle errors: the playlist
+  loader `error` handler disables the track immediately ("Disabling subtitle track"). Web
+  and Windows Video.js therefore load text subs via the full sidecar
+  `GET /api/indexed-files/{id}/subtitles/{index}.vtt` (`loadSidecarSubtitleTrack`), parse cues,
+  and inject them on a remote text track **without** `src` (`manualCleanup` so quality/encode
+  `src` swaps do not auto-drop the track). Pending sidecar is re-applied on `loadedmetadata`.
+  A `blob:` `src` fails when the media element uses credentials (`ProgressEvent` status 0).
+  Segmented HLS subtitle playlists are not used. Android Exo still uses HLS VTT segments with
+  its own 503 retry policy.
 
 Android video clock comes from ExoPlayer (`ExoPlaybackBridge` / `GetExoPlaybackPositionSeconds`
 into `IPlayerService`), not toolkit `MediaElement.Position`. A skip or seekbar tap on a stale
@@ -319,7 +344,9 @@ toolkit position used to jump minutes backward. Stale `.m4s` from an older rebas
 deleted from the transcode cache. Sidecar SRT uses `GET /api/indexed-files/{id}/subtitles/{index}.vtt`
 (503 retry while Exo or the XAML loader waits). Web Video.js wraps VHS xhr the same way
 (`ensureVtt503RetryXhr` in `videoplayer.js`): exponential backoff on `.vtt` 503 so VHS
-does not disable the subtitle track on the first cold-cache miss. Windows Direct uses the
+does not disable the subtitle track on the first cold-cache miss. Retries install at the
+native `XMLHttpRequest` layer (so VHS cannot bypass module wrappers) and also wrap
+`videojs.xhr` while keeping `Vhs.xhr.original = true`. Windows Direct uses the
 XAML sidecar loader. Windows HLS uses Video.js remote text tracks via the stream-fetch bridge.
 
 ## Subtitle appearance

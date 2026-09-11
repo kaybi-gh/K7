@@ -2,14 +2,27 @@ window.K7 = window.K7 || {};
 
 K7.ensurePlaybackAssets = function () {
     if (K7._playbackAssetsPromise)
-        return K7._playbackAssetsPromise;
+        return K7._playbackAssetsPromise.then(function () {
+            if (typeof K7.ensureVtt503RetryXhr === 'function')
+                K7.ensureVtt503RetryXhr();
+        });
 
-    if (typeof window.initVideoJs === 'function' && typeof window.initAudioPlayer === 'function') {
-        K7._playbackAssetsPromise = Promise.resolve();
+    // Host pages sometimes ship a stale js/videoplayer.js (initVideoJs only).
+    // Require sidecar helper before treating assets as already loaded.
+    if (typeof window.initVideoJs === 'function'
+        && typeof window.initAudioPlayer === 'function'
+        && typeof window.loadSidecarSubtitleTrack === 'function') {
+        K7._playbackAssetsPromise = Promise.resolve().then(function () {
+            if (typeof K7.ensureVtt503RetryXhr === 'function')
+                K7.ensureVtt503RetryXhr();
+        });
         return K7._playbackAssetsPromise;
     }
 
-    K7._playbackAssetsPromise = K7._loadPlaybackAssets();
+    K7._playbackAssetsPromise = K7._loadPlaybackAssets().then(function () {
+        if (typeof K7.ensureVtt503RetryXhr === 'function')
+            K7.ensureVtt503RetryXhr();
+    });
     return K7._playbackAssetsPromise;
 };
 
