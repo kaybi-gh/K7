@@ -148,9 +148,13 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
 
         try
         {
-            // Run interactive auth off the Blazor sync context so the WebView UI
-            // stays responsive while the system browser completes the redirect.
-            await Task.Run(async () =>
+            // The interactive flow presents the system browser for sign-in. On iOS/Mac
+            // Catalyst that is an ASWebAuthenticationSession (UIKit), which MUST be started
+            // on the main thread. Running it via Task.Run presents it from a threadpool
+            // thread and raises "UIKit Consistency error: you are calling a UIKit method
+            // that can only be invoked from the UI thread." The flow is fully async and
+            // yields to the run loop, so presenting on the main thread does not freeze the UI.
+            async Task RunInteractiveLoginAsync()
             {
                 var challenge = await _openIddictClientService.ChallengeInteractivelyAsync(new()
                 {
@@ -201,7 +205,17 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
                     await SaveLocalUserFromCurrentUserAsync(timeout.Token).ConfigureAwait(false);
                     await TryAttachCurrentUserToDeviceAsync(timeout.Token).ConfigureAwait(false);
                 }
-            }, timeout.Token).ConfigureAwait(false);
+            }
+
+#if IOS || MACCATALYST
+            await Microsoft.Maui.ApplicationModel.MainThread
+                .InvokeOnMainThreadAsync(RunInteractiveLoginAsync)
+                .ConfigureAwait(false);
+#else
+            // Other platforms: run off the Blazor sync context so the WebView UI stays
+            // responsive while the system browser completes the redirect.
+            await Task.Run(RunInteractiveLoginAsync, timeout.Token).ConfigureAwait(false);
+#endif
 
             NativeAuthTrace.Write(
                 "login-complete",
