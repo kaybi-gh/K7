@@ -225,7 +225,7 @@ public class NativeAudioService : NSObject, IDisposable
             var handoffSeconds = _crossfadePlayer.CurrentTime.Seconds;
             await MainThread.InvokeOnMainThreadAsync(() => ApplySource(_player, source, 0f, observe: true));
             if (handoffSeconds > 0)
-                await MainThread.InvokeOnMainThreadAsync(() => _player.Seek(CMTime.FromSeconds(handoffSeconds, 1)));
+                await MainThread.InvokeOnMainThreadAsync(() => _player.Seek(CMTime.FromSeconds(handoffSeconds, 1000)));
 
             await WaitUntilItemReadyAsync(_player, ct);
 
@@ -356,7 +356,7 @@ public class NativeAudioService : NSObject, IDisposable
     {
         if (_player is null) return;
 
-        var interval = CMTime.FromSeconds(0.5, 1);
+        var interval = CMTime.FromSeconds(0.5, 1000);
         _timeObserver = _player.AddPeriodicTimeObserver(interval, null, time =>
         {
             _updatingFromPlayer = true;
@@ -405,7 +405,7 @@ public class NativeAudioService : NSObject, IDisposable
     {
         if (_updatingFromPlayer) return Task.CompletedTask;
         MainThread.BeginInvokeOnMainThread(() =>
-            _player?.Seek(CMTime.FromSeconds(positionSeconds, 1)));
+            _player?.Seek(CMTime.FromSeconds(positionSeconds, 1000)));
         return Task.CompletedTask;
     }
 
