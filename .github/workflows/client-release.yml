@@ -302,12 +302,12 @@ jobs:
   # other clients, alongside an AltStore source (apps.json). No Apple Developer
   # account or signing certificate is required.
   #
-  # Why the source survives immutable, versioned releases: apps.json and the icon
-  # are uploaded under FIXED filenames, so `…/releases/latest/download/apps.json`
+  # Why the source survives immutable, versioned releases: apps.json is uploaded
+  # under a FIXED filename, so `.../releases/latest/download/apps.json`
   # always resolves to the newest published release's source. The IPA download URL
   # inside apps.json points at this release's exact versioned asset, which is a
   # permanent immutable link. So users add one stable source URL and AltStore sees
-  # each new release as an update.
+  # each new release as an update. The source icon is branding/icon.png on that tag.
   publish-ios:
     needs: resolve
     runs-on: macos-15
@@ -456,23 +456,25 @@ jobs:
           fi
           echo "OK: classic LC_DYLD_INFO fixups in use"
 
-      # Generate the AltStore/SideStore source. apps.json + icon use fixed
-      # filenames (served via /releases/latest/download/), so the source URL tracks
-      # the newest release. The IPA downloadURL is this release's exact versioned
+      # Generate the AltStore/SideStore source. apps.json uses a fixed filename
+      # (served via /releases/latest/download/), so the source URL tracks the
+      # newest release. The IPA downloadURL is this release's exact versioned
       # asset, and size comes from the real IPA so AltStore's byte-exact check passes.
+      # iconURL reuses branding/icon.png (512px app mark, same as MAUI AppIcon).
       - name: Generate AltStore source
         id: source
         run: |
           set -euo pipefail
           latest="https://github.com/${{ github.repository }}/releases/latest/download"
           dl="https://github.com/${{ github.repository }}/releases/download/${{ needs.resolve.outputs.tag }}/K7-${{ needs.resolve.outputs.version }}-ios-sideload.ipa"
+          icon="https://raw.githubusercontent.com/${{ github.repository }}/${{ needs.resolve.outputs.tag }}/branding/icon.png"
           out="${RUNNER_TEMP}/apps.json"
           date=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-          desc="iOS client for the K7 self-hosted media server. Community sideload build: ad-hoc signed on GitHub Actions and re-signed with your own Apple ID by AltStore/SideStore on install. Built with the Mono interpreter; the CarPlay scene is dropped because a free Apple ID cannot provision it."
+          desc="iOS client for the K7 self-hosted media server. Community sideload build: ad-hoc signed on GitHub Actions and re-signed with your own Apple ID by AltStore/SideStore on install. Built with the Mono interpreter. The CarPlay scene is dropped because a free Apple ID cannot provision it."
           jq -n \
             --arg name "K7 (sideload)" \
             --arg src "${latest}/apps.json" \
-            --arg icon "${latest}/k7-icon.png" \
+            --arg icon "${icon}" \
             --arg web "https://github.com/${{ github.repository }}" \
             --arg v "${{ needs.resolve.outputs.version }}" \
             --arg date "${date}" \
@@ -517,8 +519,8 @@ jobs:
           jq empty "$out" && echo "apps.json is valid JSON"
           echo "path=${out}" >> "$GITHUB_OUTPUT"
 
-      # Attach the IPA, the source and the icon to the same draft release. apps.json
-      # and k7-icon.png keep fixed names so /releases/latest/download/ tracks them.
+      # Attach the IPA and AltStore source to the same draft release. apps.json
+      # keeps a fixed name so /releases/latest/download/ tracks it.
       - name: Upload iOS assets to release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -526,7 +528,6 @@ jobs:
           gh release upload "${{ needs.resolve.outputs.tag }}" \
             "${{ steps.pack.outputs.path }}" \
             "${{ steps.source.outputs.path }}" \
-            altstore/k7-icon.png \
             --repo "${{ github.repository }}" \
             --clobber
 
