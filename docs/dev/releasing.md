@@ -7,7 +7,8 @@
 3. Maintainers prepare a **draft** GitHub Release with tag name `vX.Y.Z` (target `main`). Saving a draft does **not** create the git tag yet; that is normal.
 4. **client-release** uploads native clients to the draft. If the git tag is missing, the workflow creates it from the release target commitish (usually `main`), then builds:
    - `K7-{version}-android.apk` - sideload / Android TV
-   - `K7-{version}-win-x64.zip` - self-contained unpackaged Windows; extract the whole folder and run `K7.exe` (needs matching `K7.pri` sidecars; not a single-file exe). Requires WebView2 Runtime and a recent Windows App Runtime on the machine.
+   - `K7-{version}-win-x64.zip` - self-contained unpackaged Windows. Extract the whole folder and run `K7.exe` (needs matching `K7.pri` sidecars, not a single-file exe). Requires WebView2 Runtime and a recent Windows App Runtime on the machine.
+   - `K7-{version}-ios-sideload.ipa` - ad-hoc-signed iOS client for AltStore / SideStore / Sideloadly, plus AltStore source `apps.json`
 5. Maintainers **publish the draft** (human / non-`GITHUB_TOKEN`). That triggers **sync-version** and **docker-release**.
 6. **sync-version** rewrites `<Version>` in `Directory.Build.props` to match the tag and commits `chore: sync version to ...`.
 7. **docker-release** builds and pushes `ghcr.io/kaybi-gh/k7` with semver tags and `latest`, passing `APP_VERSION` as a Docker build-arg.
@@ -20,13 +21,17 @@ gh release create vX.Y.Z --draft --target main --title "K7 vX.Y.Z" --notes-file 
 # Editing a draft does not re-run clients. Drafter-created drafts also do not
 # auto-start other workflows (GITHUB_TOKEN). Start clients once:
 gh workflow run client-release.yml -f tag=vX.Y.Z
-# After APK + zip appear on the draft:
+# After APK, Windows zip, and iOS IPA appear on the draft:
 gh release edit vX.Y.Z --draft=false
 ```
 
 Manual re-attach: Actions -> Client release -> Run workflow with the tag (creates the git tag if still missing).
 
-iOS / Mac Catalyst packages are not published from CI (Apple signing required).
+iOS ships as a sideload IPA on that draft. No Apple Developer certificate is required. The sideloader re-signs with the user's Apple ID at install. Users add a stable AltStore/SideStore source:
+
+`https://github.com/kaybi-gh/K7/releases/latest/download/apps.json`
+
+`apps.json` uses a fixed name so `latest/download/` tracks the newest published release. The IPA URL inside `apps.json` points at that release's versioned asset. The source icon is [`branding/icon.png`](../../branding/icon.png). Details: [`altstore/README.md`](../../altstore/README.md). Mac Catalyst packages are not published.
 
 ## Release notes
 
@@ -47,6 +52,7 @@ Client assets land on the draft; publishing the draft triggers **docker-release*
 | Docker | `ghcr.io/kaybi-gh/k7:$RESOLVED_VERSION` (also `latest`) |
 | Android | Release asset `K7-{version}-android.apk` |
 | Windows | Release asset `K7-{version}-win-x64.zip` |
+| iOS | Release assets `K7-{version}-ios-sideload.ipa`, `apps.json` |
 
 ### Android signing
 

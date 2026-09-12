@@ -61,9 +61,10 @@ Same interface in the browser and in native apps.
 | Android (phone) | Native app, also supports **Android Auto** (browse Home / Library / Playlists / Downloads, play radios from Home with the same names as in the app). You can open K7 from the car without launching it on the phone first. It restores the last unlocked profile. |
 | Android TV | Native app for TV remotes, including Fire TV Stick (same Android APK). Prefer the app over the Fire TV Silk browser. Admin pages use a lighter layout (numbers instead of live charts, and background tasks refresh more slowly). Active streams stay live. |
 | Windows | Native app |
-| iOS / Mac | Native apps exist but are **not tested** (no Apple hardware) |
+| iOS | Sideload IPA from GitHub Releases (AltStore, SideStore, or Sideloadly). A free Apple ID expires the app after 7 days and allows at most 3 sideloaded apps. This build drops CarPlay. |
+| Mac | Native app exists but is **not published** from CI |
 
-Native builds: download from GitHub Releases when published (`K7-*-android.apk` or `K7-*-win-x64.zip`), or ask your admin. On Windows, extract the **whole** zip folder and run `K7.exe` from that folder (do not move the exe alone). The app needs the [WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/) (usually already installed with Microsoft Edge). On first launch, enter the server address (for example `k7.example.com`). **https** is assumed; use `http://...` only for plain HTTP on a local network. The app checks that the server responds, then saves the address.
+Native builds: download from GitHub Releases when published (`K7-*-android.apk`, `K7-*-win-x64.zip`, or `K7-*-ios-sideload.ipa`), or ask your admin. On iOS, add the AltStore/SideStore source `https://github.com/kaybi-gh/K7/releases/latest/download/apps.json` (see [`altstore/README.md`](../../altstore/README.md)). On Windows, extract the **whole** zip folder and run `K7.exe` from that folder (do not move the exe alone). The app needs the [WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/) (usually already installed with Microsoft Edge). On first launch, enter the server address (for example `k7.example.com`). **https** is assumed; use `http://...` only for plain HTTP on a local network. The app checks that the server responds, then saves the address.
 
 After that first setup, the app **closes** (or exits to the home screen). Open it again and sign in. This restart quirk is a **known limitation** of the native apps.
 

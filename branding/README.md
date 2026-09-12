@@ -2,7 +2,24 @@
 
 Pre-colored SVG copies of the Design System brand variants. Construction source: `logo-build.svg`.
 
-Asset backgrounds are transparent. README previews bake the Design System surfaces (`#0d0907` / `#e4e3d9`) so they stay visible on GitHub. `logo.svg` and `symbol.svg` are the default marks.
+Asset backgrounds are transparent. README previews bake the Design System surfaces (`#0d0907` / `#e4e3d9`) so they stay visible on GitHub. `logo.svg` and `symbol.svg` are the default marks. `icon.png` is the 512px square app icon (mark on `#0d0907`) for places that need a PNG.
+
+## App icon (512x512 PNG)
+
+<table>
+  <tr>
+    <td align="center">
+      <img src="icon.png" width="160" alt="K7 app icon">
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <code>icon.png</code><br>
+      App icon on dark<br>
+      cream mark <code>#d9b060</code> on <code>#0d0907</code>
+    </td>
+  </tr>
+</table>
 
 ## Logo (wordmark, 128x70)
 

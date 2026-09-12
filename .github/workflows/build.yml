@@ -157,6 +157,94 @@ jobs:
           --no-build
           --verbosity normal
 
+  # macOS: compile the iOS client with the same sideload-shaped flags as publish-ios.
+  # Does not package the IPA. Catches Xcode / workload / csproj breakage on PRs.
+  maui-ios-smoke:
+    needs: build-and-test
+    if: |
+      github.event_name != 'pull_request_target' ||
+      contains(fromJson('["github-actions[bot]","dependabot[bot]"]'), github.event.pull_request.user.login)
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        name: Checkout code
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
+        with:
+          global-json-file: global.json
+
+      - name: Select matching Xcode
+        run: |
+          set -euo pipefail
+          echo "Installed Xcodes:"
+          ls -d /Applications/Xcode*.app
+          if ls -d /Applications/Xcode_26.0*.app >/dev/null 2>&1; then
+            target=$(ls -d /Applications/Xcode_26.0*.app | sort -V | tail -n 1)
+          else
+            echo "::warning::Xcode 26.0 not installed, using newest and updating workload"
+            target=$(ls -d /Applications/Xcode*.app | sort -V | tail -n 1)
+            echo "NEED_WORKLOAD_UPDATE=1" >> "$GITHUB_ENV"
+          fi
+          echo "Selecting ${target}"
+          sudo xcode-select -s "${target}/Contents/Developer"
+          xcodebuild -version
+
+      - name: Install MAUI iOS workload
+        run: |
+          set -euo pipefail
+          if [ "${NEED_WORKLOAD_UPDATE:-0}" = "1" ]; then
+            dotnet workload install maui-ios
+            dotnet workload update
+          else
+            dotnet workload install maui-ios --skip-manifest-update
+          fi
+          dotnet workload list
+
+      - name: Restore LibMan libraries
+        working-directory: src/Clients/Shared/UI
+        run: |
+          dotnet tool restore
+          dotnet tool run libman -- restore
+
+      - name: Build iOS .app
+        # MtouchExtraArgs quotes are for MSBuild: `-p:` splits on commas.
+        run: |
+          set -euo pipefail
+          dotnet build src/Clients/MAUI/K7.Clients.MAUI.csproj \
+            -c Release \
+            -f net10.0-ios \
+            -p:K7PublishPlatform=ios \
+            -p:RuntimeIdentifier=ios-arm64 \
+            -p:RunAOTCompilation=false \
+            -p:UseInterpreter=true \
+            -p:MtouchLink=None \
+            -p:MtouchExtraArgs='"-gcc_flags -Wl,-no_fixup_chains"' \
+            -p:TreatWarningsAsErrors=false \
+            -p:EnableCodeSigning=false \
+            -p:_RequireCodeSigning=false \
+            -p:CodesignKey= \
+            -p:DisableCodesignVerification=true
+
+      - name: Verify .app and classic fixups
+        run: |
+          set -euo pipefail
+          app=$(find src/Clients/MAUI/bin/Release/net10.0-ios -path '*/ios-arm64/*.app' -type d -print -quit)
+          if [ -z "${app}" ]; then
+            echo "::error::No ios-arm64 .app bundle produced"
+            find src/Clients/MAUI/bin/Release/net10.0-ios -maxdepth 3 | head -n 100
+            exit 1
+          fi
+          echo "Found app bundle: ${app}"
+          bin="${app}/$(basename "${app}" .app)"
+          if otool -l "${bin}" | grep -q LC_DYLD_CHAINED_FIXUPS; then
+            echo "::error::Binary still uses LC_DYLD_CHAINED_FIXUPS, -no_fixup_chains did not take effect"
+            exit 1
+          fi
+          echo "OK: classic LC_DYLD_INFO fixups in use"
+
   integration:
     name: Integration tests
     needs: build-and-test

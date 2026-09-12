@@ -32,7 +32,7 @@ dotnet workload install maui
 4. After first URL setup the app **closes** (known limitation) - reopen it, then sign in.
 5. Retarget via Settings -> General -> disconnect, or clear the preference.
 
-Android emulator often needs `http://10.0.2.2:PORT` instead of `localhost`. Physical devices need the host LAN IP. iOS/Mac builds are untested by the maintainer.
+Android emulator often needs `http://10.0.2.2:PORT` instead of `localhost`. Physical devices need the host LAN IP. Mac Catalyst builds are untested by the maintainer. iOS device builds are compiled in CI (`maui-ios-smoke`) and the sideload IPA is produced by [client-release](releasing.md).
 
 Native video chrome on Android/iOS/Windows is documented in [video-playback.md](video-playback.md). When `MauiNativeVideoChrome.IsEnabled` is true, the host shows `NativeVideoPlayerOverlay` above ExoPlayer (Android), MediaElement (iOS), LibVLC (Windows Direct Play), or Video.js in WebView2 (Windows HLS) instead of the Blazor HUD. Web WASM stays on Video.js + full Blazor controls.
 
@@ -62,7 +62,23 @@ dotnet publish src/Clients/MAUI/K7.Clients.MAUI.csproj \
 
 Output entry point is `K7.Clients.MAUI.exe` (plus `K7.Clients.MAUI.pri`). Release CI also copies those to `K7.exe` / `K7.pri` for a shorter launcher name - WinUI requires the `.pri` basename to match the `.exe`. Do not ship a renamed exe without the matching `.pri`.
 
-Published Release assets (APK + Windows zip) are produced by [client-release](releasing.md#android-signing) on each GitHub Release.
+iOS device (macOS host, single TFM via `K7PublishPlatform`):
+
+```bash
+dotnet build src/Clients/MAUI/K7.Clients.MAUI.csproj \
+  -c Release \
+  -f net10.0-ios \
+  -p:K7PublishPlatform=ios \
+  -p:RuntimeIdentifier=ios-arm64 \
+  -p:RunAOTCompilation=false \
+  -p:UseInterpreter=true \
+  -p:MtouchLink=None \
+  -p:EnableCodeSigning=false
+```
+
+Release CI applies extra sideload packaging (ad-hoc IPA, AltStore `apps.json`). See [releasing.md](releasing.md) and [`altstore/README.md`](../../altstore/README.md).
+
+Published Release assets (APK, Windows zip, iOS sideload IPA) are produced by [client-release](releasing.md) on each GitHub Release.
 
 Android TV: leanback launcher category is registered - use a TV emulator for D-pad testing. Fire TV Stick uses the same APK (leanback / Fire TV feature / AFT model, not UiMode alone). Couch layout stays near 1920 CSS px so a 4K framebuffer does not shrink the 10-foot UI.
 
@@ -143,6 +159,7 @@ New behavior should ship with tests in the matching project (unit, bUnit, functi
 | `Clients.ComponentTests` | bUnit | fast |
 | `Web.SmokeTests` / `Clients.DesignSystem.SmokeTests` | Smoke | fast |
 | `Clients.MAUI.SmokeTests` | MAUI smoke | `build.yml` `maui-smoke` (Windows, after `build-and-test`) |
+| MAUI iOS compile | Sideload-shaped `net10.0-ios` build | `build.yml` `maui-ios-smoke` (macOS, after `build-and-test`) |
 | `Application.FunctionalTests` / `Infrastructure.IntegrationTests` | HTTP + EF | `build.yml` `integration` (after `build-and-test`) |
 | `Tests.Helpers` | Factories, Testcontainers | referenced |
 
@@ -157,9 +174,9 @@ dotnet test K7.CI.slnf
 
 Functional/integration tests need **Docker** (Testcontainers.PostgreSQL + Respawn). Without Docker, unit and bUnit projects still run.
 
-`build.yml` runs `build-and-test` first (restore, vulnerable-package check, Release build of `K7.CI.slnf`, fast tests). `maui-smoke`, integration tests, CodeQL, and `publish-image` start only if that job succeeds. CodeQL still has a weekly schedule (and a manual `workflow_dispatch`) in [`codeql.yml`](../../.github/workflows/codeql.yml).
+`build.yml` runs `build-and-test` first (restore, vulnerable-package check, Release build of `K7.CI.slnf`, fast tests). `maui-smoke`, `maui-ios-smoke`, integration tests, CodeQL, and `publish-image` start only if that job succeeds. CodeQL still has a weekly schedule (and a manual `workflow_dispatch`) in [`codeql.yml`](../../.github/workflows/codeql.yml).
 
-If branch protection requires status checks, use the names under the **Build** workflow (`build-and-test`, `maui-smoke`, `Integration tests / integration`, `CodeQL / Analyze (csharp)`, `publish-image`). The old standalone **Integration Tests** and **CodeQL** PR checks no longer run on push/PR.
+If branch protection requires status checks, use the names under the **Build** workflow (`build-and-test`, `maui-smoke`, `maui-ios-smoke`, `Integration tests / integration`, `CodeQL / Analyze (csharp)`, `publish-image`). The old standalone **Integration Tests** and **CodeQL** PR checks no longer run on push/PR.
 
 ## Dependency updates
 
