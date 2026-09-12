@@ -44,7 +44,9 @@
   <!--
     LibMan restores wwwroot/dist during the build. Static web assets are discovered from
     Content items evaluated earlier, so first CI builds omit those files from publish/APK
-    unless we restore before discovery and re-include them as Content.
+    unless we restore before discovery and re-include them as Content. PrepareForBuild
+    is required so debug restart (rebuild while the previous host is still shutting down)
+    does not run UpdateExternallyDefinedStaticWebAssets against a half-restored wwwroot.
   -->
   <PropertyGroup>
     <ResolveCurrentProjectStaticWebAssetsInputsDependsOn>
@@ -52,6 +54,11 @@
       IncludeLibraryManagerWwwrootContent;
       $(ResolveCurrentProjectStaticWebAssetsInputsDependsOn)
     </ResolveCurrentProjectStaticWebAssetsInputsDependsOn>
+    <PrepareForBuildDependsOn>
+      LibraryManagerRestore;
+      IncludeLibraryManagerWwwrootContent;
+      $(PrepareForBuildDependsOn)
+    </PrepareForBuildDependsOn>
   </PropertyGroup>
 
   <Target Name="IncludeLibraryManagerWwwrootContent" AfterTargets="LibraryManagerRestore">

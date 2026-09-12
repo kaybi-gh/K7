@@ -32,13 +32,18 @@
     </Content>
   </ItemGroup>
 
-  <!-- Same LibMan / static web assets first-build gap as Shared.UI (wwwroot/dist is gitignored). -->
+  <!-- Same LibMan / static web assets first-build and debug-restart gap as Shared.UI (wwwroot/dist is gitignored). -->
   <PropertyGroup>
     <ResolveCurrentProjectStaticWebAssetsInputsDependsOn>
       LibraryManagerRestore;
       IncludeLibraryManagerWwwrootContent;
       $(ResolveCurrentProjectStaticWebAssetsInputsDependsOn)
     </ResolveCurrentProjectStaticWebAssetsInputsDependsOn>
+    <PrepareForBuildDependsOn>
+      LibraryManagerRestore;
+      IncludeLibraryManagerWwwrootContent;
+      $(PrepareForBuildDependsOn)
+    </PrepareForBuildDependsOn>
   </PropertyGroup>
 
   <Target Name="IncludeLibraryManagerWwwrootContent" AfterTargets="LibraryManagerRestore">

@@ -23,10 +23,11 @@
                   @oninput="OnInput"
                   @onchange="OnChange"
                   @onfocus="HandleFocusAsync"
-                  @onfocusout="OnFocusOut"
+                  @onfocusout="HandleFocusOutAsync"
                   @onkeydown="OnKeyDown"
-                  @onkeyup="OnKeyUp"
-                  @onclick="OnClick"></textarea>
+                  @onkeyup="HandleKeyUpAsync"
+                  @onclick="HandleClickAsync"
+                  @onselect="CaptureSelectionAsync"></textarea>
     }
     else
     {
@@ -45,10 +46,11 @@
                    @oninput="OnInput"
                    @onchange="OnChange"
                    @onfocus="HandleFocusAsync"
-                   @onfocusout="OnFocusOut"
+                   @onfocusout="HandleFocusOutAsync"
                    @onkeydown="OnKeyDown"
-                   @onkeyup="OnKeyUp"
-                   @onclick="OnClick" />
+                   @onkeyup="HandleKeyUpAsync"
+                   @onclick="HandleClickAsync"
+                   @onselect="CaptureSelectionAsync" />
             @if (ShowPasswordToggleButton)
             {
                 <K7IconButton Icon="@(_passwordRevealed ? Phosphor.Eye : Phosphor.EyeClosed)"
