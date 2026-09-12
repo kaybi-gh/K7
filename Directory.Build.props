@@ -4,10 +4,9 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <Version>1.10.0</Version>
+    <Version>1.11.0</Version>
     <StaticWebAssetMakeReferencedAssetOriginalItemSpecAbsolute Condition="'$(StaticWebAssetMakeReferencedAssetOriginalItemSpecAbsolute)' == ''">true</StaticWebAssetMakeReferencedAssetOriginalItemSpecAbsolute>
   </PropertyGroup>
-
   <ItemGroup>
     <_StaticWebAssetCanonicalMetadata Include="FileLength" />
     <_StaticWebAssetCanonicalMetadata Include="LastWriteTime" />
