@@ -21,9 +21,23 @@
   <resheader name="version"><value>2.0</value></resheader>
   <data name="Title" xml:space="preserve"><value>Cles API</value></data>
   <data name="CreateKey" xml:space="preserve"><value>Creer une cle</value></data>
+  <data name="Empty" xml:space="preserve"><value>Aucune cle API</value></data>
+  <data name="EmptyHint" xml:space="preserve"><value>Creez une cle pour autoriser des integrations externes.</value></data>
   <data name="NoKeys" xml:space="preserve"><value>Aucune cle API configuree.</value></data>
+  <data name="HeaderName" xml:space="preserve"><value>Nom</value></data>
+  <data name="HeaderScope" xml:space="preserve"><value>Portee</value></data>
+  <data name="HeaderCreated" xml:space="preserve"><value>Creee</value></data>
+  <data name="HeaderExpires" xml:space="preserve"><value>Expiration</value></data>
+  <data name="HeaderLastUsed" xml:space="preserve"><value>Derniere utilisation</value></data>
+  <data name="HeaderActions" xml:space="preserve"><value>Actions</value></data>
   <data name="ExpiresAt" xml:space="preserve"><value>Expire le</value></data>
   <data name="LastUsed" xml:space="preserve"><value>Derniere utilisation</value></data>
+  <data name="Never" xml:space="preserve"><value>Jamais</value></data>
+  <data name="ScopeRead" xml:space="preserve"><value>Lecture</value></data>
+  <data name="ScopeWrite" xml:space="preserve"><value>Ecriture</value></data>
+  <data name="ScopeAdmin" xml:space="preserve"><value>Admin</value></data>
   <data name="Revoke" xml:space="preserve"><value>Revoquer</value></data>
+  <data name="AriaCreate" xml:space="preserve"><value>Creer une cle API</value></data>
+  <data name="AriaRevoke" xml:space="preserve"><value>Revoquer la cle</value></data>
   <data name="RevokeConfirmTitle" xml:space="preserve"><value>Revoquer la cle</value></data>
 </root>

@@ -1,5 +1,7 @@
+using System.Globalization;
 using K7.Clients.Shared.UI.Components;
 using K7.Clients.Shared.UI.Pages.Admin.Dialogs;
+using K7.Server.Domain.Enums;
 using K7.Shared.Dtos;
 using K7.Shared.Interfaces;
 using Microsoft.AspNetCore.Components;
@@ -34,6 +36,20 @@ public partial class AdminApiKeysPanel
 
         _loading = false;
     }
+
+    private string GetScopeLabel(ApiKeyScope scope) => scope switch
+    {
+        ApiKeyScope.Read => L["ScopeRead"],
+        ApiKeyScope.Write => L["ScopeWrite"],
+        ApiKeyScope.Admin => L["ScopeAdmin"],
+        _ => scope.ToString()
+    };
+
+    private static string FormatDate(DateTimeOffset value) =>
+        value.ToLocalTime().ToString("g", CultureInfo.CurrentCulture);
+
+    private static string FormatDate(DateTime value) =>
+        value.ToLocalTime().ToString("g", CultureInfo.CurrentCulture);
 
     private async Task ShowCreateDialog()
     {
