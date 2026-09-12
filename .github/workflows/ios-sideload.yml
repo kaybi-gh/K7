@@ -1,0 +1,258 @@
+name: iOS sideload build
+
+# Builds an ad-hoc-signed iOS .ipa for sideloading and publishes it, together
+# with an AltStore/SideStore source (apps.json), to a fixed GitHub Release.
+# iOS is not part of the repo's normal release matrix (client-release only ships
+# Android and Windows), so this workflow is opt-in: it runs on demand and does
+# not change how the app builds for any other platform.
+#
+# No Apple Developer account or signing certificate is required. The IPA is
+# ad-hoc signed; the sideloader (AltStore / SideStore / Sideloadly) re-signs it
+# with the user's own free Apple ID at install time.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version string for the app + source (default: 1.0.<run number>)'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+env:
+  MAUI_PROJECT: src/Clients/MAUI/K7.Clients.MAUI.csproj
+  RELEASE_TAG: ios-sideload
+
+jobs:
+  build-ios:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compute version
+        run: |
+          set -euo pipefail
+          v="${{ inputs.version }}"
+          [ -z "$v" ] && v="1.0.${{ github.run_number }}"
+          echo "APP_VERSION=$v" >> "$GITHUB_ENV"
+          echo "Building version $v"
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      # .NET for iOS pins to an EXACT Xcode version. The workload bundled with the
+      # SDK (Microsoft.iOS 26.0.x) needs Xcode 26.0. Use it if present; otherwise
+      # select the newest Xcode and update the workload to match it.
+      - name: Select matching Xcode
+        run: |
+          set -euo pipefail
+          echo "Installed Xcodes:"
+          ls -d /Applications/Xcode*.app
+          if ls -d /Applications/Xcode_26.0*.app >/dev/null 2>&1; then
+            target=$(ls -d /Applications/Xcode_26.0*.app | sort -V | tail -n 1)
+          else
+            echo "::warning::Xcode 26.0 not installed; using newest and updating workload"
+            target=$(ls -d /Applications/Xcode*.app | sort -V | tail -n 1)
+            echo "NEED_WORKLOAD_UPDATE=1" >> "$GITHUB_ENV"
+          fi
+          echo "Selecting ${target}"
+          sudo xcode-select -s "${target}/Contents/Developer"
+          xcodebuild -version
+
+      - name: Install MAUI iOS workload
+        run: |
+          set -euo pipefail
+          if [ "${NEED_WORKLOAD_UPDATE:-0}" = "1" ]; then
+            dotnet workload install maui-ios
+            dotnet workload update
+          else
+            dotnet workload install maui-ios --skip-manifest-update
+          fi
+          dotnet workload list
+
+      # wwwroot/dist is gitignored; restore it before the build so the static web
+      # assets are embedded, same as the Android/Windows jobs do.
+      - name: Restore LibMan libraries
+        working-directory: src/Clients/Shared/UI
+        run: |
+          dotnet tool restore
+          dotnet tool run libman -- restore
+
+      # Build the device .app WITHOUT code signing (the sideloader supplies the
+      # signature). Sideload-specific build choices live here, not in the csproj,
+      # so the app's normal iOS build is unaffected:
+      #   - UseInterpreter: full AOT produces a ~104MB main binary that some
+      #     re-signers (isign) fail to process. The Mono interpreter (allowed on
+      #     iOS, no JIT) yields a small runtime that re-signs cleanly and builds
+      #     in minutes instead of ~30.
+      #   - -no_fixup_chains: .NET 10 + Xcode 26 emit LC_DYLD_CHAINED_FIXUPS by
+      #     default; older Mach-O parsers in some sideloaders cannot read it. Force
+      #     the classic LC_DYLD_INFO fixup format for broad sideloader compat.
+      #   - MtouchLink=None: this app is heavily reflection-based (EF Core,
+      #     OpenIddict, Blazor Hybrid) and iOS was never trim-tested upstream, so
+      #     keep every assembly rather than risk a trimmer removing reflected code.
+      #   - TreatWarningsAsErrors=false: iOS-only analyzers (CA1422, ...) were
+      #     never exercised and would otherwise fail the build.
+      - name: Build unsigned iOS .app
+        run: |
+          set -euo pipefail
+          dotnet build "${MAUI_PROJECT}" \
+            -c Release \
+            -f net10.0-ios \
+            -p:K7PublishPlatform=ios \
+            -p:RuntimeIdentifier=ios-arm64 \
+            -p:ApplicationDisplayVersion="${APP_VERSION}" \
+            -p:ApplicationVersion="${{ github.run_number }}" \
+            -p:RunAOTCompilation=false \
+            -p:UseInterpreter=true \
+            -p:MtouchLink=None \
+            -p:MtouchExtraArgs="-gcc_flags -Wl,-no_fixup_chains" \
+            -p:TreatWarningsAsErrors=false \
+            -p:EnableCodeSigning=false \
+            -p:_RequireCodeSigning=false \
+            -p:CodesignKey= \
+            -p:DisableCodesignVerification=true
+
+      # Package the .app into an ad-hoc-signed .ipa (a zip with the .app under a
+      # top-level Payload/). Two bundle tweaks are applied to the packaged copy
+      # only (the repo's Info.plist is untouched):
+      #   - CFBundleName = K7: the App ID name a sideloader sends to Apple is the
+      #     CFBundleName. MAUI derives it from the assembly name (K7.Clients.MAUI),
+      #     and Apple rejects App ID names containing dots (error 9416). A clean
+      #     name is required for free-Apple-ID signing.
+      #   - remove UIApplicationSceneManifest: it only declares the CarPlay scene,
+      #     whose restricted entitlement a free Apple ID cannot provision. Dropping
+      #     it from the sideload build keeps free-tier install/re-sign clean; the
+      #     repo keeps CarPlay for proper signed builds.
+      # Ad-hoc signing (`--sign -`, no cert) gives the binaries the LC_CODE_SIGNATURE
+      # slot that re-signers expect; nested Mach-O are signed first, the app last.
+      - name: Package ad-hoc-signed .ipa
+        id: pack
+        run: |
+          set -euo pipefail
+          app=$(find src/Clients/MAUI/bin/Release/net10.0-ios -maxdepth 3 -type d -name '*.app' | head -n 1)
+          if [ -z "${app}" ]; then
+            echo "::error::No .app bundle produced"
+            find src/Clients/MAUI/bin/Release/net10.0-ios -maxdepth 3 | head -n 100
+            exit 1
+          fi
+          echo "Found app bundle: ${app}"
+          workdir="${RUNNER_TEMP}/ipa"
+          rm -rf "${workdir}"
+          mkdir -p "${workdir}/Payload"
+          cp -R "${app}" "${workdir}/Payload/"
+          appcopy="${workdir}/Payload/$(basename "${app}")"
+          plist="${appcopy}/Info.plist"
+          plutil -replace CFBundleName -string "K7" "${plist}" \
+            || plutil -insert CFBundleName -string "K7" "${plist}"
+          plutil -remove UIApplicationSceneManifest "${plist}" 2>/dev/null || true
+
+          find "${appcopy}" -type d -name '*.framework' -exec \
+            codesign --force --sign - --timestamp=none {} \;
+          find "${appcopy}" -type f -name '*.dylib' -exec \
+            codesign --force --sign - --timestamp=none {} \;
+          codesign --force --sign - --timestamp=none "${appcopy}"
+          codesign -dvvv "${appcopy}" 2>&1 | grep -iE 'Signature=|flags=' || true
+
+          ipa="${RUNNER_TEMP}/K7-ios-sideload.ipa"
+          (cd "${workdir}" && zip -qr "${ipa}" Payload)
+          size=$(stat -f%z "${ipa}")
+          ls -lh "${ipa}"
+          echo "path=${ipa}" >> "$GITHUB_OUTPUT"
+          echo "size=${size}" >> "$GITHUB_OUTPUT"
+
+      # Fail fast if -no_fixup_chains did not take effect: a chained-fixups binary
+      # is rejected by older sideloader Mach-O parsers ("Guru Meditation ...
+      # Invalid file"). Better to catch it here than at install time.
+      - name: Verify classic fixups
+        run: |
+          set -euo pipefail
+          app=$(find src/Clients/MAUI/bin/Release/net10.0-ios -maxdepth 3 -type d -name '*.app' | head -n 1)
+          bin="${app}/$(basename "${app}" .app)"
+          if otool -l "${bin}" | grep -q LC_DYLD_CHAINED_FIXUPS; then
+            echo "::error::Binary still uses LC_DYLD_CHAINED_FIXUPS; -no_fixup_chains did not take effect"
+            exit 1
+          fi
+          echo "OK: classic LC_DYLD_INFO fixups in use"
+
+      # Generate the AltStore/SideStore source. Size comes from the actual IPA, so
+      # AltStore's exact-size check always matches. URLs are the Release assets of
+      # this repo (stable, filenames are fixed), so the source URL never changes.
+      - name: Generate AltStore source
+        id: source
+        run: |
+          set -euo pipefail
+          base="https://github.com/${{ github.repository }}/releases/download/${RELEASE_TAG}"
+          out="${RUNNER_TEMP}/apps.json"
+          date=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          desc="iOS client for the K7 self-hosted media server. Community sideload build: ad-hoc signed on GitHub Actions and re-signed with your own Apple ID by AltStore/SideStore on install. Built with the Mono interpreter; the CarPlay scene is dropped because a free Apple ID cannot provision it."
+          jq -n \
+            --arg name "K7 (sideload)" \
+            --arg src "${base}/apps.json" \
+            --arg icon "${base}/k7-icon.png" \
+            --arg web "https://github.com/${{ github.repository }}" \
+            --arg v "${APP_VERSION}" \
+            --arg date "${date}" \
+            --arg dl "${base}/K7-ios-sideload.ipa" \
+            --argjson size ${{ steps.pack.outputs.size }} \
+            --arg desc "${desc}" \
+            '{
+              name: $name,
+              identifier: "com.k7.maui.sideload-source",
+              sourceURL: $src,
+              subtitle: "Sideload builds of the K7 media client for iOS",
+              iconURL: $icon,
+              website: $web,
+              tintColor: "#d9b060",
+              apps: [{
+                name: "K7",
+                bundleIdentifier: "com.k7.maui",
+                developerName: "K7 community",
+                subtitle: "Client for the K7 self-hosted media server",
+                localizedDescription: $desc,
+                iconURL: $icon,
+                tintColor: "#d9b060",
+                category: "entertainment",
+                screenshotURLs: [],
+                version: $v,
+                versionDate: $date,
+                versionDescription: "Latest CI sideload build.",
+                downloadURL: $dl,
+                size: $size,
+                minOSVersion: "15.0",
+                versions: [{
+                  version: $v,
+                  date: $date,
+                  localizedDescription: "Latest CI sideload build.",
+                  downloadURL: $dl,
+                  size: $size,
+                  minOSVersion: "15.0"
+                }]
+              }],
+              news: []
+            }' > "$out"
+          jq empty "$out" && echo "apps.json is valid JSON"
+          echo "path=${out}" >> "$GITHUB_OUTPUT"
+
+      # Publish everything to a fixed Release tag. Release assets don't count
+      # against the Actions artifact quota and give AltStore a stable public URL.
+      # --clobber overwrites the previous assets on each run.
+      - name: Publish IPA + source to GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh release view "${RELEASE_TAG}" >/dev/null 2>&1 || \
+            gh release create "${RELEASE_TAG}" \
+              --title "iOS sideload build" \
+              --notes "Ad-hoc signed iOS .ipa for sideloading (AltStore / SideStore / Sideloadly re-sign it with your own Apple ID). Add the AltStore source: \`${{ github.server_url }}/${{ github.repository }}/releases/download/${RELEASE_TAG}/apps.json\`"
+          gh release upload "${RELEASE_TAG}" \
+            "${{ steps.pack.outputs.path }}" \
+            "${{ steps.source.outputs.path }}" \
+            altstore/k7-icon.png \
+            --clobber
+          echo "Source URL: ${{ github.server_url }}/${{ github.repository }}/releases/download/${RELEASE_TAG}/apps.json"

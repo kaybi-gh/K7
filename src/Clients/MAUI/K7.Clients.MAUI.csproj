@@ -9,6 +9,7 @@
          Do not pass global -p:TargetFrameworks= (poisons ProjectReference restore / NETSDK1005). -->
     <TargetFrameworks Condition="'$(K7PublishPlatform)' == 'android'">net10.0-android</TargetFrameworks>
     <TargetFrameworks Condition="'$(K7PublishPlatform)' == 'windows'">net10.0-windows10.0.19041.0</TargetFrameworks>
+    <TargetFrameworks Condition="'$(K7PublishPlatform)' == 'ios'">net10.0-ios</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- Uncomment to also build the tizen app. You will need to install tizen by following this: https://github.com/Samsung/Tizen.NET -->
     <!-- <TargetFrameworks>$(TargetFrameworks);net9.0-tizen</TargetFrameworks> -->
