@@ -1,8 +1,10 @@
 using Ardalis.GuardClauses;
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Common.Services;
 using K7.Server.Application.Services;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Medias;
+using K7.Server.Domain.Entities.Metadatas;
 using K7.Server.Domain.Entities.Restrictions;
 using K7.Server.Domain.Entities.Users;
 using K7.Server.Domain.Enums;
@@ -19,6 +21,7 @@ public class MediaAccessGuardTests
     private SqliteConnection _connection = null!;
     private ApplicationDbContext _context = null!;
     private IUser _currentUser = null!;
+    private MediaAccessFilter _filter = null!;
     private MediaAccessGuard _guard = null!;
 
     private Guid _userId;
@@ -78,7 +81,9 @@ public class MediaAccessGuardTests
 
         _currentUser = Substitute.For<IUser>();
         _currentUser.Id.Returns(_userId);
-        _guard = new MediaAccessGuard(_context, _currentUser);
+        _currentUser.GetSharedProfileIdAsync(Arg.Any<CancellationToken>()).Returns((Guid?)null);
+        _filter = new MediaAccessFilter(_context);
+        _guard = new MediaAccessGuard(_context, _currentUser, _filter);
     }
 
     [TearDown]
@@ -178,6 +183,96 @@ public class MediaAccessGuardTests
         var canAccess = await _guard.CanAccessAsync(_accessibleMediaId, _userId);
 
         canAccess.Should().BeTrue();
+    }
+
+    [Test]
+    public async Task CanAccessAsync_ShouldAllowUnratedMovie_WhenAgeRestrictionIsDisabled()
+    {
+        var user = await _context.Users.SingleAsync(u => u.Id == _userId);
+        user.DateOfBirth = new DateOnly(2014, 9, 10);
+        user.AgeRestrictionEnabled = false;
+        await _context.SaveChangesAsync();
+
+        var canAccess = await _guard.CanAccessAsync(_accessibleMediaId, _userId);
+
+        canAccess.Should().BeTrue();
+    }
+
+    [Test]
+    public async Task CanAccessAsync_ShouldDenyUnratedMovie_WhenAgeRestrictionIsEnabled()
+    {
+        var user = await _context.Users.SingleAsync(u => u.Id == _userId);
+        user.DateOfBirth = new DateOnly(2014, 9, 10);
+        user.AgeRestrictionEnabled = true;
+        await _context.SaveChangesAsync();
+
+        var canAccess = await _guard.CanAccessAsync(_accessibleMediaId, _userId);
+
+        canAccess.Should().BeFalse();
+    }
+
+    [Test]
+    public async Task CanAccessAsync_ShouldAllowUnratedMovie_WhenHideUnratedTitlesIsOff()
+    {
+        var user = await _context.Users.SingleAsync(u => u.Id == _userId);
+        user.DateOfBirth = new DateOnly(2014, 9, 10);
+        user.AgeRestrictionEnabled = true;
+        user.HideUnratedTitles = false;
+        await _context.SaveChangesAsync();
+
+        var canAccess = await _guard.CanAccessAsync(_accessibleMediaId, _userId);
+
+        canAccess.Should().BeTrue();
+    }
+
+    [Test]
+    public async Task CanAccessAsync_ShouldDenyEpisode_WhenParentSerieRatingExceedsAge()
+    {
+        var episodeId = await SeedAdultSerieEpisodeAsync();
+        var user = await _context.Users.SingleAsync(u => u.Id == _userId);
+        user.DateOfBirth = new DateOnly(2014, 9, 10);
+        user.AgeRestrictionEnabled = true;
+        await _context.SaveChangesAsync();
+
+        var canAccess = await _guard.CanAccessAsync(episodeId, _userId);
+
+        canAccess.Should().BeFalse();
+    }
+
+    private async Task<Guid> SeedAdultSerieEpisodeAsync()
+    {
+        var serieId = Guid.NewGuid();
+        var seasonId = Guid.NewGuid();
+        var episodeId = Guid.NewGuid();
+        var tag = new MetadataTag
+        {
+            Kind = MetadataTagKind.ContentRating,
+            NormalizedKey = "tv-ma",
+            DisplayName = "TV-MA"
+        };
+        var serie = new Serie { Id = serieId, Title = "Adult Show" };
+        var season = new SerieSeason { Id = seasonId, Title = "S1", SerieId = serieId, SeasonNumber = 1 };
+        var episode = new SerieEpisode
+        {
+            Id = episodeId,
+            Title = "E1",
+            SerieId = serieId,
+            SeasonId = seasonId,
+            EpisodeNumber = 1
+        };
+
+        _context.MetadataTags.Add(tag);
+        _context.Medias.AddRange(serie, season, episode);
+        _context.MediaLibraryAvailabilities.AddRange(
+            new MediaLibraryAvailability { MediaId = serieId, LibraryId = _libraryId },
+            new MediaLibraryAvailability { MediaId = seasonId, LibraryId = _libraryId },
+            new MediaLibraryAvailability { MediaId = episodeId, LibraryId = _libraryId });
+        await _context.SaveChangesAsync();
+
+        serie.MetadataTags.Add(new MediaMetadataTag { MediaId = serieId, MetadataTagId = tag.Id });
+        await _context.SaveChangesAsync();
+
+        return episodeId;
     }
 
     private static ContentRestrictionProfile CreateTitleRestrictionProfile(string name, string blockedTitle) =>

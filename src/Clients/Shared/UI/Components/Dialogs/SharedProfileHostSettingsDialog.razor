@@ -43,6 +43,24 @@ else
         }
 
         <h6>@L["RestrictionTitle"]</h6>
+        <h6>@L["AgeFilterTitle"]</h6>
+        <K7Switch Label="@L["AgeRestrictionEnabled"]" @bind-Value="_ageRestrictionEnabled" />
+        <K7Alert Severity="K7Severity.Info" Icon="@Phosphor.Info">@L["AgeRestrictionHelp"]</K7Alert>
+        <K7TextField TValue="string" Type="date" Label="@L["DateOfBirth"]"
+                     @bind-Value="_dateOfBirthText"
+                     Required="_ageRestrictionEnabled"
+                     HelperText="@L["DateOfBirthHelp"]" />
+        <K7Switch Label="@L["HideUnratedTitles"]"
+                  @bind-Value="_hideUnratedTitles"
+                  Disabled="@(!_ageRestrictionEnabled)" />
+        @if (_restrictionError is not null)
+        {
+            <K7Alert Severity="K7Severity.Error">@_restrictionError</K7Alert>
+        }
+
+        <hr class="k7-divider my-2" />
+
+        <h6>@L["CustomProfilesTitle"]</h6>
         <K7Select TValue="Guid?" Label="@L["RestrictionProfile"]" @bind-Value="_restrictionProfileId" Clearable="true">
             @foreach (var profile in _restrictionProfiles)
             {

@@ -36,6 +36,10 @@ public partial class SharedProfileHostSettingsDialog
     private string? _avatarUrl;
     private string? _avatarError;
     private Guid? _restrictionProfileId;
+    private bool _ageRestrictionEnabled;
+    private bool _hideUnratedTitles = true;
+    private string _dateOfBirthText = "";
+    private string? _restrictionError;
     private List<ContentRestrictionProfileDto> _restrictionProfiles = [];
     private List<LitePlaylistDto> _playlists = [];
     private HashSet<Guid> _sharedPlaylistIds = [];
@@ -63,6 +67,9 @@ public partial class SharedProfileHostSettingsDialog
                 .ToList();
 
             _restrictionProfileId = Group.ContentRestrictionProfileId;
+            _ageRestrictionEnabled = Group.AgeRestrictionEnabled;
+            _hideUnratedTitles = Group.HideUnratedTitles;
+            _dateOfBirthText = Group.ViewerDateOfBirth?.ToString("yyyy-MM-dd") ?? "";
             _restrictionProfiles = await UserAdminService.GetContentRestrictionProfilesAsync();
             var playlistPage = await PlaylistService.GetPlaylistsAsync(pageNumber: 1, pageSize: 100);
             _playlists = playlistPage?.Items?.ToList() ?? [];
@@ -180,9 +187,33 @@ public partial class SharedProfileHostSettingsDialog
     private async Task SaveAsync()
     {
         _saving = true;
+        _restrictionError = null;
         try
         {
+            DateOnly? dateOfBirth = null;
+            if (!string.IsNullOrWhiteSpace(_dateOfBirthText)
+                && DateOnly.TryParse(_dateOfBirthText, out var parsed))
+                dateOfBirth = parsed;
+
+            if (_ageRestrictionEnabled && dateOfBirth is null)
+            {
+                _restrictionError = L["DateOfBirthRequired"];
+                return;
+            }
+
+            if (dateOfBirth > DateOnly.FromDateTime(DateTime.UtcNow))
+            {
+                _restrictionError = L["DateOfBirthInFuture"];
+                return;
+            }
+
             await SharedProfileService.AssignContentRestrictionAsync(Group.Id, _restrictionProfileId);
+            await SharedProfileService.UpdateAgeRestrictionAsync(Group.Id, new UpdateAgeRestrictionRequest
+            {
+                Enabled = _ageRestrictionEnabled,
+                DateOfBirth = dateOfBirth,
+                HideUnratedTitles = _hideUnratedTitles
+            });
 
             foreach (var id in _sharedPlaylistIds.Except(_initialSharedPlaylistIds))
                 await SharedProfileService.SharePlaylistAsync(Group.Id, id);

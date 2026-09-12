@@ -1,3 +1,4 @@
+using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Services;
 using K7.Server.Application.Services;
 using K7.Server.Domain.Entities;
@@ -64,7 +65,7 @@ public class HomeRecommendationServiceTests
             new MediaLibraryAvailability { MediaId = _candidateMovieId, LibraryId = libraryId });
         _context.SaveChanges();
 
-        _service = new HomeRecommendationService(_context, new MediaAccessFilter(_context));
+        _service = new HomeRecommendationService(_context, new MediaAccessFilter(_context), Substitute.For<IUser>());
     }
 
     [TearDown]

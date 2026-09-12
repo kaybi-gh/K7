@@ -4,7 +4,6 @@ using K7.Server.Application.Common.Models;
 using K7.Server.Application.Common.QueryExtensions;
 using K7.Server.Application.Common.Services;
 using K7.Server.Application.Features.Medias.Queries.Common;
-using K7.Server.Application.Features.Restrictions.Services;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Enums;
@@ -31,9 +30,9 @@ internal sealed class HomeFeedRecentlyAddedStrategy(
 
         var pageIds = request.LibraryIds is { Length: > 0 }
             ? await ResolveRecentlyAddedMediaIdsFromLibrariesAsync(
-                request.LibraryIds, leafTypes, userId, skip, fetchSize, cancellationToken)
+                request.LibraryIds, leafTypes, userId, sharedProfileId, skip, fetchSize, cancellationToken)
             : await ResolveRecentlyAddedMediaIdsFromAllMediaAsync(
-                request, leafTypes, userId, skip, fetchSize, cancellationToken);
+                request, leafTypes, userId, sharedProfileId, skip, fetchSize, cancellationToken);
 
         if (pageIds.Count == 0)
             return new PaginatedList<HomeFeedItemDto>([], 0, request.PageNumber, request.PageSize);
@@ -78,6 +77,7 @@ internal sealed class HomeFeedRecentlyAddedStrategy(
         Guid[] libraryIds,
         HashSet<MediaType> leafTypes,
         Guid? userId,
+        Guid? sharedProfileId,
         int skip,
         int fetchSize,
         CancellationToken cancellationToken)
@@ -116,13 +116,14 @@ internal sealed class HomeFeedRecentlyAddedStrategy(
             .ToListAsync(cancellationToken);
 
         return await FilterRecentlyAddedMediaIdsAsync(
-            candidateIds, leafTypes, userId, fetchSize, cancellationToken);
+            candidateIds, leafTypes, userId, sharedProfileId, fetchSize, cancellationToken);
     }
 
     private async Task<List<Guid>> ResolveRecentlyAddedMediaIdsFromAllMediaAsync(
         GetHomeFeedItemsQuery request,
         HashSet<MediaType> leafTypes,
         Guid? userId,
+        Guid? sharedProfileId,
         int skip,
         int fetchSize,
         CancellationToken cancellationToken)
@@ -136,7 +137,7 @@ internal sealed class HomeFeedRecentlyAddedStrategy(
         query = mediaAccessFilter.ApplyUnavailablePeerExclusion(query);
 
         if (userId.HasValue)
-            query = await HomeFeedQueryFilters.ApplyUserExclusionsAsync(mediaAccessFilter, query, userId.Value, cancellationToken);
+            query = await HomeFeedQueryFilters.ApplyUserExclusionsAsync(mediaAccessFilter, query, userId.Value, sharedProfileId, cancellationToken);
 
         return await query
             .OrderByDescending(x => x.Id)
@@ -150,6 +151,7 @@ internal sealed class HomeFeedRecentlyAddedStrategy(
         List<Guid> candidateIds,
         HashSet<MediaType> leafTypes,
         Guid? userId,
+        Guid? sharedProfileId,
         int fetchSize,
         CancellationToken cancellationToken)
     {
@@ -170,12 +172,8 @@ internal sealed class HomeFeedRecentlyAddedStrategy(
 
             mediaQuery = mediaQuery.WhereNotUserExcluded(excludedMediaIds);
 
-            var restrictionProfile = await context.ContentRestrictionProfiles
-                .AsNoTracking()
-                .FirstOrDefaultAsync(p => p.Users.Any(u => u.Id == userId.Value), cancellationToken);
-
-            if (restrictionProfile is not null)
-                mediaQuery = ContentRestrictionEvaluator.ApplyRestriction(mediaQuery, restrictionProfile);
+            mediaQuery = await mediaAccessFilter.ApplyAllAsync(
+                mediaQuery, userId.Value, sharedProfileId, cancellationToken);
         }
 
         var filteredIds = await mediaQuery.Select(m => m.Id).ToListAsync(cancellationToken);

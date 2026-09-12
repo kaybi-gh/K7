@@ -23,6 +23,7 @@ public interface IUserAdminService
     Task UpdateContentRestrictionProfileAsync(Guid id, UpdateContentRestrictionProfileRequest request, CancellationToken cancellationToken = default);
     Task DeleteContentRestrictionProfileAsync(Guid id, CancellationToken cancellationToken = default);
     Task AssignContentRestrictionProfileAsync(Guid userId, Guid? profileId, CancellationToken cancellationToken = default);
+    Task UpdateUserAgeRestrictionAsync(Guid userId, UpdateAgeRestrictionRequest request, CancellationToken cancellationToken = default);
     Task<List<RestrictedMediaPreviewDto>> PreviewRestrictedMediasAsync(Guid profileId, CancellationToken cancellationToken = default);
     Task<string?> GetUserLanguageAsync(CancellationToken cancellationToken = default);
     Task UpdateUserLanguageAsync(string language, CancellationToken cancellationToken = default);

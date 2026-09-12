@@ -17,6 +17,9 @@ public sealed record SharedProfileDto
     public required bool HasPin { get; init; }
     public string? PinHash { get; init; }
     public Guid? ContentRestrictionProfileId { get; init; }
+    public DateOnly? ViewerDateOfBirth { get; init; }
+    public bool AgeRestrictionEnabled { get; init; }
+    public bool HideUnratedTitles { get; init; } = true;
     public string? AvatarUrl { get; init; }
     public required IReadOnlyList<SharedProfileMemberDto> Members { get; init; }
 }

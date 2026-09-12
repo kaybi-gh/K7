@@ -36,8 +36,12 @@ internal static class HomeFeedQueryFilters
         query.WhereAvailableInLibraries(context, libraryIds ?? []);
 
     public static Task<IQueryable<BaseMedia>> ApplyUserExclusionsAsync(
-        MediaAccessFilter mediaAccessFilter, IQueryable<BaseMedia> query, Guid userId, CancellationToken cancellationToken) =>
-        mediaAccessFilter.ApplyAllAsync(query, userId, cancellationToken);
+        MediaAccessFilter mediaAccessFilter,
+        IQueryable<BaseMedia> query,
+        Guid userId,
+        Guid? sharedProfileId,
+        CancellationToken cancellationToken) =>
+        mediaAccessFilter.ApplyAllAsync(query, userId, sharedProfileId, cancellationToken);
 
     public static async Task<IReadOnlyDictionary<Guid, IReadOnlyList<MetadataPictureSize>>> GetPictureSizesAsync(
         IApplicationDbContext context, IEnumerable<BaseMedia> medias, CancellationToken cancellationToken) =>

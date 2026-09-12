@@ -2538,6 +2538,9 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
+                    b.Property<bool>("AgeRestrictionEnabled")
+                        .HasColumnType("INTEGER");
+
                     b.Property<Guid?>("ContentRestrictionProfileId")
                         .HasColumnType("TEXT");
 
@@ -2550,6 +2553,11 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
 
                     b.Property<Guid>("CreatedByUserId")
                         .HasColumnType("TEXT");
+
+                    b.Property<bool>("HideUnratedTitles")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(true);
 
                     b.Property<Guid>("HostUserId")
                         .HasColumnType("TEXT");
@@ -2567,6 +2575,9 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("PinHash")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateOnly?>("ViewerDateOfBirth")
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
@@ -2668,6 +2679,9 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
+                    b.Property<bool>("AgeRestrictionEnabled")
+                        .HasColumnType("INTEGER");
+
                     b.Property<Guid?>("ContentRestrictionProfileId")
                         .HasColumnType("TEXT");
 
@@ -2678,12 +2692,20 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Property<string>("CreatedBy")
                         .HasColumnType("TEXT");
 
+                    b.Property<DateOnly?>("DateOfBirth")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("DeletedAt")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("DisplayName")
                         .HasMaxLength(50)
                         .HasColumnType("TEXT");
+
+                    b.Property<bool>("HideUnratedTitles")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(true);
 
                     b.Property<string>("IdentityUserId")
                         .HasColumnType("TEXT");

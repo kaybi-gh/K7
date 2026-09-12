@@ -21,6 +21,9 @@ public sealed record UserDto
     public required IReadOnlyList<UserLibraryExclusionDto> LibraryExclusions { get; init; }
     public required IReadOnlyList<UserMediaExclusionDto> MediaExclusions { get; init; }
     public Guid? ContentRestrictionProfileId { get; init; }
+    public DateOnly? DateOfBirth { get; init; }
+    public bool AgeRestrictionEnabled { get; init; }
+    public bool HideUnratedTitles { get; init; } = true;
 }
 
 public sealed record CapabilityOverrideDto

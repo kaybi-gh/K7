@@ -43,7 +43,10 @@ public static class UserMappings
                     IsAdminExcluded = e.IsAdminExcluded,
                     IsSelfExcluded = e.IsSelfExcluded
                 }).ToList(),
-            ContentRestrictionProfileId = domain.ContentRestrictionProfileId
+            ContentRestrictionProfileId = domain.ContentRestrictionProfileId,
+            DateOfBirth = domain.DateOfBirth,
+            AgeRestrictionEnabled = domain.AgeRestrictionEnabled,
+            HideUnratedTitles = domain.HideUnratedTitles
         };
 
         public LiteUserDto ToLiteUserDto() => new()

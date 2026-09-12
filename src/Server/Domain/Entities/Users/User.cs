@@ -15,6 +15,9 @@ public class User : BaseAuditableEntity
     public DateTimeOffset? DeletedAt { get; set; }
     public Guid? ContentRestrictionProfileId { get; set; }
     public ContentRestrictionProfile? ContentRestrictionProfile { get; set; }
+    public DateOnly? DateOfBirth { get; set; }
+    public bool AgeRestrictionEnabled { get; set; }
+    public bool HideUnratedTitles { get; set; } = true;
 
     public Guid? PeerServerId { get; set; }
     public PeerServer? PeerServer { get; set; }

@@ -154,7 +154,10 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
             filterQuery = MediaRuleEvaluator.ApplyFilter(filterQuery, filterDto.ToRuleGroup(), userId);
 
         if (userId.HasValue)
-            filterQuery = await mediaAccessFilter.ApplyAllAsync(filterQuery, userId.Value, cancellationToken);
+        {
+            var sharedProfileId = await currentUser.GetSharedProfileIdAsync(cancellationToken);
+            filterQuery = await mediaAccessFilter.ApplyAllAsync(filterQuery, userId.Value, sharedProfileId, cancellationToken);
+        }
         else
             filterQuery = mediaAccessFilter.ApplyUnavailablePeerExclusion(filterQuery);
 

@@ -10,6 +10,7 @@ using K7.Server.Application.Features.SharedProfiles.Commands.UnsharePlaylistFrom
 using K7.Server.Application.Features.SharedProfiles.Commands.UpdateSharedProfile;
 using K7.Server.Application.Features.SharedProfiles.Commands.UpdateSharedProfileAudioPlaybackPolicy;
 using K7.Server.Application.Features.SharedProfiles.Commands.UpdateSharedProfileHomeLayout;
+using K7.Server.Application.Features.SharedProfiles.Commands.UpdateSharedProfileAgeRestriction;
 using K7.Server.Application.Features.SharedProfiles.Commands.UpdateSharedProfileVideoPlaybackPolicy;
 using K7.Server.Application.Features.SharedProfiles.Commands.UploadSharedProfileAvatar;
 using K7.Server.Application.Features.SharedProfiles.Commands.VerifySharedProfilePin;
@@ -24,6 +25,7 @@ using K7.Server.Web.Infrastructure;
 using K7.Shared.Dtos;
 using K7.Shared.Dtos.Home;
 using K7.Shared.Dtos.Requests;
+using K7.Shared.Dtos.Restrictions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 
@@ -312,6 +314,28 @@ public class AssignSharedProfileContentRestrictionEndpoint : IEndpoint
                 SharedProfileId = id,
                 ContentRestrictionProfileId = request.ContentRestrictionProfileId
             }, cancellationToken);
+            return Results.NoContent();
+        })
+        .RequireAuthorization(Policies.UserOrAbove)
+        .WithName(type.Name)
+        .WithTags(groupName);
+    }
+}
+
+public class UpdateSharedProfileAgeRestrictionEndpoint : IEndpoint
+{
+    public void Map(IEndpointRouteBuilder endpointRouteBuilder)
+    {
+        var type = GetType();
+        var groupName = type.Namespace!.Split('.').Last();
+
+        endpointRouteBuilder.MapPut("/api/shared-profiles/{id:guid}/age-restriction", async (
+            [FromServices] ISender sender,
+            Guid id,
+            [FromBody] UpdateAgeRestrictionRequest request,
+            CancellationToken cancellationToken) =>
+        {
+            await sender.Send(request.ToCommand(id), cancellationToken);
             return Results.NoContent();
         })
         .RequireAuthorization(Policies.UserOrAbove)

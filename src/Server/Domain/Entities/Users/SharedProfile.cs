@@ -13,6 +13,9 @@ public class SharedProfile : BaseAuditableEntity
 
     public Guid? ContentRestrictionProfileId { get; set; }
     public ContentRestrictionProfile? ContentRestrictionProfile { get; set; }
+    public DateOnly? ViewerDateOfBirth { get; set; }
+    public bool AgeRestrictionEnabled { get; set; }
+    public bool HideUnratedTitles { get; set; } = true;
 
     public IList<SharedProfileMember> Members { get; set; } = [];
 }

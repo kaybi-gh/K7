@@ -25,7 +25,16 @@
   <data name="RemoveAvatar" xml:space="preserve"><value>Remove</value></data>
   <data name="AvatarTooLarge" xml:space="preserve"><value>Image must not exceed 2 MB.</value></data>
   <data name="RestrictionTitle" xml:space="preserve"><value>Content restrictions</value></data>
+  <data name="AgeFilterTitle" xml:space="preserve"><value>Automatic age filter</value></data>
+  <data name="CustomProfilesTitle" xml:space="preserve"><value>Custom restriction profile filter</value></data>
   <data name="RestrictionProfile" xml:space="preserve"><value>Restriction profile</value></data>
+  <data name="AgeRestrictionEnabled" xml:space="preserve"><value>Age restriction</value></data>
+  <data name="AgeRestrictionHelp" xml:space="preserve"><value>Hides movies and series whose official rating exceeds the profile age. A date of birth alone does not filter.</value></data>
+  <data name="DateOfBirth" xml:space="preserve"><value>Viewer date of birth</value></data>
+  <data name="DateOfBirthHelp" xml:space="preserve"><value>Required when age restriction is on. Music is not filtered.</value></data>
+  <data name="HideUnratedTitles" xml:space="preserve"><value>Hide titles without a rating</value></data>
+  <data name="DateOfBirthRequired" xml:space="preserve"><value>Date of birth is required to enable age restriction.</value></data>
+  <data name="DateOfBirthInFuture" xml:space="preserve"><value>Date of birth cannot be in the future.</value></data>
   <data name="PlaylistsTitle" xml:space="preserve"><value>Shared playlists</value></data>
   <data name="PlaylistsDescription" xml:space="preserve"><value>Playlists shared here appear in navigation for members while this profile is active.</value></data>
   <data name="NoPlaylists" xml:space="preserve"><value>You have no playlists to share yet.</value></data>

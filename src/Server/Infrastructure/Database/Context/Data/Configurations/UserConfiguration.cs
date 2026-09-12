@@ -9,6 +9,7 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
     public void Configure(EntityTypeBuilder<User> builder)
     {
         builder.Property(u => u.DisplayName).HasMaxLength(50);
+        builder.Property(u => u.HideUnratedTitles).HasDefaultValue(true);
 
         builder.HasIndex(u => new { u.PeerServerId, u.OriginUserId })
             .IsUnique()

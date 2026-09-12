@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="AgeFilterTitle" xml:space="preserve"><value>Automatic age filter</value></data>
+  <data name="CustomProfilesTitle" xml:space="preserve"><value>Custom restriction profile filter</value></data>
+  <data name="ProfileLabel" xml:space="preserve"><value>Restriction profile</value></data>
+  <data name="AgeRestrictionEnabled" xml:space="preserve"><value>Age restriction</value></data>
+  <data name="AgeRestrictionHelp" xml:space="preserve"><value>Hides movies and series whose official rating exceeds the computed age. A date of birth alone does not filter.</value></data>
+  <data name="DateOfBirth" xml:space="preserve"><value>Date of birth</value></data>
+  <data name="DateOfBirthHelp" xml:space="preserve"><value>Required when age restriction is on. Music is not filtered.</value></data>
+  <data name="HideUnratedTitles" xml:space="preserve"><value>Hide titles without a rating</value></data>
+  <data name="DateOfBirthRequired" xml:space="preserve"><value>Date of birth is required to enable age restriction.</value></data>
+  <data name="DateOfBirthInFuture" xml:space="preserve"><value>Date of birth cannot be in the future.</value></data>
+</root>

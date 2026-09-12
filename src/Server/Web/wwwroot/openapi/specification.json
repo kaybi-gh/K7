@@ -2503,6 +2503,40 @@
         }
       }
     },
+    "/api/shared-profiles/{id}/age-restriction": {
+      "put": {
+        "tags": [
+          "SharedProfiles"
+        ],
+        "operationId": "UpdateSharedProfileAgeRestrictionEndpoint",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAgeRestrictionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/shared-profiles/{id}/playlists": {
       "get": {
         "tags": [
@@ -3447,6 +3481,40 @@
             }
           }
         ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/users/{userId}/age-restriction": {
+      "put": {
+        "tags": [
+          "Restrictions"
+        ],
+        "operationId": "UpdateUserAgeRestriction",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAgeRestrictionRequest"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "description": "OK"
@@ -20518,6 +20586,16 @@
             ],
             "format": "uuid"
           },
+          "viewerDateOfBirth": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "ageRestrictionEnabled": {
+            "type": "boolean"
+          },
           "avatarUrl": {
             "type": [
               "null",
@@ -21200,6 +21278,24 @@
               "string"
             ],
             "format": "int32"
+          }
+        }
+      },
+      "UpdateAgeRestrictionRequest": {
+        "required": [
+          "enabled"
+        ],
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "dateOfBirth": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
           }
         }
       },

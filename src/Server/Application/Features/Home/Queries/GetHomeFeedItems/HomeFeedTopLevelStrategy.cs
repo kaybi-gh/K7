@@ -30,7 +30,7 @@ internal sealed class HomeFeedTopLevelStrategy(
         query = mediaAccessFilter.ApplyUnavailablePeerExclusion(query);
 
         if (userId.HasValue)
-            query = await HomeFeedQueryFilters.ApplyUserExclusionsAsync(mediaAccessFilter, query, userId.Value, cancellationToken);
+            query = await HomeFeedQueryFilters.ApplyUserExclusionsAsync(mediaAccessFilter, query, userId.Value, sharedProfileId, cancellationToken);
 
         var ordered = ApplyOrdering(request.OrderBy, query, userId);
         var totalCount = await ordered.CountAsync(cancellationToken);

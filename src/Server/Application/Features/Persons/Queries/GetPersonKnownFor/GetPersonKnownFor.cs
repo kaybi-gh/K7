@@ -85,8 +85,6 @@ public class GetPersonKnownForQueryHandler(
             return false;
 
         var sharedProfileId = await currentUser.GetSharedProfileIdAsync(cancellationToken);
-        var restrictionProfile = await mediaAccessFilter.GetRestrictionProfileAsync(
-            userId, sharedProfileId, cancellationToken);
-        return restrictionProfile is not null;
+        return await mediaAccessFilter.HasActiveContentGateAsync(userId, sharedProfileId, cancellationToken);
     }
 }

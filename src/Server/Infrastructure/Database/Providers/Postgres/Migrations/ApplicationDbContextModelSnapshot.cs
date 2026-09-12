@@ -2480,6 +2480,9 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<bool>("AgeRestrictionEnabled")
+                        .HasColumnType("boolean");
+
                     b.Property<Guid?>("ContentRestrictionProfileId")
                         .HasColumnType("uuid");
 
@@ -2491,6 +2494,11 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
 
                     b.Property<Guid>("CreatedByUserId")
                         .HasColumnType("uuid");
+
+                    b.Property<bool>("HideUnratedTitles")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
 
                     b.Property<Guid>("HostUserId")
                         .HasColumnType("uuid");
@@ -2508,6 +2516,9 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
 
                     b.Property<string>("PinHash")
                         .HasColumnType("text");
+
+                    b.Property<DateOnly?>("ViewerDateOfBirth")
+                        .HasColumnType("date");
 
                     b.HasKey("Id");
 
@@ -2606,6 +2617,9 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<bool>("AgeRestrictionEnabled")
+                        .HasColumnType("boolean");
+
                     b.Property<Guid?>("ContentRestrictionProfileId")
                         .HasColumnType("uuid");
 
@@ -2615,12 +2629,20 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.Property<string>("CreatedBy")
                         .HasColumnType("text");
 
+                    b.Property<DateOnly?>("DateOfBirth")
+                        .HasColumnType("date");
+
                     b.Property<DateTimeOffset?>("DeletedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("DisplayName")
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
+
+                    b.Property<bool>("HideUnratedTitles")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
 
                     b.Property<string>("IdentityUserId")
                         .HasColumnType("text");

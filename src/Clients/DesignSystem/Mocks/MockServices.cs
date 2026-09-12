@@ -666,6 +666,7 @@ public sealed class MockUserAdminService : IUserAdminService
     public Task UpdateContentRestrictionProfileAsync(Guid id, UpdateContentRestrictionProfileRequest request, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task DeleteContentRestrictionProfileAsync(Guid id, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task AssignContentRestrictionProfileAsync(Guid userId, Guid? profileId, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task UpdateUserAgeRestrictionAsync(Guid userId, UpdateAgeRestrictionRequest request, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task<List<RestrictedMediaPreviewDto>> PreviewRestrictedMediasAsync(Guid profileId, CancellationToken cancellationToken = default) => Task.FromResult(new List<RestrictedMediaPreviewDto>());
     public Task<string?> GetUserLanguageAsync(CancellationToken cancellationToken = default) => Task.FromResult<string?>(null);
     public Task UpdateUserLanguageAsync(string language, CancellationToken cancellationToken = default) => Task.CompletedTask;
@@ -1000,6 +1001,9 @@ public sealed class MockSharedProfileService : ISharedProfileService
         Task.CompletedTask;
 
     public Task AssignContentRestrictionAsync(Guid id, Guid? contentRestrictionProfileId, CancellationToken cancellationToken = default) =>
+        Task.CompletedTask;
+
+    public Task UpdateAgeRestrictionAsync(Guid id, UpdateAgeRestrictionRequest request, CancellationToken cancellationToken = default) =>
         Task.CompletedTask;
 
     public Task<IReadOnlyList<Guid>> GetPlaylistIdsAsync(Guid id, CancellationToken cancellationToken = default) =>

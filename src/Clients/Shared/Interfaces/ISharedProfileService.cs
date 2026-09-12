@@ -1,6 +1,7 @@
 using K7.Shared.Dtos;
 using K7.Shared.Dtos.Home;
 using K7.Shared.Dtos.Requests;
+using K7.Shared.Dtos.Restrictions;
 using K7.Shared.Dtos.SharedProfiles;
 
 namespace K7.Clients.Shared.Interfaces;
@@ -20,6 +21,7 @@ public interface ISharedProfileService
     Task<AudioPlaybackPolicySettingsDto> GetAudioPlaybackPolicyAsync(Guid id, CancellationToken cancellationToken = default);
     Task UpdateAudioPlaybackPolicyAsync(Guid id, AudioPlaybackPolicySettingsDto settings, CancellationToken cancellationToken = default);
     Task AssignContentRestrictionAsync(Guid id, Guid? contentRestrictionProfileId, CancellationToken cancellationToken = default);
+    Task UpdateAgeRestrictionAsync(Guid id, UpdateAgeRestrictionRequest request, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<Guid>> GetPlaylistIdsAsync(Guid id, CancellationToken cancellationToken = default);
     Task SharePlaylistAsync(Guid id, Guid playlistId, CancellationToken cancellationToken = default);
     Task UnsharePlaylistAsync(Guid id, Guid playlistId, CancellationToken cancellationToken = default);

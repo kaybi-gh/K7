@@ -11,6 +11,7 @@ public class SharedProfileConfiguration : IEntityTypeConfiguration<SharedProfile
         builder.ToTable("SharedProfiles");
 
         builder.Property(e => e.Name).HasMaxLength(100).IsRequired();
+        builder.Property(e => e.HideUnratedTitles).HasDefaultValue(true);
 
         builder.HasIndex(e => e.HostUserId);
         builder.HasIndex(e => e.CreatedByUserId);

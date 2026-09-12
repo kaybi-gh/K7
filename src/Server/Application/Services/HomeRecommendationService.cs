@@ -11,7 +11,8 @@ namespace K7.Server.Application.Services;
 
 public class HomeRecommendationService(
     IApplicationDbContext context,
-    MediaAccessFilter mediaAccessFilter) : IHomeRecommendationService
+    MediaAccessFilter mediaAccessFilter,
+    IUser currentUser) : IHomeRecommendationService
 {
     private const int SeedSessionLimit = 20;
     private const int SeedStateLimit = 10;
@@ -114,7 +115,8 @@ public class HomeRecommendationService(
             return [];
 
         var externalIdValues = scoreByExternalKey.Keys.Select(k => k.ExternalId).Distinct().ToList();
-        var restrictionProfile = await mediaAccessFilter.GetRestrictionProfileAsync(userId, cancellationToken);
+        var sharedProfileId = await currentUser.GetSharedProfileIdAsync(cancellationToken);
+        var gates = await mediaAccessFilter.GetContentGatesAsync(userId, sharedProfileId, cancellationToken);
         var scoredCandidates = new Dictionary<Guid, (double Score, DateTimeOffset Created)>();
         foreach (var externalIdBatch in externalIdValues.Chunk(500))
         {
@@ -127,8 +129,10 @@ public class HomeRecommendationService(
                 query = query.WhereAvailableInLibraries(context, libraryIds);
 
             query = mediaAccessFilter.ApplyExclusions(query, userId);
-            if (restrictionProfile is not null)
-                query = ContentRestrictionEvaluator.ApplyRestriction(query, restrictionProfile);
+            if (gates.RestrictionProfile is not null)
+                query = ContentRestrictionEvaluator.ApplyRestriction(query, gates.RestrictionProfile);
+            if (gates.AgeGate is not null)
+                query = mediaAccessFilter.ApplyAgeRestriction(query, gates.AgeGate);
 
             var candidates = await query
                 .Select(m => new

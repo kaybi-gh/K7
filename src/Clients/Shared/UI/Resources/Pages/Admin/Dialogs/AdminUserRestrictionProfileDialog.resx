@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="AgeFilterTitle" xml:space="preserve"><value>Filtre par âge automatique</value></data>
+  <data name="CustomProfilesTitle" xml:space="preserve"><value>Filtre par profils de restrictions personnalisés</value></data>
+  <data name="ProfileLabel" xml:space="preserve"><value>Profil de restriction</value></data>
+  <data name="AgeRestrictionEnabled" xml:space="preserve"><value>Restriction par âge</value></data>
+  <data name="AgeRestrictionHelp" xml:space="preserve"><value>Cache les films et séries dont la classification officielle dépasse l'âge calculé. La date seule ne filtre rien.</value></data>
+  <data name="DateOfBirth" xml:space="preserve"><value>Date de naissance</value></data>
+  <data name="DateOfBirthHelp" xml:space="preserve"><value>Requise si la restriction par âge est activée. La musique n'est pas filtrée.</value></data>
+  <data name="HideUnratedTitles" xml:space="preserve"><value>Titres sans classification cachés</value></data>
+  <data name="DateOfBirthRequired" xml:space="preserve"><value>La date de naissance est requise pour activer la restriction par âge.</value></data>
+  <data name="DateOfBirthInFuture" xml:space="preserve"><value>La date de naissance ne peut pas être dans le futur.</value></data>
+</root>

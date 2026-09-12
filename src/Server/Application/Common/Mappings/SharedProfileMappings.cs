@@ -21,6 +21,9 @@ public static class SharedProfileMappings
                 HasPin = group.PinHash is not null,
                 PinHash = includePinHash ? group.PinHash : null,
                 ContentRestrictionProfileId = group.ContentRestrictionProfileId,
+                ViewerDateOfBirth = group.ViewerDateOfBirth,
+                AgeRestrictionEnabled = group.AgeRestrictionEnabled,
+                HideUnratedTitles = group.HideUnratedTitles,
                 AvatarUrl = avatarUrl,
                 Members = group.Members
                 .OrderBy(m => m.UserId == group.HostUserId ? 0 : 1)

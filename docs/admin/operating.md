@@ -303,6 +303,7 @@ Admin Dashboard still shows a short health overview and active streams (encoder 
 
 - Activate Guest, roles, profile restrictions, and per-user capability overrides under Admin -> Users.
 - Restriction profiles hide matching library titles from browse, search, Home, and person filmography. Person **Known for** (external posters not in the library) is hidden entirely while a restriction profile is active, including on a shared profile.
+- Age restriction is opt-in per user (or shared profile): enable it and set a date of birth. K7 then hides movies and series whose official TMDB/TVDB content rating exceeds the computed age. A date of birth without the flag does nothing. Music is not filtered. Titles with no content rating are hidden by default and can be shown with the unrated toggle.
 - Guest playback is recorded in Admin -> Playback history (and active streams) without giving Guest continue watching or personal history.
 - Admin -> Playback history can reassign a play (personal or any shared profile) and delete rows. A personal delete updates that user's play/skip counts. A shared-profile delete removes the row for the whole group without un-watching members. Bulk select works like Admin -> Users. Delete requires `CanDeleteHistory`. Reassign requires `CanReassignHistory`.
 - `CanDeleteHistory` and `CanReassignHistory` are on by default for Administrator only (off for User and Guest). Enable them per User account when needed. Turning them off on an admin keeps history visible while blocking those actions.

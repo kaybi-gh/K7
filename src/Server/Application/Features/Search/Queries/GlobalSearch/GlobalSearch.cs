@@ -3,7 +3,6 @@ using K7.Server.Application.Common.Mappings;
 using K7.Server.Application.Common.QueryExtensions;
 using K7.Server.Application.Common.Security;
 using K7.Server.Application.Common.Services;
-using K7.Server.Application.Features.Restrictions.Services;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Metadatas.PersonRoles;
@@ -51,18 +50,11 @@ public class GlobalSearchQueryHandler(
 
         if (userId is { } currentUserId)
         {
-            var restrictionProfile = await mediaAccessFilter.GetRestrictionProfileAsync(currentUserId, cancellationToken);
-
-            mediaQuery = mediaAccessFilter.ApplyExclusions(mediaQuery, currentUserId);
-            if (restrictionProfile is not null)
-                mediaQuery = ContentRestrictionEvaluator.ApplyRestriction(mediaQuery, restrictionProfile);
-
-            accessibleMediaIds = mediaAccessFilter.GetAccessibleMediaIds(currentUserId);
-            if (restrictionProfile is not null)
-                accessibleMediaIds = ContentRestrictionEvaluator.ApplyRestriction(
-                    context.Medias.Where(m => accessibleMediaIds.Contains(m.Id)),
-                    restrictionProfile)
-                    .Select(m => m.Id);
+            var sharedProfileId = await currentUser.GetSharedProfileIdAsync(cancellationToken);
+            mediaQuery = await mediaAccessFilter.ApplyAllAsync(mediaQuery, currentUserId, sharedProfileId, cancellationToken);
+            accessibleMediaIds = (await mediaAccessFilter.ApplyAllAsync(
+                    context.Medias.AsNoTracking(), currentUserId, sharedProfileId, cancellationToken))
+                .Select(m => m.Id);
         }
 
         mediaQuery = mediaQuery.AsNoTracking();

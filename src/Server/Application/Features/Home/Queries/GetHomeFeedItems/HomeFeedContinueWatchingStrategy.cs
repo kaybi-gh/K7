@@ -53,7 +53,7 @@ internal sealed class HomeFeedContinueWatchingStrategy(
 
         query = HomeFeedQueryFilters.ApplyFamilyFilter(query, request.MediaTypes);
         query = HomeFeedQueryFilters.ApplyLibraryFilter(context, query, request.LibraryIds);
-        query = await HomeFeedQueryFilters.ApplyUserExclusionsAsync(mediaAccessFilter, query, userId.Value, cancellationToken);
+        query = await HomeFeedQueryFilters.ApplyUserExclusionsAsync(mediaAccessFilter, query, userId.Value, sharedProfileId, cancellationToken);
 
         var allowedIds = await query.Select(m => m.Id).ToListAsync(cancellationToken);
         var allowedSet = allowedIds.ToHashSet();

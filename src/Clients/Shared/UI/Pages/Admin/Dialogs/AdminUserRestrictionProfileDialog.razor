@@ -1,28 +1,44 @@
+<div class="k7-dialog-content">
+    @if (_isLoading)
+    {
+        <K7ProgressBar Indeterminate="true" />
+    }
+    else
+    {
+        <h6>@L["AgeFilterTitle"]</h6>
+        <K7Switch Label="@L["AgeRestrictionEnabled"]" @bind-Value="_ageRestrictionEnabled" />
+        <K7Alert Severity="K7Severity.Info" Icon="@Phosphor.Info">@L["AgeRestrictionHelp"]</K7Alert>
+        <K7TextField TValue="string" Type="date" Label="@L["DateOfBirth"]"
+                     @bind-Value="_dateOfBirthText"
+                     Required="_ageRestrictionEnabled"
+                     HelperText="@L["DateOfBirthHelp"]" />
+        <K7Switch Label="@L["HideUnratedTitles"]"
+                  @bind-Value="_hideUnratedTitles"
+                  Disabled="@(!_ageRestrictionEnabled)" />
+        @if (_validationError is not null)
+        {
+            <K7Alert Severity="K7Severity.Error">@_validationError</K7Alert>
+        }
 
-<!--Profil de restriction-->
-    <div class="k7-dialog-content">
-        @if (_isLoading)
-        {
-            <K7ProgressBar Indeterminate="true" />
-        }
-        else
-        {
-            <K7Select TValue="Guid?" @bind-Value="_selectedProfileId" Label="Profil de restriction"
-                       Variant="outlined" Clearable="true">
-                @foreach (var profile in _profiles)
-                {
-                    <K7SelectItem TValue="Guid?" Value="@profile.Id">
-                        @profile.Name
-                        @if (!string.IsNullOrWhiteSpace(profile.Description))
-                        {
-                            <span class="text-caption" Color="secondary"> - @profile.Description</span>
-                        }
-                    </K7SelectItem>
-                }
-            </K7Select>
-        }
-    </div>
-    <div class="k7-dialog-actions">
-        <K7Button OnClick="Cancel">Annuler</K7Button>
-        <K7Button Color="primary" Variant="filled" OnClick="Submit" Disabled="_isLoading">Valider</K7Button>
-    </div>
+        <hr class="k7-divider my-2" />
+
+        <h6>@L["CustomProfilesTitle"]</h6>
+        <K7Select TValue="Guid?" @bind-Value="_selectedProfileId" Label="@L["ProfileLabel"]"
+                   Variant="outlined" Clearable="true">
+            @foreach (var profile in _profiles)
+            {
+                <K7SelectItem TValue="Guid?" Value="@profile.Id">
+                    @profile.Name
+                    @if (!string.IsNullOrWhiteSpace(profile.Description))
+                    {
+                        <span class="text-caption" Color="secondary"> - @profile.Description</span>
+                    }
+                </K7SelectItem>
+            }
+        </K7Select>
+    }
+</div>
+<div class="k7-dialog-actions">
+    <K7Button OnClick="Cancel">@S["Cancel"]</K7Button>
+    <K7Button Color="primary" Variant="filled" OnClick="Submit" Disabled="_isLoading">@S["Save"]</K7Button>
+</div>

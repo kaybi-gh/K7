@@ -132,15 +132,18 @@ public class GetPersonQueryHandler(IApplicationDbContext context, IUser currentU
         CancellationToken cancellationToken)
     {
         var sharedProfileId = await currentUser.GetSharedProfileIdAsync(cancellationToken);
-        var restrictionProfile = await mediaAccessFilter.GetRestrictionProfileAsync(
-            userId, sharedProfileId, cancellationToken);
-        if (restrictionProfile is null)
+        var gates = await mediaAccessFilter.GetContentGatesAsync(userId, sharedProfileId, cancellationToken);
+        if (gates.RestrictionProfile is null && gates.AgeGate is null)
             return roles.ToList();
 
         var roleMediaIds = roles.Select(r => r.MediaId).Distinct().ToList();
-        var allowedMediaIds = await ContentRestrictionEvaluator.ApplyRestriction(
-                context.Medias.AsNoTracking().Where(m => roleMediaIds.Contains(m.Id)),
-                restrictionProfile)
+        var gatedQuery = context.Medias.AsNoTracking().Where(m => roleMediaIds.Contains(m.Id));
+        if (gates.RestrictionProfile is not null)
+            gatedQuery = ContentRestrictionEvaluator.ApplyRestriction(gatedQuery, gates.RestrictionProfile);
+        if (gates.AgeGate is not null)
+            gatedQuery = mediaAccessFilter.ApplyAgeRestriction(gatedQuery, gates.AgeGate);
+
+        var allowedMediaIds = await gatedQuery
             .Select(m => m.Id)
             .ToHashSetAsync(cancellationToken);
 

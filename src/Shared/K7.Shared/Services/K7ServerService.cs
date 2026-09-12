@@ -654,6 +654,16 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         response.EnsureSuccessStatusCode();
     }
 
+    public async Task UpdateSharedProfileAgeRestrictionAsync(Guid id, UpdateAgeRestrictionRequest request, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PutAsJsonAsync(
+            $"api/shared-profiles/{id}/age-restriction",
+            request,
+            _serializerOptions,
+            cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
     public async Task<IReadOnlyList<Guid>> GetSharedProfilePlaylistIdsAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var result = await HttpClient.GetFromJsonAsync<List<Guid>>(
@@ -1310,6 +1320,12 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
     public async Task AssignContentRestrictionProfileAsync(Guid userId, Guid? profileId, CancellationToken cancellationToken = default)
     {
         var response = await HttpClient.PutAsJsonAsync($"api/users/{userId}/restriction-profile", new { ProfileId = profileId }, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task UpdateUserAgeRestrictionAsync(Guid userId, UpdateAgeRestrictionRequest request, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PutAsJsonAsync($"api/users/{userId}/age-restriction", request, _serializerOptions, cancellationToken);
         response.EnsureSuccessStatusCode();
     }
 

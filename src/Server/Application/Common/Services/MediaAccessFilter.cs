@@ -8,6 +8,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace K7.Server.Application.Common.Services;
 
+public sealed record ContentAccessGates(
+    ContentRestrictionProfile? RestrictionProfile,
+    AgeRestrictionGate? AgeGate);
+
 /// <summary>
 /// Centralizes the per-user media visibility filtering shared by the media list, search and home feed
 /// queries: library exclusions, media exclusions and content restriction profiles. Keeping this logic
@@ -69,35 +73,114 @@ public sealed class MediaAccessFilter(IApplicationDbContext context)
     public async Task<ContentRestrictionProfile?> GetRestrictionProfileAsync(
         Guid userId,
         Guid? sharedProfileId,
+        CancellationToken cancellationToken = default) =>
+        (await GetContentGatesAsync(userId, sharedProfileId, cancellationToken)).RestrictionProfile;
+
+    public Task<AgeRestrictionGate?> GetAgeRestrictionGateAsync(
+        Guid userId,
+        CancellationToken cancellationToken = default) =>
+        GetAgeRestrictionGateAsync(userId, sharedProfileId: null, cancellationToken);
+
+    public async Task<AgeRestrictionGate?> GetAgeRestrictionGateAsync(
+        Guid userId,
+        Guid? sharedProfileId,
+        CancellationToken cancellationToken = default) =>
+        (await GetContentGatesAsync(userId, sharedProfileId, cancellationToken)).AgeGate;
+
+    /// <summary>
+    /// Loads the custom restriction profile and age gate in one round trip.
+    /// Shared sessions use the shared profile settings, never the acting member's.
+    /// </summary>
+    public async Task<ContentAccessGates> GetContentGatesAsync(
+        Guid userId,
+        Guid? sharedProfileId,
         CancellationToken cancellationToken = default)
     {
         if (sharedProfileId is { } profileId)
         {
-            return await context.SharedProfiles
+            var shared = await context.SharedProfiles
                 .AsNoTracking()
                 .Where(p => p.Id == profileId)
-                .Select(p => p.ContentRestrictionProfile)
+                .Select(p => new
+                {
+                    p.ContentRestrictionProfile,
+                    p.AgeRestrictionEnabled,
+                    p.ViewerDateOfBirth,
+                    p.HideUnratedTitles
+                })
                 .FirstOrDefaultAsync(cancellationToken);
+
+            if (shared is null)
+                return new ContentAccessGates(null, null);
+
+            var sharedGate = AgeRestrictionEvaluator.IsActive(shared.AgeRestrictionEnabled, shared.ViewerDateOfBirth)
+                ? new AgeRestrictionGate(shared.ViewerDateOfBirth!.Value, shared.HideUnratedTitles)
+                : null;
+            return new ContentAccessGates(shared.ContentRestrictionProfile, sharedGate);
         }
 
-        return await context.ContentRestrictionProfiles
+        var user = await context.Users
             .AsNoTracking()
-            .FirstOrDefaultAsync(p => p.Users.Any(u => u.Id == userId), cancellationToken);
+            .Where(u => u.Id == userId)
+            .Select(u => new
+            {
+                u.ContentRestrictionProfile,
+                u.AgeRestrictionEnabled,
+                u.DateOfBirth,
+                u.HideUnratedTitles
+            })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (user is null)
+            return new ContentAccessGates(null, null);
+
+        var userGate = AgeRestrictionEvaluator.IsActive(user.AgeRestrictionEnabled, user.DateOfBirth)
+            ? new AgeRestrictionGate(user.DateOfBirth!.Value, user.HideUnratedTitles)
+            : null;
+        return new ContentAccessGates(user.ContentRestrictionProfile, userGate);
     }
 
+    public async Task<bool> HasActiveContentGateAsync(
+        Guid userId,
+        Guid? sharedProfileId,
+        CancellationToken cancellationToken = default)
+    {
+        var gates = await GetContentGatesAsync(userId, sharedProfileId, cancellationToken);
+        return gates.RestrictionProfile is not null || gates.AgeGate is not null;
+    }
+
+    public IQueryable<BaseMedia> ApplyAgeRestriction(
+        IQueryable<BaseMedia> query,
+        AgeRestrictionGate gate) =>
+        AgeRestrictionEvaluator.Apply(
+            query,
+            gate.DateOfBirth,
+            DateOnly.FromDateTime(DateTime.UtcNow),
+            gate.HideUnratedTitles);
+
     /// <summary>
-    /// Applies exclusions and the content restriction profile in one pass.
+    /// Applies exclusions, the content restriction profile, and age restriction in one pass.
     /// </summary>
+    public Task<IQueryable<BaseMedia>> ApplyAllAsync(
+        IQueryable<BaseMedia> query,
+        Guid userId,
+        CancellationToken cancellationToken = default) =>
+        ApplyAllAsync(query, userId, sharedProfileId: null, cancellationToken);
+
     public async Task<IQueryable<BaseMedia>> ApplyAllAsync(
         IQueryable<BaseMedia> query,
         Guid userId,
-        CancellationToken cancellationToken = default)
+        Guid? sharedProfileId,
+        CancellationToken cancellationToken)
     {
         query = ApplyExclusions(query, userId);
 
-        var restrictionProfile = await GetRestrictionProfileAsync(userId, cancellationToken);
-        if (restrictionProfile is not null)
-            query = ContentRestrictionEvaluator.ApplyRestriction(query, restrictionProfile);
+        var gates = await GetContentGatesAsync(userId, sharedProfileId, cancellationToken);
+        if (gates.RestrictionProfile is not null)
+            query = ContentRestrictionEvaluator.ApplyRestriction(query, gates.RestrictionProfile);
+
+        if (gates.AgeGate is not null)
+            query = ApplyAgeRestriction(query, gates.AgeGate);
 
         return query;
     }

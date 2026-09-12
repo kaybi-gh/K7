@@ -481,19 +481,27 @@ public partial class AdminUsersPanel : IAsyncDisposable
     {
         var parameters = new K7DialogParameters<AdminUserRestrictionProfileDialog>
         {
-            { x => x.CurrentProfileId, user.ContentRestrictionProfileId }
+            { x => x.CurrentProfileId, user.ContentRestrictionProfileId },
+            { x => x.CurrentAgeRestrictionEnabled, user.AgeRestrictionEnabled },
+            { x => x.CurrentDateOfBirth, user.DateOfBirth },
+            { x => x.CurrentHideUnratedTitles, user.HideUnratedTitles }
         };
 
         var options = new K7DialogOptions { MaxWidth = K7DialogMaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
         var dialog = await DialogService.ShowAsync<AdminUserRestrictionProfileDialog>(L["RestrictionProfileTitle"], parameters, options);
         var result = await dialog.Result;
 
-        if (result is { Canceled: false })
+        if (result is { Canceled: false, Data: UserRestrictionAssignmentResult assignment })
         {
-            var profileId = result.Data as Guid?;
             try
             {
-                await K7ServerService.AssignContentRestrictionProfileAsync(user.Id, profileId);
+                await K7ServerService.AssignContentRestrictionProfileAsync(user.Id, assignment.ProfileId);
+                await K7ServerService.UpdateUserAgeRestrictionAsync(user.Id, new UpdateAgeRestrictionRequest
+                {
+                    Enabled = assignment.AgeRestrictionEnabled,
+                    DateOfBirth = assignment.DateOfBirth,
+                    HideUnratedTitles = assignment.HideUnratedTitles
+                });
                 Snackbar.Add(L["RestrictionProfileUpdated"], K7Severity.Success);
                 await LoadData();
             }

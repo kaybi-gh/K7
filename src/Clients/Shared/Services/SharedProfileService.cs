@@ -2,6 +2,7 @@ using K7.Clients.Shared.Interfaces;
 using K7.Shared.Dtos;
 using K7.Shared.Dtos.Home;
 using K7.Shared.Dtos.Requests;
+using K7.Shared.Dtos.Restrictions;
 using K7.Shared.Dtos.SharedProfiles;
 using K7.Shared.Interfaces;
 
@@ -90,6 +91,12 @@ public class SharedProfileService(
     public async Task AssignContentRestrictionAsync(Guid id, Guid? contentRestrictionProfileId, CancellationToken cancellationToken = default)
     {
         await api.AssignSharedProfileContentRestrictionAsync(id, contentRestrictionProfileId, cancellationToken);
+        await cache.RefreshAsync(cancellationToken);
+    }
+
+    public async Task UpdateAgeRestrictionAsync(Guid id, UpdateAgeRestrictionRequest request, CancellationToken cancellationToken = default)
+    {
+        await api.UpdateSharedProfileAgeRestrictionAsync(id, request, cancellationToken);
         await cache.RefreshAsync(cancellationToken);
     }
 
