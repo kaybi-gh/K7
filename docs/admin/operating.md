@@ -480,17 +480,49 @@ each set.
 ### Outgoing notifications (webhooks)
 
 Outbound HTTP webhooks only (event filters + payload templates). CRUD + test: `/api/notifications/rules`.
+Presets (Discord, Telegram, Slack, ntfy, Gotify, Signal) lock the message step to Raw JSON and prefill URL, method, headers, and payload.
+Each preset shows URL helper text for the placeholders to replace (`...`, `<token>`, `your-topic`, ...).
+Each rule can add time windows (server time zone, empty = always) and an optional cooldown in seconds.
+Template placeholders use `{{Name}}` (simple Mustache-style). Possible enum/bool values are listed under each parameter in the UI.
+Optional advanced value maps: `{{Name|true=online|false=offline|*=fallback}}` (kept for power users, not used in default templates).
+Title + Body is only for preset None and serializes as `{"title","body"}`. Switching to Raw JSON without a preset fills that object from the current title/body.
+Template preview and the test endpoint use the sample value attached to each catalog parameter (`Server.Name`, TV/music fields, external ids).
+Application logs: HTTP/exception failures as Error, successful sends as Debug.
 
-Event catalog covers Playback, Library, Media, Playlist, Device, Download, Federation, and Health
-categories. Notable Federation / Health events for ops monitoring:
+Event catalog covers Playback, Library, Media, Playlist, Device, Download, Federation, Health, User, and Security
+categories. User events include account lifecycle and per-user media hide changes. Security covers API keys and Subsonic app passwords.
+Notable Federation / Health events for ops monitoring:
 
 | Event | Category | Fires when |
 |---|---|---|
 | `PeerConnectivityChangedEvent` | Federation | A peer test (scheduled or manual) transitions success/failure state, e.g. a peer goes offline or comes back |
 | `TranscodeFailedEvent` | Health | An on-the-fly transcode/remux session fails for a media file |
 | `MusicIntelligenceUnavailableEvent` | Health | AudioMuse AI is enabled but unreachable during a health probe |
+| `ClientErrorReportedEvent` | Health | A client posted to `/api/diagnostics/client-errors` (debounced 2 min per device+message). Use a rule cooldown if you want fewer webhooks |
 | `LibraryScanCompletedEvent` | Library | A full or partial (path-scoped) library scan finishes, with added/skipped/inaccessible counts |
-| `MediaCreatedEvent` | Media | A new media item is created from indexing |
+| `MediaCreatedEvent` | Media | Media row created from indexing (may still lack metadata). UI label: Media created |
+| `MediaAddedEvent` | Media | First metadata refresh completed (poster/title ready). UI label: Media ready |
+| `PlaybackStateChangedEvent` | Playback | Meaningful transitions: `Playing`, `Paused`, `Ended`, leave = `Idle` (templates: `Stopped`). `Buffering` only after ~15s continuous buffering on the client |
+
+### Scrobbling
+
+Global opt-out under **Admin -> Scrobbling** (`/admin/scrobbling`, stored as `Scrobbling`). Default is on.
+Last.fm needs an API key/secret (Libre.fm: change the host). Trakt needs a client id/secret.
+Users connect their own accounts under **Settings -> Scrobbling**. Native destinations: Last.fm, ListenBrainz, Trakt.
+ListenBrainz user tokens come from [listenbrainz.org/settings/](https://listenbrainz.org/settings/).
+Admin Last.fm keys: [last.fm/api/account/create](https://www.last.fm/api/account/create). Admin Trakt app: [trakt.tv/oauth/applications](https://trakt.tv/oauth/applications).
+Webhook presets impersonate Jellyfin/Plex JSON for Yamtrack, Floppy, Ryot, and BetaSeries.
+URL hints use `yourdomain.tld` placeholders (for example `https://yamtrack.yourdomain.tld/webhook/jellyfin/{token}`).
+BetaSeries API tokens: [betaseries.com/api/](https://www.betaseries.com/api/).
+Yamtrack / Floppy / Ryot use the unofficial Jellyfin webhook shape (`Event`, `Item.Type` Movie/Episode, `ProviderIds`, `Session.PlayState.PositionTicks`, `UserData.Played`). Ryot needs TMDB (or TVDB) ids and numeric ticks.
+After the completion scrobble (`Stop` + `UserData.Played: true`), K7 does not send further Play/Stop/progress for that session so Yamtrack stays Completed.
+BetaSeries is posted like Jellyfin Generic Form: `application/x-www-form-urlencoded` with a `payload` field containing the Plex JSON (`event`, `Account`, `Metadata`, Guids). Tracking happens only on Watched (`media.scrobble`) - there is no in-progress state via this webhook. Movies need an IMDb id, episodes need a TVDB episode id. BetaSeries always returns HTTP 200, so a successful send does not prove a match.
+Yamtrack, Floppy, Ryot, and BetaSeries are video-only (movies and episodes). Custom webhooks can still include music.
+A HTTP 2xx only means the remote accepted the POST. Missing external ids are still ignored server-side.
+Custom webhooks can subscribe to Play, Pause, Stop, Progress (position about every 10s while playing), and Watched/Listened (completion). Use `{{{Name}}}` for raw JSON numbers.
+On a shared profile, K7 fans out each scrobble to every member's own accounts (each member needs `CanScrobble` and an enabled destination).
+
+Capability `CanScrobble` is on for User and Admin, not Guest.
 
 ### Music intelligence (AudioMuse AI)
 
