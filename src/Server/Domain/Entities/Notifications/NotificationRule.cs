@@ -16,4 +16,7 @@ public class NotificationRule : BaseAuditableEntity
     public string? BodyTemplate { get; set; }
     public string? RawJsonTemplate { get; set; }
     public RuleGroup? RuleFilter { get; set; }
+    public List<NotificationScheduleWindow> ScheduleWindows { get; set; } = [];
+    public int? CooldownSeconds { get; set; }
+    public DateTimeOffset? LastSentAt { get; set; }
 }

@@ -13,5 +13,7 @@ public sealed record UpdateNotificationRuleRequest
     public string? BodyTemplate { get; init; }
     public string? RawJsonTemplate { get; init; }
     public RuleGroupDto? RuleFilter { get; init; }
+    public IReadOnlyList<NotificationScheduleWindowDto> ScheduleWindows { get; init; } = [];
+    public int? CooldownSeconds { get; init; }
     public bool IsEnabled { get; init; }
 }

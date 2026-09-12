@@ -17,7 +17,7 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.5")
+                .HasAnnotation("ProductVersion", "10.0.11")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "pg_trgm");
@@ -1677,6 +1677,9 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.Property<string>("BodyTemplate")
                         .HasColumnType("text");
 
+                    b.Property<int?>("CooldownSeconds")
+                        .HasColumnType("integer");
+
                     b.Property<DateTimeOffset>("Created")
                         .HasColumnType("timestamp with time zone");
 
@@ -1695,6 +1698,9 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
 
                     b.Property<string>("LastModifiedBy")
                         .HasColumnType("text");
+
+                    b.Property<DateTimeOffset?>("LastSentAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -1717,6 +1723,10 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.Property<string>("RuleFilter")
                         .HasColumnType("jsonb");
 
+                    b.Property<string>("ScheduleWindows")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
                     b.Property<string>("TitleTemplate")
                         .HasColumnType("text");
 
@@ -1726,6 +1736,57 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                         .HasDatabaseName("IX_NotificationRules_IsEnabled");
 
                     b.ToTable("NotificationRules");
+                });
+
+            modelBuilder.Entity("K7.Server.Domain.Entities.Notifications.UserScrobblerAccount", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ConfigJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTimeOffset>("Created")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("DisplayName")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<bool>("IncludeNowPlaying")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsEnabled")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTimeOffset>("LastModified")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("MediaTypes")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("Provider")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("UserId", "Provider");
+
+                    b.ToTable("UserScrobblerAccounts");
                 });
 
             modelBuilder.Entity("K7.Server.Domain.Entities.Playlists.Playlist", b =>
@@ -1775,7 +1836,7 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
 
                     b.ToTable("Playlists");
 
-                    b.HasDiscriminator().HasValue("Playlist");
+                    b.HasDiscriminator<string>("Discriminator").HasValue("Playlist");
 
                     b.UseTphMappingStrategy();
                 });
@@ -3492,12 +3553,12 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.Property<int?>("BitDepth")
                         .HasColumnType("integer");
 
-                    b.Property<float?>("FrameRate")
-                        .HasColumnType("real");
-
                     b.Property<string>("Codec")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<float?>("FrameRate")
+                        .HasColumnType("real");
 
                     b.Property<int>("Height")
                         .HasColumnType("integer");
@@ -4211,7 +4272,9 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
 
                             b1.ToTable("Medias");
 
-                            b1.ToJson("Trailers");
+                            b1
+                                .ToJson("Trailers")
+                                .HasColumnType("jsonb");
 
                             b1.WithOwner()
                                 .HasForeignKey("BaseMediaId");
@@ -4387,6 +4450,17 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.Navigation("Media");
 
                     b.Navigation("Person");
+                });
+
+            modelBuilder.Entity("K7.Server.Domain.Entities.Notifications.UserScrobblerAccount", b =>
+                {
+                    b.HasOne("K7.Server.Domain.Entities.Users.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("K7.Server.Domain.Entities.Playlists.Playlist", b =>

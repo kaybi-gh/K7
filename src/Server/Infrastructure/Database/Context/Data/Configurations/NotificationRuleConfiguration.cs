@@ -40,6 +40,16 @@ public class NotificationRuleConfiguration : IEntityTypeConfiguration<Notificati
                 v => v == null ? null : JsonSerializer.Serialize(v, JsonOptions),
                 v => v == null ? null : JsonSerializer.Deserialize<RuleGroup>(v, JsonOptions));
 
+        builder.Property(r => r.ScheduleWindows)
+            .HasColumnType("jsonb")
+            .HasConversion(
+                v => JsonSerializer.Serialize(v, JsonOptions),
+                v => JsonSerializer.Deserialize<List<NotificationScheduleWindow>>(v, JsonOptions) ?? new List<NotificationScheduleWindow>())
+            .Metadata.SetValueComparer(new ValueComparer<List<NotificationScheduleWindow>>(
+                (a, b) => JsonSerializer.Serialize(a, JsonOptions) == JsonSerializer.Serialize(b, JsonOptions),
+                c => JsonSerializer.Serialize(c, JsonOptions).GetHashCode(),
+                c => JsonSerializer.Deserialize<List<NotificationScheduleWindow>>(JsonSerializer.Serialize(c, JsonOptions), JsonOptions)!));
+
         builder.HasIndex(r => r.IsEnabled)
             .HasDatabaseName("IX_NotificationRules_IsEnabled");
     }

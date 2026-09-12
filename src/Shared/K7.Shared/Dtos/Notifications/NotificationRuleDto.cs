@@ -15,6 +15,8 @@ public sealed record NotificationRuleDto
     public string? BodyTemplate { get; init; }
     public string? RawJsonTemplate { get; init; }
     public RuleGroupDto? RuleFilter { get; init; }
+    public IReadOnlyList<NotificationScheduleWindowDto> ScheduleWindows { get; init; } = [];
+    public int? CooldownSeconds { get; init; }
     public DateTimeOffset Created { get; init; }
     public DateTimeOffset LastModified { get; init; }
 }

@@ -84,6 +84,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
     public DbSet<LibraryScanIssue> ScanIssues => Set<LibraryScanIssue>();
     public DbSet<Download> Downloads => Set<Download>();
     public DbSet<NotificationRule> NotificationRules => Set<NotificationRule>();
+    public DbSet<UserScrobblerAccount> UserScrobblerAccounts => Set<UserScrobblerAccount>();
     public DbSet<EphemeralStreamToken> EphemeralStreamTokens => Set<EphemeralStreamToken>();
     public DbSet<PeerServer> PeerServers => Set<PeerServer>();
     public DbSet<PeerShareAgreement> PeerShareAgreements => Set<PeerShareAgreement>();

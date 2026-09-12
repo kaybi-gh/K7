@@ -30,6 +30,7 @@ public static class ServerSettingKeys
     public static readonly SettingKey<string> AudioPlaybackPolicy = new("AudioPlaybackPolicy");
     public static readonly SettingKey<string> TrackSelectionPreferences = new("TrackSelectionPreferences");
     public static readonly SettingKey<string> AudioMuseAi = new("AudioMuseAi");
+    public static readonly SettingKey<string> Scrobbling = new("Scrobbling");
     public static readonly SettingKey<string> TranscodeSettings = new("TranscodeSettings");
     public static readonly SettingKey<string> FederationSocialPolicy = new("FederationSocialPolicy");
     public static readonly SettingKey<string> PasswordPolicy = new("PasswordPolicy");
