@@ -1,11 +1,13 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Services;
 using K7.Server.Application.Features.Medias.Commands.UpdatePlaybackProgress;
+using K7.Server.Application.Features.Scrobbling.Services;
 using K7.Server.Application.Services;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Users;
 using K7.Server.Domain.Enums;
+using K7.Server.Domain.Settings;
 using K7.Server.Infrastructure.Database.Context.Data;
 using K7.Shared.Dtos;
 using K7.Shared.Enums;
@@ -109,7 +111,27 @@ public class UpdatePlaybackProgressCommandHandlerTests
             _sharedProfiles,
             syncPlay,
             Substitute.For<IFfmpegCapabilitiesService>(),
+            CreateDisabledScrobbleDispatcher(),
             Substitute.For<ILogger<UpdatePlaybackProgressCommandHandler>>());
+    }
+
+    private ScrobbleDispatcher CreateDisabledScrobbleDispatcher()
+    {
+        var settings = Substitute.For<IServerSettingsService>();
+        settings.GetAsync(ServerSettingKeys.Scrobbling, Arg.Any<CancellationToken>())
+            .Returns("""{"Enabled":false}""");
+
+        return new ScrobbleDispatcher(
+            _context,
+            _identityService,
+            settings,
+            Substitute.For<IScrobbleConfigProtector>(),
+            Substitute.For<IScrobbleQueue>(),
+            new ScrobblePayloadFactory(_context),
+            _sharedProfiles,
+            Substitute.For<IScrobbleProgressThrottle>(),
+            Substitute.For<IScrobbleCompletionGate>(),
+            Substitute.For<ILogger<ScrobbleDispatcher>>());
     }
 
     [TearDown]
@@ -433,6 +455,7 @@ public class UpdatePlaybackProgressCommandHandlerTests
             _sharedProfiles,
             Substitute.For<ISyncPlayPlaybackContextResolver>(),
             Substitute.For<IFfmpegCapabilitiesService>(),
+            CreateDisabledScrobbleDispatcher(),
             Substitute.For<ILogger<UpdatePlaybackProgressCommandHandler>>());
 
         var sessionId = Guid.NewGuid();

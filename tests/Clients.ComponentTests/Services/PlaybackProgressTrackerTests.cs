@@ -246,4 +246,165 @@ public class PlaybackProgressTrackerTests
             1,
             Arg.Any<int?>());
     }
+
+    [Test]
+    public async Task Report_ShouldForceSend_WhenPausedAtSamePosition()
+    {
+        var mediaId = Guid.NewGuid();
+        _source.PendingSeekTime = null;
+        _sut.StartTracking(mediaId, isAuthenticated: true);
+
+        _player.CurrentTime.Returns(120d);
+        _player.PlaybackStateChanged += Raise.Event<Action<PlaybackState>>(PlaybackState.Playing);
+        await Task.Delay(50);
+
+        _player.PlaybackStateChanged += Raise.Event<Action<PlaybackState>>(PlaybackState.Paused);
+        await Task.Delay(50);
+
+        await _streaming.Received().ReportPlaybackProgressAsync(
+            mediaId,
+            Arg.Any<Guid>(),
+            Arg.Any<Guid>(),
+            120d,
+            7200d,
+            (int)PlaybackState.Paused,
+            Arg.Any<Guid?>(),
+            Arg.Any<Guid?>(),
+            Arg.Any<Guid?>());
+    }
+
+    [Test]
+    public async Task Report_ShouldIgnoreBriefBuffering()
+    {
+        var mediaId = Guid.NewGuid();
+        _source.PendingSeekTime = null;
+        _sut.StartTracking(mediaId, isAuthenticated: true);
+
+        _player.CurrentTime.Returns(120d);
+        _player.PlaybackStateChanged += Raise.Event<Action<PlaybackState>>(PlaybackState.Playing);
+        await Task.Delay(50);
+        _streaming.ClearReceivedCalls();
+
+        _player.PlaybackStateChanged += Raise.Event<Action<PlaybackState>>(PlaybackState.Buffering);
+        await Task.Delay(50);
+
+        await _streaming.DidNotReceiveWithAnyArgs()
+            .ReportPlaybackProgressAsync(default, default, default, default, default, default, default);
+    }
+
+    [Test]
+    public async Task Report_ShouldSendBuffering_AfterSustainedThreshold()
+    {
+        var previous = PlaybackProgressTracker.SustainedBufferingThreshold;
+        PlaybackProgressTracker.SustainedBufferingThreshold = TimeSpan.FromMilliseconds(40);
+        try
+        {
+            var mediaId = Guid.NewGuid();
+            _source.PendingSeekTime = null;
+            _sut.StartTracking(mediaId, isAuthenticated: true);
+
+            _player.CurrentTime.Returns(120d);
+            _player.PlaybackStateChanged += Raise.Event<Action<PlaybackState>>(PlaybackState.Playing);
+            await Task.Delay(50);
+            _streaming.ClearReceivedCalls();
+
+            _player.PlaybackStateChanged += Raise.Event<Action<PlaybackState>>(PlaybackState.Buffering);
+            await Task.Delay(120);
+
+            await _streaming.Received().ReportPlaybackProgressAsync(
+                mediaId,
+                Arg.Any<Guid>(),
+                Arg.Any<Guid>(),
+                120d,
+                7200d,
+                (int)PlaybackState.Buffering,
+                Arg.Any<Guid?>(),
+                Arg.Any<Guid?>(),
+                Arg.Any<Guid?>());
+        }
+        finally
+        {
+            PlaybackProgressTracker.SustainedBufferingThreshold = previous;
+        }
+    }
+
+    [Test]
+    public async Task Report_ShouldCancelSustainedBuffering_WhenPlaybackResumes()
+    {
+        var previous = PlaybackProgressTracker.SustainedBufferingThreshold;
+        PlaybackProgressTracker.SustainedBufferingThreshold = TimeSpan.FromMilliseconds(200);
+        try
+        {
+            var mediaId = Guid.NewGuid();
+            _source.PendingSeekTime = null;
+            _sut.StartTracking(mediaId, isAuthenticated: true);
+
+            _player.CurrentTime.Returns(120d);
+            _player.PlaybackStateChanged += Raise.Event<Action<PlaybackState>>(PlaybackState.Playing);
+            await Task.Delay(50);
+            _streaming.ClearReceivedCalls();
+
+            _player.PlaybackStateChanged += Raise.Event<Action<PlaybackState>>(PlaybackState.Buffering);
+            await Task.Delay(30);
+            _player.PlaybackStateChanged += Raise.Event<Action<PlaybackState>>(PlaybackState.Playing);
+            await Task.Delay(250);
+
+            await _streaming.DidNotReceive().ReportPlaybackProgressAsync(
+                mediaId,
+                Arg.Any<Guid>(),
+                Arg.Any<Guid>(),
+                Arg.Any<double>(),
+                Arg.Any<double>(),
+                (int)PlaybackState.Buffering,
+                Arg.Any<Guid?>(),
+                Arg.Any<Guid?>(),
+                Arg.Any<Guid?>());
+        }
+        finally
+        {
+            PlaybackProgressTracker.SustainedBufferingThreshold = previous;
+        }
+    }
+
+    [Test]
+    public async Task Report_ShouldSkipStartupIdle_BeforeFirstPlay()
+    {
+        var mediaId = Guid.NewGuid();
+        _source.PendingSeekTime = null;
+        _sut.StartTracking(mediaId, isAuthenticated: true);
+
+        _player.CurrentTime.Returns(120d);
+        _player.PlaybackStateChanged += Raise.Event<Action<PlaybackState>>(PlaybackState.Idle);
+        await Task.Delay(50);
+
+        await _streaming.DidNotReceiveWithAnyArgs()
+            .ReportPlaybackProgressAsync(default, default, default, default, default, default, default);
+    }
+
+    [Test]
+    public async Task Report_ShouldSendIdle_AfterMeaningfulPlayback()
+    {
+        var mediaId = Guid.NewGuid();
+        _source.PendingSeekTime = null;
+        _sut.StartTracking(mediaId, isAuthenticated: true);
+
+        _player.CurrentTime.Returns(120d);
+        _player.PlaybackStateChanged += Raise.Event<Action<PlaybackState>>(PlaybackState.Playing);
+        await Task.Delay(50);
+        _streaming.ClearReceivedCalls();
+
+        _player.PlaybackStateChanged += Raise.Event<Action<PlaybackState>>(PlaybackState.Idle);
+        await Task.Delay(50);
+
+        await _streaming.Received().ReportPlaybackProgressAsync(
+            mediaId,
+            Arg.Any<Guid>(),
+            Arg.Any<Guid>(),
+            120d,
+            7200d,
+            (int)PlaybackState.Idle,
+            Arg.Any<Guid?>(),
+            Arg.Any<Guid?>(),
+            Arg.Any<Guid?>());
+    }
 }

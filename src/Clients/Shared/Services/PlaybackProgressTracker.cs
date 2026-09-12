@@ -26,6 +26,7 @@ public class PlaybackProgressTracker : IDisposable
     private readonly ISyncPlayService? _syncPlayService;
     private readonly MediaCacheStore _cacheStore;
     private Timer? _reportTimer;
+    private Timer? _bufferingTimer;
     private Guid? _currentMediaId;
     private Guid? _currentSerieId;
     private Guid _sessionId;
@@ -36,9 +37,14 @@ public class PlaybackProgressTracker : IDisposable
     private double _resumeFloor;
     private bool _isAuthenticated;
     private bool _disposed;
+    private bool _hadMeaningfulPlayback;
+    private bool _bufferingWatchActive;
+    private bool _sustainedBufferingReported;
     private PlaybackState _lastState = PlaybackState.Unknown;
 
     private static readonly TimeSpan ReportInterval = TimeSpan.FromSeconds(10);
+    /// <summary>Only report Buffering after it has lasted this long (Tautulli-style sustained buffer).</summary>
+    internal static TimeSpan SustainedBufferingThreshold { get; set; } = TimeSpan.FromSeconds(15);
     private const double MinPositionDeltaToReport = 2.0;
     private const double SeekDetectionThreshold = 3.0;
     private const double SpuriousZeroGuardSeconds = 5.0;
@@ -91,6 +97,9 @@ public class PlaybackProgressTracker : IDisposable
         _referenceId = Guid.NewGuid();
         _lastReportedPosition = 0;
         _isAuthenticated = isAuthenticated;
+        _hadMeaningfulPlayback = false;
+        _lastState = PlaybackState.Unknown;
+        CancelBufferingWatch();
         ApplyResumeFloor(_playerService.Source?.PendingSeekTime);
         StartTimer();
     }
@@ -103,12 +112,13 @@ public class PlaybackProgressTracker : IDisposable
     private async Task StopTrackingAsync()
     {
         StopTimer();
+        CancelBufferingWatch();
         var mediaId = _currentMediaId;
         _currentMediaId = null;
         _currentSerieId = null;
         if (mediaId is not null)
         {
-            await ReportProgressAsync(mediaId.Value, force: true);
+            await ReportProgressAsync(mediaId.Value, force: true, state: PlaybackState.Idle);
             _cacheStore.InvalidateHomeFeed();
         }
     }
@@ -121,7 +131,7 @@ public class PlaybackProgressTracker : IDisposable
         // Detect significant seek (forward or backward) and immediately report
         if (_currentMediaId is not null && Math.Abs(time - _lastKnownTime) > SeekDetectionThreshold)
         {
-            _ = ReportProgressAsync();
+            _ = ReportProgressAsync(force: false, state: ResolveReportState(_lastState));
         }
 
         _lastKnownTime = time;
@@ -141,28 +151,81 @@ public class PlaybackProgressTracker : IDisposable
 
     private void OnPlaybackStateChanged(PlaybackState state)
     {
+        if (state == PlaybackState.Buffering)
+        {
+            StartBufferingWatch();
+            return;
+        }
+
+        CancelBufferingWatch();
         _lastState = state;
         switch (state)
         {
             case PlaybackState.Paused:
+                _hadMeaningfulPlayback = true;
                 StopTimer();
-                _ = ReportProgressAsync();
+                _ = ReportProgressAsync(force: true, state: state);
                 break;
             case PlaybackState.Playing:
-                _ = ReportProgressAsync();
+                _hadMeaningfulPlayback = true;
+                _ = ReportProgressAsync(force: true, state: state);
                 StartTimer();
                 break;
             case PlaybackState.Idle:
+                StopTimer();
+                // Ignore startup Idle from source swaps before the first Playing/Paused.
+                if (_hadMeaningfulPlayback)
+                    _ = ReportProgressAsync(force: true, state: state);
+                break;
             case PlaybackState.Ended:
                 StopTimer();
-                _ = ReportProgressAsync();
+                _hadMeaningfulPlayback = true;
+                _ = ReportProgressAsync(force: true, state: state);
                 break;
         }
     }
 
+    private void StartBufferingWatch()
+    {
+        // Brief waiting/stalled/seek spikes are ignored. Only sustained buffering is reported.
+        if (!_hadMeaningfulPlayback || _bufferingWatchActive || _sustainedBufferingReported)
+            return;
+
+        _bufferingWatchActive = true;
+        _bufferingTimer?.Dispose();
+        _bufferingTimer = new Timer(
+            _ => OnSustainedBufferingElapsed(),
+            null,
+            SustainedBufferingThreshold,
+            Timeout.InfiniteTimeSpan);
+    }
+
+    private void OnSustainedBufferingElapsed()
+    {
+        if (_disposed || !_bufferingWatchActive)
+            return;
+
+        _bufferingWatchActive = false;
+        _sustainedBufferingReported = true;
+        _lastState = PlaybackState.Buffering;
+        _ = ReportProgressAsync(force: true, state: PlaybackState.Buffering);
+    }
+
+    private void CancelBufferingWatch()
+    {
+        _bufferingWatchActive = false;
+        _sustainedBufferingReported = false;
+        _bufferingTimer?.Dispose();
+        _bufferingTimer = null;
+    }
+
     private void StartTimer()
     {
-        _reportTimer ??= new Timer(_ => _ = ReportProgressAsync(), null, ReportInterval, ReportInterval);
+        _reportTimer ??= new Timer(
+            _ => _ = ReportProgressAsync(force: false, state: ResolveReportState(_lastState)),
+            null,
+            ReportInterval,
+            ReportInterval);
     }
 
     private void StopTimer()
@@ -177,21 +240,29 @@ public class PlaybackProgressTracker : IDisposable
 
     private void ReportSelectedTracks()
     {
-        if (_lastState is PlaybackState.Playing or PlaybackState.Buffering or PlaybackState.Paused)
-            _ = ReportProgressAsync(force: true);
+        if (_lastState is PlaybackState.Playing or PlaybackState.Paused)
+            _ = ReportProgressAsync(force: true, state: _lastState);
     }
 
-    private async Task ReportProgressAsync(bool force = false) => await ReportProgressAsync(_currentMediaId, force);
+    private async Task ReportProgressAsync(bool force = false, PlaybackState? state = null) =>
+        await ReportProgressAsync(_currentMediaId, force, state);
 
-    private async Task ReportProgressAsync(Guid? mediaId, bool force = false)
+    private async Task ReportProgressAsync(Guid? mediaId, bool force = false, PlaybackState? state = null)
     {
         if (mediaId is null) return;
         if (!_isAuthenticated) return;
 
+        var reportState = ResolveReportState(state ?? _lastState);
+        if (reportState is PlaybackState.Unknown)
+            return;
+        // Buffering is only sent after the sustained threshold (force report).
+        if (reportState is PlaybackState.Buffering && !force)
+            return;
+
         // Prefer last known time: CurrentTime can briefly drop when the player is disposed on Idle.
         var position = _playerService.CurrentTime > 0 ? _playerService.CurrentTime : _lastKnownTime;
         var duration = _playerService.Duration;
-        var isTerminal = _lastState is PlaybackState.Idle or PlaybackState.Ended;
+        var isTerminal = reportState is PlaybackState.Idle or PlaybackState.Ended;
 
         try
         {
@@ -238,7 +309,7 @@ public class PlaybackProgressTracker : IDisposable
                     _referenceId,
                     position,
                     duration,
-                    (int)_lastState,
+                    (int)reportState,
                     deviceId,
                     sharedProfileId: _viewingGroupSession?.ActiveGroupId,
                     syncPlayGroupId: _syncPlayService?.IsInGroup == true ? _syncPlayService.CurrentGroup?.GroupId : null,
@@ -267,6 +338,15 @@ public class PlaybackProgressTracker : IDisposable
             if (isTerminal)
                 _cacheStore.InvalidateHomeFeed();
         }
+    }
+
+    private PlaybackState ResolveReportState(PlaybackState state)
+    {
+        // While watching for sustained buffering, keep reporting Playing for heartbeats/seeks.
+        if (state == PlaybackState.Buffering && !_sustainedBufferingReported)
+            return _hadMeaningfulPlayback ? PlaybackState.Playing : PlaybackState.Unknown;
+
+        return state;
     }
 
     private void ApplyResumeFloor(double? pendingSeekTime)
@@ -307,6 +387,7 @@ public class PlaybackProgressTracker : IDisposable
         _playerService.AudioTrackChanged -= OnSelectedTrackChanged;
         _playerService.SubtitleTrackChanged -= OnSelectedSubtitleChanged;
         StopTimer();
+        CancelBufferingWatch();
         GC.SuppressFinalize(this);
     }
 }

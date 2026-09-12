@@ -3,6 +3,7 @@ using K7.Server.Application.Common.Helpers;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Security;
 using K7.Server.Application.Common.Services;
+using K7.Server.Application.Features.Scrobbling.Services;
 using K7.Server.Application.Services;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities.Medias;
@@ -47,6 +48,7 @@ public class UpdatePlaybackProgressCommandHandler(
     ISharedProfilePlaybackResolver viewingGroupPlaybackResolver,
     ISyncPlayPlaybackContextResolver syncPlayPlaybackContextResolver,
     IFfmpegCapabilitiesService ffmpegCapabilitiesService,
+    ScrobbleDispatcher scrobbleDispatcher,
     ILogger<UpdatePlaybackProgressCommandHandler> logger) : IRequestHandler<UpdatePlaybackProgressCommand>
 {
     private readonly IApplicationDbContext _context = context;
@@ -62,6 +64,7 @@ public class UpdatePlaybackProgressCommandHandler(
     private readonly ISharedProfilePlaybackResolver _viewingGroupPlaybackResolver = viewingGroupPlaybackResolver;
     private readonly ISyncPlayPlaybackContextResolver _syncPlayPlaybackContextResolver = syncPlayPlaybackContextResolver;
     private readonly IFfmpegCapabilitiesService _ffmpegCapabilitiesService = ffmpegCapabilitiesService;
+    private readonly ScrobbleDispatcher _scrobbleDispatcher = scrobbleDispatcher;
     private readonly ILogger _logger = logger;
 
     public async Task Handle(UpdatePlaybackProgressCommand request, CancellationToken cancellationToken)
@@ -289,7 +292,8 @@ public class UpdatePlaybackProgressCommandHandler(
                 sharedResult.CompletedEpisodeId)));
         }
 
-        if (request.State != previousState)
+        if (request.State != previousState
+            && request.State is not PlaybackState.Unknown)
         {
             var libraryTitle = await _context.IndexedFiles
                 .Where(f => f.MediaId == request.MediaId)
@@ -321,7 +325,8 @@ public class UpdatePlaybackProgressCommandHandler(
                 request.Duration,
                 libraryTitle,
                 deviceInfo?.DeviceName,
-                deviceInfo?.DeviceType));
+                deviceInfo?.DeviceType,
+                viewingGroup?.SharedProfileId));
         }
 
         if (!isGuest && request.PlaylistId is { } playlistId)
@@ -329,7 +334,7 @@ public class UpdatePlaybackProgressCommandHandler(
 
         try
         {
-            await _context.SaveChangesAsync(cancellationToken);
+            await SavePlaybackChangesAsync(cancellationToken);
         }
         catch (DbUpdateException ex) when (isNewSession && IsDuplicateSessionId(ex))
         {
@@ -360,7 +365,29 @@ public class UpdatePlaybackProgressCommandHandler(
                 session.AddDomainEvent(MediaPlaybackCompletedEvent<BaseMedia>.Create(session, media));
             }
 
-            await _context.SaveChangesAsync(cancellationToken);
+            await SavePlaybackChangesAsync(cancellationToken);
+        }
+
+        if (!isGuest
+            && request.State is PlaybackState.Playing
+            && previousState is PlaybackState.Playing
+            && session.CompletedAt is null)
+        {
+            var identityIdForScrobble = _currentUser.IdentityId;
+            var scrobbleUserName = !string.IsNullOrEmpty(identityIdForScrobble)
+                ? await _identityService.GetUserNameAsync(identityIdForScrobble)
+                : null;
+
+            await _scrobbleDispatcher.DispatchProgressAsync(
+                request.SessionId,
+                userId,
+                scrobbleUserName,
+                request.MediaId,
+                request.State,
+                request.Position,
+                request.Duration > 0 ? request.Duration : session.DurationSeconds,
+                viewingGroup?.SharedProfileId ?? session.SharedProfileId,
+                cancellationToken);
         }
 
         if (request.State is PlaybackState.Playing or PlaybackState.Buffering or PlaybackState.Paused)
@@ -599,6 +626,50 @@ public class UpdatePlaybackProgressCommandHandler(
             _context.Entry(session.Details).State = EntityState.Detached;
 
         _context.Entry(session).State = EntityState.Detached;
+    }
+
+    /// <summary>
+    /// Progress ticks race on bookmark delete / state updates. Without row versions EF still
+    /// throws concurrency when a DELETE/UPDATE affects 0 rows. Retry so completion domain
+    /// events (scrobble Watched) are not dropped.
+    /// </summary>
+    private async Task SavePlaybackChangesAsync(CancellationToken cancellationToken)
+    {
+        const int maxAttempts = 3;
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                await _context.SaveChangesAsync(cancellationToken);
+                return;
+            }
+            catch (DbUpdateConcurrencyException ex) when (attempt < maxAttempts)
+            {
+                _logger.LogWarning(
+                    ex,
+                    "Playback progress concurrency conflict on attempt {Attempt}, retrying",
+                    attempt);
+
+                foreach (var entry in ex.Entries)
+                {
+                    if (entry.State is EntityState.Deleted)
+                    {
+                        entry.State = EntityState.Detached;
+                        continue;
+                    }
+
+                    var databaseValues = await entry.GetDatabaseValuesAsync(cancellationToken);
+                    if (databaseValues is null)
+                    {
+                        entry.State = EntityState.Detached;
+                        continue;
+                    }
+
+                    // Keep our intended values, refresh originals so the next UPDATE matches.
+                    entry.OriginalValues.SetValues(databaseValues);
+                }
+            }
+        }
     }
 
     private static bool IsDuplicateSessionId(DbUpdateException ex)
