@@ -152,6 +152,15 @@ public sealed class DemoPlayerService : IPlayerService
     public int SkipBackSeconds { get; private set; } = 10;
     public int SkipForwardSeconds { get; private set; } = 10;
 
+    public void ApplyExternalClock(double positionSeconds, double? durationSeconds, PlaybackState state)
+    {
+        if (durationSeconds is > 1)
+            Duration = durationSeconds.Value;
+
+        CurrentTime = Math.Max(0, positionSeconds);
+        PlaybackState = state;
+    }
+
     public void ApplyVideoPlayerUxSettings(VideoPlayerSettingsDto settings)
     {
         VideoPlayerUxSettings = settings;

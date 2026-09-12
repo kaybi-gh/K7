@@ -37,6 +37,11 @@ public class PreferenceKeyCatalogTests
         keys.Should().Contain(PreferenceKeys.VIDEO_EXO_BUFFER.Name);
         keys.Should().Contain(PreferenceKeys.VIDEO_HDMI_AFR.Name);
         keys.Should().Contain(PreferenceKeys.VIDEO_DV_DECODE.Name);
+        keys.Should().Contain(PreferenceKeys.VIDEO_MPC_ENABLED.Name);
+        keys.Should().Contain(PreferenceKeys.VIDEO_MPC_EXE_PATH.Name);
+        keys.Should().Contain(PreferenceKeys.VIDEO_MPC_WEB_HOST.Name);
+        keys.Should().Contain(PreferenceKeys.VIDEO_MPC_WEB_PORT.Name);
+        keys.Should().Contain(PreferenceKeys.VIDEO_MPC_EXTRA_ARGS.Name);
         keys.Should().NotContain("VideoExoAudio");
     }
 

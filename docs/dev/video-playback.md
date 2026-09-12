@@ -231,6 +231,21 @@ without Dispose, LibVLC `Stop`/`Dispose` on a background thread) to avoid
 
 Codec capability reporting for Direct Play is [`LibVlcWindowsCapabilities`](../../src/Clients/Shared/Helpers/LibVlcWindowsCapabilities.cs) (matroska / HEVC / EAC3). HLS transcode targets Web MSE (h264/aac), not LibVLC caps.
 
+## Windows: optional MPC-HC / MPC-BE
+
+Settings -> Video playback -> Advanced (this device) can send Play to **MPC-HC or MPC-BE** instead of LibVLC / Video.js. K7 does not embed madVR, LAV, or kaz. Those stay in MPC.
+
+Flow:
+
+1. `PlayerService.PlayIndexedFileAsync` intercepts when the device preset is on, and SyncPlay / remote control / Chromecast are not active.
+2. A stream session is created, then an ephemeral token (same as Chromecast, 8h).
+3. MPC is launched with the **original file** URL (`/api/indexed-files/{id}/direct-stream?ephemeral_token=...`), extra args (default `/fullscreen /close`), `/webport {port}` (starts the web UI for this process even if it is off in MPC options), and `/start {ms}` from the K7 bookmark.
+4. K7 does not show the in-app overlay. If `/start` is ignored on HTTP, the host seeks once via `command.html` after the web UI answers.
+5. K7 polls `variables.html` every 5s (localhost, default `127.0.0.1:13579`) and pumps `IPlayerService.ApplyExternalClock` so `PlaybackProgressTracker` keeps continue-watching. The token is revoked when MPC exits.
+6. `/webport` is applied at MPC process start only. An already-running instance without the web UI will not pick it up. If the web UI stays down, playback still starts. K7 cannot save a new position. Resume **into** MPC still uses the last K7 bookmark.
+
+Launch failure shows a snackbar. There is no silent fallback to HLS / LibVLC for that Play. Local disk paths are not used (HTTP Direct Play is enough for bitstream).
+
 `PlaybackOptionsDialog` lists movie releases by resolution, audio languages, codec, size, and
 Local vs Federated when several files exist (not the media title). Play without the dialog
 sends no track indexes so the server `TrackSelector` applies Settings -> Video playback

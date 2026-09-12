@@ -135,5 +135,11 @@ public interface IPlayerService
     /// <summary>Apply video UX settings to the in-memory player and notify listeners once.</summary>
     void ApplyVideoPlayerUxSettings(VideoPlayerSettingsDto settings);
 
+    /// <summary>
+    /// Clock updates from an external player (MPC-HC). Drives
+    /// <see cref="CurrentTimeChanged"/> and <see cref="PlaybackStateChanged"/>.
+    /// </summary>
+    void ApplyExternalClock(double positionSeconds, double? durationSeconds, PlaybackState state);
+
     event Action? PlayerUxSettingsChanged;
 }

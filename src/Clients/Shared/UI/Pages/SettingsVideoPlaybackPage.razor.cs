@@ -23,7 +23,12 @@ public partial class SettingsVideoPlaybackPage
         bool AudioPassthrough,
         ExoVideoBufferSize ExoBuffer,
         HdmiAutoFrameRateMode HdmiAfr,
-        DolbyVisionDecodeMode DvDecode);
+        DolbyVisionDecodeMode DvDecode,
+        bool MpcEnabled,
+        string MpcExePath,
+        string MpcWebHost,
+        string MpcWebPortText,
+        string MpcExtraArgs);
 
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
     [Inject] private IStringLocalizer<SharedResource> S { get; set; } = default!;
@@ -49,6 +54,12 @@ public partial class SettingsVideoPlaybackPage
     private bool _showDeviceAdvanced;
     private bool _showExoBuffer;
     private bool _showHdmiAfr;
+    private bool _showMpcExternal;
+    private bool _mpcEnabled;
+    private string _mpcExePath = "";
+    private string _mpcWebHost = WindowsMpcPlaybackSettings.DefaultWebHost;
+    private string _mpcWebPortText = WindowsMpcPlaybackSettings.DefaultWebPort.ToString();
+    private string _mpcExtraArgs = WindowsMpcPlaybackSettings.DefaultExtraArgs;
     private bool _loading = true;
     private bool _saving;
     private bool _hasUserOverride;
@@ -65,7 +76,8 @@ public partial class SettingsVideoPlaybackPage
         && (!_audioPassthrough
             || _exoBuffer != ExoVideoBufferSize.Auto
             || (_showHdmiAfr && _hdmiAfr != _hdmiAfrDefault)
-            || (_showHdmiAfr && _dvDecode != _dvDecodeDefault));
+            || (_showHdmiAfr && _dvDecode != _dvDecodeDefault)
+            || (_showMpcExternal && !WindowsMpcPlaybackSettings.IsDefault(CurrentMpcOptions())));
 
     private bool ResetDisabled => !IsDirty && !_hasUserOverride && !HasDeviceVideoOverride;
 
@@ -105,19 +117,26 @@ public partial class SettingsVideoPlaybackPage
             _audioPassthrough,
             _exoBuffer,
             _hdmiAfr,
-            _dvDecode);
+            _dvDecode,
+            _mpcEnabled,
+            _mpcExePath,
+            _mpcWebHost,
+            _mpcWebPortText,
+            _mpcExtraArgs);
 
     private async Task LoadDeviceVideoExperienceAsync()
     {
         _showDeviceAdvanced = DeviceService.GetClientType() == ClientType.Native;
         try
         {
-            _showExoBuffer = _showDeviceAdvanced
-                && await DeviceService.GetOperatingSystemAsync() == OperatingSystem.Android;
+            var os = await DeviceService.GetOperatingSystemAsync();
+            _showExoBuffer = _showDeviceAdvanced && os == OperatingSystem.Android;
+            _showMpcExternal = _showDeviceAdvanced && os == OperatingSystem.Windows;
         }
         catch
         {
             _showExoBuffer = false;
+            _showMpcExternal = false;
         }
 
         if (!_showDeviceAdvanced)
@@ -167,6 +186,7 @@ public partial class SettingsVideoPlaybackPage
                     manufacturer,
                     model)
                 : _dvDecodeDefault;
+            ApplyMpcOptions(WindowsMpcPlaybackSettings.Load(DeviceStorage));
         }
         catch
         {
@@ -174,6 +194,12 @@ public partial class SettingsVideoPlaybackPage
             _exoBuffer = ExoVideoBufferSize.Auto;
             _hdmiAfr = _hdmiAfrDefault;
             _dvDecode = _dvDecodeDefault;
+            ApplyMpcOptions(new WindowsMpcPlaybackOptions(
+                false,
+                "",
+                WindowsMpcPlaybackSettings.DefaultWebHost,
+                WindowsMpcPlaybackSettings.DefaultWebPort,
+                WindowsMpcPlaybackSettings.DefaultExtraArgs));
         }
     }
 
@@ -189,6 +215,9 @@ public partial class SettingsVideoPlaybackPage
             DeviceStorage.Set(PreferenceKeys.VIDEO_HDMI_AFR, HdmiAutoFrameRatePolicy.Persist(_hdmiAfr));
             DeviceStorage.Set(PreferenceKeys.VIDEO_DV_DECODE, DolbyVisionDecodePolicy.Persist(_dvDecode));
         }
+
+        if (_showMpcExternal)
+            WindowsMpcPlaybackSettings.Save(DeviceStorage, CurrentMpcOptions());
     }
 
     private void CaptureFormState()
@@ -213,6 +242,11 @@ public partial class SettingsVideoPlaybackPage
         _exoBuffer = state.ExoBuffer;
         _hdmiAfr = state.HdmiAfr;
         _dvDecode = state.DvDecode;
+        _mpcEnabled = state.MpcEnabled;
+        _mpcExePath = state.MpcExePath;
+        _mpcWebHost = state.MpcWebHost;
+        _mpcWebPortText = state.MpcWebPortText;
+        _mpcExtraArgs = state.MpcExtraArgs;
     }
 
     private void OnVideoPolicyChanged(VideoPlaybackPolicySettingsDto value)
@@ -362,6 +396,12 @@ public partial class SettingsVideoPlaybackPage
             _exoBuffer = ExoVideoBufferSize.Auto;
             _hdmiAfr = _hdmiAfrDefault;
             _dvDecode = _dvDecodeDefault;
+            ApplyMpcOptions(new WindowsMpcPlaybackOptions(
+                false,
+                "",
+                WindowsMpcPlaybackSettings.DefaultWebHost,
+                WindowsMpcPlaybackSettings.DefaultWebPort,
+                WindowsMpcPlaybackSettings.DefaultExtraArgs));
             PersistDeviceVideoExperience();
             await ApplyLocalVideoPlayerSettingsAsync(_settings);
             CaptureFormState();
@@ -382,4 +422,36 @@ public partial class SettingsVideoPlaybackPage
         _hasUserOverride = await UserPreferenceOverrideHelper.HasVideoOverridesAsync(
             UserPreferencesService,
             _selectedLibraryId);
+
+    private WindowsMpcPlaybackOptions CurrentMpcOptions()
+    {
+        var path = _mpcExePath.Trim();
+        if (_mpcEnabled && string.IsNullOrWhiteSpace(path))
+            path = MpcExeLocator.TryFind() ?? "";
+
+        if (!int.TryParse(_mpcWebPortText, out var port) || port is < 1 or > 65535)
+            port = WindowsMpcPlaybackSettings.DefaultWebPort;
+
+        return new WindowsMpcPlaybackOptions(
+            _mpcEnabled,
+            path,
+            string.IsNullOrWhiteSpace(_mpcWebHost)
+                ? WindowsMpcPlaybackSettings.DefaultWebHost
+                : _mpcWebHost.Trim(),
+            port,
+            string.IsNullOrWhiteSpace(_mpcExtraArgs)
+                ? WindowsMpcPlaybackSettings.DefaultExtraArgs
+                : _mpcExtraArgs.Trim());
+    }
+
+    private void ApplyMpcOptions(WindowsMpcPlaybackOptions options)
+    {
+        _mpcEnabled = options.Enabled;
+        _mpcExePath = string.IsNullOrWhiteSpace(options.ExePath)
+            ? MpcExeLocator.TryFind() ?? ""
+            : options.ExePath;
+        _mpcWebHost = options.WebHost;
+        _mpcWebPortText = options.WebPort.ToString();
+        _mpcExtraArgs = options.ExtraArgs;
+    }
 }

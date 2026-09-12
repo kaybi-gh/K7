@@ -85,13 +85,25 @@ Change server later: **Settings -> General** -> disconnect (trash), then enter a
 
 On a movie or series page, the clapperboard opens a trailer when metadata includes one (YouTube from TMDb / TVDB). It plays fullscreen in K7 by default. **Settings -> Video playback -> Open trailers in YouTube** (server default under Admin -> Video playback) sends YouTube to the system app on native clients and TV instead. That can leave K7, and on a TV that keeps only one app in memory the system may unload K7. The browser (except TV) always stays in K7. Sites that cannot be embedded still open externally.
 
+### Windows external player (MPC-HC / MPC-BE)
+
+On the Windows app, **Settings -> Video playback -> Advanced** can launch **MPC-HC or MPC-BE** instead of the built-in player. Use this if you already have a kaz / madVR / HDMI bitstream setup.
+
+1. Install MPC-HC (clsid2) or MPC-BE and apply your kaz (or equivalent) settings **inside MPC**.
+2. In K7, turn on the MPC switch, confirm the exe path if detection missed it, and save.
+3. Close any already-open MPC window so K7 can start a fresh process.
+
+Play then opens the original file in MPC. K7 passes `/webport` (default 13579) so the web interface starts for that session even if you never enabled it in MPC options, and `/start` uses your K7 resume point. Continue-watching is saved while that interface answers. If MPC was already running without it, close MPC and play again from K7.
+
+SyncPlay, remote control, and Chromecast on that device keep the built-in player. Next episode, intro skip, and in-app track picking do not run while MPC is playing (pick tracks in MPC). Other devices in the family keep the built-in player.
+
 ### Settings
 
 The administrator can set **server-wide defaults**; yours override them (reset available on those pages). Details for video, subtitles, tracks, and audio: see [Customization](#customization).
 
 | Page | Highlights |
 |---|---|
-| Settings -> Video playback | Intro/outro skip, short skip back/forward duration, subtitle appearance, resume / continue-watching, completion threshold (marks watched; also drives home recommendations and watch stats), seekbar thumbnails, chapter markers, open trailers in YouTube (native apps and TV). On the Android/iOS/Windows apps: per-device audio passthrough (Dolby/DTS over HDMI) and, on Android TV, playback buffer size, HDMI auto frame rate (disabled / scale on TV / scale on device), and Dolby Vision (native / play as HDR10) |
+| Settings -> Video playback | Intro/outro skip, short skip back/forward duration, subtitle appearance, resume / continue-watching, completion threshold (marks watched; also drives home recommendations and watch stats), seekbar thumbnails, chapter markers, open trailers in YouTube (native apps and TV). On the Android/iOS/Windows apps: per-device audio passthrough (Dolby/DTS over HDMI) and, on Android TV, playback buffer size, HDMI auto frame rate (disabled / scale on TV / scale on device), and Dolby Vision (native / play as HDR10). On the Windows app: optional **MPC-HC / MPC-BE** external player (see below) |
 | Track selection | Preferred audio languages; when to show subtitles (Off, Forced only, Full, Hearing impaired) |
 | Settings -> Audio player | Music preferences: loudness normalization, equalizer, crossfade, autoplay, streaming quality, player behavior, resume / completion threshold |
 | Settings -> Scrobbling | Connect Last.fm, ListenBrainz, Trakt, or a webhook (Yamtrack, Floppy, Ryot, BetaSeries, custom). ListenBrainz tokens: listenbrainz.org/settings/. Self-hosted webhooks use URLs like `https://yamtrack.yourdomain.tld/webhook/jellyfin/{token}`. Yamtrack / Floppy / Ryot / BetaSeries are movies and episodes only. BetaSeries marks watched on completion only (needs IMDb for movies, TVDB for episodes) and does not show in-progress - API token from betaseries.com/api/. Needs the CanScrobble capability (on for User and Admin). The administrator can turn scrobbling off for the whole server under Admin -> Scrobbling. Shared profile watches scrobble to every member's own accounts |
@@ -142,7 +154,7 @@ Almost everything personal can be tuned under **Settings**. The administrator ma
 | Home | Settings -> Home | Which rows appear on Home and in which order (with preview) |
 | Libraries | Settings -> Libraries | Hide libraries you do not want to browse (among those the admin already allows); per-group tap action on Explore (suggestions vs browse) |
 | Hidden media | Settings -> Hidden | Review and unhide titles you previously hid |
-| Video and subtitles | Settings -> Video playback / track selection | Intro skip, short skip durations, subtitle look, resume rules, preferred audio / subtitle languages, open trailers in YouTube - see [Playback](#playback). Native apps also keep per-device audio passthrough, and Android TV adds playback buffer size, HDMI auto frame rate, and Dolby Vision decode |
+| Video and subtitles | Settings -> Video playback / track selection | Intro skip, short skip durations, subtitle look, resume rules, preferred audio / subtitle languages, open trailers in YouTube - see [Playback](#playback). Native apps also keep per-device audio passthrough, and Android TV adds playback buffer size, HDMI auto frame rate, and Dolby Vision decode. Windows can launch MPC-HC / MPC-BE |
 | Music player | Settings -> Audio player | Music preferences: loudness normalization, equalizer, crossfade, autoplay, streaming quality, player behavior, resume |
 | Offline | Settings -> Offline | Storage and network rules on native apps - see [Offline downloads](#offline-downloads) |
 

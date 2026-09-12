@@ -158,6 +158,15 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
     private int _skipForwardSeconds = deviceStorageService.Get(PreferenceKeys.VIDEO_SKIP_FORWARD_SECONDS, 10);
     public int SkipForwardSeconds => _skipForwardSeconds;
 
+    public void ApplyExternalClock(double positionSeconds, double? durationSeconds, PlaybackState state)
+    {
+        if (durationSeconds is > 1)
+            Duration = durationSeconds.Value;
+
+        CurrentTime = Math.Max(0, positionSeconds);
+        PlaybackState = state;
+    }
+
     public void ApplyVideoPlayerUxSettings(VideoPlayerSettingsDto settings)
     {
         ArgumentNullException.ThrowIfNull(settings);

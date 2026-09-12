@@ -13,7 +13,11 @@ namespace K7.Clients.MAUI.Services;
 
 internal class PlayerService(
     IStreamUriService streamUriService,
-    IDeviceStorageService deviceStorageService) : IPlayerService
+    IDeviceStorageService deviceStorageService,
+    IWindowsMpcPlaybackHost? mpcPlaybackHost = null,
+    ISyncPlayService? syncPlayService = null,
+    IRemoteControlService? remoteControlService = null,
+    ICastService? castService = null) : IPlayerService
 {
     public event Func<Task>? PlayRequested;
     public event Func<Task>? PauseRequested;
@@ -278,8 +282,20 @@ internal class PlayerService(
     private DateTime _lastQualityFallbackUtc = DateTime.MinValue;
     private readonly SemaphoreSlim _playbackStartRecoveryLock = new(1, 1);
 
+    public void ApplyExternalClock(double positionSeconds, double? durationSeconds, PlaybackState state)
+    {
+        if (durationSeconds is > 1)
+            Duration = durationSeconds.Value;
+
+        CurrentTime = Math.Max(0, positionSeconds);
+        PlaybackState = state;
+    }
+
     public async Task PlayIndexedFileAsync(Guid indexedFileId, IEnumerable<AudioFileTrackDto> audioTracks, IEnumerable<SubtitleFileTrackDto>? subtitleTracks = null, int? audioTrackIndex = null, int? subtitleTrackIndex = null, VideoResolutionIdentifier? videoResolution = null, string? thumbnailsUrl = null, Guid? mediaId = null, string? title = null, string? coverUrl = null, double? startPosition = null, IReadOnlyList<ChapterMarkerDto>? chapters = null, double? durationSeconds = null, CancellationToken cancellationToken = default)
     {
+        if (mpcPlaybackHost is not null)
+            await mpcPlaybackHost.StopAsync(cancellationToken);
+
         _currentIndexedFileId = indexedFileId;
         _lastKnownPlaybackTime = startPosition is > 1 ? startPosition.Value : 0;
         _audioTracks = audioTracks.ToList();
@@ -295,6 +311,21 @@ internal class PlayerService(
             ? VideoQualityOption.BuildOptionsForResolution(videoResolution.Value).ToList()
             : [];
         _selectedQuality = SelectInitialQuality(_availableQualities);
+
+        if (ShouldUseMpc())
+        {
+            await TryPlayInMpcAsync(
+                indexedFileId,
+                mediaId,
+                title,
+                coverUrl,
+                startPosition,
+                durationSeconds,
+                audioTrackIndex,
+                subtitleTrackIndex,
+                cancellationToken);
+            return;
+        }
 
         Source = new PlayerSource();
 
@@ -791,6 +822,56 @@ internal class PlayerService(
         }
     }
 
+    private bool ShouldUseMpc()
+    {
+        if (mpcPlaybackHost is null)
+            return false;
+        if (!System.OperatingSystem.IsWindows())
+            return false;
+        if (!WindowsMpcPlaybackSettings.IsEnabled(deviceStorageService))
+            return false;
+        if (syncPlayService?.IsInGroup == true)
+            return false;
+        if (remoteControlService?.IsControlling == true)
+            return false;
+        if (castService?.IsCasting == true)
+            return false;
+
+        return true;
+    }
+
+    private async Task<bool> TryPlayInMpcAsync(
+        Guid indexedFileId,
+        Guid? mediaId,
+        string? title,
+        string? coverUrl,
+        double? startPosition,
+        double? durationSeconds,
+        int? audioTrackIndex,
+        int? subtitleTrackIndex,
+        CancellationToken cancellationToken)
+    {
+        if (!ShouldUseMpc() || mpcPlaybackHost is null)
+            return false;
+
+        var launched = await mpcPlaybackHost.TryPlayAsync(
+            new WindowsMpcPlayRequest
+            {
+                IndexedFileId = indexedFileId,
+                MediaId = mediaId,
+                Title = title,
+                CoverUrl = coverUrl,
+                StartPositionSeconds = startPosition,
+                DurationSeconds = durationSeconds,
+                AudioTrackIndex = audioTrackIndex,
+                SubtitleTrackIndex = subtitleTrackIndex
+            },
+            this,
+            cancellationToken);
+
+        return launched;
+    }
+
     public Task ShowAsync()
     {
         IsVisible = true;
@@ -834,7 +915,13 @@ internal class PlayerService(
     }
     public void SetPlaybackRate(double rate) => PlaybackRateChangeRequested?.Invoke(rate);
 
-    public void Stop() => StopRequested?.Invoke();
+    public void Stop()
+    {
+        if (mpcPlaybackHost is { IsActive: true })
+            _ = mpcPlaybackHost.StopAsync();
+
+        StopRequested?.Invoke();
+    }
     public void EnterFullScreen() => EnterFullScreenRequested?.Invoke();
     public void ExitFullScreen() => ExitFullScreenRequested?.Invoke();
 

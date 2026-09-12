@@ -137,6 +137,8 @@
   <data name="StreamPlaybackFailed" xml:space="preserve"><value>Playback could not start. Please try again.</value></data>
   <data name="MediaPlaybackUnplayable" xml:space="preserve"><value>This media cannot be played. Please contact your administrator.</value></data>
   <data name="StreamPlaybackTimedOut" xml:space="preserve"><value>Playback took too long to start. Transcoding may still be in progress.</value></data>
+  <data name="MpcExternalPlayerLaunchFailed" xml:space="preserve"><value>Could not start MPC. Check the executable path under Settings, Video playback.</value></data>
+  <data name="MpcExternalPlayerWebUiUnavailable" xml:space="preserve"><value>MPC web interface is not reachable. Playback continues, but K7 cannot save the position.</value></data>
   <data name="TrackInfo" xml:space="preserve"><value>Track Info</value></data>
   <data name="AudioDetails" xml:space="preserve"><value>Audio Details</value></data>
   <data name="Codec" xml:space="preserve"><value>Codec</value></data>

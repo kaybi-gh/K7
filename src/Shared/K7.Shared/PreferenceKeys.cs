@@ -77,6 +77,14 @@ public static class PreferenceKeys
     /// preference. Empty means the device default (TV=hevc, phone=native).
     /// </summary>
     public static readonly PreferenceKey<string> VIDEO_DV_DECODE = new("VideoDvDecode");
+    /// <summary>
+    /// Windows: launch MPC-HC / MPC-BE instead of the built-in player. Device-local.
+    /// </summary>
+    public static readonly PreferenceKey<bool> VIDEO_MPC_ENABLED = new("VideoMpcEnabled");
+    public static readonly PreferenceKey<string> VIDEO_MPC_EXE_PATH = new("VideoMpcExePath");
+    public static readonly PreferenceKey<string> VIDEO_MPC_WEB_HOST = new("VideoMpcWebHost");
+    public static readonly PreferenceKey<int> VIDEO_MPC_WEB_PORT = new("VideoMpcWebPort");
+    public static readonly PreferenceKey<string> VIDEO_MPC_EXTRA_ARGS = new("VideoMpcExtraArgs");
 
     // Player UX
     public static readonly PreferenceKey<bool> SHOW_FULLSCREEN_ON_PLAY = new("ShowFullscreenOnPlay");

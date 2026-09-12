@@ -76,4 +76,13 @@
   <data name="DolbyVisionNative" xml:space="preserve"><value>Natif (banniere DV)</value></data>
   <data name="DolbyVisionHevc" xml:space="preserve"><value>Lire en HDR10 (HEVC)</value></data>
   <data name="DolbyVisionHint" xml:space="preserve"><value>Le Profile 8.1 a deja une couche HDR10. HEVC joue cette couche (la TV peut afficher HDR10). Natif garde video/dolby-vision (banniere DV). Relancer la lecture. Defaut TV: HDR10.</value></data>
+  <data name="MpcExternalPlayer" xml:space="preserve"><value>Lecteur externe MPC-HC / MPC-BE</value></data>
+  <data name="MpcExternalPlayerHint" xml:space="preserve"><value>Lance MPC pour la video (madVR, kaz, bitstream HDMI). Installez MPC. K7 demarre l'interface web via /webport. Fermez MPC s'il tourne deja. K7 garde la bibliotheque, les profils et la reprise.</value></data>
+  <data name="MpcExePath" xml:space="preserve"><value>Chemin de mpc-hc64.exe / mpc-be64.exe</value></data>
+  <data name="MpcExePathHint" xml:space="preserve"><value>Laissez vide pour detecter Program Files. La config kaz reste dans MPC, pas dans K7.</value></data>
+  <data name="MpcWebHost" xml:space="preserve"><value>Hote interface web MPC</value></data>
+  <data name="MpcWebPort" xml:space="preserve"><value>Port interface web MPC</value></data>
+  <data name="MpcWebHint" xml:space="preserve"><value>Defaut 127.0.0.1:13579. K7 passe /webport a MPC pour allumer l'interface et lire la position. Sans reponse, la reprise K7 vers MPC marche encore (/start).</value></data>
+  <data name="MpcExtraArgs" xml:space="preserve"><value>Arguments MPC</value></data>
+  <data name="MpcExtraArgsHint" xml:space="preserve"><value>Defaut /fullscreen /close. K7 ajoute /webport et /start (millisecondes) pour la reprise.</value></data>
 </root>

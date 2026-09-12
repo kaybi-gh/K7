@@ -198,6 +198,34 @@ else
                 <K7Switch Label="@L["AudioPassthrough"]" @bind-Value="_audioPassthrough" />
                 <span class="text-caption video-playback-hint">@L["AudioPassthroughHint"]</span>
 
+                @if (_showMpcExternal)
+                {
+                    <K7Switch Label="@L["MpcExternalPlayer"]" @bind-Value="_mpcEnabled" />
+                    <span class="text-caption video-playback-hint">@L["MpcExternalPlayerHint"]</span>
+
+                    @if (_mpcEnabled)
+                    {
+                        <K7TextField Label="@L["MpcExePath"]"
+                                     TValue="string"
+                                     @bind-Value="_mpcExePath" />
+                        <span class="text-caption video-playback-hint">@L["MpcExePathHint"]</span>
+
+                        <K7TextField Label="@L["MpcWebHost"]"
+                                     TValue="string"
+                                     @bind-Value="_mpcWebHost" />
+
+                        <K7TextField Label="@L["MpcWebPort"]"
+                                     TValue="string"
+                                     @bind-Value="_mpcWebPortText" />
+                        <span class="text-caption video-playback-hint">@L["MpcWebHint"]</span>
+
+                        <K7TextField Label="@L["MpcExtraArgs"]"
+                                     TValue="string"
+                                     @bind-Value="_mpcExtraArgs" />
+                        <span class="text-caption video-playback-hint">@L["MpcExtraArgsHint"]</span>
+                    }
+                }
+
                 @if (_showExoBuffer)
                 {
                     <K7Select Label="@L["ExoBuffer"]" @bind-Value="_exoBuffer" TValue="ExoVideoBufferSize">
