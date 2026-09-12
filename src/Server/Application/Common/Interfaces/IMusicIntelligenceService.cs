@@ -15,7 +15,6 @@ public interface IMusicIntelligenceService
     Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default);
     Task<MusicIntelligenceStatusDto> GetStatusAsync(CancellationToken cancellationToken = default);
     Task<List<MusicIntelligenceTrackMatchDto>> GetSimilarTracksAsync(Guid trackId, int count = 20, string? title = null, string? artist = null, CancellationToken cancellationToken = default);
-    Task<IReadOnlyList<MusicMoodPresetDto>> GetMoodPresetsAsync(CancellationToken cancellationToken = default);
     Task<List<Guid>> GetMoodTracksAsync(string moodKey, int centroidIndex, int count = 50, CancellationToken cancellationToken = default);
     Task<List<Guid>> GetDiscoveryTracksAsync(int count = 50, CancellationToken cancellationToken = default);
     Task<List<Guid>> GetSonicPathAsync(Guid fromId, Guid toId, CancellationToken cancellationToken = default);

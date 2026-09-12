@@ -827,7 +827,7 @@ public sealed class MockServerInfoService : IServerInfoService
     public Task DeleteAdminPlaybackHistoryAsync(Guid referenceId, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task<IReadOnlyList<SharedProfileDto>> GetAdminSharedProfilesAsync(CancellationToken cancellationToken = default) =>
         Task.FromResult<IReadOnlyList<SharedProfileDto>>([]);
-    public Task<List<LiteMediaDto>?> GetMusicRadioAsync(string radioType, Guid[]? libraryIds = null, Guid[]? libraryGroupIds = null, Guid? seedTrackId = null, Guid? seedArtistId = null, string? moodPreset = null, int? moodCentroidIndex = null, string? genre = null, int limit = 50, Guid[]? excludeIds = null, CancellationToken cancellationToken = default) => Task.FromResult<List<LiteMediaDto>?>(null);
+    public Task<List<LiteMediaDto>?> GetMusicRadioAsync(string radioType, Guid[]? libraryIds = null, Guid[]? libraryGroupIds = null, Guid? seedTrackId = null, Guid? seedArtistId = null, string? genre = null, int limit = 50, Guid[]? excludeIds = null, CancellationToken cancellationToken = default) => Task.FromResult<List<LiteMediaDto>?>(null);
     public Task UpdateDefaultLanguageAsync(string language, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task UpdateDefaultThemeAsync(string theme, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task<List<ActiveStreamDto>?> GetActiveStreamsAsync(CancellationToken cancellationToken = default) => Task.FromResult<List<ActiveStreamDto>?>(null);
@@ -914,7 +914,6 @@ public sealed class MockServerPreferencesService : IServerPreferencesService
     public Task<K7.Shared.Dtos.ServerFeatureFlagsDto> GetServerFeatureFlagsAsync(CancellationToken cancellationToken = default) => Task.FromResult(new K7.Shared.Dtos.ServerFeatureFlagsDto());
     public Task UpdateServerFeatureFlagsAsync(K7.Shared.Dtos.ServerFeatureFlagsDto flags, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task<K7.Shared.Dtos.MusicIntelligenceStatusDto> GetMusicIntelligenceStatusAsync(CancellationToken cancellationToken = default) => Task.FromResult(new K7.Shared.Dtos.MusicIntelligenceStatusDto());
-    public Task<IReadOnlyList<K7.Shared.Dtos.MusicMoodPresetDto>> GetMusicMoodPresetsAsync(CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<K7.Shared.Dtos.MusicMoodPresetDto>>([]);
     public Task<K7.Shared.Dtos.VideoPlayerSettingsDto?> GetServerVideoPlayerSettingsAsync(CancellationToken cancellationToken = default) => Task.FromResult<K7.Shared.Dtos.VideoPlayerSettingsDto?>(null);
     public Task UpdateServerVideoPlayerSettingsAsync(K7.Shared.Dtos.VideoPlayerSettingsDto settings, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task DeleteServerVideoPlayerSettingsAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;

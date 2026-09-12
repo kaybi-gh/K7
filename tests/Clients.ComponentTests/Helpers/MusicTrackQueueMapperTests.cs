@@ -2,6 +2,7 @@ using K7.Clients.Shared.Helpers;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities;
 using K7.Shared.Dtos.Entities.Medias;
+using K7.Shared.Dtos.Entities.Metadatas.Files;
 using K7.Shared.Interfaces;
 
 namespace K7.Clients.ComponentTests.Helpers;
@@ -53,6 +54,7 @@ public class MusicTrackQueueMapperTests
             IndexedFileId = fileId,
             Duration = 210,
             LoudnessLufs = -14,
+            UserRating = 8,
             Pictures =
             [
                 new MetadataPictureDto
@@ -84,6 +86,77 @@ public class MusicTrackQueueMapperTests
         item.LoudnessLufs.Should().Be(-14);
         item.CoverDominantColor.Should().Be("#112233");
         item.CoverUrl.Should().Contain("/api/pictures/cover");
+        item.UserRating.Should().Be(8);
+    }
+
+    [Test]
+    public void ToQueueItem_ShouldMapUserRating_FromLocalUserRatingOnFullTrack()
+    {
+        var mediaId = Guid.NewGuid();
+        var fileId = Guid.NewGuid();
+        var track = new MusicTrackDto
+        {
+            Id = mediaId,
+            Title = "Song",
+            ArtistName = "Artist",
+            AlbumTitle = "Album",
+            IndexedFiles =
+            [
+                new IndexedFileDto
+                {
+                    Id = fileId,
+                    LibraryId = Guid.NewGuid(),
+                    Name = "song",
+                    Extension = ".mp3",
+                    Path = "/music/song.mp3",
+                    Hash = 1,
+                    Size = 10,
+                    FileMetadata = new AudioFileMetadataDto
+                    {
+                        Container = "mp3",
+                        Duration = TimeSpan.FromSeconds(180)
+                    }
+                }
+            ],
+            Ratings =
+            [
+                new RatingDto { Source = RatingSource.MetadataProvider, Value = 9 },
+                new RatingDto { Source = RatingSource.LocalUser, Value = 7 }
+            ]
+        };
+
+        var item = MusicTrackQueueMapper.ToQueueItem(track, _api);
+
+        item.Should().NotBeNull();
+        item!.UserRating.Should().Be(7);
+        item.Duration.Should().Be(180);
+    }
+
+    [Test]
+    public void ToQueueItem_ShouldIgnoreZeroLocalUserRating_OnFullTrack()
+    {
+        var track = new MusicTrackDto
+        {
+            Id = Guid.NewGuid(),
+            Title = "Song",
+            IndexedFiles =
+            [
+                new IndexedFileDto
+                {
+                    Id = Guid.NewGuid(),
+                    LibraryId = Guid.NewGuid(),
+                    Name = "song",
+                    Extension = ".mp3",
+                    Path = "/music/song.mp3",
+                    Hash = 1,
+                    Size = 10,
+                    FileMetadata = new AudioFileMetadataDto { Container = "mp3" }
+                }
+            ],
+            Ratings = [new RatingDto { Source = RatingSource.LocalUser, Value = 0 }]
+        };
+
+        MusicTrackQueueMapper.ToQueueItem(track, _api)!.UserRating.Should().BeNull();
     }
 
     [Test]

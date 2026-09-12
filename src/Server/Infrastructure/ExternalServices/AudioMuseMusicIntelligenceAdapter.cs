@@ -81,63 +81,6 @@ public class AudioMuseMusicIntelligenceAdapter(
         return ParseTrackMatches(await response.Content.ReadFromJsonAsync<JsonElement>(cancellationToken));
     }
 
-    public async Task<IReadOnlyList<MusicMoodPresetDto>> GetMoodPresetsAsync(CancellationToken cancellationToken)
-    {
-        await ConfigureClientAsync(cancellationToken);
-        var response = await httpClient.GetAsync("api/mood_centroids", cancellationToken);
-        if (!response.IsSuccessStatusCode)
-            return [];
-
-        var content = await response.Content.ReadFromJsonAsync<JsonElement>(cancellationToken);
-        if (content.ValueKind != JsonValueKind.Object)
-            return [];
-
-        // AudioMuse returns dozens of centroids per mood; keep the strongest one per mood key.
-        var bestByMood = new Dictionary<string, (MusicMoodPresetDto Preset, double Score)>(StringComparer.OrdinalIgnoreCase);
-        foreach (var moodEntry in content.EnumerateObject())
-        {
-            if (moodEntry.Value.ValueKind != JsonValueKind.Array)
-                continue;
-
-            var fallbackIndex = 0;
-            foreach (var centroid in moodEntry.Value.EnumerateArray())
-            {
-                var centroidIndex = fallbackIndex;
-                if (centroid.TryGetProperty("index", out var indexProp) && indexProp.TryGetInt32(out var parsedIndex))
-                    centroidIndex = parsedIndex;
-
-                var moodScore = 0d;
-                if (centroid.TryGetProperty("mood_score", out var scoreProp) && scoreProp.ValueKind == JsonValueKind.Number)
-                    moodScore = scoreProp.GetDouble();
-
-                string? topTags = null;
-                if (centroid.TryGetProperty("top_tags", out var tags) && tags.ValueKind == JsonValueKind.Array)
-                {
-                    topTags = string.Join(", ", tags.EnumerateArray()
-                        .Select(t => t.GetString())
-                        .Where(t => !string.IsNullOrWhiteSpace(t)));
-                }
-
-                var preset = new MusicMoodPresetDto
-                {
-                    MoodKey = moodEntry.Name,
-                    CentroidIndex = centroidIndex,
-                    TopTags = topTags
-                };
-
-                if (!bestByMood.TryGetValue(moodEntry.Name, out var existing) || moodScore > existing.Score)
-                    bestByMood[moodEntry.Name] = (preset, moodScore);
-
-                fallbackIndex++;
-            }
-        }
-
-        return bestByMood.Values
-            .Select(v => v.Preset)
-            .OrderBy(p => p.MoodKey, StringComparer.OrdinalIgnoreCase)
-            .ToList();
-    }
-
     public async Task<List<Guid>> GetMoodTracksAsync(string moodKey, int centroidIndex, int count, CancellationToken cancellationToken)
     {
         var resolvedMoodKey = moodKey;

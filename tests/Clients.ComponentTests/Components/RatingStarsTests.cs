@@ -89,6 +89,26 @@ public class RatingStarsTests
         cached.Should().BeNull();
     }
 
+    [Test]
+    public async Task Render_ShouldInitJs_WhenCanRateResolvesAfterFirstRender()
+    {
+        var canRate = new TaskCompletionSource<bool>();
+        var sync = new UserRatingSync([]);
+        using var ctx = CreateContext(sync, canRate.Task);
+
+        var cut = ctx.Render<RatingStars>(p => p
+            .Add(x => x.MediaId, Guid.NewGuid())
+            .Add(x => x.Value, 4)
+            .Add(x => x.Size, "md"));
+
+        ctx.JSInterop.Invocations.Should().NotContain(i => i.Identifier == "K7.RatingStars.init");
+
+        canRate.SetResult(true);
+
+        await cut.WaitForAssertionAsync(() =>
+            ctx.JSInterop.Invocations.Should().Contain(i => i.Identifier == "K7.RatingStars.init"));
+    }
+
     private static async Task PointerRateAsync(IRenderedComponent<RatingStars> cut, double clientX)
     {
         var args = new PointerEventArgs
@@ -105,7 +125,10 @@ public class RatingStarsTests
         ctx.JSInterop.Setup<RatingPointerRect>("K7.getBoundingRect", _ => true)
             .SetResult(new RatingPointerRect(0, 0, width, 20));
 
-    private static BunitContext CreateContext(IUserRatingSync sync, bool canRate)
+    private static BunitContext CreateContext(IUserRatingSync sync, bool canRate) =>
+        CreateContext(sync, Task.FromResult(canRate));
+
+    private static BunitContext CreateContext(IUserRatingSync sync, Task<bool> canRate)
     {
         var ctx = new BunitContext();
         ctx.Services.AddSingleton(sync);

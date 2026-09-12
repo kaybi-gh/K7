@@ -46,7 +46,6 @@ public partial class MusicRadioPresets : IAsyncDisposable
 
         var presets = BuildBasePresets();
         presets.Insert(1, new(L["PresetDiscoveryAi"], L["PresetDiscoveryAiDesc"], Phosphor.Sparkle, "--radio-tone: #7A9E7E;", MusicRadioType.DiscoveryAi));
-        presets.Add(new(L["PresetAmbiance"], L["PresetAmbianceDesc"], Phosphor.MoonStars, "--radio-tone: var(--color-warning);", Action: RadioPresetAction.Ambiance));
         presets.Add(new(L["PresetSonicPath"], L["PresetSonicPathDesc"], Phosphor.Path, "--radio-tone: #9A8BB8;", Action: RadioPresetAction.SonicPath));
         presets.Add(new(L["PresetIntelligentSearch"], L["PresetIntelligentSearchDesc"], Phosphor.MagnifyingGlass, "--radio-tone: #6B8FA3;", Action: RadioPresetAction.IntelligentSearch));
         Presets = presets;
@@ -76,9 +75,6 @@ public partial class MusicRadioPresets : IAsyncDisposable
     {
         switch (radio.Action)
         {
-            case RadioPresetAction.Ambiance:
-                await OpenAmbianceDialogAsync();
-                return;
             case RadioPresetAction.Genre:
                 await OpenGenreDialogAsync();
                 return;
@@ -92,17 +88,6 @@ public partial class MusicRadioPresets : IAsyncDisposable
                 await PlayRadioAsync(radio);
                 return;
         }
-    }
-
-    private async Task OpenAmbianceDialogAsync()
-    {
-        var parameters = new K7DialogParameters<AmbianceRadioDialog>
-        {
-            { x => x.LibraryIds, LibraryIds },
-            { x => x.LibraryGroupIds, LibraryGroupIds }
-        };
-        var options = new K7DialogOptions { MaxWidth = K7DialogMaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
-        await DialogService.ShowAsync<AmbianceRadioDialog>(L["PresetAmbiance"], parameters, options);
     }
 
     private async Task OpenGenreDialogAsync()
@@ -143,9 +128,7 @@ public partial class MusicRadioPresets : IAsyncDisposable
             RadioType = radio.Type.Value.ToString(),
             Title = radio.Title,
             LibraryIds = LibraryIds,
-            LibraryGroupIds = LibraryGroupIds,
-            MoodPreset = radio.MoodPreset,
-            MoodCentroidIndex = radio.MoodCentroidIndex
+            LibraryGroupIds = LibraryGroupIds
         });
 
         if (!started)
@@ -155,7 +138,6 @@ public partial class MusicRadioPresets : IAsyncDisposable
     private enum RadioPresetAction
     {
         Play,
-        Ambiance,
         Genre,
         SonicPath,
         IntelligentSearch
@@ -167,7 +149,5 @@ public partial class MusicRadioPresets : IAsyncDisposable
         string Icon,
         string BackgroundStyle,
         MusicRadioType? Type = null,
-        RadioPresetAction Action = RadioPresetAction.Play,
-        string? MoodPreset = null,
-        int? MoodCentroidIndex = null);
+        RadioPresetAction Action = RadioPresetAction.Play);
 }

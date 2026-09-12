@@ -21,8 +21,6 @@ public class GetMusicRadio : IEndpoint
             [FromQuery] Guid[]? libraryGroupIds,
             [FromQuery] Guid? seedTrackId,
             [FromQuery] Guid? seedArtistId,
-            [FromQuery] string? moodPreset,
-            [FromQuery] int? moodCentroidIndex,
             [FromQuery] string? genre,
             [FromQuery] int limit = 50,
             [FromQuery] Guid[]? excludeIds = null,
@@ -35,8 +33,6 @@ public class GetMusicRadio : IEndpoint
                 LibraryGroupIds = libraryGroupIds,
                 SeedTrackId = seedTrackId,
                 SeedArtistId = seedArtistId,
-                MoodPreset = moodPreset,
-                MoodCentroidIndex = moodCentroidIndex,
                 Genre = genre,
                 Limit = limit,
                 ExcludeIds = excludeIds

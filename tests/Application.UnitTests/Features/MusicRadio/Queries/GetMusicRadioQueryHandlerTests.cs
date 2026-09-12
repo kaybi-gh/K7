@@ -134,7 +134,68 @@ public class GetMusicRadioQueryHandlerTests
     }
 
     [Test]
-    public async Task Handle_DiscoveryAi_ShouldReturnSimilarTracks_WhenNeighborsWereAlreadyPlayed()
+    public async Task Handle_DiscoveryAi_ShouldExcludeRatedNeighbors_EvenWhenNeverPlayed()
+    {
+        _context.Ratings.Add(new UserRating
+        {
+            UserId = _userId,
+            MediaId = _similarTrackId,
+            Value = 4,
+            MinimumValue = 0,
+            MaximumValue = 10
+        });
+        await _context.SaveChangesAsync();
+
+        _musicIntelligence
+            .GetSimilarTracksAsync(
+                _favoriteTrackId,
+                Arg.Any<int>(),
+                Arg.Any<string?>(),
+                Arg.Any<string?>(),
+                Arg.Any<CancellationToken>())
+            .Returns([new MusicIntelligenceTrackMatchDto { ItemId = _similarTrackId }]);
+
+        var result = await _handler.Handle(new GetMusicRadioQuery
+        {
+            RadioType = MusicRadioType.DiscoveryAi,
+            Limit = 3
+        }, CancellationToken.None);
+
+        result.Should().BeEmpty();
+    }
+
+    [Test]
+    public async Task Handle_DiscoveryAi_ShouldKeepPlayedUnratedNeighbors()
+    {
+        _context.UserMediaStates.Add(new UserMediaState
+        {
+            UserId = _userId,
+            MediaId = _similarTrackId,
+            PlayCount = 4,
+            LastInteractedAt = DateTime.UtcNow
+        });
+        await _context.SaveChangesAsync();
+
+        _musicIntelligence
+            .GetSimilarTracksAsync(
+                _favoriteTrackId,
+                Arg.Any<int>(),
+                Arg.Any<string?>(),
+                Arg.Any<string?>(),
+                Arg.Any<CancellationToken>())
+            .Returns([new MusicIntelligenceTrackMatchDto { ItemId = _similarTrackId }]);
+
+        var result = await _handler.Handle(new GetMusicRadioQuery
+        {
+            RadioType = MusicRadioType.DiscoveryAi,
+            Limit = 3
+        }, CancellationToken.None);
+
+        result.Should().ContainSingle(t => t.Id == _similarTrackId);
+    }
+
+    [Test]
+    public async Task Handle_DiscoveryAi_ShouldReturnEmpty_WhenNeighborsWereAlreadyRated()
     {
         _context.UserMediaStates.Add(new UserMediaState
         {
@@ -168,7 +229,42 @@ public class GetMusicRadioQueryHandlerTests
             Limit = 3
         }, CancellationToken.None);
 
+        result.Should().BeEmpty();
+    }
+
+    [Test]
+    public async Task Handle_Discovery_ShouldExcludeAlreadyRatedTracks()
+    {
+        var result = await _handler.Handle(new GetMusicRadioQuery
+        {
+            RadioType = MusicRadioType.Discovery,
+            Limit = 3
+        }, CancellationToken.None);
+
         result.Should().ContainSingle(t => t.Id == _similarTrackId);
+        result.Should().NotContain(t => t.Id == _favoriteTrackId);
+    }
+
+    [Test]
+    public async Task Handle_Discovery_ShouldExcludeRatedTrack_EvenWhenNeverPlayed()
+    {
+        _context.Ratings.Add(new UserRating
+        {
+            UserId = _userId,
+            MediaId = _similarTrackId,
+            Value = 3,
+            MinimumValue = 0,
+            MaximumValue = 10
+        });
+        await _context.SaveChangesAsync();
+
+        var result = await _handler.Handle(new GetMusicRadioQuery
+        {
+            RadioType = MusicRadioType.Discovery,
+            Limit = 3
+        }, CancellationToken.None);
+
+        result.Should().BeEmpty();
     }
 
     [Test]

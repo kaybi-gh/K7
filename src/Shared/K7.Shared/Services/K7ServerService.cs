@@ -316,7 +316,7 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         return groups ?? [];
     }
 
-    public async Task<List<LiteMediaDto>?> GetMusicRadioAsync(string radioType, Guid[]? libraryIds = null, Guid[]? libraryGroupIds = null, Guid? seedTrackId = null, Guid? seedArtistId = null, string? moodPreset = null, int? moodCentroidIndex = null, string? genre = null, int limit = 50, Guid[]? excludeIds = null, CancellationToken cancellationToken = default)
+    public async Task<List<LiteMediaDto>?> GetMusicRadioAsync(string radioType, Guid[]? libraryIds = null, Guid[]? libraryGroupIds = null, Guid? seedTrackId = null, Guid? seedArtistId = null, string? genre = null, int limit = 50, Guid[]? excludeIds = null, CancellationToken cancellationToken = default)
     {
         var queryParams = new List<string> { $"radioType={Uri.EscapeDataString(radioType)}" };
         if (libraryIds is { Length: > 0 })
@@ -331,8 +331,6 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         }
         if (seedTrackId.HasValue) queryParams.Add($"seedTrackId={seedTrackId.Value}");
         if (seedArtistId.HasValue) queryParams.Add($"seedArtistId={seedArtistId.Value}");
-        if (!string.IsNullOrWhiteSpace(moodPreset)) queryParams.Add($"moodPreset={Uri.EscapeDataString(moodPreset)}");
-        if (moodCentroidIndex.HasValue) queryParams.Add($"moodCentroidIndex={moodCentroidIndex.Value}");
         if (!string.IsNullOrWhiteSpace(genre)) queryParams.Add($"genre={Uri.EscapeDataString(genre)}");
         if (limit != 50) queryParams.Add($"limit={limit}");
         if (excludeIds is { Length: > 0 })
@@ -1579,12 +1577,6 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
     {
         var result = await HttpClient.GetFromJsonAsync<MusicIntelligenceStatusDto>("api/server/music-intelligence/status", _serializerOptions, cancellationToken);
         return result ?? new MusicIntelligenceStatusDto();
-    }
-
-    public async Task<IReadOnlyList<MusicMoodPresetDto>> GetMusicMoodPresetsAsync(CancellationToken cancellationToken = default)
-    {
-        var result = await HttpClient.GetFromJsonAsync<List<MusicMoodPresetDto>>("api/server/music-intelligence/mood-presets", _serializerOptions, cancellationToken);
-        return result ?? [];
     }
 
     // IFederationService

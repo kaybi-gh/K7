@@ -85,7 +85,8 @@ public partial class RatingStars : IAsyncDisposable
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (!firstRender || ReadOnly || !_canRate)
+        _ = firstRender;
+        if (ReadOnly || !_canRate || _dotNetRef is not null)
             return;
 
         try

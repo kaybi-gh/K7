@@ -2809,19 +2809,6 @@
         }
       }
     },
-    "/api/server/music-intelligence/mood-presets": {
-      "get": {
-        "tags": [
-          "Server"
-        ],
-        "operationId": "GetMusicMoodPresets",
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
     "/api/search": {
       "get": {
         "tags": [
@@ -4524,25 +4511,6 @@
             "schema": {
               "type": "string",
               "format": "uuid"
-            }
-          },
-          {
-            "name": "moodPreset",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "moodCentroidIndex",
-            "in": "query",
-            "schema": {
-              "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
-              "format": "int32"
             }
           },
           {

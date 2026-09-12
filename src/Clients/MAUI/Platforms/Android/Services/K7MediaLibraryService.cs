@@ -768,6 +768,9 @@ public class K7MediaLibraryService : MediaLibraryService,
     {
         if (_player is null || string.IsNullOrEmpty(source.Url)) return;
 
+        var rebuildNativeRadioPlaylist = _radioMediaIdsOnPlayer.Count > 0
+            && !string.IsNullOrEmpty(_audioPlayerService?.ActiveRadioTitle);
+
         _resolvedQueueMediaItems = null;
         _gaplessPrebufferedUrl = null;
         // Stop the current AudioTrack before replacing the item. On Bluetooth A2DP,
@@ -780,6 +783,17 @@ public class K7MediaLibraryService : MediaLibraryService,
         if (startVolume > 0)
             _player.Volume = startVolume * _loudnessLinearGain;
         Log.Info(Tag, $"Playing: {(_audioPlayerService?.CurrentTrack ?? _pendingTrack)?.Title ?? "unknown"}");
+
+        // In-app / service skip collapses the native playlist. Rebuild remaining
+        // radio items for Android Auto only when Media3 already owned that playlist.
+        if (!rebuildNativeRadioPlaylist)
+            return;
+
+        _radioMediaIdsOnPlayer.Clear();
+        if (_audioPlayerService?.CurrentTrack is { } current)
+            _radioMediaIdsOnPlayer.Add(current.MediaId);
+        if (!_radioAwaitingMedia3Playlist)
+            ScheduleRadioPlaylistSync();
     }
 
     private void OnSourceChanged(PlayerSource source)
@@ -796,9 +810,6 @@ public class K7MediaLibraryService : MediaLibraryService,
                 if (_crossfadeInProgress)
                     CancelCrossfadeForUserSkip();
 
-                var uri = source.Url.Contains("://") ? source.Url : $"file://{source.Url}";
-                var currentIndex = _audioPlayerService?.CurrentIndex ?? 0;
-
                 // Gapless: promote the prebuffered secondary in place (do not reload).
                 if (_crossfadePlayer is not null
                     && string.Equals(_gaplessPrebufferedUrl, source.Url, StringComparison.Ordinal)
@@ -812,38 +823,9 @@ public class K7MediaLibraryService : MediaLibraryService,
                     return;
                 }
 
-                // Validate resolved queue is still current (not stale from previous session)
-                if (_resolvedQueueMediaItems is not null)
-                {
-                    var currentTrackId = _audioPlayerService?.CurrentTrack?.MediaId.ToString();
-                    if (currentIndex < 0 || currentIndex >= _resolvedQueueMediaItems.Count
-                        || currentTrackId != _resolvedQueueMediaItems[currentIndex].MediaId)
-                    {
-                        _resolvedQueueMediaItems = null;
-                    }
-                }
-
-                // If we have resolved queue items (from OnAddMediaItems), use multi-item playlist
-                if (_resolvedQueueMediaItems is not null && _resolvedQueueMediaItems.Count > 1)
-                {
-                    if (_player.MediaItemCount == _resolvedQueueMediaItems.Count)
-                    {
-                        _player.SeekToDefaultPosition(currentIndex);
-                    }
-                    else
-                    {
-                        _player.SetMediaItems(_resolvedQueueMediaItems, currentIndex, 0L);
-                        _player.Prepare();
-                    }
-
-                    _player.Volume = _loudnessLinearGain;
-                    _player.PlayWhenReady = true;
-                    Log.Info(Tag, $"Playing: {_pendingTrack?.Title ?? "unknown"} - URI: {uri[..Math.Min(80, uri.Length)]}");
-                }
-                else
-                {
-                    ApplySingleItemSource(source);
-                }
+                // In-app Next always hard-cuts. Seeking a native radio playlist here
+                // updates MediaSession artwork while the old AudioTrack keeps playing.
+                ApplySingleItemSource(source);
             }
             catch (Exception ex)
             {
@@ -1002,6 +984,10 @@ public class K7MediaLibraryService : MediaLibraryService,
         if (_radioAwaitingMedia3Playlist)
             return;
         if (string.IsNullOrEmpty(_audioPlayerService?.ActiveRadioTitle))
+            return;
+        // In-app radio stays on a single MediaItem so Next goes through
+        // ApplySingleItemSource. Native playlist append is Android Auto only.
+        if (_radioMediaIdsOnPlayer.Count == 0)
             return;
 
         ScheduleRadioPlaylistSync();

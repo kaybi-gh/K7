@@ -94,23 +94,6 @@ public class MusicIntelligenceService(
         }
     }
 
-    public async Task<IReadOnlyList<MusicMoodPresetDto>> GetMoodPresetsAsync(CancellationToken cancellationToken = default)
-    {
-        if (!await IsAvailableAsync(cancellationToken))
-            return [];
-
-        try
-        {
-            return await adapter.GetMoodPresetsAsync(cancellationToken);
-        }
-        catch (Exception ex)
-        {
-            healthMonitor.MarkUnreachable();
-            logger.LogWarning(ex, "Failed to get mood presets");
-            return [];
-        }
-    }
-
     public async Task<List<Guid>> GetMoodTracksAsync(string moodKey, int centroidIndex, int count = 50, CancellationToken cancellationToken = default)
     {
         if (!await IsAvailableAsync(cancellationToken))

@@ -17,8 +17,6 @@ public record GetMusicRadioQuery : IRequest<List<BaseMedia>>
     public Guid[]? LibraryGroupIds { get; init; }
     public Guid? SeedTrackId { get; init; }
     public Guid? SeedArtistId { get; init; }
-    public string? MoodPreset { get; init; }
-    public int? MoodCentroidIndex { get; init; }
     public string? Genre { get; init; }
     public int Limit { get; init; } = 50;
     public Guid[]? ExcludeIds { get; init; }
@@ -46,7 +44,6 @@ public class GetMusicRadioQueryHandler(
         {
             MusicRadioType.Sonic => await GetSonicRadio(request, userId, libraryIds, cancellationToken),
             MusicRadioType.Artist => await GetArtistRadio(request, userId, libraryIds, cancellationToken),
-            MusicRadioType.Mood => await GetMoodMix(request, userId, libraryIds, cancellationToken),
             MusicRadioType.Discovery => await GetDiscoveryMix(userId, libraryIds, request.Limit, request.ExcludeIds, cancellationToken),
             MusicRadioType.DiscoveryAi => await GetDiscoveryAiMix(userId, libraryIds, request.Limit, request.ExcludeIds, cancellationToken),
             MusicRadioType.TimeCapsule => await GetTimeCapsule(userId, libraryIds, request.Limit, request.ExcludeIds, cancellationToken),
@@ -153,23 +150,6 @@ public class GetMusicRadioQueryHandler(
         return await LoadTracksByIdsAsync(ids, userId, libraryIds, ct);
     }
 
-    private async Task<List<BaseMedia>> GetMoodMix(
-        GetMusicRadioQuery request,
-        Guid? userId,
-        Guid[]? libraryIds,
-        CancellationToken ct)
-    {
-        if (!await musicIntelligenceService.IsAvailableAsync(ct))
-            return [];
-
-        var moodKey = request.MoodPreset ?? "relaxed";
-        var centroidIndex = request.MoodCentroidIndex ?? 0;
-        var fetchLimit = request.Limit + (request.ExcludeIds?.Length ?? 0);
-        var trackIds = await musicIntelligenceService.GetMoodTracksAsync(moodKey, centroidIndex, fetchLimit, ct);
-        var filteredIds = FilterExcluded(trackIds, request.ExcludeIds, request.Limit);
-        return await LoadTracksByIdsAsync(filteredIds, userId, libraryIds, ct);
-    }
-
     private async Task<List<BaseMedia>> GetDiscoveryMix(
         Guid? userId,
         Guid[]? libraryIds,
@@ -194,6 +174,7 @@ public class GetMusicRadioQueryHandler(
 
         var neverPlayedIds = await baseQuery
             .Where(t => !t.UserMediaStates.Any(s => s.UserId == uid && s.PlayCount > 0))
+            .Where(t => !t.Ratings.OfType<UserRating>().Any(r => r.UserId == uid && r.Value > 0))
             .OrderBy(_ => EF.Functions.Random())
             .Select(t => t.Id)
             .Take(limit)
@@ -203,7 +184,7 @@ public class GetMusicRadioQueryHandler(
             return await LoadTracksByIdsAsync(neverPlayedIds, userId, libraryIds, ct);
 
         var neverRatedIds = await baseQuery
-            .Where(t => !t.Ratings.OfType<UserRating>().Any(r => r.UserId == uid))
+            .Where(t => !t.Ratings.OfType<UserRating>().Any(r => r.UserId == uid && r.Value > 0))
             .OrderBy(_ => EF.Functions.Random())
             .Select(t => t.Id)
             .Take(limit)
@@ -266,18 +247,14 @@ public class GetMusicRadioQueryHandler(
             // Enough neighbors that AudioMuse seed tracks (already played) do not fill the whole list.
             var fingerprintCount = Math.Max(limit * 5, DiscoveryAiFingerprintMinCount);
             var fingerprintIds = await musicIntelligenceService.GetDiscoveryTracksAsync(fingerprintCount, ct);
-            candidateIds.AddRange(fingerprintIds.Where(seen.Add));
+            candidateIds.AddRange((fingerprintIds ?? []).Where(seen.Add));
         }
 
         if (candidateIds.Count == 0)
             return [];
 
         var tracks = await LoadTracksByIdsAsync(candidateIds, userId, libraryIds, ct);
-        var unexplored = FilterUnexploredTracks(tracks, candidateIds, userId, limit);
-        if (unexplored.Count > 0)
-            return unexplored;
-
-        return tracks.Take(limit).ToList();
+        return FilterUnexploredTracks(tracks, candidateIds, userId, limit);
     }
 
     private async Task<List<Guid>> PickTasteSeedTrackIdsAsync(
@@ -537,7 +514,7 @@ public class GetMusicRadioQueryHandler(
         var uid = userId.Value;
 
         var neverPlayed = ordered
-            .Where(t => !t.UserMediaStates.Any(s => s.UserId == uid && s.PlayCount > 0))
+            .Where(t => !HasBeenPlayed(t, uid) && !HasUserRating(t, uid))
             .ToList();
 
         if (neverPlayed.Count >= limit)
@@ -546,7 +523,7 @@ public class GetMusicRadioQueryHandler(
         var neverPlayedIds = neverPlayed.Select(t => t.Id).ToHashSet();
         var neverRated = ordered
             .Where(t => !neverPlayedIds.Contains(t.Id))
-            .Where(t => !t.Ratings.OfType<UserRating>().Any(r => r.UserId == uid))
+            .Where(t => !HasUserRating(t, uid))
             .ToList();
 
         return neverPlayed
@@ -555,6 +532,12 @@ public class GetMusicRadioQueryHandler(
             .Cast<BaseMedia>()
             .ToList();
     }
+
+    private static bool HasBeenPlayed(MusicTrack track, Guid userId) =>
+        track.UserMediaStates.Any(s => s.UserId == userId && s.PlayCount > 0);
+
+    private static bool HasUserRating(MusicTrack track, Guid userId) =>
+        track.Ratings.OfType<UserRating>().Any(r => r.UserId == userId && r.Value > 0);
 
     private static List<Guid> InterleaveUnique(IReadOnlyList<List<Guid>> batches, HashSet<Guid> seen)
     {

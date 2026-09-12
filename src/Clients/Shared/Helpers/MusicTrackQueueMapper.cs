@@ -38,7 +38,8 @@ public static class MusicTrackQueueMapper
             track.FadeOutDuration,
             track.ReplayGainTrackGain,
             track.WaveformPeaks,
-            untitledLabel);
+            untitledLabel,
+            userRating: GetUserRating(track));
     }
 
     public static AudioQueueItem? ToQueueItem(
@@ -72,7 +73,8 @@ public static class MusicTrackQueueMapper
             waveformPeaks: null,
             untitledLabel,
             intelligenceScore,
-            intelligenceScoreMetric);
+            intelligenceScoreMetric,
+            track.UserRating);
     }
 
     public static List<AudioQueueItem> ToQueueItems(
@@ -118,7 +120,8 @@ public static class MusicTrackQueueMapper
         float[]? waveformPeaks,
         string? untitledLabel,
         double? intelligenceScore = null,
-        string? intelligenceScoreMetric = null) => new()
+        string? intelligenceScoreMetric = null,
+        int? userRating = null) => new()
     {
         IndexedFileId = indexedFileId,
         MediaId = mediaId,
@@ -136,6 +139,12 @@ public static class MusicTrackQueueMapper
         ReplayGainTrackGain = replayGainTrackGain,
         WaveformPeaks = waveformPeaks,
         IntelligenceScore = intelligenceScore,
-        IntelligenceScoreMetric = intelligenceScoreMetric
+        IntelligenceScoreMetric = intelligenceScoreMetric,
+        UserRating = userRating
     };
+
+    private static int? GetUserRating(MusicTrackDto track) =>
+        track.Ratings?.FirstOrDefault(r => r.Source == RatingSource.LocalUser)?.Value is double value && value > 0
+            ? (int)Math.Round(value)
+            : null;
 }
