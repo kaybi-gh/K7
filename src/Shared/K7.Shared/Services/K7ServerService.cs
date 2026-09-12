@@ -17,6 +17,7 @@ using K7.Shared.Dtos.Home;
 using K7.Shared.Dtos.Notifications;
 using K7.Shared.Dtos.Requests;
 using K7.Shared.Dtos.Restrictions;
+using K7.Shared.Dtos.Scrobbling;
 using K7.Shared.Dtos.Search;
 using K7.Shared.Dtos.SharedProfiles;
 using K7.Shared.Dtos.Users;
@@ -28,7 +29,7 @@ using K7.Shared.QueryBuilders;
 
 namespace K7.Shared.Services;
 
-public class K7ServerService : IK7ServerService, IMediaService, ILibraryService, IPlaylistService, ICollectionService, ISearchService, IStreamingService, IDeviceApiService, IUserAdminService, IRatingService, IReviewService, ISocialUserService, IServerInfoService, IBackgroundTaskService, IDiagnosticsService, IUserPreferencesService, IServerPreferencesService, IDownloadService, INotificationAdminService, IFederationService, IApiKeyAdminService, IClientAppPasswordUserService, IMusicIntelligenceAdminService, IMusicIntelligenceClientService, ISharedProfileApi, ITranscodeAdminService
+public class K7ServerService : IK7ServerService, IMediaService, ILibraryService, IPlaylistService, ICollectionService, ISearchService, IStreamingService, IDeviceApiService, IUserAdminService, IRatingService, IReviewService, ISocialUserService, IServerInfoService, IBackgroundTaskService, IDiagnosticsService, IUserPreferencesService, IServerPreferencesService, IDownloadService, INotificationAdminService, IFederationService, IApiKeyAdminService, IClientAppPasswordUserService, IMusicIntelligenceAdminService, IMusicIntelligenceClientService, ISharedProfileApi, ITranscodeAdminService, IScrobblingAdminService, IScrobblingUserService
 {
     public HttpClient HttpClient { get; }
     private readonly JsonSerializerOptions _serializerOptions;
@@ -1974,6 +1975,11 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         return (await HttpClient.GetFromJsonAsync<List<NotificationEventDescriptorDto>>("api/notifications/events", _serializerOptions, cancellationToken))!;
     }
 
+    public async Task<List<NotificationWebhookPresetDto>> GetWebhookPresetsAsync(CancellationToken cancellationToken = default)
+    {
+        return (await HttpClient.GetFromJsonAsync<List<NotificationWebhookPresetDto>>("api/notifications/presets", _serializerOptions, cancellationToken))!;
+    }
+
     private sealed record EphemeralTokenResponse(string Token);
     private sealed record TestPeerResponse(bool Reachable);
 
@@ -2049,6 +2055,101 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
     async Task<MusicIntelligenceSettingsDto> IMusicIntelligenceAdminService.GetSettingsAsync(CancellationToken cancellationToken)
     {
         return (await HttpClient.GetFromJsonAsync<MusicIntelligenceSettingsDto>("api/admin/music-intelligence", _serializerOptions, cancellationToken))!;
+    }
+
+    async Task<ScrobblingSettingsDto> IScrobblingAdminService.GetSettingsAsync(CancellationToken cancellationToken)
+    {
+        return (await HttpClient.GetFromJsonAsync<ScrobblingSettingsDto>("api/admin/scrobbling", _serializerOptions, cancellationToken))!;
+    }
+
+    async Task IScrobblingAdminService.UpdateSettingsAsync(ScrobblingSettingsDto settings, CancellationToken cancellationToken)
+    {
+        var response = await HttpClient.PutAsJsonAsync("api/admin/scrobbling", settings, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task<List<UserScrobblerAccountDto>> GetAccountsAsync(CancellationToken cancellationToken = default)
+    {
+        return (await HttpClient.GetFromJsonAsync<List<UserScrobblerAccountDto>>("api/scrobbling/accounts", _serializerOptions, cancellationToken))!;
+    }
+
+    public async Task<ScrobblingAvailabilityDto> GetAvailabilityAsync(CancellationToken cancellationToken = default)
+    {
+        return (await HttpClient.GetFromJsonAsync<ScrobblingAvailabilityDto>("api/scrobbling/availability", _serializerOptions, cancellationToken))!;
+    }
+
+    public async Task<Guid> CreateAccountAsync(CreateUserScrobblerAccountRequest request, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PostAsJsonAsync("api/scrobbling/accounts", request, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<Guid>(_serializerOptions, cancellationToken);
+    }
+
+    public async Task UpdateAccountAsync(Guid id, UpdateUserScrobblerAccountRequest request, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PutAsJsonAsync($"api/scrobbling/accounts/{id}", request, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task DeleteAccountAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.DeleteAsync($"api/scrobbling/accounts/{id}", cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task<ScrobbleTestResultDto> TestAccountAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PostAsync($"api/scrobbling/accounts/{id}/test", null, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        return (await response.Content.ReadFromJsonAsync<ScrobbleTestResultDto>(_serializerOptions, cancellationToken))!;
+    }
+
+    async Task<List<ScrobbleWebhookPresetDto>> IScrobblingUserService.GetWebhookPresetsAsync(CancellationToken cancellationToken)
+    {
+        return (await HttpClient.GetFromJsonAsync<List<ScrobbleWebhookPresetDto>>("api/scrobbling/presets", _serializerOptions, cancellationToken))!;
+    }
+
+    public async Task<LastFmAuthStartDto> StartLastFmAuthAsync(CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PostAsync("api/scrobbling/lastfm/start", null, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        return (await response.Content.ReadFromJsonAsync<LastFmAuthStartDto>(_serializerOptions, cancellationToken))!;
+    }
+
+    public async Task<Guid> CompleteLastFmAuthAsync(
+        string token,
+        IReadOnlyList<string>? mediaTypes = null,
+        CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PostAsJsonAsync(
+            "api/scrobbling/lastfm/complete",
+            new { token, mediaTypes },
+            _serializerOptions,
+            cancellationToken);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<Guid>(_serializerOptions, cancellationToken);
+    }
+
+    public async Task<TraktDeviceStartDto> StartTraktDeviceAsync(CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PostAsync("api/scrobbling/trakt/start", null, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        return (await response.Content.ReadFromJsonAsync<TraktDeviceStartDto>(_serializerOptions, cancellationToken))!;
+    }
+
+    public async Task<Guid?> PollTraktDeviceAsync(
+        string deviceCode,
+        IReadOnlyList<string>? mediaTypes = null,
+        string? displayName = null,
+        CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PostAsJsonAsync(
+            "api/scrobbling/trakt/poll",
+            new { deviceCode, mediaTypes, displayName },
+            _serializerOptions,
+            cancellationToken);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<Guid?>(_serializerOptions, cancellationToken);
     }
 
     async Task IMusicIntelligenceAdminService.UpdateSettingsAsync(MusicIntelligenceSettingsDto settings, CancellationToken cancellationToken)

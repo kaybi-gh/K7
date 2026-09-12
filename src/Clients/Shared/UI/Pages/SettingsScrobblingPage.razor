@@ -1,0 +1,114 @@
+@page "/settings/scrobbling"
+@layout SettingsLayout
+@using K7.Server.Domain.Enums
+@using K7.Clients.Shared.UI.Pages.Dialogs
+@inject IStringLocalizer<SettingsScrobblingPage> L
+@inject IStringLocalizer<SharedResource> S
+@inject IScrobblingUserService Scrobbling
+@inject IFeatureAccessService FeatureAccess
+@inject IK7Snackbar Snackbar
+@inject IK7DialogService DialogService
+@implements IAsyncDisposable
+
+<PageTitle>@L["PageTitle"]</PageTitle>
+
+<div class="settings-form-page">
+    <div class="settings-form-page__body pa-4 d-flex flex-col gap-4">
+        @if (!_canScrobble)
+        {
+            <K7EmptyState Icon="@Phosphor.Broadcast" Title="@L["DisabledTitle"]" Subtitle="@L["DisabledHint"]" />
+        }
+        else if (_loading)
+        {
+            <K7Spinner />
+        }
+        else
+        {
+            <div class="d-flex align-center justify-between gap-3 flex-wrap">
+                @if (_selectionMode)
+                {
+                    <h5>@string.Format(L["SelectedCount"], SelectedCount)</h5>
+                    <div class="d-flex align-center gap-2 flex-wrap">
+                        <K7Button Variant="text" OnClick="ToggleSelectAll" Disabled="@(_accounts.Count == 0 || _deleting)">
+                            @(AllSelected ? L["DeselectAll"] : L["SelectAll"])
+                        </K7Button>
+                        <K7Button Variant="filled"
+                                  Color="error"
+                                  StartIcon="@Phosphor.Trash"
+                                  OnClick="ConfirmDeleteSelectedAsync"
+                                  Disabled="@(SelectedCount == 0 || _deleting)"
+                                  AriaLabel="@L["DeleteSelected"]">
+                            @L["DeleteSelected"]
+                        </K7Button>
+                        <K7Button Variant="text" OnClick="ExitSelectionMode" Disabled="@_deleting" AriaLabel="@S["Cancel"]">
+                            @S["Cancel"]
+                        </K7Button>
+                    </div>
+                }
+                else
+                {
+                    <h5>@L["PageTitle"]</h5>
+                    <div class="d-flex align-center gap-2">
+                        @if (_accounts.Count > 0)
+                        {
+                            <K7IconButton Icon="@Phosphor.ListChecks"
+                                          OnClick="EnterSelectionMode"
+                                          AriaLabel="@L["Select"]" />
+                        }
+                        <K7Button StartIcon="@Phosphor.Plus" Variant="filled" Color="primary" OnClick="ShowCreateDialog">
+                            @S["Create"]
+                        </K7Button>
+                    </div>
+                }
+            </div>
+            <p class="text-body-2" style="color: var(--color-text-muted);">@L["Intro"]</p>
+
+            @if (_accounts.Count == 0)
+            {
+                <K7EmptyState Icon="@Phosphor.Broadcast" Title="@L["EmptyTitle"]" Subtitle="@L["EmptyHint"]" />
+            }
+            else
+            {
+                @foreach (var account in _accounts)
+                {
+                    var selected = IsSelected(account.Id);
+                    @if (_selectionMode)
+                    {
+                        <button type="button"
+                                class="scrobble-select-item focusable @(selected ? "is-selected" : null)"
+                                @onclick="@(() => ToggleSelection(account.Id))">
+                            <span class="scrobble-select-item__check" aria-hidden="true">
+                                <K7Icon Icon="@(selected ? Phosphor.Fill.CheckCircle : Phosphor.Circle)" IconSize="@K7IconSize.Md" />
+                            </span>
+                            <K7Paper Outlined="true" Class="scrobble-select-item__paper">
+                                <div class="d-flex align-center justify-between gap-3">
+                                    <div>
+                                        <div class="text-bold">@(account.DisplayName ?? LocalizeProvider(account.Provider))</div>
+                                        <div class="text-caption" style="color: var(--color-text-muted);">@LocalizeProvider(account.Provider)</div>
+                                    </div>
+                                </div>
+                            </K7Paper>
+                        </button>
+                    }
+                    else
+                    {
+                        <K7Paper Outlined="true" Style="padding: var(--space-4);">
+                            <div class="d-flex align-center justify-between gap-3">
+                                <div>
+                                    <div class="text-bold">@(account.DisplayName ?? LocalizeProvider(account.Provider))</div>
+                                    <div class="text-caption" style="color: var(--color-text-muted);">@LocalizeProvider(account.Provider)</div>
+                                </div>
+                                <div class="d-flex align-center gap-2">
+                                    <K7Switch Value="account.IsEnabled" ValueChanged="v => ToggleAsync(account, v)" />
+                                    <K7Button Variant="outlined" Size="sm" OnClick="() => TestAsync(account)">@L["Test"]</K7Button>
+                                    <K7IconButton Icon="@Phosphor.PencilSimple" AriaLabel="@L["EditTitle"]" OnClick="() => ShowEditDialog(account)" />
+                                    <K7IconButton Icon="@Phosphor.Trash" AriaLabel="@S["Delete"]" OnClick="() => ConfirmDeleteAsync(account)" />
+                                </div>
+                            </div>
+                        </K7Paper>
+                    }
+                }
+            }
+        }
+    </div>
+</div>

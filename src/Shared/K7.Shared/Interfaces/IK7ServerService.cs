@@ -1,4 +1,4 @@
-﻿namespace K7.Shared.Interfaces;
+namespace K7.Shared.Interfaces;
 
 public interface IK7ServerService
 {

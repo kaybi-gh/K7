@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="Events" xml:space="preserve"><value>Events</value></data>
+  <data name="EventsHint" xml:space="preserve"><value>Play: playback start. Pause: pause. Stop: end or idle. Progress: position about every 10s while playing (Ryot, Floppy...). Watched / Listened: completion threshold reached. Last.fm / ListenBrainz / Trakt ignore Progress.</value></data>
+  <data name="SharedProfileHint" xml:space="preserve"><value>Shared profile playback: each member gets the scrobble on their own accounts (if they have CanScrobble).</value></data>
+  <data name="EventPlay" xml:space="preserve"><value>Play</value></data>
+  <data name="EventPause" xml:space="preserve"><value>Pause</value></data>
+  <data name="EventStop" xml:space="preserve"><value>Stop</value></data>
+  <data name="EventProgress" xml:space="preserve"><value>Progress</value></data>
+  <data name="EventScrobble" xml:space="preserve"><value>Watched / Listened</value></data>
+  <data name="TemplateHelper" xml:space="preserve"><value>Placeholders {{Name}}. Raw JSON numbers: {{{PositionTicks}}}. Map: {{State|Playing=play|*=other}}. Click a parameter to insert it.</value></data>
+  <data name="TemplateReadOnlyHelper" xml:space="preserve"><value>Preset payload (read-only). Choose Custom to edit the JSON.</value></data>
+  <data name="PresetReadOnlyHint" xml:space="preserve"><value>This preset manages the payload automatically. Templates below are read-only.</value></data>
+  <data name="AvailableParams" xml:space="preserve"><value>Available parameters</value></data>
+  <data name="SearchParams" xml:space="preserve"><value>Search parameters</value></data>
+  <data name="GroupUser" xml:space="preserve"><value>User</value></data>
+  <data name="GroupMedia" xml:space="preserve"><value>Media</value></data>
+  <data name="GroupMusic" xml:space="preserve"><value>Music</value></data>
+  <data name="GroupTv" xml:space="preserve"><value>TV</value></data>
+  <data name="GroupIds" xml:space="preserve"><value>Ids</value></data>
+  <data name="GroupPlayback" xml:space="preserve"><value>Playback</value></data>
+  <data name="EditPreview" xml:space="preserve"><value>Edit / Preview</value></data>
+  <data name="PreviewNote" xml:space="preserve"><value>Preview with sample data:</value></data>
+</root>

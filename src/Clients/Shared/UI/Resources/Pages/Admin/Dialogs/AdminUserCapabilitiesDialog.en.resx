@@ -21,4 +21,5 @@
   <data name="CapCanManageUsers" xml:space="preserve"><value>Manage users</value></data>
   <data name="CapCanReportPlaybackProgress" xml:space="preserve"><value>Report playback progress</value></data>
   <data name="CapCanTranscode" xml:space="preserve"><value>Transcode media</value></data>
+  <data name="CapCanScrobble" xml:space="preserve"><value>Scrobble playback</value></data>
 </root>

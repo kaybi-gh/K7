@@ -1,0 +1,138 @@
+@using K7.Server.Domain.Enums
+@using K7.Shared.Scrobbling
+@inject IStringLocalizer<CreateScrobblerAccountDialog> L
+@inject IStringLocalizer<SharedResource> S
+@inject IScrobblingUserService Scrobbling
+@inject IK7Snackbar Snackbar
+@inject IExternalLinkService ExternalLinks
+
+<div class="k7-dialog-content">
+    <div class="d-flex flex-col mt-2 gap-4" data-initial-focus=".k7-select.focusable, .k7-input.focusable, .focusable">
+        @if (_loading)
+        {
+            <K7Spinner />
+        }
+        else
+        {
+            <K7Select TValue="string" Value="_provider" ValueChanged="OnProviderChanged" Label="@L["Provider"]" Variant="outlined"
+                      HelperText="@ProviderHelperText">
+                <K7SelectItem Value="@nameof(ScrobblerProvider.LastFm)"
+                              Text="@L["ProviderLastFm"]"
+                              Disabled="@(!_availability.LastFmConfigured)">
+                    @L["ProviderLastFm"]
+                </K7SelectItem>
+                <K7SelectItem Value="@nameof(ScrobblerProvider.ListenBrainz)" Text="@L["ProviderListenBrainz"]">
+                    @L["ProviderListenBrainz"]
+                </K7SelectItem>
+                <K7SelectItem Value="@nameof(ScrobblerProvider.Trakt)"
+                              Text="@L["ProviderTrakt"]"
+                              Disabled="@(!_availability.TraktConfigured)">
+                    @L["ProviderTrakt"]
+                </K7SelectItem>
+                <K7SelectItem Value="@nameof(ScrobblerProvider.Webhook)" Text="@L["ProviderWebhook"]">
+                    @L["ProviderWebhook"]
+                </K7SelectItem>
+            </K7Select>
+
+            <p class="text-caption" style="color: var(--color-text-muted);">@ProviderCapabilityHint</p>
+
+            @if (ShowsMediaTypePicker)
+            {
+                <div>
+                    <p class="text-sm mb-1">@L["MediaTypes"]</p>
+                    <K7CheckboxList TItem="MediaType"
+                                    Items="_availableMediaTypes"
+                                    IsChecked="@(type => _selectedMediaTypes.Contains(type))"
+                                    CheckedChanged="@(e => ToggleMediaType(e.Item, e.Checked))"
+                                    ItemLabel="@GetMediaTypeLabel" />
+                    <p class="text-caption mt-1" style="color: var(--color-text-muted);">@L["MediaTypesHint"]</p>
+                </div>
+            }
+
+            @if (_provider == nameof(ScrobblerProvider.LastFm))
+            {
+                @if (_lastFm is null)
+                {
+                    <p class="text-body-2" style="color: var(--color-text-muted);">@L["LastFmIntro"]</p>
+                }
+                else
+                {
+                    <K7Alert Severity="K7Severity.Info">
+                        @L["LastFmAuthHint"]
+                        <div class="d-flex flex-wrap gap-2 mt-2">
+                            <K7Button Variant="text" OnClick="() => ExternalLinks.OpenAsync(_lastFm.AuthUrl)">@L["OpenLastFm"]</K7Button>
+                        </div>
+                    </K7Alert>
+                }
+            }
+            else if (_provider == nameof(ScrobblerProvider.Trakt))
+            {
+                <K7TextField @bind-Value="_displayName" Label="@L["DisplayName"]" Variant="outlined" />
+                @if (_trakt is null)
+                {
+                    <p class="text-body-2" style="color: var(--color-text-muted);">@L["TraktIntro"]</p>
+                }
+                else
+                {
+                    <K7Alert Severity="K7Severity.Info">
+                        @string.Format(L["TraktAuthHint"], _trakt.UserCode)
+                        <div class="d-flex flex-wrap gap-2 mt-2">
+                            <K7Button Variant="text" OnClick="() => ExternalLinks.OpenAsync(_trakt.VerificationUrl)">@L["OpenTrakt"]</K7Button>
+                        </div>
+                    </K7Alert>
+                }
+            }
+            else if (_provider == nameof(ScrobblerProvider.ListenBrainz))
+            {
+                <K7TextField @bind-Value="_displayName" Label="@L["DisplayName"]" Variant="outlined" />
+                <K7TextField @bind-Value="_listenBrainzToken" Label="@L["ListenBrainzToken"]" Type="password" Variant="outlined"
+                             HelperText="@L["ListenBrainzTokenHint"]" />
+                <K7Button Variant="text" OnClick="() => ExternalLinks.OpenAsync(ScrobblerSetupUrls.ListenBrainzTokenSettings)">
+                    @L["OpenListenBrainzSettings"]
+                </K7Button>
+            }
+            else if (_provider == nameof(ScrobblerProvider.Webhook))
+            {
+                <K7Select TValue="string" Value="_webhookPresetId" ValueChanged="OnWebhookPresetChanged" Label="@L["WebhookPreset"]" Variant="outlined">
+                    @foreach (var preset in _presets)
+                    {
+                        <K7SelectItem Value="@preset.Id" Text="@LocalizePreset(preset)">@LocalizePreset(preset)</K7SelectItem>
+                    }
+                </K7Select>
+                <K7TextField @bind-Value="_webhookUrl" Label="@L["WebhookUrl"]" Variant="outlined"
+                             HelperText="@WebhookUrlHelperText" />
+                @if (!string.IsNullOrWhiteSpace(SelectedWebhookPreset?.SetupHelpUrl))
+                {
+                    <K7Button Variant="text" OnClick="() => ExternalLinks.OpenAsync(SelectedWebhookPreset!.SetupHelpUrl!)">
+                        @L["OpenTokenSettings"]
+                    </K7Button>
+                }
+                <K7TextField @bind-Value="_displayName" Label="@L["DisplayName"]" Variant="outlined" />
+
+                <ScrobbleWebhookPayloadEditor EnabledEvents="@_webhookEvents"
+                                              EnabledEventsChanged="OnWebhookEventsChanged"
+                                              ReadOnly="@(!IsCustomWebhook)"
+                                              PlayTemplate="@_playTemplate"
+                                              PlayTemplateChanged="@(v => _playTemplate = v)"
+                                              PauseTemplate="@_pauseTemplate"
+                                              PauseTemplateChanged="@(v => _pauseTemplate = v)"
+                                              StopTemplate="@_stopTemplate"
+                                              StopTemplateChanged="@(v => _stopTemplate = v)"
+                                              ProgressTemplate="@_progressTemplate"
+                                              ProgressTemplateChanged="@(v => _progressTemplate = v)"
+                                              ScrobbleTemplate="@_scrobbleTemplate"
+                                              ScrobbleTemplateChanged="@(v => _scrobbleTemplate = v)" />
+            }
+        }
+    </div>
+</div>
+<div class="k7-dialog-actions">
+    <K7Button OnClick="Cancel">@S["Cancel"]</K7Button>
+    <K7Button Color="primary" Variant="filled" OnClick="PrimaryAsync" Disabled="@(!CanSubmit || _busy)">
+        @if (_busy)
+        {
+            <K7Spinner Size="sm" />
+        }
+        @PrimaryLabel
+    </K7Button>
+</div>

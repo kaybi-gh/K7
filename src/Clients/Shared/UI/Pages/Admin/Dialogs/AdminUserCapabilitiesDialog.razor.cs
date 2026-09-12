@@ -59,6 +59,7 @@ public partial class AdminUserCapabilitiesDialog
         Capability.CanManageUsers => L["CapCanManageUsers"],
         Capability.CanReportPlaybackProgress => L["CapCanReportPlaybackProgress"],
         Capability.CanTranscode => L["CapCanTranscode"],
+        Capability.CanScrobble => L["CapCanScrobble"],
         _ => cap.ToString()
     };
 }

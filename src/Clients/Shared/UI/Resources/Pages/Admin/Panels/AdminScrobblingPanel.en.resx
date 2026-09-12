@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="Title" xml:space="preserve"><value>Scrobbling</value></data>
+  <data name="Description" xml:space="preserve"><value>Enable scrobbling and register this server's OAuth applications. Each user then connects their own account in Settings.</value></data>
+  <data name="Enabled" xml:space="preserve"><value>Enable scrobbling</value></data>
+  <data name="DisabledWarning" xml:space="preserve"><value>Scrobbling is disabled. User accounts stay saved but nothing is sent.</value></data>
+  <data name="LastFmSectionTitle" xml:space="preserve"><value>Last.fm / Libre.fm</value></data>
+  <data name="LastFmSectionHint" xml:space="preserve"><value>K7 application keys from last.fm/api/account/create. Users connect with their own Last.fm account afterward.</value></data>
+  <data name="OpenLastFmApi" xml:space="preserve"><value>Open last.fm/api/account/create</value></data>
+  <data name="LastFmApiKey" xml:space="preserve"><value>API key</value></data>
+  <data name="LastFmApiSecret" xml:space="preserve"><value>API secret</value></data>
+  <data name="LastFmApiHost" xml:space="preserve"><value>API host</value></data>
+  <data name="LastFmApiHostHelper" xml:space="preserve"><value>Keep the default, or a Libre.fm host.</value></data>
+  <data name="TraktSectionTitle" xml:space="preserve"><value>Trakt</value></data>
+  <data name="TraktSectionHint" xml:space="preserve"><value>K7 application client ID and secret from trakt.tv/oauth/applications. Users authorize their Trakt account afterward.</value></data>
+  <data name="OpenTraktApps" xml:space="preserve"><value>Open trakt.tv/oauth/applications</value></data>
+  <data name="TraktClientId" xml:space="preserve"><value>Client ID</value></data>
+  <data name="TraktClientSecret" xml:space="preserve"><value>Client secret</value></data>
+  <data name="SaveSuccess" xml:space="preserve"><value>Settings saved</value></data>
+</root>

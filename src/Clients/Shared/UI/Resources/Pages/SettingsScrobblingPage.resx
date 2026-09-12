@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="PageTitle" xml:space="preserve"><value>Scrobbling</value></data>
+  <data name="CreateTitle" xml:space="preserve"><value>Ajouter un compte</value></data>
+  <data name="EditTitle" xml:space="preserve"><value>Modifier le compte</value></data>
+  <data name="Intro" xml:space="preserve"><value>Envoyez vos lectures vers Last.fm, ListenBrainz, Trakt, ou un webhook (Yamtrack, Floppy, Ryot, BetaSeries). En profil partage, chaque membre scrobble sur ses propres comptes.</value></data>
+  <data name="DisabledTitle" xml:space="preserve"><value>Scrobbling indisponible</value></data>
+  <data name="DisabledHint" xml:space="preserve"><value>Votre compte n'a pas cette capacite, ou l'administrateur l'a desactivee.</value></data>
+  <data name="EmptyTitle" xml:space="preserve"><value>Aucun compte</value></data>
+  <data name="EmptyHint" xml:space="preserve"><value>Ajoutez un service pour scrobbler vos lectures.</value></data>
+  <data name="Test" xml:space="preserve"><value>Tester</value></data>
+  <data name="TestOk" xml:space="preserve"><value>Test reussi</value></data>
+  <data name="TestFail" xml:space="preserve"><value>Test echoue</value></data>
+  <data name="TestFailedWithError" xml:space="preserve"><value>Test echoue: {0}</value></data>
+  <data name="ProviderLastFm" xml:space="preserve"><value>Last.fm</value></data>
+  <data name="ProviderListenBrainz" xml:space="preserve"><value>ListenBrainz</value></data>
+  <data name="ProviderTrakt" xml:space="preserve"><value>Trakt</value></data>
+  <data name="ProviderWebhook" xml:space="preserve"><value>Webhook</value></data>
+  <data name="Select" xml:space="preserve"><value>Selectionner</value></data>
+  <data name="SelectAll" xml:space="preserve"><value>Tout selectionner</value></data>
+  <data name="DeselectAll" xml:space="preserve"><value>Tout deselectionner</value></data>
+  <data name="SelectedCount" xml:space="preserve"><value>{0} selectionne(s)</value></data>
+  <data name="DeleteSelected" xml:space="preserve"><value>Supprimer</value></data>
+  <data name="DeleteSelectedTitle" xml:space="preserve"><value>Supprimer les comptes</value></data>
+  <data name="DeleteSelectedMessage" xml:space="preserve"><value>Supprimer {0} compte(s) ? Cette action est irreversible.</value></data>
+  <data name="DeleteSelectedSuccess" xml:space="preserve"><value>{0} compte(s) supprime(s)</value></data>
+  <data name="DeleteSelectedError" xml:space="preserve"><value>Impossible de supprimer les comptes selectionnes</value></data>
+  <data name="DeleteSelectedPartial" xml:space="preserve"><value>{0} supprime(s), {1} echec(s)</value></data>
+  <data name="DeleteAccountTitle" xml:space="preserve"><value>Supprimer le compte</value></data>
+  <data name="DeleteAccountMessage" xml:space="preserve"><value>Supprimer le compte "{0}" ? Cette action est irreversible.</value></data>
+  <data name="AccountDeleted" xml:space="preserve"><value>Compte supprime</value></data>
+</root>

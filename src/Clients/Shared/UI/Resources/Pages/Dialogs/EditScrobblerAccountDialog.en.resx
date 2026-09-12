@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="DisplayName" xml:space="preserve"><value>Display name</value></data>
+  <data name="IncludeNowPlaying" xml:space="preserve"><value>Send now playing</value></data>
+  <data name="MediaTypes" xml:space="preserve"><value>Types to scrobble</value></data>
+  <data name="MediaTypeMovie" xml:space="preserve"><value>Movies</value></data>
+  <data name="MediaTypeEpisode" xml:space="preserve"><value>Episodes</value></data>
+  <data name="MediaTypeMusic" xml:space="preserve"><value>Music</value></data>
+  <data name="ListenBrainzToken" xml:space="preserve"><value>New ListenBrainz token</value></data>
+  <data name="TokenReplaceHint" xml:space="preserve"><value>Leave empty to keep the current token. Otherwise: listenbrainz.org/settings/</value></data>
+  <data name="OpenListenBrainzSettings" xml:space="preserve"><value>Open ListenBrainz settings</value></data>
+  <data name="OpenTokenSettings" xml:space="preserve"><value>Where to find the token</value></data>
+  <data name="WebhookUrl" xml:space="preserve"><value>Webhook URL</value></data>
+  <data name="WebhookUrlHintYamtrack" xml:space="preserve"><value>Example: https://yamtrack.yourdomain.tld/webhook/jellyfin/{token}</value></data>
+  <data name="WebhookUrlHintFloppy" xml:space="preserve"><value>Example: https://floppy.yourdomain.tld/webhook/jellyfin/{token}</value></data>
+  <data name="WebhookUrlHintRyot" xml:space="preserve"><value>Example: https://ryot.yourdomain.tld/_i/{slug}</value></data>
+  <data name="WebhookUrlHintBetaSeries" xml:space="preserve"><value>Append your API token. Token: betaseries.com/api/</value></data>
+  <data name="WebhookUrlHintCustom" xml:space="preserve"><value>Full webhook URL.</value></data>
+  <data name="PlayTemplate" xml:space="preserve"><value>Play payload</value></data>
+  <data name="PauseTemplate" xml:space="preserve"><value>Pause payload</value></data>
+  <data name="StopTemplate" xml:space="preserve"><value>Stop payload</value></data>
+  <data name="ProgressTemplate" xml:space="preserve"><value>Progress payload</value></data>
+  <data name="ProviderLastFm" xml:space="preserve"><value>Last.fm</value></data>
+  <data name="ProviderListenBrainz" xml:space="preserve"><value>ListenBrainz</value></data>
+  <data name="ProviderTrakt" xml:space="preserve"><value>Trakt</value></data>
+  <data name="ProviderWebhook" xml:space="preserve"><value>Webhook</value></data>
+  <data name="CapabilityLastFm" xml:space="preserve"><value>Music only</value></data>
+  <data name="CapabilityListenBrainz" xml:space="preserve"><value>Music only</value></data>
+  <data name="CapabilityTrakt" xml:space="preserve"><value>Movies and episodes</value></data>
+  <data name="CapabilityWebhook" xml:space="preserve"><value>Movies, episodes, and music</value></data>
+  <data name="CapabilityWebhookVideo" xml:space="preserve"><value>Movies and episodes only (not music)</value></data>
+  <data name="CapabilityBetaSeries" xml:space="preserve"><value>Watched on completion only (no in-progress). Movies: IMDb. Episodes: TVDB</value></data>
+</root>

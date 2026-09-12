@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="PageTitle" xml:space="preserve"><value>Scrobbling</value></data>
+  <data name="CreateTitle" xml:space="preserve"><value>Add account</value></data>
+  <data name="EditTitle" xml:space="preserve"><value>Edit account</value></data>
+  <data name="Intro" xml:space="preserve"><value>Send playback to Last.fm, ListenBrainz, Trakt, or a webhook (Yamtrack, Floppy, Ryot, BetaSeries). On a shared profile, each member scrobbles to their own accounts.</value></data>
+  <data name="DisabledTitle" xml:space="preserve"><value>Scrobbling unavailable</value></data>
+  <data name="DisabledHint" xml:space="preserve"><value>Your account does not have this capability, or an administrator turned it off.</value></data>
+  <data name="EmptyTitle" xml:space="preserve"><value>No accounts</value></data>
+  <data name="EmptyHint" xml:space="preserve"><value>Add a service to scrobble your playback.</value></data>
+  <data name="Test" xml:space="preserve"><value>Test</value></data>
+  <data name="TestOk" xml:space="preserve"><value>Test succeeded</value></data>
+  <data name="TestFail" xml:space="preserve"><value>Test failed</value></data>
+  <data name="TestFailedWithError" xml:space="preserve"><value>Test failed: {0}</value></data>
+  <data name="ProviderLastFm" xml:space="preserve"><value>Last.fm</value></data>
+  <data name="ProviderListenBrainz" xml:space="preserve"><value>ListenBrainz</value></data>
+  <data name="ProviderTrakt" xml:space="preserve"><value>Trakt</value></data>
+  <data name="ProviderWebhook" xml:space="preserve"><value>Webhook</value></data>
+  <data name="Select" xml:space="preserve"><value>Select</value></data>
+  <data name="SelectAll" xml:space="preserve"><value>Select all</value></data>
+  <data name="DeselectAll" xml:space="preserve"><value>Deselect all</value></data>
+  <data name="SelectedCount" xml:space="preserve"><value>{0} selected</value></data>
+  <data name="DeleteSelected" xml:space="preserve"><value>Delete</value></data>
+  <data name="DeleteSelectedTitle" xml:space="preserve"><value>Delete accounts</value></data>
+  <data name="DeleteSelectedMessage" xml:space="preserve"><value>Delete {0} account(s)? This cannot be undone.</value></data>
+  <data name="DeleteSelectedSuccess" xml:space="preserve"><value>{0} account(s) deleted</value></data>
+  <data name="DeleteSelectedError" xml:space="preserve"><value>Could not delete the selected accounts</value></data>
+  <data name="DeleteSelectedPartial" xml:space="preserve"><value>{0} deleted, {1} failed</value></data>
+  <data name="DeleteAccountTitle" xml:space="preserve"><value>Delete account</value></data>
+  <data name="DeleteAccountMessage" xml:space="preserve"><value>Delete account "{0}"? This cannot be undone.</value></data>
+  <data name="AccountDeleted" xml:space="preserve"><value>Account deleted</value></data>
+</root>

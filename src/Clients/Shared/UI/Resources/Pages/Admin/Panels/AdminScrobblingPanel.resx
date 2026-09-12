@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="Title" xml:space="preserve"><value>Scrobbling</value></data>
+  <data name="Description" xml:space="preserve"><value>Activez le scrobbling et enregistrez les applications OAuth du serveur. Chaque utilisateur connecte ensuite son propre compte dans Parametres.</value></data>
+  <data name="Enabled" xml:space="preserve"><value>Activer le scrobbling</value></data>
+  <data name="DisabledWarning" xml:space="preserve"><value>Le scrobbling est desactive. Les comptes utilisateur restent enregistres mais aucun envoi n est effectue.</value></data>
+  <data name="LastFmSectionTitle" xml:space="preserve"><value>Last.fm / Libre.fm</value></data>
+  <data name="LastFmSectionHint" xml:space="preserve"><value>Cles de l application K7. Creez-les sur last.fm/api/account/create. Les utilisateurs se connectent ensuite avec leur compte.</value></data>
+  <data name="OpenLastFmApi" xml:space="preserve"><value>Ouvrir last.fm/api/account/create</value></data>
+  <data name="LastFmApiKey" xml:space="preserve"><value>API key</value></data>
+  <data name="LastFmApiSecret" xml:space="preserve"><value>API secret</value></data>
+  <data name="LastFmApiHost" xml:space="preserve"><value>Host API</value></data>
+  <data name="LastFmApiHostHelper" xml:space="preserve"><value>Laissez le defaut, ou un hote Libre.fm.</value></data>
+  <data name="TraktSectionTitle" xml:space="preserve"><value>Trakt</value></data>
+  <data name="TraktSectionHint" xml:space="preserve"><value>Client ID et secret de l application K7. Creez-les sur trakt.tv/oauth/applications. Les utilisateurs autorisent ensuite leur compte.</value></data>
+  <data name="OpenTraktApps" xml:space="preserve"><value>Ouvrir trakt.tv/oauth/applications</value></data>
+  <data name="TraktClientId" xml:space="preserve"><value>Client ID</value></data>
+  <data name="TraktClientSecret" xml:space="preserve"><value>Client secret</value></data>
+  <data name="SaveSuccess" xml:space="preserve"><value>Reglages enregistres</value></data>
+</root>

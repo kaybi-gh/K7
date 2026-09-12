@@ -1,5 +1,5 @@
-using Blazored.LocalStorage;
 using System.Globalization;
+using Blazored.LocalStorage;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Services;
 using K7.Clients.Shared.Services.K7Server;
@@ -56,6 +56,8 @@ builder.Services.AddSingleton<IFederationService>(sp => sp.GetRequiredService<K7
 builder.Services.AddSingleton<IApiKeyAdminService>(sp => sp.GetRequiredService<K7ServerService>());
 builder.Services.AddSingleton<IClientAppPasswordUserService>(sp => sp.GetRequiredService<K7ServerService>());
 builder.Services.AddSingleton<IMusicIntelligenceAdminService>(sp => sp.GetRequiredService<K7ServerService>());
+builder.Services.AddSingleton<IScrobblingAdminService>(sp => sp.GetRequiredService<K7ServerService>());
+builder.Services.AddSingleton<IScrobblingUserService>(sp => sp.GetRequiredService<K7ServerService>());
 builder.Services.AddSingleton<ITranscodeAdminService>(sp => sp.GetRequiredService<K7ServerService>());
 builder.Services.AddSingleton<IMusicIntelligenceClientService>(sp => sp.GetRequiredService<K7ServerService>());
 

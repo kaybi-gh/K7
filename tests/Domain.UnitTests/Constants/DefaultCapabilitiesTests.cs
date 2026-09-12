@@ -12,6 +12,7 @@ public class DefaultCapabilitiesTests
         var caps = DefaultCapabilities.ForRole(Roles.Guest);
 
         caps.Should().BeEquivalentTo([Capability.CanReportPlaybackProgress]);
+        caps.Should().NotContain(Capability.CanScrobble);
     }
 
     [Test]
@@ -23,6 +24,7 @@ public class DefaultCapabilitiesTests
         caps.Should().Contain(Capability.CanResumePlayback);
         caps.Should().Contain(Capability.CanViewHistory);
         caps.Should().Contain(Capability.CanViewStats);
+        caps.Should().Contain(Capability.CanScrobble);
         caps.Should().NotContain(Capability.CanDeleteHistory);
         caps.Should().NotContain(Capability.CanReassignHistory);
     }

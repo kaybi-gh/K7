@@ -8,5 +8,5 @@ public partial class AdminLayout
     private static readonly string[] ActivityRoutes = ["/admin/playback-history", "/admin/stats"];
     private static readonly string[] SystemRoutes =
         ["/admin/background-tasks", "/admin/diagnostics", "/admin/diagnostics/details"];
-    private static readonly string[] IntegrationRoutes = ["/admin/federation", "/admin/notifications", "/admin/music-intelligence", "/admin/api-keys"];
+    private static readonly string[] IntegrationRoutes = ["/admin/federation", "/admin/notifications", "/admin/scrobbling", "/admin/music-intelligence", "/admin/api-keys"];
 }

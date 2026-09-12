@@ -1,0 +1,41 @@
+.scrobble-select-item {
+  display: flex;
+  align-items: stretch;
+  gap: var(--space-3);
+  width: 100%;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+}
+
+.scrobble-select-item__check {
+  display: inline-flex;
+  align-items: center;
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
+  padding-left: var(--space-1);
+}
+
+.scrobble-select-item.is-selected .scrobble-select-item__check {
+  color: var(--color-accent);
+}
+
+.scrobble-select-item__paper {
+  flex: 1;
+  padding: var(--space-4);
+}
+
+.scrobble-select-item.is-selected ::deep .scrobble-select-item__paper {
+  border-color: var(--color-accent);
+}
+
+.scrobble-select-item:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-md, 8px);
+}

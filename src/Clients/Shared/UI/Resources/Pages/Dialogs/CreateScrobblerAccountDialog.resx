@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="Provider" xml:space="preserve"><value>Service</value></data>
+  <data name="Connect" xml:space="preserve"><value>Connecter</value></data>
+  <data name="Add" xml:space="preserve"><value>Ajouter</value></data>
+  <data name="ContactAdminLastFm" xml:space="preserve"><value>Last.fm n'est pas configure. Contactez votre administrateur pour l'activer.</value></data>
+  <data name="ContactAdminTrakt" xml:space="preserve"><value>Trakt n'est pas configure. Contactez votre administrateur pour l'activer.</value></data>
+  <data name="ContactAdminBoth" xml:space="preserve"><value>Last.fm et Trakt ne sont pas configures. Contactez votre administrateur pour les activer.</value></data>
+  <data name="LastFmIntro" xml:space="preserve"><value>Connectez votre compte Last.fm pour scrobbler la musique.</value></data>
+  <data name="TraktIntro" xml:space="preserve"><value>Connectez votre compte Trakt pour scrobbler films et series.</value></data>
+  <data name="ListenBrainzToken" xml:space="preserve"><value>Jeton ListenBrainz</value></data>
+  <data name="ListenBrainzTokenHint" xml:space="preserve"><value>Creez ou copiez le jeton sur listenbrainz.org/settings/</value></data>
+  <data name="OpenListenBrainzSettings" xml:space="preserve"><value>Ouvrir les parametres ListenBrainz</value></data>
+  <data name="OpenTokenSettings" xml:space="preserve"><value>Ou trouver le jeton</value></data>
+  <data name="WebhookPreset" xml:space="preserve"><value>Modele</value></data>
+  <data name="WebhookUrl" xml:space="preserve"><value>URL du webhook</value></data>
+  <data name="WebhookUrlHintYamtrack" xml:space="preserve"><value>Collez l URL webhook Yamtrack. Exemple: https://yamtrack.yourdomain.tld/webhook/jellyfin/{token}</value></data>
+  <data name="WebhookUrlHintFloppy" xml:space="preserve"><value>Collez l URL webhook Floppy. Exemple: https://floppy.yourdomain.tld/webhook/jellyfin/{token}</value></data>
+  <data name="WebhookUrlHintRyot" xml:space="preserve"><value>Collez l URL d integration Ryot. Exemple: https://ryot.yourdomain.tld/_i/{slug}</value></data>
+  <data name="WebhookUrlHintBetaSeries" xml:space="preserve"><value>Ajoutez votre jeton API a la fin de l URL. Jeton: betaseries.com/api/</value></data>
+  <data name="WebhookUrlHintCustom" xml:space="preserve"><value>URL complete du webhook a appeler.</value></data>
+  <data name="DisplayName" xml:space="preserve"><value>Nom affiche</value></data>
+  <data name="LastFmAuthHint" xml:space="preserve"><value>Autorisez K7 sur Last.fm puis revenez ici.</value></data>
+  <data name="OpenLastFm" xml:space="preserve"><value>Ouvrir Last.fm</value></data>
+  <data name="LastFmDone" xml:space="preserve"><value>J'ai autorise</value></data>
+  <data name="TraktAuthHint" xml:space="preserve"><value>Entrez le code {0} sur Trakt.</value></data>
+  <data name="OpenTrakt" xml:space="preserve"><value>Ouvrir Trakt</value></data>
+  <data name="TraktDone" xml:space="preserve"><value>Verifier</value></data>
+  <data name="TraktPending" xml:space="preserve"><value>Trakt n'a pas encore confirme. Reessayez.</value></data>
+  <data name="ProviderLastFm" xml:space="preserve"><value>Last.fm</value></data>
+  <data name="ProviderListenBrainz" xml:space="preserve"><value>ListenBrainz</value></data>
+  <data name="ProviderTrakt" xml:space="preserve"><value>Trakt</value></data>
+  <data name="ProviderWebhook" xml:space="preserve"><value>Webhook</value></data>
+  <data name="PresetYamtrack" xml:space="preserve"><value>Yamtrack</value></data>
+  <data name="PresetFloppy" xml:space="preserve"><value>Floppy</value></data>
+  <data name="PresetRyot" xml:space="preserve"><value>Ryot</value></data>
+  <data name="PresetBetaSeries" xml:space="preserve"><value>BetaSeries</value></data>
+  <data name="PresetCustom" xml:space="preserve"><value>Personnalise</value></data>
+  <data name="MediaTypes" xml:space="preserve"><value>Types a scrobbler</value></data>
+  <data name="MediaTypesHint" xml:space="preserve"><value>Cochez ce que ce compte doit recevoir.</value></data>
+  <data name="MediaTypeMovie" xml:space="preserve"><value>Films</value></data>
+  <data name="MediaTypeEpisode" xml:space="preserve"><value>Episodes</value></data>
+  <data name="MediaTypeMusic" xml:space="preserve"><value>Musique</value></data>
+  <data name="CapabilityLastFm" xml:space="preserve"><value>Last.fm scrobble uniquement la musique.</value></data>
+  <data name="CapabilityListenBrainz" xml:space="preserve"><value>ListenBrainz scrobble uniquement la musique.</value></data>
+  <data name="CapabilityTrakt" xml:space="preserve"><value>Trakt scrobble films et episodes (pas la musique).</value></data>
+  <data name="CapabilityWebhook" xml:space="preserve"><value>Les webhooks peuvent recevoir films, episodes et musique.</value></data>
+  <data name="CapabilityWebhookVideo" xml:space="preserve"><value>Ce preset scrobble films et episodes uniquement (pas la musique).</value></data>
+  <data name="CapabilityBetaSeries" xml:space="preserve"><value>BetaSeries marque uniquement comme vu a la fin (pas en cours). Films: IMDb requis. Episodes: TVDB requis.</value></data>
+  <data name="WebhookTemplatesHint" xml:space="preserve"><value>JSON envoye pour play, pause, stop et progress. Placeholders: {{Title}}, {{MediaType}}, {{ProgressPercent}}, {{State}}, etc.</value></data>
+  <data name="WebhookPresetLockedHint" xml:space="preserve"><value>Ce modele utilise un payload pret a l'emploi. Choisissez Personnalise pour editer le JSON.</value></data>
+  <data name="PlayTemplate" xml:space="preserve"><value>Payload play</value></data>
+  <data name="PauseTemplate" xml:space="preserve"><value>Payload pause</value></data>
+  <data name="StopTemplate" xml:space="preserve"><value>Payload stop</value></data>
+  <data name="ProgressTemplate" xml:space="preserve"><value>Payload progress</value></data>
+</root>

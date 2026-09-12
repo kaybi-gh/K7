@@ -12,7 +12,9 @@
     <DockerfileFastModeStage>dev</DockerfileFastModeStage>
     <DockerfileRunArguments>--add-host host.docker.internal:host-gateway -v "C:\k7:/k7"</DockerfileRunArguments>
     <OpenApiGenerateDocumentsOnBuild>true</OpenApiGenerateDocumentsOnBuild>
-    <OpenApiDocumentsDirectory>wwwroot/openapi</OpenApiDocumentsDirectory>
+    <!-- Write to obj first. Copying straight into wwwroot fails on Aspire debug restart because
+         the previous host keeps specification.json memory-mapped. -->
+    <OpenApiDocumentsDirectory>$([MSBuild]::EnsureTrailingSlash('$(IntermediateOutputPath)'))openapi</OpenApiDocumentsDirectory>
     <OpenApiGenerateDocumentsOptions>--file-name specification</OpenApiGenerateDocumentsOptions>
     <RequiresAspNetWebAssets>true</RequiresAspNetWebAssets>
   </PropertyGroup>
@@ -66,6 +68,21 @@
   <ItemGroup>
     <Folder Include="wwwroot\openapi\" />
   </ItemGroup>
+
+  <Target Name="CopyOpenApiSpecificationToWwwroot" AfterTargets="GenerateOpenApiDocuments">
+    <PropertyGroup>
+      <_OpenApiGeneratedSpec>$([MSBuild]::EnsureTrailingSlash('$(IntermediateOutputPath)'))openapi\specification.json</_OpenApiGeneratedSpec>
+      <_OpenApiWwwrootSpec>$(MSBuildProjectDirectory)\wwwroot\openapi\specification.json</_OpenApiWwwrootSpec>
+    </PropertyGroup>
+    <MakeDir Directories="$(MSBuildProjectDirectory)\wwwroot\openapi" />
+    <Copy SourceFiles="$(_OpenApiGeneratedSpec)"
+          DestinationFiles="$(_OpenApiWwwrootSpec)"
+          SkipUnchangedFiles="true"
+          Retries="3"
+          RetryDelayMilliseconds="200"
+          ContinueOnError="WarnAndContinue"
+          Condition="Exists('$(_OpenApiGeneratedSpec)')" />
+  </Target>
 
   <PropertyGroup Condition="'$(IsGeneratingOpenApi)' == 'true'">
     <DefineConstants>$(DefineConstants);GENERATING_OPENAPI</DefineConstants>

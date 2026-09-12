@@ -1,0 +1,73 @@
+@page "/admin/scrobbling"
+@layout AdminLayout
+@using K7.Shared.Scrobbling
+@inject IStringLocalizer<AdminScrobblingPanel> L
+@inject IScrobblingAdminService ScrobblingAdmin
+@inject IExternalLinkService ExternalLinks
+
+@if (_loading)
+{
+    <K7ProgressBar Indeterminate="true" />
+}
+else if (_settings is not null)
+{
+    <div class="settings-form-page">
+        <div class="settings-form-page__body d-flex flex-col pa-4 gap-4">
+            <div>
+                <h6 class="mb-1">@L["Title"]</h6>
+                <p class="text-sm" style="color: var(--color-text-muted);">@L["Description"]</p>
+            </div>
+
+            <K7Switch Label="@L["Enabled"]" Value="_settings.Enabled" ValueChanged="OnEnabledChanged" />
+
+            @if (!_settings.Enabled)
+            {
+                <K7Alert Severity="K7Severity.Warning" Variant="outlined">
+                    @L["DisabledWarning"]
+                </K7Alert>
+            }
+
+            <K7ExpansionPanel Dense="true">
+                <TitleContent>@L["LastFmSectionTitle"]</TitleContent>
+                <ChildContent>
+                    <div class="d-flex flex-col gap-3 pt-2">
+                        <p class="text-sm" style="color: var(--color-text-muted);">@L["LastFmSectionHint"]</p>
+                        <K7Button Variant="text" Class="align-self-start"
+                                  OnClick="() => ExternalLinks.OpenAsync(ScrobblerSetupUrls.LastFmApiAccountCreate)">
+                            @L["OpenLastFmApi"]
+                        </K7Button>
+                        <K7TextField TValue="string" Label="@L["LastFmApiKey"]" Value="_settings.LastFmApiKey"
+                                     ValueChanged="OnLastFmApiKeyChanged" />
+                        <K7TextField TValue="string" Label="@L["LastFmApiSecret"]" Value="_settings.LastFmApiSecret"
+                                     ValueChanged="OnLastFmApiSecretChanged" Type="password" />
+                        <K7TextField TValue="string" Label="@L["LastFmApiHost"]" Value="_settings.LastFmApiHost"
+                                     ValueChanged="OnLastFmApiHostChanged" HelperText="@L["LastFmApiHostHelper"]" />
+                    </div>
+                </ChildContent>
+            </K7ExpansionPanel>
+
+            <K7ExpansionPanel Dense="true">
+                <TitleContent>@L["TraktSectionTitle"]</TitleContent>
+                <ChildContent>
+                    <div class="d-flex flex-col gap-3 pt-2">
+                        <p class="text-sm" style="color: var(--color-text-muted);">@L["TraktSectionHint"]</p>
+                        <K7Button Variant="text" Class="align-self-start"
+                                  OnClick="() => ExternalLinks.OpenAsync(ScrobblerSetupUrls.TraktOauthApplications)">
+                            @L["OpenTraktApps"]
+                        </K7Button>
+                        <K7TextField TValue="string" Label="@L["TraktClientId"]" Value="_settings.TraktClientId"
+                                     ValueChanged="OnTraktClientIdChanged" />
+                        <K7TextField TValue="string" Label="@L["TraktClientSecret"]" Value="_settings.TraktClientSecret"
+                                     ValueChanged="OnTraktClientSecretChanged" Type="password" />
+                    </div>
+                </ChildContent>
+            </K7ExpansionPanel>
+        </div>
+
+        <K7SettingsActionBar IsDirty="IsDirty"
+                             IsSaving="_saving"
+                             ShowResetToDefaults="false"
+                             OnSave="SaveAsync"
+                             OnCancel="CancelChanges" />
+    </div>
+}

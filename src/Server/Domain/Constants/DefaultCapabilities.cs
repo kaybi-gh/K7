@@ -14,7 +14,8 @@ public static class DefaultCapabilities
         Capability.CanManageDevices,
         Capability.CanModifySettings,
         Capability.CanReportPlaybackProgress,
-        Capability.CanTranscode
+        Capability.CanTranscode,
+        Capability.CanScrobble
     ];
 
     private static readonly HashSet<Capability> AdminCapabilities =

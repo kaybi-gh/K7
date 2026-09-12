@@ -158,6 +158,8 @@ public static partial class MauiProgram
         builder.Services.AddSingleton<IApiKeyAdminService>(sp => sp.GetRequiredService<K7ServerService>());
         builder.Services.AddSingleton<IClientAppPasswordUserService>(sp => sp.GetRequiredService<K7ServerService>());
         builder.Services.AddSingleton<IMusicIntelligenceAdminService>(sp => sp.GetRequiredService<K7ServerService>());
+        builder.Services.AddSingleton<IScrobblingAdminService>(sp => sp.GetRequiredService<K7ServerService>());
+        builder.Services.AddSingleton<IScrobblingUserService>(sp => sp.GetRequiredService<K7ServerService>());
         builder.Services.AddSingleton<ITranscodeAdminService>(sp => sp.GetRequiredService<K7ServerService>());
         builder.Services.AddSingleton<IMusicIntelligenceClientService>(sp => sp.GetRequiredService<K7ServerService>());
         builder.Services.AddSingleton<IDownloadService>(sp => sp.GetRequiredService<K7ServerService>());

@@ -15,5 +15,6 @@ public enum Capability
     CanReportPlaybackProgress,
     CanTranscode,
     CanDeleteHistory,
-    CanReassignHistory
+    CanReassignHistory,
+    CanScrobble
 }

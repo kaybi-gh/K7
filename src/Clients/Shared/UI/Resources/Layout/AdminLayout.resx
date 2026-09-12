@@ -48,6 +48,7 @@
   <data name="TrackSelection" xml:space="preserve"><value>Audio et sous-titres</value></data>
   <data name="Federation" xml:space="preserve"><value>Fédération</value></data>
   <data name="Notifications" xml:space="preserve"><value>Notifications</value></data>
+  <data name="Scrobbling" xml:space="preserve"><value>Scrobbling</value></data>
   <data name="PlaybackHistory" xml:space="preserve"><value>Historique</value></data>
   <data name="Stats" xml:space="preserve"><value>Statistiques</value></data>
   <data name="ApiKeys" xml:space="preserve"><value>Clés API</value></data>

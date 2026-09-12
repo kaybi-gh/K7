@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="Provider" xml:space="preserve"><value>Provider</value></data>
+  <data name="Connect" xml:space="preserve"><value>Connect</value></data>
+  <data name="Add" xml:space="preserve"><value>Add</value></data>
+  <data name="ContactAdminLastFm" xml:space="preserve"><value>Last.fm is not configured. Contact your administrator to enable it.</value></data>
+  <data name="ContactAdminTrakt" xml:space="preserve"><value>Trakt is not configured. Contact your administrator to enable it.</value></data>
+  <data name="ContactAdminBoth" xml:space="preserve"><value>Last.fm and Trakt are not configured. Contact your administrator to enable them.</value></data>
+  <data name="LastFmIntro" xml:space="preserve"><value>Connect your Last.fm account to scrobble music.</value></data>
+  <data name="TraktIntro" xml:space="preserve"><value>Connect your Trakt account to scrobble movies and shows.</value></data>
+  <data name="ListenBrainzToken" xml:space="preserve"><value>ListenBrainz token</value></data>
+  <data name="ListenBrainzTokenHint" xml:space="preserve"><value>Create or copy the token at listenbrainz.org/settings/</value></data>
+  <data name="OpenListenBrainzSettings" xml:space="preserve"><value>Open ListenBrainz settings</value></data>
+  <data name="OpenTokenSettings" xml:space="preserve"><value>Where to find the token</value></data>
+  <data name="WebhookPreset" xml:space="preserve"><value>Preset</value></data>
+  <data name="WebhookUrl" xml:space="preserve"><value>Webhook URL</value></data>
+  <data name="WebhookUrlHintYamtrack" xml:space="preserve"><value>Paste the Yamtrack webhook URL. Example: https://yamtrack.yourdomain.tld/webhook/jellyfin/{token}</value></data>
+  <data name="WebhookUrlHintFloppy" xml:space="preserve"><value>Paste the Floppy webhook URL. Example: https://floppy.yourdomain.tld/webhook/jellyfin/{token}</value></data>
+  <data name="WebhookUrlHintRyot" xml:space="preserve"><value>Paste the Ryot integration URL. Example: https://ryot.yourdomain.tld/_i/{slug}</value></data>
+  <data name="WebhookUrlHintBetaSeries" xml:space="preserve"><value>Append your API token to the URL. Token: betaseries.com/api/</value></data>
+  <data name="WebhookUrlHintCustom" xml:space="preserve"><value>Full webhook URL to call.</value></data>
+  <data name="DisplayName" xml:space="preserve"><value>Display name</value></data>
+  <data name="LastFmAuthHint" xml:space="preserve"><value>Authorize K7 on Last.fm, then come back here.</value></data>
+  <data name="OpenLastFm" xml:space="preserve"><value>Open Last.fm</value></data>
+  <data name="LastFmDone" xml:space="preserve"><value>I authorized it</value></data>
+  <data name="TraktAuthHint" xml:space="preserve"><value>Enter code {0} on Trakt.</value></data>
+  <data name="OpenTrakt" xml:space="preserve"><value>Open Trakt</value></data>
+  <data name="TraktDone" xml:space="preserve"><value>Check</value></data>
+  <data name="TraktPending" xml:space="preserve"><value>Trakt has not confirmed yet. Try again.</value></data>
+  <data name="ProviderLastFm" xml:space="preserve"><value>Last.fm</value></data>
+  <data name="ProviderListenBrainz" xml:space="preserve"><value>ListenBrainz</value></data>
+  <data name="ProviderTrakt" xml:space="preserve"><value>Trakt</value></data>
+  <data name="ProviderWebhook" xml:space="preserve"><value>Webhook</value></data>
+  <data name="PresetYamtrack" xml:space="preserve"><value>Yamtrack</value></data>
+  <data name="PresetFloppy" xml:space="preserve"><value>Floppy</value></data>
+  <data name="PresetRyot" xml:space="preserve"><value>Ryot</value></data>
+  <data name="PresetBetaSeries" xml:space="preserve"><value>BetaSeries</value></data>
+  <data name="PresetCustom" xml:space="preserve"><value>Custom</value></data>
+  <data name="MediaTypes" xml:space="preserve"><value>Types to scrobble</value></data>
+  <data name="MediaTypesHint" xml:space="preserve"><value>Choose what this account should receive.</value></data>
+  <data name="MediaTypeMovie" xml:space="preserve"><value>Movies</value></data>
+  <data name="MediaTypeEpisode" xml:space="preserve"><value>Episodes</value></data>
+  <data name="MediaTypeMusic" xml:space="preserve"><value>Music</value></data>
+  <data name="CapabilityLastFm" xml:space="preserve"><value>Last.fm scrobbles music only.</value></data>
+  <data name="CapabilityListenBrainz" xml:space="preserve"><value>ListenBrainz scrobbles music only.</value></data>
+  <data name="CapabilityTrakt" xml:space="preserve"><value>Trakt scrobbles movies and episodes (not music).</value></data>
+  <data name="CapabilityWebhook" xml:space="preserve"><value>Webhooks can receive movies, episodes, and music.</value></data>
+  <data name="CapabilityWebhookVideo" xml:space="preserve"><value>This preset scrobbles movies and episodes only (not music).</value></data>
+  <data name="CapabilityBetaSeries" xml:space="preserve"><value>BetaSeries only marks watched on completion (no in-progress). Movies need IMDb. Episodes need TVDB.</value></data>
+  <data name="WebhookTemplatesHint" xml:space="preserve"><value>JSON sent for play, pause, stop, and progress. Placeholders: {{Title}}, {{MediaType}}, {{ProgressPercent}}, {{State}}, etc.</value></data>
+  <data name="WebhookPresetLockedHint" xml:space="preserve"><value>This preset ships a ready-made payload. Choose Custom to edit the JSON.</value></data>
+  <data name="PlayTemplate" xml:space="preserve"><value>Play payload</value></data>
+  <data name="PauseTemplate" xml:space="preserve"><value>Pause payload</value></data>
+  <data name="StopTemplate" xml:space="preserve"><value>Stop payload</value></data>
+  <data name="ProgressTemplate" xml:space="preserve"><value>Progress payload</value></data>
+</root>

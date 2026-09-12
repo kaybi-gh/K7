@@ -1,6 +1,8 @@
 using System.Net;
+using System.Reflection;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Infrastructure.ExternalServices.Federation;
+using K7.Server.Infrastructure.ExternalServices.Scrobbling;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Http.Resilience;
 using Polly;
@@ -66,7 +68,39 @@ public static class DependencyInjection
             })
             .SelectPipelineByAuthority();
 
+        // Replace Aspire defaults with a short, capped pipeline so a flaky Yamtrack/BetaSeries
+        // cannot sit on the queue for tens of seconds (playback stays on a separate path).
+        var scrobbleVersion = Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "0.0.0";
+        services.AddHttpClient(K7.Server.Application.DependencyInjection.ScrobbleHttpClient, client =>
+            {
+                client.DefaultRequestHeaders.UserAgent.ParseAdd($"K7/{scrobbleVersion}");
+                client.Timeout = TimeSpan.FromSeconds(20);
+            })
+            .ConfigureAdditionalHttpMessageHandlers((handlers, _) => handlers.Clear())
+            .AddStandardResilienceHandler(options =>
+            {
+                options.AttemptTimeout.Timeout = TimeSpan.FromSeconds(5);
+                options.TotalRequestTimeout.Timeout = TimeSpan.FromSeconds(12);
+                options.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(30);
+                options.CircuitBreaker.MinimumThroughput = 4;
+                options.CircuitBreaker.BreakDuration = TimeSpan.FromSeconds(45);
+                // 429 is handled per destination (Retry-After). Do not open the shared
+                // scrobble circuit on rate limits (would block Last.fm/Trakt/webhooks too).
+                options.CircuitBreaker.ShouldHandle = args =>
+                    ValueTask.FromResult(IsScrobbleCircuitFailure(args.Outcome));
+                // Resilience options require MaxRetryAttempts >= 1; disable retries via ShouldHandle.
+                options.Retry.MaxRetryAttempts = 1;
+                options.Retry.ShouldHandle = _ => ValueTask.FromResult(false);
+                options.Retry.Delay = TimeSpan.FromMilliseconds(400);
+            });
+
         services.AddScoped<IPeerApplicationManager, PeerApplicationManager>();
+
+        services.AddSingleton<IScrobbleQueue, ScrobbleChannelQueue>();
+        services.AddScoped<IScrobbleDestination, LastFmScrobbleDestination>();
+        services.AddScoped<IScrobbleDestination, ListenBrainzScrobbleDestination>();
+        services.AddScoped<IScrobbleDestination, TraktScrobbleDestination>();
+        services.AddScoped<IScrobbleDestination, WebhookScrobbleDestination>();
 
         return services;
     }
@@ -101,6 +135,21 @@ public static class DependencyInjection
             return true;
 
         return outcome.Result?.StatusCode is HttpStatusCode.InternalServerError
+            or HttpStatusCode.RequestTimeout;
+    }
+
+    /// <summary>
+    /// Shared scrobble HttpClient: trip only on hard failures, never on 429.
+    /// </summary>
+    private static bool IsScrobbleCircuitFailure(Outcome<HttpResponseMessage> outcome)
+    {
+        if (outcome.Exception is TimeoutRejectedException or HttpRequestException)
+            return true;
+
+        return outcome.Result?.StatusCode is HttpStatusCode.InternalServerError
+            or HttpStatusCode.BadGateway
+            or HttpStatusCode.ServiceUnavailable
+            or HttpStatusCode.GatewayTimeout
             or HttpStatusCode.RequestTimeout;
     }
 }
