@@ -1,18 +1,10 @@
 using K7.Server.Application.Common.Security;
 using K7.Server.Application.Features.Notifications.Services;
 using K7.Server.Domain.Constants;
+using K7.Shared.Dtos.Notifications;
+using K7.Shared.Dtos.Rules;
 
 namespace K7.Server.Application.Features.Notifications.Queries.GetAvailableEvents;
-
-public record NotificationEventDescriptorDto(
-    string EventTypeName,
-    string DisplayName,
-    string Category,
-    string DefaultTitleTemplate,
-    string DefaultBodyTemplate,
-    IReadOnlyList<NotificationParameterInfoDto> Parameters);
-
-public record NotificationParameterInfoDto(string Name, string DisplayName, string ValueType);
 
 [Authorize(Roles = Roles.Administrator)]
 public record GetAvailableEventsQuery : IRequest<IEnumerable<NotificationEventDescriptorDto>>;
@@ -28,20 +20,31 @@ public class GetAvailableEventsQueryHandler : IRequestHandler<GetAvailableEvents
 
     public Task<IEnumerable<NotificationEventDescriptorDto>> Handle(GetAvailableEventsQuery request, CancellationToken cancellationToken)
     {
-        var globalParams = GlobalNotificationParameters.All
-            .Select(p => new NotificationParameterInfoDto(p.Name, p.DisplayName, p.ValueType))
-            .ToList();
+        var globalParams = NotificationParams.Globals.Select(ToDto).ToList();
 
-        var result = _descriptors.Select(d => new NotificationEventDescriptorDto(
-            d.EventTypeName,
-            d.DisplayName,
-            d.Category.ToString(),
-            d.DefaultTitleTemplate,
-            d.DefaultBodyTemplate,
-            d.Parameters.Select(p => new NotificationParameterInfoDto(p.Name, p.DisplayName, p.ValueType))
-                .Concat(globalParams)
-                .ToList()));
+        var result = _descriptors.Select(d => new NotificationEventDescriptorDto
+        {
+            EventTypeName = d.EventTypeName,
+            DisplayName = d.DisplayNameKey,
+            DisplayNameKey = d.DisplayNameKey,
+            Category = d.Category.ToString(),
+            DefaultTitleTemplate = d.DefaultTitleTemplate,
+            DefaultBodyTemplate = d.DefaultBodyTemplate,
+            Parameters = d.Parameters.Select(ToDto).Concat(globalParams).ToList()
+        });
 
         return Task.FromResult(result);
     }
+
+    private static NotificationParameterInfoDto ToDto(NotificationParameterInfo p) => new()
+    {
+        Name = p.Name,
+        DisplayName = p.DisplayNameKey,
+        DisplayNameKey = p.DisplayNameKey,
+        ValueType = p.ValueType,
+        Group = p.Group.ToString(),
+        SampleValue = p.SampleValue,
+        FilterValueType = p.FilterValueType.ToString(),
+        FilterOptions = p.FilterOptions
+    };
 }

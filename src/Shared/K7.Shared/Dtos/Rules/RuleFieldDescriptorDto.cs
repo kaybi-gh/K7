@@ -10,6 +10,7 @@ public sealed record RuleFieldDescriptorDto
     public required IReadOnlyList<RuleOperator> Operators { get; init; }
     public IReadOnlyList<RuleFieldOptionDto>? Options { get; init; }
     public string? ValuePlaceholder { get; init; }
+    public string? Group { get; init; }
 }
 
 public sealed record RuleFieldOptionDto

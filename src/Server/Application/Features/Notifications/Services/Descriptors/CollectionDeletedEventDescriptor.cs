@@ -6,14 +6,14 @@ namespace K7.Server.Application.Features.Notifications.Services.Descriptors;
 public class CollectionDeletedEventDescriptor : INotificationEventDescriptor
 {
     public string EventTypeName => nameof(CollectionDeletedEvent);
-    public string DisplayName => "Collection Deleted";
+    public string DisplayNameKey => "EventCollectionDeletedEvent";
     public NotificationEventCategory Category => NotificationEventCategory.Playlist;
-    public string DefaultTitleTemplate => "Collection Deleted";
-    public string DefaultBodyTemplate => "{{Collection.Title}} has been removed";
+    public string DefaultTitleTemplate => "Collection deleted";
+    public string DefaultBodyTemplate => "Collection {{Collection.Title}} was removed.";
     public IReadOnlyList<NotificationParameterInfo> Parameters { get; } =
     [
-        new("Collection.Title", "Title", "String"),
-        new("Collection.Description", "Description", "String"),
-        new("Collection.MediaType", "Media Type", "String"),
+        NotificationParams.CollectionTitle,
+        NotificationParams.CollectionDescription,
+        NotificationParams.CollectionMediaType
     ];
 }

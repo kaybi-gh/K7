@@ -2,6 +2,7 @@ using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Mappings;
 using K7.Server.Application.Common.Security;
 using K7.Server.Domain.Constants;
+using K7.Shared.Dtos.Notifications;
 using K7.Shared.Dtos.Rules;
 
 namespace K7.Server.Application.Features.Notifications.Commands.UpdateNotificationRule;
@@ -19,6 +20,8 @@ public record UpdateNotificationRuleCommand : IRequest
     public string? BodyTemplate { get; init; }
     public string? RawJsonTemplate { get; init; }
     public RuleGroupDto? RuleFilter { get; init; }
+    public IReadOnlyList<NotificationScheduleWindowDto> ScheduleWindows { get; init; } = [];
+    public int? CooldownSeconds { get; init; }
     public bool IsEnabled { get; init; }
 }
 
@@ -51,6 +54,8 @@ public class UpdateNotificationRuleCommandHandler : IRequestHandler<UpdateNotifi
         entity.BodyTemplate = request.BodyTemplate;
         entity.RawJsonTemplate = request.RawJsonTemplate;
         entity.RuleFilter = request.RuleFilter?.ToRuleGroup();
+        entity.ScheduleWindows = request.ScheduleWindows.ToDomain();
+        entity.CooldownSeconds = request.CooldownSeconds;
 
         await _context.SaveChangesAsync(cancellationToken);
     }

@@ -232,8 +232,17 @@ public class RemainingCommandValidatorTests
             ProviderType = nameof(NotificationProviderType.Webhook),
             PayloadFormat = "Json",
             EventTypeNames = ["MediaCreated"],
-            ProviderConfig = "{}"
+            ProviderConfig = """{"url":"https://hooks.example.com/k7"}"""
         }).IsValid.Should().BeTrue();
+
+        create.Validate(new CreateNotificationRuleCommand
+        {
+            Name = "Rule",
+            ProviderType = nameof(NotificationProviderType.Webhook),
+            PayloadFormat = "Json",
+            EventTypeNames = ["MediaCreated"],
+            ProviderConfig = """{"url":"ftp://bad.example"}"""
+        }).IsValid.Should().BeFalse();
 
         update.Validate(new UpdateNotificationRuleCommand
         {
@@ -242,7 +251,7 @@ public class RemainingCommandValidatorTests
             ProviderType = nameof(NotificationProviderType.Webhook),
             PayloadFormat = "Json",
             EventTypeNames = ["MediaCreated"],
-            ProviderConfig = "{}"
+            ProviderConfig = """{"url":"https://hooks.example.com/k7"}"""
         }).IsValid.Should().BeTrue();
     }
 

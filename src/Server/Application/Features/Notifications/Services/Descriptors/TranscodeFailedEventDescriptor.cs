@@ -6,14 +6,14 @@ namespace K7.Server.Application.Features.Notifications.Services.Descriptors;
 public class TranscodeFailedEventDescriptor : INotificationEventDescriptor
 {
     public string EventTypeName => nameof(TranscodeFailedEvent);
-    public string DisplayName => "Transcode Failed";
+    public string DisplayNameKey => "EventTranscodeFailedEvent";
     public NotificationEventCategory Category => NotificationEventCategory.Health;
     public string DefaultTitleTemplate => "Transcode failed";
-    public string DefaultBodyTemplate => "{{MediaTitle}}: {{ErrorMessage}}";
+    public string DefaultBodyTemplate => "Transcode failed for {{MediaTitle}}: {{ErrorMessage}}";
     public IReadOnlyList<NotificationParameterInfo> Parameters { get; } =
     [
-        new("IndexedFileId", "Indexed File Id", "Guid"),
-        new("MediaTitle", "Media Title", "String"),
-        new("ErrorMessage", "Error Message", "String"),
+        NotificationParams.TranscodeIndexedFileId,
+        NotificationParams.TranscodeMediaTitle,
+        NotificationParams.TranscodeError
     ];
 }

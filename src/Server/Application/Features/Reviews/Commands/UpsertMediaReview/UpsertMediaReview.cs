@@ -6,6 +6,7 @@ using K7.Server.Application.Services;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities.Ratings;
 using K7.Server.Domain.Entities.Reviews;
+using K7.Server.Domain.Events;
 using K7.Shared.Constants;
 using K7.Shared.Dtos.Requests;
 using Microsoft.EntityFrameworkCore;
@@ -19,7 +20,8 @@ public class UpsertMediaReviewCommandHandler(
     IApplicationDbContext context,
     IUser currentUser,
     IMediaAccessGuard accessGuard,
-    IUserRatingNotifier ratingNotifier)
+    IUserRatingNotifier ratingNotifier,
+    IIdentityService identityService)
     : IRequestHandler<UpsertMediaReviewCommand, Guid>
 {
     public async Task<Guid> Handle(UpsertMediaReviewCommand command, CancellationToken cancellationToken)
@@ -28,6 +30,10 @@ public class UpsertMediaReviewCommandHandler(
             throw new ForbiddenAccessException();
 
         await accessGuard.EnsureAccessAsync(command.MediaId, cancellationToken);
+
+        var userName = currentUser.IdentityId is not null
+            ? await identityService.GetUserNameAsync(currentUser.IdentityId)
+            : null;
 
         if (command.Request.Rating <= 0)
             throw new Common.Exceptions.ValidationException([new FluentValidation.Results.ValidationFailure("Rating", "Rating is required.")]);
@@ -39,6 +45,8 @@ public class UpsertMediaReviewCommandHandler(
             .OfType<UserRating>()
             .FirstOrDefaultAsync(r => r.UserId == userId && r.MediaId == command.MediaId, cancellationToken);
 
+        var isNewRating = rating is null;
+        var previousValue = rating?.Value;
         if (rating is null)
         {
             rating = new UserRating
@@ -57,6 +65,16 @@ public class UpsertMediaReviewCommandHandler(
             rating.Value = command.Request.Rating;
         }
 
+        if (isNewRating || previousValue != command.Request.Rating)
+        {
+            rating.AddDomainEvent(new MediaRatedEvent(
+                userId,
+                userName,
+                command.MediaId,
+                command.Request.Rating,
+                isNewRating));
+        }
+
         var review = await context.MediaReviews
             .FirstOrDefaultAsync(r => r.UserId == userId && r.MediaId == command.MediaId, cancellationToken);
 
@@ -66,17 +84,22 @@ public class UpsertMediaReviewCommandHandler(
         if (!hasReviewContent)
         {
             if (review is not null)
+            {
+                review.AddDomainEvent(new MediaReviewDeletedEvent(userId, userName, command.MediaId));
                 context.MediaReviews.Remove(review);
+            }
 
             await context.SaveChangesAsync(cancellationToken);
             await NotifyRatingUpdatedAsync(command.MediaId, command.Request.Rating, cancellationToken);
             return rating.Id;
         }
 
+        var isNewReview = review is null;
         if (review is null)
         {
             review = new MediaReview
             {
+                Id = Guid.NewGuid(),
                 UserId = userId,
                 MediaId = command.MediaId,
                 UserRatingId = rating.Id,
@@ -91,6 +114,15 @@ public class UpsertMediaReviewCommandHandler(
             review.Emoji = command.Request.Emoji;
             review.UserRatingId = rating.Id;
         }
+
+        review.AddDomainEvent(new MediaReviewUpsertedEvent(
+            userId,
+            userName,
+            command.MediaId,
+            command.Request.Rating,
+            text,
+            command.Request.Emoji,
+            isNewReview));
 
         await context.SaveChangesAsync(cancellationToken);
         await NotifyRatingUpdatedAsync(command.MediaId, command.Request.Rating, cancellationToken);

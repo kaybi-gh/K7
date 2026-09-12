@@ -37,6 +37,8 @@ public class GetNotificationRules : IEndpoint
         BodyTemplate = rule.BodyTemplate,
         RawJsonTemplate = rule.RawJsonTemplate,
         RuleFilter = rule.RuleFilter?.ToRuleGroupDto(),
+        ScheduleWindows = rule.ScheduleWindows.ToDto(),
+        CooldownSeconds = rule.CooldownSeconds,
         Created = rule.Created,
         LastModified = rule.LastModified
     };

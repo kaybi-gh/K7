@@ -39,7 +39,14 @@ public class NotificationConditionEvaluator
     {
         if (!eventData.TryGetValue(rule.Field, out var rawValue))
         {
-            return rule.Operator is RuleOperator.IsEmpty;
+            // Multi-event rules may reference fields only some events provide (e.g. User.Origin
+            // on UserCreatedEvent). Missing fields are not applicable, except emptiness checks.
+            return rule.Operator switch
+            {
+                RuleOperator.IsEmpty => true,
+                RuleOperator.IsNotEmpty => false,
+                _ => true
+            };
         }
 
         var actual = rawValue?.ToString() ?? string.Empty;
@@ -59,8 +66,25 @@ public class NotificationConditionEvaluator
             RuleOperator.EndsWith => actual.EndsWith(expected, StringComparison.OrdinalIgnoreCase),
             RuleOperator.IsEmpty => string.IsNullOrEmpty(actual),
             RuleOperator.IsNotEmpty => !string.IsNullOrEmpty(actual),
+            RuleOperator.InLast => IsInLast(actual, expected),
             _ => false
         };
+    }
+
+    private static bool IsInLast(string actual, string expected)
+    {
+        if (!double.TryParse(expected, CultureInfo.InvariantCulture, out var days))
+            return false;
+
+        DateTimeOffset instant;
+        if (DateTimeOffset.TryParse(actual, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var timestamp))
+            instant = timestamp;
+        else if (DateTime.TryParse(actual, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var dateTime))
+            instant = new DateTimeOffset(dateTime, TimeSpan.Zero);
+        else
+            return false;
+
+        return instant >= DateTimeOffset.UtcNow - TimeSpan.FromDays(days);
     }
 
     private static bool CompareEqual(string actual, string expected)

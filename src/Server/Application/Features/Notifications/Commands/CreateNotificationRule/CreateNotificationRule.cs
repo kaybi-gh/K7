@@ -4,6 +4,7 @@ using K7.Server.Application.Common.Security;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities.Notifications;
 using K7.Server.Domain.Events;
+using K7.Shared.Dtos.Notifications;
 using K7.Shared.Dtos.Rules;
 
 namespace K7.Server.Application.Features.Notifications.Commands.CreateNotificationRule;
@@ -20,6 +21,8 @@ public record CreateNotificationRuleCommand : IRequest<Guid>
     public string? BodyTemplate { get; init; }
     public string? RawJsonTemplate { get; init; }
     public RuleGroupDto? RuleFilter { get; init; }
+    public IReadOnlyList<NotificationScheduleWindowDto> ScheduleWindows { get; init; } = [];
+    public int? CooldownSeconds { get; init; }
     public bool IsEnabled { get; init; } = true;
 }
 
@@ -49,7 +52,9 @@ public class CreateNotificationRuleCommandHandler : IRequestHandler<CreateNotifi
             TitleTemplate = request.TitleTemplate,
             BodyTemplate = request.BodyTemplate,
             RawJsonTemplate = request.RawJsonTemplate,
-            RuleFilter = request.RuleFilter?.ToRuleGroup()
+            RuleFilter = request.RuleFilter?.ToRuleGroup(),
+            ScheduleWindows = request.ScheduleWindows.ToDomain(),
+            CooldownSeconds = request.CooldownSeconds
         };
 
         entity.AddDomainEvent(new NotificationRuleCreatedEvent(entity));

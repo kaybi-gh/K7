@@ -3,6 +3,8 @@ using K7.Server.Application.Common.Models;
 using K7.Server.Application.Common.Security;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities.Users;
+using K7.Server.Domain.Enums;
+using K7.Server.Domain.Events;
 using K7.Server.Domain.Settings;
 using K7.Server.Infrastructure.Database.Context.Identity;
 using Microsoft.AspNetCore.Identity;
@@ -112,7 +114,14 @@ public class SetupService(
         await EnsureRoleAsync(Roles.Administrator);
         await userManager.AddToRoleAsync(identityUser, Roles.Administrator);
 
-        dbContext.Users.Add(new User { IdentityUserId = identityUser.Id });
+        var domainUser = new User { Id = Guid.NewGuid(), IdentityUserId = identityUser.Id };
+        domainUser.AddDomainEvent(new UserCreatedEvent(
+            domainUser.Id,
+            userName,
+            identityUser.Email,
+            Roles.Administrator,
+            UserCreationOrigin.Setup));
+        dbContext.Users.Add(domainUser);
         await dbContext.SaveChangesAsync(cancellationToken);
 
         return Result.Success();
@@ -149,7 +158,14 @@ public class SetupService(
 
         if (!domainUserExists)
         {
-            dbContext.Users.Add(new User { IdentityUserId = identityUser.Id });
+            var domainUser = new User { Id = Guid.NewGuid(), IdentityUserId = identityUser.Id };
+            domainUser.AddDomainEvent(new UserCreatedEvent(
+                domainUser.Id,
+                userName,
+                identityUser.Email,
+                Roles.Administrator,
+                UserCreationOrigin.Setup));
+            dbContext.Users.Add(domainUser);
             await dbContext.SaveChangesAsync(cancellationToken);
         }
 

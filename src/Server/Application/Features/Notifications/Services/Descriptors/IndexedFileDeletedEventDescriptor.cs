@@ -6,17 +6,17 @@ namespace K7.Server.Application.Features.Notifications.Services.Descriptors;
 public class IndexedFileDeletedEventDescriptor : INotificationEventDescriptor
 {
     public string EventTypeName => nameof(IndexedFileDeletedEvent);
-    public string DisplayName => "File Removed from Library";
+    public string DisplayNameKey => "EventIndexedFileDeletedEvent";
     public NotificationEventCategory Category => NotificationEventCategory.Library;
-    public string DefaultTitleTemplate => "File Removed";
-    public string DefaultBodyTemplate => "{{IndexedFile.Name}} removed from library";
+    public string DefaultTitleTemplate => "File removed";
+    public string DefaultBodyTemplate => "File {{IndexedFile.Name}} was removed from the library.";
     public IReadOnlyList<NotificationParameterInfo> Parameters { get; } =
     [
-        new("IndexedFile.Name", "File Name", "String"),
-        new("IndexedFile.Extension", "Extension", "String"),
-        new("IndexedFile.Path", "File Path", "String"),
-        new("IndexedFile.ParentDirectory", "Parent Directory", "String"),
-        new("IndexedFile.Size", "File Size (bytes)", "Int"),
-        new("IndexedFile.LibraryId", "Library ID", "String"),
+        NotificationParams.IndexedFileName,
+        NotificationParams.IndexedFileExtension,
+        NotificationParams.IndexedFilePath,
+        NotificationParams.IndexedFileParent,
+        NotificationParams.IndexedFileSize,
+        NotificationParams.IndexedFileLibraryId
     ];
 }

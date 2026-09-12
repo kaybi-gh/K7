@@ -10,5 +10,7 @@ public enum NotificationEventCategory
     Download,
     System,
     Federation,
-    Health
+    Health,
+    User,
+    Security
 }

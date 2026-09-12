@@ -5,6 +5,8 @@
 @using K7.Server.Application.Common.Interfaces
 @using K7.Server.Domain.Constants
 @using K7.Server.Domain.Entities.Users
+@using K7.Server.Domain.Enums
+@using K7.Server.Domain.Events
 @using K7.Server.Infrastructure.Configuration
 @using K7.Server.Infrastructure.Database.Context.Identity
 @using K7.Shared.Dtos
@@ -150,8 +152,16 @@
         {
             var domainUser = new User
             {
+                Id = Guid.NewGuid(),
                 IdentityUserId = userId
             };
+
+            domainUser.AddDomainEvent(new UserCreatedEvent(
+                domainUser.Id,
+                Input.Username.Trim(),
+                string.IsNullOrWhiteSpace(Input.Email) ? null : Input.Email.Trim(),
+                Roles.User,
+                UserCreationOrigin.Registration));
 
             ApplicationDbContext.Users.Add(domainUser);
             await ApplicationDbContext.SaveChangesAsync(CancellationToken.None);

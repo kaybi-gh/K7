@@ -50,7 +50,8 @@ public class UpsertMediaReviewCommandHandlerTests
         _currentUser.Id.Returns(_userId);
         _accessGuard = Substitute.For<IMediaAccessGuard>();
 
-        _handler = new UpsertMediaReviewCommandHandler(_context, _currentUser, _accessGuard, Substitute.For<IUserRatingNotifier>());
+        _handler = new UpsertMediaReviewCommandHandler(
+            _context, _currentUser, _accessGuard, Substitute.For<IUserRatingNotifier>(), Substitute.For<IIdentityService>());
     }
 
     [TearDown]

@@ -15,7 +15,8 @@ public class PlaybackStateChangedEvent(
     double duration,
     string? libraryTitle,
     string? deviceName,
-    string? deviceType) : BaseEvent
+    string? deviceType,
+    Guid? sharedProfileId = null) : BaseEvent
 {
     public PlaybackState State { get; } = state;
     public PlaybackState PreviousState { get; } = previousState;
@@ -30,4 +31,5 @@ public class PlaybackStateChangedEvent(
     public string? LibraryTitle { get; } = libraryTitle;
     public string? DeviceName { get; } = deviceName;
     public string? DeviceType { get; } = deviceType;
+    public Guid? SharedProfileId { get; } = sharedProfileId;
 }

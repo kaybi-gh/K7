@@ -11,6 +11,8 @@ using K7.Server.Application.Features.Notifications.EventHandlers;
 using K7.Server.Application.Features.Notifications.Services;
 using K7.Server.Application.Features.Notifications.Services.Descriptors;
 using K7.Server.Application.Features.OpenSubsonic;
+using K7.Server.Application.Features.Scrobbling.EventHandlers;
+using K7.Server.Application.Features.Scrobbling.Services;
 using K7.Server.Application.Services;
 using K7.Server.Domain.Common;
 using K7.Server.Domain.Entities.Medias;
@@ -24,6 +26,7 @@ namespace K7.Server.Application;
 public static class DependencyInjection
 {
     public const string MetadataPictureDownloadClient = "MetadataPictureDownload";
+    public const string ScrobbleHttpClient = "Scrobble";
 
     public static IServiceCollection AddApplicationServices(this IServiceCollection services)
     {
@@ -39,6 +42,8 @@ public static class DependencyInjection
             client.DefaultRequestHeaders.UserAgent.ParseAdd($"K7/{version}");
             client.Timeout = TimeSpan.FromMinutes(5);
         }).ConfigureAdditionalHttpMessageHandlers((handlers, _) => handlers.Clear());
+
+        // Named Scrobble client is registered in ExternalServices with a capped resilience policy.
         services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
         services.AddScoped<LiteMediaProjectionService>();
         services.AddScoped<MediaAccessFilter>();
@@ -46,6 +51,12 @@ public static class DependencyInjection
 
         services.AddMediatR(cfg =>
         {
+            // Explicit closed Outbound/Scrobble handler registrations below.
+            // Skip scan for those types or Publish runs each matching event twice.
+            cfg.TypeEvaluator = static type =>
+                type != typeof(OutboundNotificationEventHandler<>)
+                && type != typeof(ScrobblePlaybackCompletedHandler<>)
+                && type != typeof(ScrobblePlaybackStateChangedHandler);
             cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly());
             cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(UnhandledExceptionBehaviour<,>));
             cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(AuthorizationBehaviour<,>));
@@ -134,7 +145,14 @@ public static class DependencyInjection
         services.AddSingleton<NotificationConditionEvaluator>();
         services.AddSingleton<NotificationPayloadRenderer>();
         services.AddSingleton<NotificationEventDataSerializer>();
+        services.AddScoped<NotificationEventEnricher>();
         services.AddScoped<OutboundNotificationDispatcher>();
+        services.AddScoped<LastFmClient>();
+        services.AddScoped<TraktClient>();
+        services.AddScoped<ScrobblePayloadFactory>();
+        services.AddScoped<ScrobbleDispatcher>();
+        services.AddSingleton<IScrobbleProgressThrottle, ScrobbleProgressThrottle>();
+        services.AddSingleton<IScrobbleCompletionGate, ScrobbleCompletionGate>();
 
         services.AddSingleton<INotificationEventDescriptor, MediaAddedEventDescriptor>();
         services.AddSingleton<INotificationEventDescriptor, MediaCreatedEventDescriptor>();
@@ -163,6 +181,18 @@ public static class DependencyInjection
         services.AddSingleton<INotificationEventDescriptor, PeerConnectivityChangedEventDescriptor>();
         services.AddSingleton<INotificationEventDescriptor, TranscodeFailedEventDescriptor>();
         services.AddSingleton<INotificationEventDescriptor, MusicIntelligenceUnavailableEventDescriptor>();
+        services.AddSingleton<INotificationEventDescriptor, ClientErrorReportedEventDescriptor>();
+        services.AddSingleton<INotificationEventDescriptor, UserCreatedEventDescriptor>();
+        services.AddSingleton<INotificationEventDescriptor, UserDeletedEventDescriptor>();
+        services.AddSingleton<INotificationEventDescriptor, ApiKeyCreatedEventDescriptor>();
+        services.AddSingleton<INotificationEventDescriptor, ApiKeyRevokedEventDescriptor>();
+        services.AddSingleton<INotificationEventDescriptor, ClientAppPasswordCreatedEventDescriptor>();
+        services.AddSingleton<INotificationEventDescriptor, ClientAppPasswordRevokedEventDescriptor>();
+        services.AddSingleton<INotificationEventDescriptor, MediaRatedEventDescriptor>();
+        services.AddSingleton<INotificationEventDescriptor, MediaReviewUpsertedEventDescriptor>();
+        services.AddSingleton<INotificationEventDescriptor, MediaReviewDeletedEventDescriptor>();
+        services.AddSingleton<INotificationEventDescriptor, MediaHiddenChangedEventDescriptor>();
+        services.AddSingleton<ClientErrorNotificationPublisher>();
 
         services.AddSingleton<IDomainEventPublisher, DomainEventPublisher>();
 
@@ -193,6 +223,17 @@ public static class DependencyInjection
         services.AddTransient<INotificationHandler<PeerConnectivityChangedEvent>, OutboundNotificationEventHandler<PeerConnectivityChangedEvent>>();
         services.AddTransient<INotificationHandler<TranscodeFailedEvent>, OutboundNotificationEventHandler<TranscodeFailedEvent>>();
         services.AddTransient<INotificationHandler<MusicIntelligenceUnavailableEvent>, OutboundNotificationEventHandler<MusicIntelligenceUnavailableEvent>>();
+        services.AddTransient<INotificationHandler<ClientErrorReportedEvent>, OutboundNotificationEventHandler<ClientErrorReportedEvent>>();
+        services.AddTransient<INotificationHandler<UserCreatedEvent>, OutboundNotificationEventHandler<UserCreatedEvent>>();
+        services.AddTransient<INotificationHandler<UserDeletedEvent>, OutboundNotificationEventHandler<UserDeletedEvent>>();
+        services.AddTransient<INotificationHandler<ApiKeyCreatedEvent>, OutboundNotificationEventHandler<ApiKeyCreatedEvent>>();
+        services.AddTransient<INotificationHandler<ApiKeyRevokedEvent>, OutboundNotificationEventHandler<ApiKeyRevokedEvent>>();
+        services.AddTransient<INotificationHandler<ClientAppPasswordCreatedEvent>, OutboundNotificationEventHandler<ClientAppPasswordCreatedEvent>>();
+        services.AddTransient<INotificationHandler<ClientAppPasswordRevokedEvent>, OutboundNotificationEventHandler<ClientAppPasswordRevokedEvent>>();
+        services.AddTransient<INotificationHandler<MediaRatedEvent>, OutboundNotificationEventHandler<MediaRatedEvent>>();
+        services.AddTransient<INotificationHandler<MediaReviewUpsertedEvent>, OutboundNotificationEventHandler<MediaReviewUpsertedEvent>>();
+        services.AddTransient<INotificationHandler<MediaReviewDeletedEvent>, OutboundNotificationEventHandler<MediaReviewDeletedEvent>>();
+        services.AddTransient<INotificationHandler<MediaHiddenChangedEvent>, OutboundNotificationEventHandler<MediaHiddenChangedEvent>>();
         services.AddTransient<INotificationHandler<MediaPlaybackCompletedEvent<BaseMedia>>, OutboundNotificationEventHandler<MediaPlaybackCompletedEvent<BaseMedia>>>();
         services.AddTransient<INotificationHandler<MediaPlaybackCompletedEvent<MusicTrack>>, OutboundNotificationEventHandler<MediaPlaybackCompletedEvent<MusicTrack>>>();
         services.AddTransient<INotificationHandler<MediaPlaybackCompletedEvent<Movie>>, OutboundNotificationEventHandler<MediaPlaybackCompletedEvent<Movie>>>();
@@ -200,6 +241,15 @@ public static class DependencyInjection
         services.AddTransient<INotificationHandler<MediaPlaybackCompletedEvent<Serie>>, OutboundNotificationEventHandler<MediaPlaybackCompletedEvent<Serie>>>();
         services.AddTransient<INotificationHandler<MediaPlaybackCompletedEvent<SerieSeason>>, OutboundNotificationEventHandler<MediaPlaybackCompletedEvent<SerieSeason>>>();
         services.AddTransient<INotificationHandler<MediaPlaybackCompletedEvent<MusicAlbum>>, OutboundNotificationEventHandler<MediaPlaybackCompletedEvent<MusicAlbum>>>();
+
+        services.AddTransient<INotificationHandler<PlaybackStateChangedEvent>, ScrobblePlaybackStateChangedHandler>();
+        services.AddTransient<INotificationHandler<MediaPlaybackCompletedEvent<BaseMedia>>, ScrobblePlaybackCompletedHandler<BaseMedia>>();
+        services.AddTransient<INotificationHandler<MediaPlaybackCompletedEvent<MusicTrack>>, ScrobblePlaybackCompletedHandler<MusicTrack>>();
+        services.AddTransient<INotificationHandler<MediaPlaybackCompletedEvent<Movie>>, ScrobblePlaybackCompletedHandler<Movie>>();
+        services.AddTransient<INotificationHandler<MediaPlaybackCompletedEvent<SerieEpisode>>, ScrobblePlaybackCompletedHandler<SerieEpisode>>();
+        services.AddTransient<INotificationHandler<MediaPlaybackCompletedEvent<Serie>>, ScrobblePlaybackCompletedHandler<Serie>>();
+        services.AddTransient<INotificationHandler<MediaPlaybackCompletedEvent<SerieSeason>>, ScrobblePlaybackCompletedHandler<SerieSeason>>();
+        services.AddTransient<INotificationHandler<MediaPlaybackCompletedEvent<MusicAlbum>>, ScrobblePlaybackCompletedHandler<MusicAlbum>>();
 
         services.AddScoped<IFederatedMediaResolver, FederatedMediaResolver>();
         services.AddScoped<IContentVisibilityEvaluator, ContentVisibilityEvaluator>();

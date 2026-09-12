@@ -6,15 +6,15 @@ namespace K7.Server.Application.Features.Notifications.Services.Descriptors;
 public class LibraryFilesIndexTriggeredEventDescriptor : INotificationEventDescriptor
 {
     public string EventTypeName => nameof(LibraryFilesIndexTriggeredEvent);
-    public string DisplayName => "Library Scan Started";
+    public string DisplayNameKey => "EventLibraryFilesIndexTriggeredEvent";
     public NotificationEventCategory Category => NotificationEventCategory.Library;
-    public string DefaultTitleTemplate => "Library Scan";
-    public string DefaultBodyTemplate => "Scan started for {{Library.Title}}";
+    public string DefaultTitleTemplate => "Library scan started";
+    public string DefaultBodyTemplate => "Scan started for library {{Library.Title}}.";
     public IReadOnlyList<NotificationParameterInfo> Parameters { get; } =
     [
-        new("Library.Title", "Library Title", "String"),
-        new("Library.MediaType", "Media Type", "String"),
-        new("Library.RootPath", "Root Path", "String"),
-        new("Library.MetadataProviderName", "Metadata Provider", "String"),
+        NotificationParams.LibraryTitle,
+        NotificationParams.LibraryMediaType,
+        NotificationParams.LibraryRootPath,
+        NotificationParams.LibraryMetadataProvider
     ];
 }

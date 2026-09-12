@@ -1,25 +1,25 @@
-﻿using K7.Shared.Json;
-using K7.Server.Domain.Constants;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Services;
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Domain.Constants;
 using K7.Server.Infrastructure.Configuration;
+using K7.Server.Infrastructure.Database.Context.Data;
+using K7.Server.Web.Components.Account;
+using K7.Server.Web.Infrastructure;
 using K7.Server.Web.OpenSubsonic;
 using K7.Server.Web.Services;
-using Microsoft.AspNetCore.DataProtection;
-using Microsoft.AspNetCore.Mvc;
-using Serilog;
-using K7.Server.Web.Components.Account;
-using Microsoft.AspNetCore.Components.Authorization;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.HttpOverrides;
-using K7.Server.Infrastructure.Database.Context.Data;
-using K7.Server.Web.Infrastructure;
+using K7.Shared.Json;
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.Extensions.Http.Resilience;
-using OpenIddict.Validation.AspNetCore;
+using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Http.Resilience;
 using Microsoft.Extensions.Options;
+using OpenIddict.Validation.AspNetCore;
+using Serilog;
 
 namespace K7.Server.Web;
 
@@ -118,6 +118,7 @@ public static class DependencyInjection
 
         services.AddDatabaseDeveloperPageExceptionFilter();
         services.AddScoped<IUser, CurrentUser>();
+        services.AddSingleton<INotificationServerInfo, NotificationServerInfo>();
         services.AddScoped<OpenSubsonicAuthenticator>();
         services.AddSingleton<IPlaybackProgressNotifier, PlaybackProgressNotifier>();
         services.AddSingleton<IUserRatingNotifier, UserRatingNotifier>();
@@ -131,6 +132,7 @@ public static class DependencyInjection
         services.AddHostedService<ServerMetricsWarmupService>();
         services.AddHostedService<AdminMetricsNotifier>();
         services.AddHostedService<EphemeralStreamTokenCleanupService>();
+        services.AddHostedService<ScrobbleQueueHostedService>();
         services.AddHostedService<StreamSessionCleanupService>();
 
         services.AddScoped<K7DialogService>();

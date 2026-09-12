@@ -6,15 +6,15 @@ namespace K7.Server.Application.Features.Notifications.Services.Descriptors;
 public class PlaylistDeletedEventDescriptor : INotificationEventDescriptor
 {
     public string EventTypeName => nameof(PlaylistDeletedEvent);
-    public string DisplayName => "Playlist Deleted";
+    public string DisplayNameKey => "EventPlaylistDeletedEvent";
     public NotificationEventCategory Category => NotificationEventCategory.Playlist;
-    public string DefaultTitleTemplate => "Playlist Deleted";
-    public string DefaultBodyTemplate => "{{Playlist.Title}} has been removed";
+    public string DefaultTitleTemplate => "Playlist deleted";
+    public string DefaultBodyTemplate => "Playlist {{Playlist.Title}} was removed.";
     public IReadOnlyList<NotificationParameterInfo> Parameters { get; } =
     [
-        new("Playlist.Title", "Title", "String"),
-        new("Playlist.Description", "Description", "String"),
-        new("Playlist.MediaType", "Media Type", "String"),
-        new("Playlist.Items.Count", "Items Count", "Int"),
+        NotificationParams.PlaylistTitle,
+        NotificationParams.PlaylistDescription,
+        NotificationParams.PlaylistMediaType,
+        NotificationParams.PlaylistItemsCount
     ];
 }

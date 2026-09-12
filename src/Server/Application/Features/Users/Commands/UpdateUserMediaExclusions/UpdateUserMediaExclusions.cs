@@ -2,6 +2,7 @@ using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Security;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities.Users;
+using K7.Server.Domain.Events;
 
 namespace K7.Server.Application.Features.Users.Commands.UpdateUserMediaExclusions;
 
@@ -14,7 +15,8 @@ public record UpdateUserMediaExclusionsCommand : IRequest
 
 public class UpdateUserMediaExclusionsCommandHandler(
     IApplicationDbContext context,
-    IMediaQueryCacheInvalidator cacheInvalidator)
+    IMediaQueryCacheInvalidator cacheInvalidator,
+    IIdentityService identityService)
     : IRequestHandler<UpdateUserMediaExclusionsCommand>
 {
     public async Task Handle(UpdateUserMediaExclusionsCommand request, CancellationToken cancellationToken)
@@ -23,6 +25,10 @@ public class UpdateUserMediaExclusionsCommandHandler(
             .FirstOrDefaultAsync(u => u.Id == request.Id, cancellationToken);
 
         Guard.Against.NotFound(request.Id, user);
+
+        var userName = user.IdentityUserId is not null
+            ? await identityService.GetUserNameAsync(user.IdentityUserId)
+            : null;
 
         var existing = await context.UserMediaExclusions
             .Where(e => e.UserId == request.Id)
@@ -36,27 +42,43 @@ public class UpdateUserMediaExclusionsCommandHandler(
             if (existingDict.TryGetValue(mediaId, out var row))
             {
                 row.IsAdminExcluded = true;
+                AddHiddenChangedEvent(row, request.Id, userName);
             }
             else
             {
-                context.UserMediaExclusions.Add(new UserMediaExclusion
+                var exclusion = new UserMediaExclusion
                 {
                     Id = Guid.NewGuid(),
                     UserId = request.Id,
                     MediaId = mediaId,
                     IsAdminExcluded = true
-                });
+                };
+                AddHiddenChangedEvent(exclusion, request.Id, userName);
+                context.UserMediaExclusions.Add(exclusion);
             }
         }
 
         foreach (var row in existing.Where(e => !requestedSet.Contains(e.MediaId)))
         {
             row.IsAdminExcluded = false;
+            AddHiddenChangedEvent(row, request.Id, userName);
             if (!row.IsSelfExcluded)
                 context.UserMediaExclusions.Remove(row);
         }
 
         await context.SaveChangesAsync(cancellationToken);
         cacheInvalidator.InvalidateAll();
+    }
+
+    private static void AddHiddenChangedEvent(UserMediaExclusion exclusion, Guid userId, string? userName)
+    {
+        var isHidden = exclusion.IsSelfExcluded || exclusion.IsAdminExcluded;
+        exclusion.AddDomainEvent(new MediaHiddenChangedEvent(
+            userId,
+            userName,
+            exclusion.MediaId,
+            isHidden,
+            exclusion.IsSelfExcluded,
+            exclusion.IsAdminExcluded));
     }
 }

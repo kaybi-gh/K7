@@ -1,3 +1,4 @@
+using K7.Server.Application.Features.Notifications;
 using K7.Server.Domain.Enums;
 
 namespace K7.Server.Application.Features.Notifications.Commands.UpdateNotificationRule;
@@ -24,6 +25,8 @@ public class UpdateNotificationRuleCommandValidator : AbstractValidator<UpdateNo
                 .WithMessage("Maximum 50 event types per rule.");
 
         RuleFor(v => v.ProviderConfig)
-            .NotEmpty();
+            .NotEmpty()
+            .Must(NotificationWebhookUrl.ProviderConfigHasHttpUrl)
+            .WithMessage("Webhook URL must be an absolute HTTP or HTTPS URL.");
     }
 }

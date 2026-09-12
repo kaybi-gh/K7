@@ -4,6 +4,8 @@ using K7.Server.Application.Common.Mappings;
 using K7.Server.Application.Common.Security;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities.Users;
+using K7.Server.Domain.Enums;
+using K7.Server.Domain.Events;
 using K7.Shared.Dtos.Users;
 using K7.Shared.Security;
 using ValidationException = K7.Server.Application.Common.Exceptions.ValidationException;
@@ -43,9 +45,17 @@ public class CreateUserCommandHandler(
 
         var domainUser = new User
         {
+            Id = Guid.NewGuid(),
             IdentityUserId = identityUserId,
             IsActive = true
         };
+
+        domainUser.AddDomainEvent(new UserCreatedEvent(
+            domainUser.Id,
+            request.Username,
+            email,
+            request.Role,
+            UserCreationOrigin.Admin));
 
         context.Users.Add(domainUser);
         await context.SaveChangesAsync(cancellationToken);

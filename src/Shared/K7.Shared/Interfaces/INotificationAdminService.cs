@@ -11,4 +11,5 @@ public interface INotificationAdminService
     Task DeleteNotificationRuleAsync(Guid id, CancellationToken cancellationToken = default);
     Task<TestNotificationRuleResponse> TestNotificationRuleAsync(Guid id, CancellationToken cancellationToken = default);
     Task<List<NotificationEventDescriptorDto>> GetAvailableEventsAsync(CancellationToken cancellationToken = default);
+    Task<List<NotificationWebhookPresetDto>> GetWebhookPresetsAsync(CancellationToken cancellationToken = default);
 }

@@ -25,6 +25,8 @@ public class CreateNotificationRule : IEndpoint
                 BodyTemplate = request.BodyTemplate,
                 RawJsonTemplate = request.RawJsonTemplate,
                 RuleFilter = request.RuleFilter,
+                ScheduleWindows = request.ScheduleWindows,
+                CooldownSeconds = request.CooldownSeconds,
                 IsEnabled = request.IsEnabled
             };
 

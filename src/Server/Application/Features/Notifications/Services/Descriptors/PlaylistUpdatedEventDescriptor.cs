@@ -6,15 +6,15 @@ namespace K7.Server.Application.Features.Notifications.Services.Descriptors;
 public class PlaylistUpdatedEventDescriptor : INotificationEventDescriptor
 {
     public string EventTypeName => nameof(PlaylistUpdatedEvent);
-    public string DisplayName => "Playlist Updated";
+    public string DisplayNameKey => "EventPlaylistUpdatedEvent";
     public NotificationEventCategory Category => NotificationEventCategory.Playlist;
-    public string DefaultTitleTemplate => "Playlist Updated";
-    public string DefaultBodyTemplate => "{{Playlist.Title}}";
+    public string DefaultTitleTemplate => "Playlist updated";
+    public string DefaultBodyTemplate => "Playlist {{Playlist.Title}} was updated.";
     public IReadOnlyList<NotificationParameterInfo> Parameters { get; } =
     [
-        new("Playlist.Title", "Title", "String"),
-        new("Playlist.Description", "Description", "String"),
-        new("Playlist.MediaType", "Media Type", "String"),
-        new("Playlist.Items.Count", "Items Count", "Int"),
+        NotificationParams.PlaylistTitle,
+        NotificationParams.PlaylistDescription,
+        NotificationParams.PlaylistMediaType,
+        NotificationParams.PlaylistItemsCount
     ];
 }

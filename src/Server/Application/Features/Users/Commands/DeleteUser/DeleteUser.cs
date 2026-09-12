@@ -2,6 +2,7 @@ using FluentValidation.Results;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Security;
 using K7.Server.Domain.Constants;
+using K7.Server.Domain.Events;
 using ValidationException = K7.Server.Application.Common.Exceptions.ValidationException;
 
 namespace K7.Server.Application.Features.Users.Commands.DeleteUser;
@@ -48,6 +49,18 @@ public class DeleteUserCommandHandler : IRequestHandler<DeleteUserCommand>
         }
 
         var identityUserId = domainUser.IdentityUserId;
+        string? userName = null;
+        string? email = null;
+        string? role = null;
+        if (identityUserId is not null)
+        {
+            userName = await _identityService.GetUserNameAsync(identityUserId);
+            email = await _identityService.GetEmailAsync(identityUserId);
+            var roles = await _identityService.GetRolesAsync(identityUserId);
+            role = roles.FirstOrDefault();
+        }
+
+        domainUser.AddDomainEvent(new UserDeletedEvent(domainUser.Id, userName, email, role));
 
         _context.Users.Remove(domainUser);
         await _context.SaveChangesAsync(cancellationToken);

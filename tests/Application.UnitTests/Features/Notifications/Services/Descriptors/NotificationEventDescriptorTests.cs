@@ -54,4 +54,33 @@ public class NotificationEventDescriptorTests
         descriptor.EventTypeName.Should().Be(nameof(MediaCreatedEvent));
         descriptor.Category.Should().Be(NotificationEventCategory.Media);
     }
+
+    [Test]
+    public void UserCreated_ShouldMatchEventTypeName_AndBeUserCategory()
+    {
+        var descriptor = new UserCreatedEventDescriptor();
+
+        descriptor.EventTypeName.Should().Be(nameof(UserCreatedEvent));
+        descriptor.Category.Should().Be(NotificationEventCategory.User);
+        descriptor.Parameters.Should().Contain(p => p.Name == "User.Origin");
+    }
+
+    [Test]
+    public void UserDeleted_ShouldMatchEventTypeName_AndBeUserCategory()
+    {
+        var descriptor = new UserDeletedEventDescriptor();
+
+        descriptor.EventTypeName.Should().Be(nameof(UserDeletedEvent));
+        descriptor.Category.Should().Be(NotificationEventCategory.User);
+        descriptor.Parameters.Should().NotContain(p => p.Name == "User.Origin");
+    }
+
+    [Test]
+    public void ApiKeyCreated_ShouldMatchEventTypeName_AndBeSecurityCategory()
+    {
+        var descriptor = new ApiKeyCreatedEventDescriptor();
+
+        descriptor.EventTypeName.Should().Be(nameof(ApiKeyCreatedEvent));
+        descriptor.Category.Should().Be(NotificationEventCategory.Security);
+    }
 }

@@ -6,21 +6,21 @@ namespace K7.Server.Application.Features.Notifications.Services.Descriptors;
 public class DeviceCreatedEventDescriptor : INotificationEventDescriptor
 {
     public string EventTypeName => nameof(DeviceCreatedEvent);
-    public string DisplayName => "New Device Connected";
+    public string DisplayNameKey => "EventDeviceCreatedEvent";
     public NotificationEventCategory Category => NotificationEventCategory.Device;
-    public string DefaultTitleTemplate => "New Device";
-    public string DefaultBodyTemplate => "{{Device.DeviceName}} ({{Device.DeviceType}})";
+    public string DefaultTitleTemplate => "New device";
+    public string DefaultBodyTemplate => "Device {{Device.DeviceName}} ({{Device.DeviceType}} / {{Device.ClientType}}) was registered.";
     public IReadOnlyList<NotificationParameterInfo> Parameters { get; } =
     [
-        new("Device.DeviceName", "Device Name", "String"),
-        new("Device.DeviceType", "Device Type", "String"),
-        new("Device.ClientType", "Client Type", "String"),
-        new("Device.OperatingSystem", "Operating System", "String"),
-        new("Device.OperatingSystemVersion", "OS Version", "String"),
-        new("Device.DisplayScreenWidth", "Display Screen Width", "Float"),
-        new("Device.DisplayScreenHeight", "Display Screen Height", "Float"),
-        new("Device.DisplayResolutionWidth", "Display Resolution Width", "Float"),
-        new("Device.DisplayResolutionHeight", "Display Resolution Height", "Float"),
-        new("Device.DeviceUniqueId", "Device Unique ID", "String"),
+        NotificationParams.DeviceName,
+        NotificationParams.DeviceDeviceType,
+        NotificationParams.DeviceClientType,
+        NotificationParams.DeviceOs,
+        NotificationParams.DeviceOsVersion,
+        NotificationParams.DeviceScreenWidth,
+        NotificationParams.DeviceScreenHeight,
+        NotificationParams.DeviceResWidth,
+        NotificationParams.DeviceResHeight,
+        NotificationParams.DeviceUniqueId
     ];
 }

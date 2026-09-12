@@ -25,7 +25,7 @@ public class OutboundNotificationEventHandler<TEvent>(
 
             try
             {
-                await dispatcher.DispatchAsync(eventTypeName, eventData, CancellationToken.None);
+                await dispatcher.DispatchAsync(eventTypeName, eventData, notification, CancellationToken.None);
             }
             catch (Exception ex)
             {

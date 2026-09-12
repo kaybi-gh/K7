@@ -48,7 +48,8 @@ public class RateMediaCommandHandlerTests
         _accessGuard = Substitute.For<IMediaAccessGuard>();
         _cacheInvalidator = Substitute.For<IMediaQueryCacheInvalidator>();
         _notifier = Substitute.For<IUserRatingNotifier>();
-        _handler = new RateMediaCommandHandler(_context, _currentUser, _accessGuard, _cacheInvalidator, _notifier);
+        _handler = new RateMediaCommandHandler(
+            _context, _currentUser, _accessGuard, _cacheInvalidator, _notifier, Substitute.For<IIdentityService>());
     }
 
     [TearDown]

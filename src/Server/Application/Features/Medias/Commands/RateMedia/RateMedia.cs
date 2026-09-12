@@ -3,6 +3,7 @@ using K7.Server.Application.Common.Security;
 using K7.Server.Application.Services;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities.Ratings;
+using K7.Server.Domain.Events;
 using Microsoft.EntityFrameworkCore;
 
 namespace K7.Server.Application.Features.Medias.Commands.RateMedia;
@@ -15,7 +16,8 @@ public class RateMediaCommandHandler(
     IUser currentUser,
     IMediaAccessGuard accessGuard,
     IMediaQueryCacheInvalidator cacheInvalidator,
-    IUserRatingNotifier ratingNotifier)
+    IUserRatingNotifier ratingNotifier,
+    IIdentityService identityService)
     : IRequestHandler<RateMediaCommand>
 {
     public async Task Handle(RateMediaCommand request, CancellationToken cancellationToken)
@@ -29,10 +31,12 @@ public class RateMediaCommandHandler(
             .OfType<UserRating>()
             .FirstOrDefaultAsync(r => r.UserId == userId && r.MediaId == request.MediaId, cancellationToken);
 
+        var isNew = rating is null;
         if (rating is null)
         {
             rating = new UserRating
             {
+                Id = Guid.NewGuid(),
                 UserId = userId,
                 MediaId = request.MediaId,
                 Value = request.Value,
@@ -45,6 +49,17 @@ public class RateMediaCommandHandler(
         {
             rating.Value = request.Value;
         }
+
+        var userName = currentUser.IdentityId is not null
+            ? await identityService.GetUserNameAsync(currentUser.IdentityId)
+            : null;
+
+        rating.AddDomainEvent(new MediaRatedEvent(
+            userId,
+            userName,
+            request.MediaId,
+            request.Value,
+            isNew));
 
         await context.SaveChangesAsync(cancellationToken);
         cacheInvalidator.InvalidateAll();

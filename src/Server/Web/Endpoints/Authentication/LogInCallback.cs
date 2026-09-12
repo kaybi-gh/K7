@@ -2,6 +2,8 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities.Users;
+using K7.Server.Domain.Enums;
+using K7.Server.Domain.Events;
 using K7.Server.Infrastructure.Configuration;
 using K7.Server.Infrastructure.Database.Context.Identity;
 using K7.Server.Web.Infrastructure;
@@ -115,9 +117,17 @@ public class LogInCallback : IEndpoint
                 {
                     domainUser = new User
                     {
+                        Id = Guid.NewGuid(),
                         IdentityUserId = identityUserId,
                         DisplayName = name
                     };
+
+                    domainUser.AddDomainEvent(new UserCreatedEvent(
+                        domainUser.Id,
+                        userName,
+                        user.Email,
+                        Roles.User,
+                        UserCreationOrigin.ExternalLogin));
 
                     applicationDbContext.Users.Add(domainUser);
                     await applicationDbContext.SaveChangesAsync(cancellationToken);

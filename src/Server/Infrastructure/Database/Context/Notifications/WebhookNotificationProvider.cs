@@ -49,7 +49,7 @@ public class WebhookNotificationProvider : INotificationProvider
                 return true;
             }
 
-            _logger.LogWarning("Webhook to {Url} returned {StatusCode}", config.Url, response.StatusCode);
+            _logger.LogError("Webhook to {Url} returned {StatusCode}", config.Url, response.StatusCode);
             return false;
         }
         catch (HttpRequestException ex)

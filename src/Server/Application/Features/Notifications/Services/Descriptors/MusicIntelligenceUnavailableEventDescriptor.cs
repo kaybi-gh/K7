@@ -6,12 +6,12 @@ namespace K7.Server.Application.Features.Notifications.Services.Descriptors;
 public class MusicIntelligenceUnavailableEventDescriptor : INotificationEventDescriptor
 {
     public string EventTypeName => nameof(MusicIntelligenceUnavailableEvent);
-    public string DisplayName => "Music Intelligence Unavailable";
+    public string DisplayNameKey => "EventMusicIntelligenceUnavailableEvent";
     public NotificationEventCategory Category => NotificationEventCategory.Health;
     public string DefaultTitleTemplate => "Music intelligence unavailable";
-    public string DefaultBodyTemplate => "AudioMuse is unreachable{{Reason}}";
+    public string DefaultBodyTemplate => "Music intelligence is unreachable: {{Reason}}";
     public IReadOnlyList<NotificationParameterInfo> Parameters { get; } =
     [
-        new("Reason", "Reason", "String"),
+        NotificationParams.MusicIntelligenceReason
     ];
 }
