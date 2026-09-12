@@ -52,6 +52,8 @@ public partial class MainLayout : IDisposable
 
         ThemeBootstrap.InitializeAsync(ThemeService, JS, ServerInfoService)
             .FireAndForget(Logger, "Theme bootstrap failed");
+        CultureBootstrap.InitializeAsync(JS, ServerInfoService, NavigationManager)
+            .FireAndForget(Logger, "Culture bootstrap failed");
 
         if (DeviceService.GetClientType() == ClientType.Web)
         {

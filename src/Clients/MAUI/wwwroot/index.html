@@ -42,6 +42,18 @@
     <script src="_content/K7.Clients.Shared.UI/js/qrcode.js"></script>
     <script src="_content/K7.Clients.Shared.UI/js/playbackAssets.js"></script>
     <script src="js/windowsStreamFetch.js"></script>
+    <script>
+        window.blazorCulture = {
+            getSaved: () => window.localStorage.getItem('BlazorCulture'),
+            get: () => window.localStorage.getItem('BlazorCulture')
+                || window.__K7_DEFAULT_LANGUAGE__
+                || 'en',
+            set: (value) => {
+                window.localStorage.setItem('BlazorCulture', value);
+                document.cookie = '.AspNetCore.Culture=c=' + value + '|uic=' + value + ';path=/;max-age=31536000;samesite=lax';
+            }
+        };
+    </script>
 </body>
 
 </html>

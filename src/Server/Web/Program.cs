@@ -14,7 +14,6 @@ using K7.Server.Web.Components.Account;
 using K7.Server.Web.Endpoints.Hubs;
 using K7.Server.Web.Infrastructure;
 using K7.Server.Web.Middleware;
-using K7.Shared;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Scalar.AspNetCore;
 using Serilog;
@@ -102,11 +101,7 @@ try
         app.UseHttpsRedirection();
     app.UseAuthLegacyRedirects();
 
-    var supportedCultures = SupportedLanguages.Interface.Select(l => l.Code).ToArray();
-    app.UseRequestLocalization(new RequestLocalizationOptions()
-        .SetDefaultCulture("en")
-        .AddSupportedCultures(supportedCultures)
-        .AddSupportedUICultures(supportedCultures));
+    app.UseRequestLocalization(RequestLocalizationSetup.CreateOptions());
 
     app.MapStaticAssets();
 

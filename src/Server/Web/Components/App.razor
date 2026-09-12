@@ -35,6 +35,7 @@
 
     <script src="@Assets["_content/K7.Clients.Shared.UI/js/tv-layout.js"]"></script>
     <script>window.__K7_DEFAULT_THEME__ = "@_defaultTheme";</script>
+    <script>window.__K7_DEFAULT_LANGUAGE__ = "@_defaultLanguage";</script>
     <script src="@Assets["_content/K7.Clients.Shared.UI/js/theme.js"]"></script>
 
     <link rel="stylesheet" href="@Assets["_content/K7.Clients.Shared.UI/app.css"]" />
@@ -97,7 +98,10 @@
     <script src="https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1"></script>
     <script>
         window.blazorCulture = {
-            get: () => window.localStorage.getItem('BlazorCulture'),
+            getSaved: () => window.localStorage.getItem('BlazorCulture'),
+            get: () => window.localStorage.getItem('BlazorCulture')
+                || window.__K7_DEFAULT_LANGUAGE__
+                || 'en',
             set: (value) => {
                 window.localStorage.setItem('BlazorCulture', value);
                 document.cookie = `.AspNetCore.Culture=c=${value}|uic=${value};path=/;max-age=31536000;samesite=lax`;
@@ -122,6 +126,7 @@
     private HttpContext HttpContext { get; set; } = default!;
 
     private string _defaultTheme = "default-dark";
+    private string _defaultLanguage = "en";
     private LinkPreview? _preview;
 
     private string ServerName =>
@@ -151,6 +156,7 @@
         await using var scope = ScopeFactory.CreateAsyncScope();
         var serverSettings = scope.ServiceProvider.GetRequiredService<IServerSettingsService>();
         _defaultTheme = await serverSettings.GetAsync(ServerSettingKeys.DefaultTheme) ?? "default-dark";
+        _defaultLanguage = await serverSettings.GetAsync(ServerSettingKeys.DefaultLanguage) ?? "en";
 
         var path = HttpContext.Request.Path.Value ?? "/";
         if (!LinkPreviewRoute.TryParse(path, out _))
