@@ -6,14 +6,21 @@
         var stepIndex = i;
         if (i > 0)
         {
-            <K7Icon Class="k7-dialog-stepper__separator" Icon="@Phosphor.CaretRight"  IconSize="@K7IconSize.Sm" aria-hidden="true" />
+            <div class="k7-dialog-stepper__separator" aria-hidden="true">
+                <span class="k7-dialog-stepper__separator-icon k7-dialog-stepper__separator-icon--right">
+                    <K7Icon Icon="@Phosphor.CaretRight" IconSize="@K7IconSize.Sm" />
+                </span>
+                <span class="k7-dialog-stepper__separator-icon k7-dialog-stepper__separator-icon--down">
+                    <K7Icon Icon="@Phosphor.CaretDown" IconSize="@K7IconSize.Sm" />
+                </span>
+            </div>
         }
         <div class="k7-dialog-stepper__step">
             <K7Chip Color="@(ActiveStep >= stepIndex ? "primary" : "default")"
                     Size="sm"
                     OnClick="@(IsStepReachable(stepIndex) ? EventCallback.Factory.Create(this, () => OnStepSelected(stepIndex)) : default)"
                     Style="@GetStepStyle(stepIndex)"
-                    Class="k7-dialog-stepper__chip">
+                    Class="@($"k7-dialog-stepper__chip{(IsStepReachable(stepIndex) ? " focusable" : "")}")">
                 @Steps[stepIndex]
             </K7Chip>
         </div>

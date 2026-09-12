@@ -15,7 +15,13 @@
 
 .k7-dialog-stepper__separator {
     flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
     color: var(--color-text-muted);
+}
+
+.k7-dialog-stepper__separator-icon--down {
+    display: none;
 }
 
 .k7-dialog-stepper__step ::deep .k7-dialog-stepper__chip {
@@ -44,7 +50,15 @@
     }
 
     .k7-dialog-stepper__separator {
-        align-self: center;
-        transform: rotate(90deg);
+        width: 100%;
+        justify-content: center;
+    }
+
+    .k7-dialog-stepper__separator-icon--right {
+        display: none;
+    }
+
+    .k7-dialog-stepper__separator-icon--down {
+        display: inline-flex;
     }
 }
