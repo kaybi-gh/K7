@@ -210,6 +210,7 @@ jobs:
           dotnet tool run libman -- restore
 
       - name: Build iOS .app
+        # MtouchExtraArgs quotes are for MSBuild: `-p:` splits on commas.
         run: |
           set -euo pipefail
           dotnet build src/Clients/MAUI/K7.Clients.MAUI.csproj \
@@ -220,7 +221,7 @@ jobs:
             -p:RunAOTCompilation=false \
             -p:UseInterpreter=true \
             -p:MtouchLink=None \
-            -p:MtouchExtraArgs="-gcc_flags -Wl,-no_fixup_chains" \
+            -p:MtouchExtraArgs='"-gcc_flags -Wl,-no_fixup_chains"' \
             -p:TreatWarningsAsErrors=false \
             -p:EnableCodeSigning=false \
             -p:_RequireCodeSigning=false \

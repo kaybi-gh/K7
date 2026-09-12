@@ -369,6 +369,8 @@ jobs:
       #   - -no_fixup_chains: .NET 10 + Xcode 26 emit LC_DYLD_CHAINED_FIXUPS by
       #     default; older Mach-O parsers in some sideloaders cannot read it. Force
       #     the classic LC_DYLD_INFO fixup format for broad sideloader compat.
+      #     Quote the value for MSBuild (`'"..."'`): `-p:` splits on commas, so
+      #     `-Wl,-no_fixup_chains` is otherwise parsed as a second switch.
       #   - MtouchLink=None: this app is heavily reflection-based (EF Core,
       #     OpenIddict, Blazor Hybrid) and iOS was never trim-tested upstream, so
       #     keep every assembly rather than risk a trimmer removing reflected code.
@@ -387,7 +389,7 @@ jobs:
             -p:RunAOTCompilation=false \
             -p:UseInterpreter=true \
             -p:MtouchLink=None \
-            -p:MtouchExtraArgs="-gcc_flags -Wl,-no_fixup_chains" \
+            -p:MtouchExtraArgs='"-gcc_flags -Wl,-no_fixup_chains"' \
             -p:TreatWarningsAsErrors=false \
             -p:EnableCodeSigning=false \
             -p:_RequireCodeSigning=false \
