@@ -9,7 +9,7 @@ Install first: [install.md](install.md). Day-to-day features: [operating.md](ope
 | Key | Env | Default | Description |
 |---|---|---|---|
 | `BaseUrl` | `BaseUrl` | `https://localhost:7443` | Public URL of this instance. Must match what browsers and federation peers use. Required for OIDC redirects and peering. |
-| `Server:Name` | `Server__Name` | *(empty)* | Display name when initiating federation. Falls back to host of `BaseUrl`, then machine name. |
+| `Server:Name` | `Server__Name` | *(empty)* | Display name for federation invitations and shared-URL previews (title). Empty: federation uses the `BaseUrl` host then the machine name, previews use K7. Media pages (`/movies/...`, `/series/...`, music artist/album) add title, overview, and poster. |
 | `Cors:Origins` | `Cors__Origins` | `[]` | Allowed CORS origins. Non-empty: only those. Empty + Development: loopback. Empty + Production: deny all. Needed if WASM is hosted on another origin. |
 | `AllowedHosts` | `AllowedHosts` | `*` | Standard ASP.NET host filtering. `*` disables host filtering; set explicit hostnames in production behind a known public URL. |
 

@@ -97,6 +97,20 @@ public class WebHostSmokeTests
     }
 
     [Test]
+    public async Task OgImage_ShouldBePublicPng()
+    {
+        var client = _factory.CreateClient(new Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions
+        {
+            AllowAutoRedirect = false
+        });
+
+        var response = await client.GetAsync("/_content/K7.Clients.Shared.UI/assets/og-image.png");
+
+        response.IsSuccessStatusCode.Should().BeTrue();
+        response.Content.Headers.ContentType!.MediaType.Should().Be("image/png");
+    }
+
+    [Test]
     public void MediatR_ShouldResolveAllHandlers()
     {
         MediatRHandlerResolution.ResolveAllHandlers(_factory.Services, typeof(DependencyInjection).Assembly);

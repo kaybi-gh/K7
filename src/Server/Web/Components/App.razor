@@ -1,17 +1,39 @@
 <!DOCTYPE html>
 @using K7.Server.Application.Common.Interfaces
+@using K7.Server.Application.Features.LinkPreview.Queries.GetLinkPreview
 @using K7.Server.Domain.Settings
+@using K7.Server.Web.Infrastructure
 @using Microsoft.AspNetCore.Components.Endpoints
+@using Microsoft.Extensions.Configuration
 @using Microsoft.Extensions.DependencyInjection
 <html lang="@System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#0d0907" />
-    <script src="@Assets["_content/K7.Clients.Shared.UI/js/tv-layout.js"]"></script>
-    <title>K7</title>
+    <title>@PageTitle</title>
+    <meta name="description" content="@PageDescription" />
+    <meta name="application-name" content="@ServerName" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="@ServerName" />
+    <meta property="og:title" content="@PageTitle" />
+    <meta property="og:description" content="@PageDescription" />
+    <meta property="og:url" content="@CanonicalUrl" />
+    <meta property="og:image" content="@ImageUrl" />
+    @if (_preview?.PictureId is null)
+    {
+        <meta property="og:image:type" content="image/png" />
+        <meta property="og:image:width" content="512" />
+        <meta property="og:image:height" content="512" />
+    }
+    <meta property="og:image:alt" content="@PageTitle" />
+    <meta name="twitter:card" content="@TwitterCard" />
+    <meta name="twitter:title" content="@PageTitle" />
+    <meta name="twitter:description" content="@PageDescription" />
+    <meta name="twitter:image" content="@ImageUrl" />
     <base href="/" />
 
+    <script src="@Assets["_content/K7.Clients.Shared.UI/js/tv-layout.js"]"></script>
     <script>window.__K7_DEFAULT_THEME__ = "@_defaultTheme";</script>
     <script src="@Assets["_content/K7.Clients.Shared.UI/js/theme.js"]"></script>
 
@@ -23,7 +45,9 @@
     <link rel="modulepreload" href="@Assets["_content/K7.Clients.Shared.UI/js/carousel.js"]" />
     <link rel="modulepreload" href="@Assets["_content/K7.Clients.Shared.UI/js/home-restore.js"]" />
     <link rel="modulepreload" href="@Assets["_content/K7.Clients.Shared.UI/js/vertical-carousel.js"]" />
+    <link rel="icon" type="image/png" sizes="512x512" href="@Assets[LinkPreviewUrls.ImageAsset]" />
     <link rel="icon" type="image/svg+xml" href="@Assets["_content/K7.Clients.Shared.UI/assets/favicon.svg"]" />
+    <link rel="apple-touch-icon" href="@Assets[LinkPreviewUrls.ImageAsset]" />
     @if (IsAuthSsrPath)
     {
         <link rel="modulepreload" href="@Assets["_framework/blazor.web.js"]" />
@@ -88,16 +112,52 @@
     [Inject]
     private IServiceScopeFactory ScopeFactory { get; set; } = default!;
 
+    [Inject]
+    private IConfiguration Configuration { get; set; } = default!;
+
+    [Inject]
+    private IStringLocalizer<App> L { get; set; } = default!;
+
     [CascadingParameter]
     private HttpContext HttpContext { get; set; } = default!;
 
     private string _defaultTheme = "default-dark";
+    private LinkPreview? _preview;
+
+    private string ServerName =>
+        Configuration["Server:Name"] is { Length: > 0 } name ? name : "K7";
+
+    private string Description => L["Description"];
+
+    private string PageTitle => _preview?.Title ?? ServerName;
+
+    private string PageDescription =>
+        !string.IsNullOrWhiteSpace(_preview?.Description) ? _preview.Description : Description;
+
+    private string CanonicalOrigin => LinkPreviewUrls.Origin(
+        HttpContext.Request,
+        Configuration["BaseUrl"]?.TrimEnd('/') ?? "https://localhost:7443");
+
+    private string CanonicalUrl => LinkPreviewUrls.CanonicalPage(CanonicalOrigin, HttpContext.Request.Path);
+
+    private string ImageUrl => _preview?.PictureId is { } pictureId
+        ? LinkPreviewUrls.Combine(CanonicalOrigin, LinkPreviewUrls.MetadataPicturePath(pictureId))
+        : LinkPreviewUrls.Combine(CanonicalOrigin, Assets[LinkPreviewUrls.ImageAsset]);
+
+    private string TwitterCard => _preview?.PictureId is not null ? "summary_large_image" : "summary";
 
     protected override async Task OnInitializedAsync()
     {
         await using var scope = ScopeFactory.CreateAsyncScope();
         var serverSettings = scope.ServiceProvider.GetRequiredService<IServerSettingsService>();
         _defaultTheme = await serverSettings.GetAsync(ServerSettingKeys.DefaultTheme) ?? "default-dark";
+
+        var path = HttpContext.Request.Path.Value ?? "/";
+        if (!LinkPreviewRoute.TryParse(path, out _))
+            return;
+
+        var sender = scope.ServiceProvider.GetRequiredService<ISender>();
+        _preview = await sender.Send(new GetLinkPreviewQuery(path), HttpContext.RequestAborted);
     }
 
     private IComponentRenderMode? PageRenderMode => IsAuthSsrPath
