@@ -92,7 +92,7 @@ Standalone URL: see `src/Clients/DesignSystem/Properties/launchSettings.json` (t
 
 ### Adding or changing a shared component
 
-1. Implement in `src/Clients/Shared/UI/Components/` (or `Dialogs/`, `Players/`) with the triad + localization.
+1. Implement in `src/Clients/Shared/UI/Components/` (or `Dialogs/`, `Players/`) with the triad + localization. `K7GroupedList` is the searchable grouped catalog (notification parameters, rule fields).
 2. Add a demo section on the matching DesignSystem page (`Pages/Components.razor`, `Players.razor`, `Dialogs.razor`, ... ) with a stable `id`.
 3. If the type name starts with `K7`, add it to the `demoed` set in `Pages/Index.razor.cs` (home page lists uncatalogued `K7*` types via reflection).
 4. Add a sidebar anchor in `Layout/DesignLayout.razor`.
@@ -123,11 +123,11 @@ K7 generates an **OpenAPI 3.1** document for the server HTTP API.
 
 | Item | Detail |
 |---|---|
-| Build output | `src/Server/Web/wwwroot/openapi/specification.json` (`OpenApiGenerateDocumentsOnBuild`) |
+| Build output | `src/Server/Web/wwwroot/openapi/specification.json` (generated into `obj/` then copied, `OpenApiGenerateDocumentsOnBuild`) |
 | Runtime static spec | `/openapi/specification.json` |
 | Scalar UI | `/scalar` - **Development only** |
 
-A normal `dotnet build` on `src/Server/Web` regenerates the document. Prefer shared DTOs in `K7.Shared` for first-party clients. Automation uses API keys via `X-Api-Key` (native API) or OpenSubsonic `apiKey` on `/rest` - see [Configuration - Security](../admin/configuration.md#hardening-checklist). OpenSubsonic facade: [Architecture](architecture.md#opensubsonic-compatibility-layer).
+A normal `dotnet build` on `src/Server/Web` regenerates the document. Generation writes under `obj/` then copies into `wwwroot`. If the host still has the file mapped (Aspire debug restart) that copy is skipped and the previous spec stays until the next unlocked build. Prefer shared DTOs in `K7.Shared` for first-party clients. Automation uses API keys via `X-Api-Key` (native API) or OpenSubsonic `apiKey` on `/rest` - see [Configuration - Security](../admin/configuration.md#hardening-checklist). OpenSubsonic facade: [Architecture](architecture.md#opensubsonic-compatibility-layer).
 
 ## Testing
 

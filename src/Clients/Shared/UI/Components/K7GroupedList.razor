@@ -1,0 +1,54 @@
+@namespace K7.Clients.Shared.UI.Components
+@typeparam TItem
+
+<div class="k7-grouped-list @Class" role="list">
+    @if (Searchable)
+    {
+        <div class="k7-grouped-list__search">
+            <K7TextField TValue="string"
+                         Value="_search"
+                         ValueChanged="OnSearchChanged"
+                         Immediate="true"
+                         Variant="outlined"
+                         Placeholder="@SearchPlaceholder" />
+        </div>
+    }
+
+    <div class="k7-grouped-list__body">
+        @foreach (var group in VisibleGroups)
+        {
+            <div @key="group.Key" class="k7-grouped-list__group" role="group" aria-label="@group.Label">
+                <div class="k7-grouped-list__header">@group.Label</div>
+                @foreach (var item in group.Items)
+                {
+                    <div @key="ItemKey(item)"
+                         class="k7-grouped-list__item focusable"
+                         role="listitem"
+                         tabindex="0"
+                         @onmousedown:preventDefault
+                         @onclick="@(() => OnItemClicked(item))"
+                         @onkeydown="@(e => OnItemKeyDown(e, item))">
+                        @if (ItemTemplate is not null)
+                        {
+                            @ItemTemplate(item)
+                        }
+                        else
+                        {
+                            <div class="k7-grouped-list__item-text">
+                                <span class="k7-grouped-list__label">@ItemLabel(item)</span>
+                                @if (ItemDescription is not null)
+                                {
+                                    var description = ItemDescription(item);
+                                    if (!string.IsNullOrWhiteSpace(description))
+                                    {
+                                        <span class="k7-grouped-list__description">@description</span>
+                                    }
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>

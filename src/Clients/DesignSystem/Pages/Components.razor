@@ -398,6 +398,25 @@
         </div>
     </section>
 
+    <section id="k7-grouped-list" class="ds-section">
+        <h2>K7GroupedList</h2>
+        <p class="ds-description">Searchable catalog with sticky group headers. Used for notification parameters, rule fields, and other pickers.</p>
+
+        <div class="ds-preview ds-preview--column ds-preview--narrow">
+            <K7GroupedList TItem="string"
+                           Groups="_groupedListGroups"
+                           Searchable="true"
+                           SearchPlaceholder="Search parameters"
+                           ItemLabel="@(item => item)"
+                           ItemDescription="@(item => "{{" + item + "}}")"
+                           ItemClicked="OnGroupedListClicked" />
+            @if (!string.IsNullOrWhiteSpace(_lastGroupedClick))
+            {
+                <p class="text-caption">Last click: @_lastGroupedClick</p>
+            }
+        </div>
+    </section>
+
     <section id="k7-expansion" class="ds-section">
         <h2>K7ExpansionPanel</h2>
         <div class="ds-preview ds-preview--block">
@@ -727,6 +746,16 @@
         else
             _selectedItems.Remove(item);
     }
+
+    private string? _lastGroupedClick;
+    private static readonly IReadOnlyList<K7GroupedListGroup<string>> _groupedListGroups =
+    [
+        new() { Key = "Media", Label = "Media", Items = ["Media.Title", "Media.Year", "Media.Type"] },
+        new() { Key = "Session", Label = "Session", Items = ["Session.State", "Session.ProgressPercent"] },
+        new() { Key = "Server", Label = "Server", Items = ["Server.Name", "Server.Url"] }
+    ];
+
+    private void OnGroupedListClicked(string item) => _lastGroupedClick = item;
 
     private readonly List<TrackRow> _tracks =
     [
