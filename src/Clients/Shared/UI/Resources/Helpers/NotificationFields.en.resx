@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="GroupGlobal" xml:space="preserve"><value>Global</value></data>
+  <data name="GroupServer" xml:space="preserve"><value>Server</value></data>
+  <data name="GroupUser" xml:space="preserve"><value>User</value></data>
+  <data name="GroupMedia" xml:space="preserve"><value>Media</value></data>
+  <data name="GroupShow" xml:space="preserve"><value>Show</value></data>
+  <data name="GroupMusic" xml:space="preserve"><value>Music</value></data>
+  <data name="GroupSession" xml:space="preserve"><value>Session</value></data>
+  <data name="GroupLibrary" xml:space="preserve"><value>Library</value></data>
+  <data name="GroupDevice" xml:space="preserve"><value>Device</value></data>
+  <data name="GroupFile" xml:space="preserve"><value>File</value></data>
+  <data name="GroupPlaylist" xml:space="preserve"><value>Playlist</value></data>
+  <data name="GroupDownload" xml:space="preserve"><value>Download</value></data>
+  <data name="GroupFederation" xml:space="preserve"><value>Federation</value></data>
+  <data name="GroupHealth" xml:space="preserve"><value>Health</value></data>
+  <data name="ParamEventType" xml:space="preserve"><value>Event type</value></data>
+  <data name="ParamServerName" xml:space="preserve"><value>Server name</value></data>
+  <data name="ParamServerUrl" xml:space="preserve"><value>Server URL</value></data>
+  <data name="ParamServerVersion" xml:space="preserve"><value>Server version</value></data>
+  <data name="ParamCurrentYear" xml:space="preserve"><value>Current year</value></data>
+  <data name="ParamCurrentMonth" xml:space="preserve"><value>Current month</value></data>
+  <data name="ParamCurrentDay" xml:space="preserve"><value>Current day</value></data>
+  <data name="ParamCurrentHour" xml:space="preserve"><value>Current hour</value></data>
+  <data name="ParamCurrentMinute" xml:space="preserve"><value>Current minute</value></data>
+  <data name="ParamCurrentWeekday" xml:space="preserve"><value>Weekday</value></data>
+  <data name="ParamCurrentDatestamp" xml:space="preserve"><value>Date</value></data>
+  <data name="ParamCurrentTimestamp" xml:space="preserve"><value>Timestamp</value></data>
+  <data name="ParamCurrentUnixTime" xml:space="preserve"><value>Unix time</value></data>
+  <data name="ParamMediaTitle" xml:space="preserve"><value>Title</value></data>
+  <data name="ParamMediaOriginalTitle" xml:space="preserve"><value>Original title</value></data>
+  <data name="ParamMediaType" xml:space="preserve"><value>Media type</value></data>
+  <data name="ParamMediaReleaseDate" xml:space="preserve"><value>Release date</value></data>
+  <data name="ParamMediaYear" xml:space="preserve"><value>Year</value></data>
+  <data name="ParamMediaGenres" xml:space="preserve"><value>Genres</value></data>
+  <data name="ParamMediaGenresCount" xml:space="preserve"><value>Genre count</value></data>
+  <data name="ParamPictureUrl" xml:space="preserve"><value>Picture</value></data>
+  <data name="ParamBackdropUrl" xml:space="preserve"><value>Backdrop</value></data>
+  <data name="ParamMediaUrl" xml:space="preserve"><value>Media link</value></data>
+  <data name="ParamExternalTmdb" xml:space="preserve"><value>TMDB</value></data>
+  <data name="ParamExternalImdb" xml:space="preserve"><value>IMDb</value></data>
+  <data name="ParamExternalTvdb" xml:space="preserve"><value>TVDB</value></data>
+  <data name="ParamExternalMusicBrainz" xml:space="preserve"><value>MusicBrainz</value></data>
+  <data name="ParamShowName" xml:space="preserve"><value>Show name</value></data>
+  <data name="ParamSeasonNumber" xml:space="preserve"><value>Season number</value></data>
+  <data name="ParamEpisodeNumber" xml:space="preserve"><value>Episode number</value></data>
+  <data name="ParamEpisodeName" xml:space="preserve"><value>Episode name</value></data>
+  <data name="ParamArtistName" xml:space="preserve"><value>Artist</value></data>
+  <data name="ParamAlbumName" xml:space="preserve"><value>Album</value></data>
+  <data name="ParamTrackName" xml:space="preserve"><value>Track</value></data>
+  <data name="ParamTrackNumber" xml:space="preserve"><value>Track number</value></data>
+  <data name="ParamUserName" xml:space="preserve"><value>User</value></data>
+  <data name="ParamUserId" xml:space="preserve"><value>User id</value></data>
+  <data name="ParamUserEmail" xml:space="preserve"><value>User email</value></data>
+  <data name="ParamUserRole" xml:space="preserve"><value>User role</value></data>
+  <data name="ParamUserOrigin" xml:space="preserve"><value>Creation origin</value></data>
+  <data name="ParamRatingValue" xml:space="preserve"><value>Rating</value></data>
+  <data name="ParamRatingIsNew" xml:space="preserve"><value>New rating</value></data>
+  <data name="ParamReviewText" xml:space="preserve"><value>Review text</value></data>
+  <data name="ParamReviewEmoji" xml:space="preserve"><value>Review emoji</value></data>
+  <data name="ParamReviewIsNew" xml:space="preserve"><value>New review</value></data>
+  <data name="ParamApiKeyName" xml:space="preserve"><value>API key name</value></data>
+  <data name="ParamApiKeyScope" xml:space="preserve"><value>API key scope</value></data>
+  <data name="ParamApiKeyKeyPrefix" xml:space="preserve"><value>API key prefix</value></data>
+  <data name="ParamClientAppPasswordName" xml:space="preserve"><value>App password name</value></data>
+  <data name="ParamHiddenIsHidden" xml:space="preserve"><value>Hidden</value></data>
+  <data name="ParamHiddenIsSelfExcluded" xml:space="preserve"><value>Self hidden</value></data>
+  <data name="ParamHiddenIsAdminExcluded" xml:space="preserve"><value>Admin hidden</value></data>
+  <data name="ParamSessionState" xml:space="preserve"><value>Playback state</value></data>
+  <data name="ParamSessionPreviousState" xml:space="preserve"><value>Previous state</value></data>
+  <data name="ParamSessionPosition" xml:space="preserve"><value>Position</value></data>
+  <data name="ParamSessionDuration" xml:space="preserve"><value>Duration</value></data>
+  <data name="ParamSessionProgressPercent" xml:space="preserve"><value>Progress</value></data>
+  <data name="ParamLibraryTitle" xml:space="preserve"><value>Library</value></data>
+  <data name="ParamLibraryMediaType" xml:space="preserve"><value>Library type</value></data>
+  <data name="ParamDeviceName" xml:space="preserve"><value>Device name</value></data>
+  <data name="ParamDeviceType" xml:space="preserve"><value>Device type</value></data>
+  <data name="ParamMessage" xml:space="preserve"><value>Error message</value></data>
+  <data name="ParamSource" xml:space="preserve"><value>Source</value></data>
+  <data name="ParamStackTrace" xml:space="preserve"><value>Stack trace</value></data>
+  <data name="ParamDeviceId" xml:space="preserve"><value>Device id</value></data>
+  <data name="ParamErrorMessage" xml:space="preserve"><value>Error message</value></data>
+  <data name="ParamReason" xml:space="preserve"><value>Reason</value></data>
+  <data name="ParamIndexedFileId" xml:space="preserve"><value>Indexed file id</value></data>
+</root>

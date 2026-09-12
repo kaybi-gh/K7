@@ -1,5 +1,7 @@
 using System.Text.Json;
 using K7.Clients.Shared.UI.Components;
+using K7.Clients.Shared.UI.Helpers;
+using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Notifications;
 using K7.Shared.Dtos.Rules;
 using K7.Shared.Interfaces;
@@ -11,6 +13,8 @@ namespace K7.Clients.Shared.UI.Pages.Admin.Dialogs;
 public partial class EditNotificationRuleDialog
 {
     [Inject] private INotificationAdminService NotificationService { get; set; } = default!;
+    [Inject] private IUserAdminService UserAdminService { get; set; } = default!;
+    [Inject] private ILibraryService LibraryService { get; set; } = default!;
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
 
     [CascadingParameter] private IK7DialogInstance Dialog { get; set; } = null!;
@@ -24,6 +28,7 @@ public partial class EditNotificationRuleDialog
     private string _payloadFormat = "Structured";
     private string _webhookUrl = "";
     private string _webhookMethod = "POST";
+    private Dictionary<string, string> _webhookHeaders = [];
     private string _titleTemplate = "";
     private string _bodyTemplate = "";
     private string _rawJsonTemplate = "";
@@ -31,7 +36,22 @@ public partial class EditNotificationRuleDialog
     private bool _isSubmitting;
     private bool _isEditMode;
     private bool _isPreviewMode;
+    private int? _cooldownSeconds;
+    private string _selectedPresetId = "";
+    private List<NotificationWebhookPresetDto> _presets = [];
+    private readonly List<ScheduleWindowEdit> _scheduleWindows = [];
     private readonly HashSet<string> _selectedEventNames = [];
+    private K7TextField<string>? _titleField;
+    private K7TextField<string>? _bodyField;
+    private K7TextField<string>? _rawField;
+    private TemplateField _activeTemplateField = TemplateField.Body;
+
+    private enum TemplateField
+    {
+        Title,
+        Body,
+        Raw
+    }
 
     private static readonly IReadOnlyList<ButtonGroupOption<bool>> _previewModeOptions =
     [
@@ -41,7 +61,7 @@ public partial class EditNotificationRuleDialog
 
     private bool IsValid => !string.IsNullOrWhiteSpace(_name)
         && _selectedEventNames.Count > 0
-        && !string.IsNullOrWhiteSpace(_webhookUrl);
+        && IsHttpOrHttpsWebhookUrl(_webhookUrl);
 
     private List<string> AvailableCategories =>
         AvailableEvents
@@ -53,7 +73,7 @@ public partial class EditNotificationRuleDialog
     private List<NotificationEventDescriptorDto> EventsForSelectedCategory =>
         AvailableEvents
             .Where(e => e.Category == _selectedCategory)
-            .OrderBy(e => e.DisplayName)
+            .OrderBy(e => LocalizeEvent(e))
             .ToList();
 
     private List<NotificationParameterInfoDto> AvailableParameters =>
@@ -61,28 +81,61 @@ public partial class EditNotificationRuleDialog
             .Where(e => _selectedEventNames.Contains(e.EventTypeName))
             .SelectMany(e => e.Parameters)
             .DistinctBy(p => p.Name)
-            .OrderBy(p => p.Name)
             .ToList();
 
-    private List<NotificationParameterInfoDto> EventParameters =>
-        AvailableParameters.Where(p => !IsGlobalParam(p.Name)).ToList();
-
-    private List<NotificationParameterInfoDto> GlobalParameters =>
-        AvailableParameters.Where(p => IsGlobalParam(p.Name)).ToList();
-
-    private static bool IsGlobalParam(string name) =>
-        name is "EventType" || name.StartsWith("Current.", StringComparison.Ordinal) || name.StartsWith("Server.", StringComparison.Ordinal);
+    private IReadOnlyList<K7GroupedListGroup<NotificationParameterInfoDto>> ParameterGroups =>
+        AvailableParameters
+            .GroupBy(p => p.Group)
+            .OrderBy(g => g.Key)
+            .Select(g => new K7GroupedListGroup<NotificationParameterInfoDto>
+            {
+                Key = g.Key,
+                Label = LocalizeGroup(g.Key),
+                Items = g.OrderBy(p => LocalizeParam(p)).ToList()
+            })
+            .ToList();
 
     private bool HasDefaultTemplates =>
         AvailableEvents.Any(e => _selectedEventNames.Contains(e.EventTypeName)
             && !string.IsNullOrWhiteSpace(e.DefaultTitleTemplate));
+
+    private bool HasPreset => !string.IsNullOrWhiteSpace(_selectedPresetId);
+
+    private string? WebhookUrlHelperText
+    {
+        get
+        {
+            if (!HasPreset)
+                return null;
+
+            var preset = _presets.FirstOrDefault(p => p.Id == _selectedPresetId);
+            if (preset is null)
+                return null;
+
+            var localized = L[preset.DisplayNameKey + "UrlHelper"];
+            return localized.ResourceNotFound ? null : localized.Value;
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _presets = await NotificationService.GetWebhookPresetsAsync();
+        }
+        catch
+        {
+            _presets = [];
+        }
+    }
 
     protected override void OnParametersSet()
     {
         if (ExistingRule is not null)
         {
             _isEditMode = true;
-            _maxVisitedStep = 3;
+            _activeStep = 0;
+            _maxVisitedStep = 2;
             _name = ExistingRule.Name;
             _providerType = ExistingRule.ProviderType;
             _payloadFormat = ExistingRule.PayloadFormat;
@@ -90,14 +143,14 @@ public partial class EditNotificationRuleDialog
             _bodyTemplate = ExistingRule.BodyTemplate ?? "";
             _rawJsonTemplate = ExistingRule.RawJsonTemplate ?? "";
             _ruleFilter = ExistingRule.RuleFilter;
+            _cooldownSeconds = ExistingRule.CooldownSeconds;
 
             _selectedEventNames.Clear();
             foreach (var evt in ExistingRule.EventTypeNames)
-            {
                 _selectedEventNames.Add(evt);
-            }
 
             ParseProviderConfig(ExistingRule.ProviderConfig);
+            LoadScheduleWindows(ExistingRule.ScheduleWindows);
 
             var firstEvent = AvailableEvents.FirstOrDefault(e => ExistingRule.EventTypeNames.Contains(e.EventTypeName));
             _selectedCategory = firstEvent?.Category;
@@ -105,14 +158,26 @@ public partial class EditNotificationRuleDialog
     }
 
     private int _maxVisitedStep;
-    private IReadOnlyList<string> _stepLabels =>
-        [L["StepCategory"].Value, L["StepEvents"].Value, L["StepMessage"].Value, L["StepProvider"].Value];
+    private int LastStepIndex => _isEditMode ? 2 : 4;
+    private int ContentStep => _isEditMode ? _activeStep + 2 : _activeStep;
 
-    private bool CanAdvance() => _activeStep switch
+    private IReadOnlyList<string> _stepLabels => _isEditMode
+        ? [L["StepDestination"].Value, L["StepConditions"].Value, L["StepMessage"].Value]
+        : [
+            L["StepCategory"].Value,
+            L["StepEvents"].Value,
+            L["StepDestination"].Value,
+            L["StepConditions"].Value,
+            L["StepMessage"].Value
+        ];
+
+    private bool CanAdvance() => ContentStep switch
     {
         0 => _selectedCategory is not null,
         1 => _selectedEventNames.Count > 0,
-        2 => _payloadFormat == "Structured"
+        2 => !string.IsNullOrWhiteSpace(_name) && IsHttpOrHttpsWebhookUrl(_webhookUrl),
+        3 => true,
+        4 => _payloadFormat == "Structured"
             ? !string.IsNullOrWhiteSpace(_titleTemplate) || !string.IsNullOrWhiteSpace(_bodyTemplate)
             : !string.IsNullOrWhiteSpace(_rawJsonTemplate) && IsValidJsonTemplate(_rawJsonTemplate),
         _ => true
@@ -123,7 +188,11 @@ public partial class EditNotificationRuleDialog
         if (string.IsNullOrWhiteSpace(template))
             return false;
 
-        var sanitized = System.Text.RegularExpressions.Regex.Replace(template, @"\{\{[^}]+\}\}", "\"__placeholder__\"");
+        var sanitized = System.Text.RegularExpressions.Regex.Replace(
+            template,
+            @"\{\{.+?\}\}",
+            "x",
+            System.Text.RegularExpressions.RegexOptions.Singleline);
 
         try
         {
@@ -144,19 +213,36 @@ public partial class EditNotificationRuleDialog
         return IsValidJsonTemplate(value) ? null : (string)L["InvalidJson"];
     }
 
+    private string? ValidateWebhookUrl(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return null;
+
+        return IsHttpOrHttpsWebhookUrl(value) ? null : (string)L["WebhookUrlInvalid"];
+    }
+
+    private static bool IsHttpOrHttpsWebhookUrl(string? url) =>
+        !string.IsNullOrWhiteSpace(url)
+        && Uri.TryCreate(url.Trim(), UriKind.Absolute, out var uri)
+        && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
+
     private void GoToStep(int step)
     {
         if (step <= _maxVisitedStep)
+        {
             _activeStep = step;
+            EnsureDefaultTemplatesIfNeeded();
+        }
     }
 
     private void NextStep()
     {
-        if (CanAdvance() && _activeStep < 3)
+        if (CanAdvance() && _activeStep < LastStepIndex)
         {
             _activeStep++;
             if (_activeStep > _maxVisitedStep)
                 _maxVisitedStep = _activeStep;
+            EnsureDefaultTemplatesIfNeeded();
         }
     }
 
@@ -164,6 +250,25 @@ public partial class EditNotificationRuleDialog
     {
         if (_activeStep > 0)
             _activeStep--;
+    }
+
+    /// <summary>
+    /// Prefill event defaults on the Message step when templates are still empty
+    /// (create flow, or edit with blank templates and no webhook preset).
+    /// </summary>
+    private void EnsureDefaultTemplatesIfNeeded()
+    {
+        if (ContentStep != 4 || HasPreset)
+            return;
+
+        if (!string.IsNullOrWhiteSpace(_titleTemplate)
+            || !string.IsNullOrWhiteSpace(_bodyTemplate)
+            || !string.IsNullOrWhiteSpace(_rawJsonTemplate))
+        {
+            return;
+        }
+
+        ApplyDefaultTemplates();
     }
 
     private void SelectCategory(string category)
@@ -174,6 +279,11 @@ public partial class EditNotificationRuleDialog
             _selectedEventNames.Clear();
         }
     }
+
+    private static readonly Dictionary<string, object> InitialFocusAttributes = new()
+    {
+        ["data-initial-focus"] = true
+    };
 
     private void OnCategoryKeyDown(KeyboardEventArgs e, string category)
     {
@@ -208,6 +318,8 @@ public partial class EditNotificationRuleDialog
         "System" => Phosphor.Gear,
         "Federation" => Phosphor.Globe,
         "Health" => Phosphor.Heartbeat,
+        "User" => Phosphor.User,
+        "Security" => Phosphor.Shield,
         _ => Phosphor.Bell
     };
 
@@ -222,6 +334,8 @@ public partial class EditNotificationRuleDialog
         "System" => L["CategorySystem"],
         "Federation" => L["CategoryFederation"],
         "Health" => L["CategoryHealth"],
+        "User" => L["CategoryUser"],
+        "Security" => L["CategorySecurity"],
         _ => category
     };
 
@@ -235,17 +349,28 @@ public partial class EditNotificationRuleDialog
                 _webhookUrl = urlProp.GetString() ?? "";
             if (root.TryGetProperty("method", out var methodProp))
                 _webhookMethod = methodProp.GetString() ?? "POST";
+            if (root.TryGetProperty("headers", out var headersProp) && headersProp.ValueKind == JsonValueKind.Object)
+            {
+                _webhookHeaders = headersProp.EnumerateObject()
+                    .ToDictionary(p => p.Name, p => p.Value.GetString() ?? "", StringComparer.OrdinalIgnoreCase);
+            }
         }
         catch
         {
             _webhookUrl = "";
             _webhookMethod = "POST";
+            _webhookHeaders = [];
         }
     }
 
     private string BuildProviderConfig()
     {
-        var config = new { url = _webhookUrl, method = _webhookMethod };
+        var config = new
+        {
+            url = _webhookUrl,
+            method = _webhookMethod,
+            headers = _webhookHeaders.Count == 0 ? null : _webhookHeaders
+        };
         return JsonSerializer.Serialize(config);
     }
 
@@ -268,113 +393,317 @@ public partial class EditNotificationRuleDialog
 
         _titleTemplate = firstSelected.DefaultTitleTemplate;
         _bodyTemplate = firstSelected.DefaultBodyTemplate;
+        if (_payloadFormat == "RawJson" && string.IsNullOrWhiteSpace(_selectedPresetId))
+            SyncRawFromStructured();
     }
 
-    private void InsertParam(string paramName)
+    private void SetPayloadFormat(string format)
+    {
+        if (HasPreset)
+            return;
+
+        if (string.Equals(_payloadFormat, format, StringComparison.Ordinal))
+            return;
+
+        if (format == "RawJson")
+            SyncRawFromStructured();
+        else
+            SyncStructuredFromRaw();
+
+        _payloadFormat = format;
+    }
+
+    private void SyncRawFromStructured()
+    {
+        _rawJsonTemplate = JsonSerializer.Serialize(
+            new Dictionary<string, string>
+            {
+                ["title"] = _titleTemplate ?? "",
+                ["body"] = _bodyTemplate ?? ""
+            },
+            new JsonSerializerOptions { WriteIndented = true });
+    }
+
+    private void SyncStructuredFromRaw()
+    {
+        if (string.IsNullOrWhiteSpace(_rawJsonTemplate))
+            return;
+
+        try
+        {
+            using var doc = JsonDocument.Parse(_rawJsonTemplate);
+            if (doc.RootElement.ValueKind != JsonValueKind.Object)
+                return;
+
+            if (doc.RootElement.TryGetProperty("title", out var title)
+                && title.ValueKind == JsonValueKind.String)
+                _titleTemplate = title.GetString() ?? _titleTemplate;
+
+            if (doc.RootElement.TryGetProperty("body", out var body)
+                && body.ValueKind == JsonValueKind.String)
+            {
+                _bodyTemplate = body.GetString() ?? _bodyTemplate;
+            }
+            else if (doc.RootElement.TryGetProperty("message", out var message)
+                     && message.ValueKind == JsonValueKind.String)
+            {
+                _bodyTemplate = message.GetString() ?? _bodyTemplate;
+            }
+        }
+        catch (JsonException)
+        {
+            // Keep current structured fields when raw JSON is not a simple title/body object.
+        }
+    }
+
+    private async Task InsertParam(string paramName)
     {
         var token = "{{" + paramName + "}}";
+        var field = ResolveActiveTemplateField();
+        if (field is not null)
+        {
+            await field.InsertAtCursorAsync(token);
+            return;
+        }
+
         if (_payloadFormat == "RawJson")
             _rawJsonTemplate += token;
+        else if (_activeTemplateField == TemplateField.Title)
+            _titleTemplate += token;
         else
             _bodyTemplate += token;
     }
 
-    private string GetParamTooltip(NotificationParameterInfoDto param)
+    private K7TextField<string>? ResolveActiveTemplateField()
     {
-        var sample = GetSampleValue(param.Name, param.ValueType);
-        return $"{sample}\n{param.DisplayName} ({param.ValueType})";
+        if (_payloadFormat == "RawJson")
+            return _rawField;
+
+        return _activeTemplateField == TemplateField.Title ? _titleField : _bodyField;
     }
 
-    private static string GetSampleValue(string name, string valueType)
+    private static string FormatParamDescription(NotificationParameterInfoDto param)
     {
-        return name switch
+        var token = "{{" + param.Name + "}}";
+        var sample = string.IsNullOrWhiteSpace(param.SampleValue) ? "" : param.SampleValue;
+        if (param.FilterOptions is not { Count: > 0 })
+            return string.IsNullOrEmpty(sample) ? token : $"{token}  {sample}";
+
+        var values = string.Join(" | ", param.FilterOptions.Select(o => o.Value));
+        return string.IsNullOrEmpty(sample)
+            ? $"{token}\n{values}"
+            : $"{token}  {sample}\n{values}";
+    }
+
+    private static IEnumerable<string> ParamKeywords(NotificationParameterInfoDto param)
+    {
+        yield return param.Name;
+        if (!string.IsNullOrWhiteSpace(param.SampleValue))
+            yield return param.SampleValue;
+
+        if (param.FilterOptions is null)
+            yield break;
+
+        foreach (var option in param.FilterOptions)
         {
-            "EventType" => "MediaCreatedEvent",
-            "Server.Name" => "K7",
-            "Server.Url" => "https://k7.example.com",
-            "Server.Version" => "1.0.0",
-            "Current.Year" => "2026",
-            "Current.Month" => "5",
-            "Current.Day" => "24",
-            "Current.Hour" => "14",
-            "Current.Minute" => "30",
-            "Current.Weekday" => "Saturday",
-            "Current.Datestamp" => "2026-05-24",
-            "Current.Timestamp" => "2026-05-24T14:30:00Z",
-            "Media.Title" => "Interstellar",
-            "Media.OriginalTitle" => "Interstellar",
-            "Media.MediaType" => "Movie",
-            "Media.ReleaseYear" => "2014",
-            "Media.Genres.Count" => "3",
-            "Media.Pictures.Count" => "2",
-            "Media.IndexedFiles.Count" => "1",
-            "PictureUrl" => "https://k7.example.com/api/metadata-pictures/a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-            "BackdropUrl" => "https://k7.example.com/api/metadata-pictures/f9e8d7c6-b5a4-3210-fedc-ba9876543210",
-            "Library.Title" => "Films",
-            "Library.MediaType" => "Movies",
-            "Library.MetadataProviderName" => "TMDB",
-            "Library.MetadataLanguage" => "fr",
-            "Device.Name" => "Galaxy S24",
-            "Device.OperatingSystemVersion" => "Android 15",
-            "Device.DisplayScreenWidth" => "1080",
-            "Device.DisplayScreenHeight" => "2340",
-            "Device.DisplayResolutionWidth" => "1080",
-            "Device.DisplayResolutionHeight" => "2340",
-            "Device.DeviceUniqueId" => "abc123",
-            "Device.LastSeen" => "2026-05-24T12:00:00Z",
-            "Playlist.Title" => "Road Trip",
-            "Playlist.Description" => "Songs for the road",
-            "Playlist.Items.Count" => "42",
-            "IndexedFile.FileName" => "interstellar.mkv",
-            "IndexedFile.ParentDirectory" => "/media/movies",
-            "IndexedFile.Size" => "4200000000",
-            "Collection.Title" => "Marvel",
-            "Collection.Description" => "MCU movies",
-            "Collection.Items.Count" => "33",
-            "DynamicPlaylist.Title" => "Recently Added",
-            "DynamicPlaylist.Description" => "Last 30 days",
-            "DynamicPlaylist.OrderDirection" => "Descending",
-            "Download.IndexedFileId" => "a1b2c3d4-...",
-            "Download.DeviceId" => "e5f6g7h8-...",
-            "Download.UserId" => "i9j0k1l2-...",
-            _ => valueType switch
-            {
-                "Int32" or "Int64" => "42",
-                "Guid" => "a1b2c3d4-...",
-                "DateTime" => "2026-05-24T12:00:00Z",
-                "Boolean" => "true",
-                _ => "..."
-            }
-        };
+            if (!string.IsNullOrWhiteSpace(option.Value))
+                yield return option.Value;
+            if (!string.IsNullOrWhiteSpace(option.Label))
+                yield return option.Label;
+        }
+    }
+
+    private string LocalizeEvent(NotificationEventDescriptorDto evt)
+    {
+        var key = string.IsNullOrWhiteSpace(evt.DisplayNameKey) ? evt.DisplayName : evt.DisplayNameKey;
+        var localized = L[key];
+        return localized.ResourceNotFound ? evt.DisplayName : localized.Value;
+    }
+
+    private string LocalizeParam(NotificationParameterInfoDto param)
+    {
+        var key = string.IsNullOrWhiteSpace(param.DisplayNameKey)
+            ? "Param" + param.Name.Replace(".", "", StringComparison.Ordinal)
+            : param.DisplayNameKey;
+        var localized = Fields[key];
+        return localized.ResourceNotFound ? param.Name : localized.Value;
+    }
+
+    private string LocalizeGroup(string group)
+    {
+        var localized = Fields["Group" + group];
+        return localized.ResourceNotFound ? group : localized.Value;
+    }
+
+    private string LocalizePreset(NotificationWebhookPresetDto preset)
+    {
+        var localized = L[preset.DisplayNameKey];
+        return localized.ResourceNotFound ? preset.Id : localized.Value;
+    }
+
+    private string LocalizeDay(DayOfWeek day) => day switch
+    {
+        DayOfWeek.Monday => L["DayMon"],
+        DayOfWeek.Tuesday => L["DayTue"],
+        DayOfWeek.Wednesday => L["DayWed"],
+        DayOfWeek.Thursday => L["DayThu"],
+        DayOfWeek.Friday => L["DayFri"],
+        DayOfWeek.Saturday => L["DaySat"],
+        DayOfWeek.Sunday => L["DaySun"],
+        _ => day.ToString()
+    };
+
+    private void OnPresetChanged(string? id)
+    {
+        _selectedPresetId = id ?? "";
+        if (string.IsNullOrWhiteSpace(_selectedPresetId))
+        {
+            _payloadFormat = "Structured";
+            if (string.IsNullOrWhiteSpace(_titleTemplate) && string.IsNullOrWhiteSpace(_bodyTemplate))
+                ApplyDefaultTemplates();
+            return;
+        }
+
+        var preset = _presets.FirstOrDefault(p => p.Id == _selectedPresetId);
+        if (preset is null)
+            return;
+
+        // Always apply the preset URL scaffold on selection so Discord -> Slack (etc.) updates the field.
+        // Placeholders (... , <token>, your-topic) stay until the user replaces them.
+        _webhookUrl = preset.UrlHint;
+
+        _webhookMethod = preset.Method;
+        _webhookHeaders = new Dictionary<string, string>(preset.Headers, StringComparer.OrdinalIgnoreCase);
+        _payloadFormat = "RawJson";
+        _rawJsonTemplate = preset.RawJsonTemplate;
     }
 
     private IReadOnlyList<RuleFieldDescriptorDto> GetConditionFieldDescriptors()
     {
-        return AvailableParameters.Select(p => new RuleFieldDescriptorDto
+        return AvailableParameters.Select(p =>
         {
-            FieldName = p.Name,
-            DisplayName = p.DisplayName,
-            ValueType = p.ValueType switch
+            var valueType = Enum.TryParse<RuleFieldValueType>(p.FilterValueType, out var parsed)
+                ? parsed
+                : RuleFieldValueType.Text;
+
+            var options = p.FilterOptions?.Select(o => o with
             {
-                "Int32" or "Int64" => RuleFieldValueType.Number,
-                "Boolean" => RuleFieldValueType.Boolean,
-                "DateTime" => RuleFieldValueType.Date,
-                _ => RuleFieldValueType.Text
-            },
-            Operators =
-            [
-                RuleOperator.Equals,
-                RuleOperator.NotEquals,
-                RuleOperator.Contains,
-                RuleOperator.NotContains,
-                RuleOperator.GreaterThan,
-                RuleOperator.LessThan,
-                RuleOperator.BeginsWith,
-                RuleOperator.EndsWith,
-                RuleOperator.IsEmpty,
-                RuleOperator.IsNotEmpty
-            ]
+                Label = LocalizeOption(o.Label)
+            }).ToList();
+
+            return new RuleFieldDescriptorDto
+            {
+                FieldName = p.Name,
+                DisplayName = LocalizeParam(p),
+                ValueType = valueType,
+                Group = LocalizeGroup(p.Group),
+                Options = options,
+                Operators = OperatorsFor(valueType)
+            };
         }).ToList();
+    }
+
+    private string LocalizeOption(string label)
+    {
+        if (label is "true")
+            return S["Yes"];
+        if (label is "false")
+            return S["No"];
+        return label;
+    }
+
+    private static IReadOnlyList<RuleOperator> OperatorsFor(RuleFieldValueType type) => type switch
+    {
+        RuleFieldValueType.Number =>
+        [
+            RuleOperator.Equals, RuleOperator.NotEquals,
+            RuleOperator.GreaterThan, RuleOperator.LessThan,
+            RuleOperator.GreaterThanOrEqual, RuleOperator.LessThanOrEqual,
+            RuleOperator.IsEmpty, RuleOperator.IsNotEmpty
+        ],
+        RuleFieldValueType.Date =>
+        [
+            RuleOperator.Equals, RuleOperator.NotEquals,
+            RuleOperator.GreaterThan, RuleOperator.LessThan,
+            RuleOperator.GreaterThanOrEqual, RuleOperator.LessThanOrEqual,
+            RuleOperator.InLast, RuleOperator.IsEmpty, RuleOperator.IsNotEmpty
+        ],
+        RuleFieldValueType.Boolean or RuleFieldValueType.Select or RuleFieldValueType.Language =>
+        [
+            RuleOperator.Equals, RuleOperator.NotEquals
+        ],
+        RuleFieldValueType.Search =>
+        [
+            RuleOperator.Equals, RuleOperator.NotEquals,
+            RuleOperator.Contains, RuleOperator.NotContains
+        ],
+        _ =>
+        [
+            RuleOperator.Equals, RuleOperator.NotEquals,
+            RuleOperator.Contains, RuleOperator.NotContains,
+            RuleOperator.BeginsWith, RuleOperator.EndsWith,
+            RuleOperator.IsEmpty, RuleOperator.IsNotEmpty
+        ]
+    };
+
+    private async Task<IReadOnlyList<string>> SearchConditionSuggestionsAsync(
+        string field,
+        string text,
+        CancellationToken cancellationToken)
+    {
+        if (field is "User.Name" or "UserName")
+        {
+            var users = await UserAdminService.GetUsersAsync(cancellationToken);
+            return users
+                .Select(u => u.DisplayName ?? u.UserName ?? "")
+                .Where(n => n.Contains(text, StringComparison.OrdinalIgnoreCase))
+                .Take(20)
+                .ToList();
+        }
+
+        if (field is "Library.Title" or "LibraryTitle")
+        {
+            var libraries = await LibraryService.GetLibrariesAsync(cancellationToken);
+            return libraries
+                .Select(l => l.Title)
+                .Where(n => n.Contains(text, StringComparison.OrdinalIgnoreCase))
+                .Take(20)
+                .ToList();
+        }
+
+        return [];
+    }
+
+    private void LoadScheduleWindows(IReadOnlyList<NotificationScheduleWindowDto> windows)
+    {
+        _scheduleWindows.Clear();
+        foreach (var window in windows)
+        {
+            _scheduleWindows.Add(new ScheduleWindowEdit
+            {
+                Days = window.Days.ToList(),
+                Start = window.Start,
+                End = window.End
+            });
+        }
+    }
+
+    private void AddScheduleWindow()
+    {
+        _scheduleWindows.Add(new ScheduleWindowEdit());
+    }
+
+    private void RemoveScheduleWindow(int index)
+    {
+        if (index >= 0 && index < _scheduleWindows.Count)
+            _scheduleWindows.RemoveAt(index);
+    }
+
+    private static void ToggleScheduleDay(ScheduleWindowEdit window, DayOfWeek day)
+    {
+        var value = (int)day;
+        if (!window.Days.Remove(value))
+            window.Days.Add(value);
     }
 
     private void Cancel() => Dialog.Cancel();
@@ -384,17 +713,49 @@ public partial class EditNotificationRuleDialog
         if (string.IsNullOrWhiteSpace(template))
             return "";
 
-        var result = template;
-        foreach (var param in AvailableParameters)
-        {
-            var token = "{{" + param.Name + "}}";
-            if (result.Contains(token, StringComparison.OrdinalIgnoreCase))
+        return System.Text.RegularExpressions.Regex.Replace(
+            template,
+            @"\{\{(.+?)\}\}",
+            match =>
             {
-                var sample = GetSampleValue(param.Name, param.ValueType);
-                result = result.Replace(token, sample, StringComparison.OrdinalIgnoreCase);
-            }
-        }
-        return result;
+                var expression = match.Groups[1].Value.Trim();
+                var parts = expression.Split('|', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+                if (parts.Length == 0)
+                    return match.Value;
+
+                var key = parts[0];
+                var param = AvailableParameters.FirstOrDefault(p =>
+                    string.Equals(p.Name, key, StringComparison.OrdinalIgnoreCase));
+                var sample = param is null || string.IsNullOrWhiteSpace(param.SampleValue)
+                    ? key
+                    : param.SampleValue;
+
+                if (parts.Length == 1)
+                    return sample;
+
+                string? fallback = null;
+                for (var i = 1; i < parts.Length; i++)
+                {
+                    var part = parts[i];
+                    var eq = part.IndexOf('=');
+                    if (eq <= 0)
+                        continue;
+
+                    var mapKey = part[..eq].Trim();
+                    var mapValue = part[(eq + 1)..];
+                    if (mapKey == "*")
+                    {
+                        fallback = mapValue;
+                        continue;
+                    }
+
+                    if (string.Equals(mapKey, sample, StringComparison.OrdinalIgnoreCase))
+                        return mapValue;
+                }
+
+                return fallback ?? sample;
+            },
+            System.Text.RegularExpressions.RegexOptions.Singleline);
     }
 
     private async Task Submit()
@@ -405,6 +766,12 @@ public partial class EditNotificationRuleDialog
         try
         {
             var providerConfig = BuildProviderConfig();
+            var windows = _scheduleWindows.Select(w => new NotificationScheduleWindowDto
+            {
+                Days = w.Days,
+                Start = w.Start,
+                End = w.End
+            }).ToList();
 
             if (_isEditMode && ExistingRule is not null)
             {
@@ -419,6 +786,8 @@ public partial class EditNotificationRuleDialog
                     BodyTemplate = string.IsNullOrWhiteSpace(_bodyTemplate) ? null : _bodyTemplate,
                     RawJsonTemplate = string.IsNullOrWhiteSpace(_rawJsonTemplate) ? null : _rawJsonTemplate,
                     RuleFilter = _ruleFilter,
+                    ScheduleWindows = windows,
+                    CooldownSeconds = _cooldownSeconds,
                     IsEnabled = ExistingRule.IsEnabled
                 });
             }
@@ -434,7 +803,9 @@ public partial class EditNotificationRuleDialog
                     TitleTemplate = string.IsNullOrWhiteSpace(_titleTemplate) ? null : _titleTemplate,
                     BodyTemplate = string.IsNullOrWhiteSpace(_bodyTemplate) ? null : _bodyTemplate,
                     RawJsonTemplate = string.IsNullOrWhiteSpace(_rawJsonTemplate) ? null : _rawJsonTemplate,
-                    RuleFilter = _ruleFilter
+                    RuleFilter = _ruleFilter,
+                    ScheduleWindows = windows,
+                    CooldownSeconds = _cooldownSeconds
                 });
             }
 
@@ -448,5 +819,12 @@ public partial class EditNotificationRuleDialog
         {
             _isSubmitting = false;
         }
+    }
+
+    private sealed class ScheduleWindowEdit
+    {
+        public List<int> Days { get; set; } = [];
+        public string Start { get; set; } = "08:00";
+        public string End { get; set; } = "22:00";
     }
 }

@@ -32,12 +32,14 @@
                 {
                     var suggestion = _suggestions[i];
                     var highlighted = i == _highlightedIndex;
-                    <div class="k7-search-select-option @(highlighted ? "k7-search-select-option--active" : "")"
+                    <div class="k7-search-select-option focusable @(highlighted ? "k7-search-select-option--active" : "")"
                          role="option"
+                         tabindex="0"
                          aria-selected="@highlighted"
                          @onclick="() => SelectSuggestionAsync(suggestion)"
                          @onmousedown:preventDefault="true"
-                         @onmousedown:stopPropagation="true">
+                         @onmousedown:stopPropagation="true"
+                         @onkeydown="@(e => OnSuggestionKeyDown(e, suggestion))">
                         @suggestion
                     </div>
                 }

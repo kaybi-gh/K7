@@ -20,7 +20,7 @@
     }
     @if (OnClose.HasDelegate)
     {
-        <button class="k7-chip-close" @onclick="OnClose" @onclick:stopPropagation="true" type="button" aria-label="Remove">
+        <button class="k7-chip-close focusable" @onclick="OnClose" @onclick:stopPropagation="true" type="button" aria-label="Remove" tabindex="0">
             <K7Icon Icon="@Phosphor.X" IconSize="@K7IconSize.Xs" Class="k7-chip-close__icon" />
         </button>
     }

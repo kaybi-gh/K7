@@ -42,4 +42,7 @@
   <data name="OpInLast" xml:space="preserve"><value>In the last days</value></data>
   <data name="OpIsEmpty" xml:space="preserve"><value>Is empty</value></data>
   <data name="OpIsNotEmpty" xml:space="preserve"><value>Is not empty</value></data>
+  <data name="SelectField" xml:space="preserve"><value>Choose a field</value></data>
+  <data name="SearchFields" xml:space="preserve"><value>Search fields</value></data>
+  <data name="GroupOther" xml:space="preserve"><value>Other</value></data>
 </root>

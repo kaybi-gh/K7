@@ -12,6 +12,8 @@ public partial class K7RuleEditor : ComponentBase
     [Parameter] public IReadOnlyList<RuleFieldDescriptorDto> FieldDescriptors { get; set; } = [];
     [Parameter] public Func<string, string, CancellationToken, Task<IReadOnlyList<string>>>? SearchSuggestionsAsync { get; set; }
     [Parameter] public string Class { get; set; } = "";
+    /// <summary>Shown when the root group has no conditions yet.</summary>
+    [Parameter] public string? EmptyHint { get; set; }
 
     private EditGroup _root = new();
 
@@ -75,6 +77,39 @@ public partial class K7RuleEditor : ComponentBase
         var rule = (EditRule)group.Items[index];
         rule.Operator = op;
         NotifyChanged();
+    }
+
+    private (EditGroup Group, int Index)? _openFieldPicker;
+
+    private bool HasGroupedFields =>
+        FieldDescriptors.Any(f => !string.IsNullOrWhiteSpace(f.Group));
+
+    private IReadOnlyList<K7GroupedListGroup<RuleFieldDescriptorDto>> FieldGroups =>
+        FieldDescriptors
+            .GroupBy(f => f.Group ?? "")
+            .Select(g => new K7GroupedListGroup<RuleFieldDescriptorDto>
+            {
+                Key = string.IsNullOrWhiteSpace(g.Key) ? "Other" : g.Key,
+                Label = string.IsNullOrWhiteSpace(g.Key) ? L["GroupOther"] : g.Key,
+                Items = g.ToList()
+            })
+            .ToList();
+
+    private bool IsFieldPickerOpen(EditGroup group, int index) =>
+        _openFieldPicker is { } open && ReferenceEquals(open.Group, group) && open.Index == index;
+
+    private void ToggleFieldPicker(EditGroup group, int index)
+    {
+        if (IsFieldPickerOpen(group, index))
+            _openFieldPicker = null;
+        else
+            _openFieldPicker = (group, index);
+    }
+
+    private void OnGroupedFieldSelected(EditGroup group, int index, string field)
+    {
+        OnFieldChanged(group, index, field);
+        _openFieldPicker = null;
     }
 
     private void OnValueChanged(EditGroup group, int index, string? value)

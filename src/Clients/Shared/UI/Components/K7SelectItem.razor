@@ -3,9 +3,11 @@
 @implements IDisposable
 
 <button type="button"
-        class="k7-select-option focusable @(_isSelected ? "k7-select-option--selected" : "")"
+        class="k7-select-option focusable @(_isSelected ? "k7-select-option--selected" : "") @(Disabled ? "k7-select-option--disabled" : "")"
         role="option"
         aria-selected="@_isSelected"
+        aria-disabled="@(Disabled ? "true" : null)"
+        disabled="@Disabled"
         @onclick="OnClick"
         @onclick:stopPropagation="true">
     @if (_isSelected)

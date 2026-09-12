@@ -7,6 +7,7 @@ public partial class K7SelectItem<TValue> : IDisposable
     [Parameter] public RenderFragment? ChildContent { get; set; }
     [Parameter] public TValue? Value { get; set; }
     [Parameter] public string? Text { get; set; }
+    [Parameter] public bool Disabled { get; set; }
 
     [CascadingParameter] private K7Select<TValue>? ParentSelect { get; set; }
 
@@ -34,6 +35,9 @@ public partial class K7SelectItem<TValue> : IDisposable
 
     private async Task OnClick()
     {
+        if (Disabled)
+            return;
+
         if (ParentSelect is not null)
             await ParentSelect.SelectValueAsync(Value);
     }

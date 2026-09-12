@@ -21,8 +21,10 @@
   <resheader name="version"><value>2.0</value></resheader>
   <data name="StepCategory" xml:space="preserve"><value>Categorie</value></data>
   <data name="StepEvents" xml:space="preserve"><value>Evenements</value></data>
+  <data name="StepDestination" xml:space="preserve"><value>Destination</value></data>
+  <data name="StepConditions" xml:space="preserve"><value>Conditions</value></data>
   <data name="StepMessage" xml:space="preserve"><value>Message</value></data>
-  <data name="StepProvider" xml:space="preserve"><value>Fournisseur</value></data>
+  <data name="StepProvider" xml:space="preserve"><value>Destination</value></data>
   <data name="SelectCategory" xml:space="preserve"><value>Quel type d'entite souhaitez-vous surveiller ?</value></data>
   <data name="SelectEvents" xml:space="preserve"><value>Quels événements souhaitez-vous suivre ?</value></data>
   <data name="SelectEventsHelper" xml:space="preserve"><value>Sélectionnez un ou plusieurs événements pour lesquels vous souhaitez recevoir des notifications.</value></data>
@@ -35,30 +37,40 @@
   <data name="CategorySystem" xml:space="preserve"><value>Système</value></data>
   <data name="CategoryFederation" xml:space="preserve"><value>Fédération</value></data>
   <data name="CategoryHealth" xml:space="preserve"><value>Santé</value></data>
+  <data name="CategoryUser" xml:space="preserve"><value>Utilisateur</value></data>
+  <data name="CategorySecurity" xml:space="preserve"><value>Securite</value></data>
   <data name="EventCount" xml:space="preserve"><value>{0} événement(s)</value></data>
   <data name="Name" xml:space="preserve"><value>Nom</value></data>
   <data name="NameRequired" xml:space="preserve"><value>Le nom est requis</value></data>
   <data name="Provider" xml:space="preserve"><value>Fournisseur</value></data>
-  <data name="ProviderConfig" xml:space="preserve"><value>Configuration du fournisseur</value></data>
-  <data name="WebhookUrl" xml:space="preserve"><value>URL du webhook</value></data>
+  <data name="ProviderConfig" xml:space="preserve"><value>Configuration</value></data>
+  <data name="DestinationTitle" xml:space="preserve"><value>Ou envoyer</value></data>
+  <data name="DestinationHelper" xml:space="preserve"><value>Choisissez un preset (Discord, Telegram, ...) pour pre-remplir l URL et le JSON, puis ajustez au besoin.</value></data>
+  <data name="WebhookUrl" xml:space="preserve"><value>URL webhook</value></data>
   <data name="WebhookUrlRequired" xml:space="preserve"><value>L'URL est requise</value></data>
+  <data name="WebhookUrlInvalid" xml:space="preserve"><value>Saisir une URL absolue http:// ou https://</value></data>
   <data name="HttpMethod" xml:space="preserve"><value>Methode HTTP</value></data>
   <data name="MessageTemplates" xml:space="preserve"><value>Message</value></data>
+  <data name="MessagePresetHint" xml:space="preserve"><value>Un preset est selectionne: le message est du JSON adapte a ce service (Titre + Corps n est pas disponible).</value></data>
   <data name="FormatStructured" xml:space="preserve"><value>Titre + Corps</value></data>
   <data name="FormatRawJson" xml:space="preserve"><value>JSON brut</value></data>
   <data name="TitleTemplate" xml:space="preserve"><value>Titre</value></data>
-  <data name="TitleTemplateHelper" xml:space="preserve"><value>Titre de la notification. Utilisez {{variable}} pour les valeurs dynamiques.</value></data>
+  <data name="TitleTemplateHelper" xml:space="preserve"><value>Titre court. Placeholders: {{variable}}. Les valeurs possibles apparaissent sous chaque parametre.</value></data>
   <data name="BodyTemplate" xml:space="preserve"><value>Corps du message</value></data>
-  <data name="BodyTemplateHelper" xml:space="preserve"><value>Corps de la notification. Utilisez {{variable}} pour les valeurs dynamiques.</value></data>
+  <data name="BodyTemplateHelper" xml:space="preserve"><value>Message detaille. Exemple: Peer {{Peer.Name}} is now {{Succeeded}}. Mapping avance optionnel: {{Succeeded|true=online|false=offline}}.</value></data>
   <data name="UseDefaultTemplate" xml:space="preserve"><value>Utiliser le modele par défaut</value></data>
   <data name="RawJsonTemplate" xml:space="preserve"><value>Payload JSON</value></data>
-  <data name="RawJsonTemplateHelper" xml:space="preserve"><value>JSON envoyé tel quel au webhook. Utilisez {{variable}} pour les valeurs dynamiques.</value></data>
+  <data name="RawJsonTemplateHelper" xml:space="preserve"><value>JSON envoye au webhook. Placeholders {{variable}}. Mapping avance: {{Name|a=b|*=defaut}}.</value></data>
   <data name="AvailableParams" xml:space="preserve"><value>Paramètres disponibles :</value></data>
   <data name="EventParams" xml:space="preserve"><value>Paramètres de l'événement :</value></data>
   <data name="GlobalParams" xml:space="preserve"><value>Paramètres globaux :</value></data>
   <data name="EditPreview" xml:space="preserve"><value>Editer / Previsualiser</value></data>
   <data name="PreviewNote" xml:space="preserve"><value>Aperçu avec des données d'exemple :</value></data>
-  <data name="Conditions" xml:space="preserve"><value>Conditions (avance)</value></data>
+  <data name="Conditions" xml:space="preserve"><value>Conditions sur les champs (optionnel)</value></data>
+  <data name="ConditionsTitle" xml:space="preserve"><value>Conditions</value></data>
+  <data name="ConditionsStepHelper" xml:space="preserve"><value>Tout est optionnel. Tu peux passer cette etape sans rien remplir: la regle enverra pour chaque evenement selectionne.</value></data>
+  <data name="ConditionsOptionalHelper" xml:space="preserve"><value>Filtre optionnel sur les champs de l evenement. Aucune condition = toujours vrai.</value></data>
+  <data name="ConditionsEmptyHint" xml:space="preserve"><value>Aucune condition. Clique sur Ajouter une condition seulement si tu veux filtrer.</value></data>
   <data name="ConditionsJson" xml:space="preserve"><value>Conditions (JSON)</value></data>
   <data name="ConditionsHelper" xml:space="preserve"><value>Format: [{"parameter":"...", "operator":"...", "value":"..."}]</value></data>
   <data name="ConditionsLogic" xml:space="preserve"><value>Logique des conditions</value></data>
@@ -67,4 +79,76 @@
   <data name="Cancel" xml:space="preserve"><value>Annuler</value></data>
   <data name="Create" xml:space="preserve"><value>Creer</value></data>
   <data name="Save" xml:space="preserve"><value>Enregistrer</value></data>
+  <data name="SearchParams" xml:space="preserve"><value>Rechercher un parametre</value></data>
+  <data name="WebhookPreset" xml:space="preserve"><value>Preset webhook</value></data>
+  <data name="WebhookPresetHelper" xml:space="preserve"><value>Remplit URL (avec aide), methode, headers et le JSON. Aucun = Titre + Corps generique.</value></data>
+  <data name="PresetNone" xml:space="preserve"><value>Aucun (Titre + Corps)</value></data>
+  <data name="PresetDiscord" xml:space="preserve"><value>Discord</value></data>
+  <data name="PresetTelegram" xml:space="preserve"><value>Telegram</value></data>
+  <data name="PresetSlack" xml:space="preserve"><value>Slack</value></data>
+  <data name="PresetNtfy" xml:space="preserve"><value>ntfy</value></data>
+  <data name="PresetGotify" xml:space="preserve"><value>Gotify</value></data>
+  <data name="PresetSignal" xml:space="preserve"><value>Signal</value></data>
+  <data name="FormatRawJsonLocked" xml:space="preserve"><value>Format: JSON brut (preset)</value></data>
+  <data name="PresetDiscordUrlHelper" xml:space="preserve"><value>Collez l URL complete du webhook Discord (Integrations > Webhooks). Remplacez les ...</value></data>
+  <data name="PresetTelegramUrlHelper" xml:space="preserve"><value>Remplacez &lt;token&gt; par le token BotFather. Renseignez aussi chat_id dans le JSON.</value></data>
+  <data name="PresetSlackUrlHelper" xml:space="preserve"><value>Collez l URL Incoming Webhook Slack (hooks.slack.com). Remplacez les ...</value></data>
+  <data name="PresetNtfyUrlHelper" xml:space="preserve"><value>Remplacez your-topic par votre topic ntfy (ou l URL de votre serveur ntfy).</value></data>
+  <data name="PresetGotifyUrlHelper" xml:space="preserve"><value>Remplacez le host et ... par l URL /message?token= de votre application Gotify.</value></data>
+  <data name="PresetSignalUrlHelper" xml:space="preserve"><value>URL de votre signal-cli REST. Ajustez number et recipients dans le JSON.</value></data>
+  <data name="CooldownSeconds" xml:space="preserve"><value>Cooldown (optionnel)</value></data>
+  <data name="CooldownSecondsField" xml:space="preserve"><value>Secondes</value></data>
+  <data name="CooldownSecondsHelper" xml:space="preserve"><value>Ignore les declenchements trop rapproches pour cette regle. Laisse vide pour aucun cooldown.</value></data>
+  <data name="ScheduleWindows" xml:space="preserve"><value>Plages horaires (optionnel)</value></data>
+  <data name="ScheduleWindowsHelper" xml:space="preserve"><value>Optionnel. Sans plage, la regle envoie toujours. Avec une ou plusieurs plages, les evenements hors de ces creneaux sont ignores. Plusieurs plages = OU. Fuseau du serveur.</value></data>
+  <data name="ScheduleWindowsEmpty" xml:space="preserve"><value>Aucune plage: envoi permanent (recommande si tu n as pas de contrainte horaire).</value></data>
+  <data name="AddWindow" xml:space="preserve"><value>Ajouter une plage</value></data>
+  <data name="RemoveWindow" xml:space="preserve"><value>Retirer la plage</value></data>
+  <data name="StartTime" xml:space="preserve"><value>Debut</value></data>
+  <data name="EndTime" xml:space="preserve"><value>Fin</value></data>
+  <data name="DayMon" xml:space="preserve"><value>Lun</value></data>
+  <data name="DayTue" xml:space="preserve"><value>Mar</value></data>
+  <data name="DayWed" xml:space="preserve"><value>Mer</value></data>
+  <data name="DayThu" xml:space="preserve"><value>Jeu</value></data>
+  <data name="DayFri" xml:space="preserve"><value>Ven</value></data>
+  <data name="DaySat" xml:space="preserve"><value>Sam</value></data>
+  <data name="DaySun" xml:space="preserve"><value>Dim</value></data>
+  <data name="EventMediaAddedEvent" xml:space="preserve"><value>Media pret</value></data>
+  <data name="EventMediaCreatedEvent" xml:space="preserve"><value>Media cree</value></data>
+  <data name="EventLibraryCreatedEvent" xml:space="preserve"><value>Bibliotheque creee</value></data>
+  <data name="EventLibraryDeletedEvent" xml:space="preserve"><value>Bibliotheque supprimee</value></data>
+  <data name="EventLibraryFilesIndexTriggeredEvent" xml:space="preserve"><value>Indexation declenchee</value></data>
+  <data name="EventLibraryScanCompletedEvent" xml:space="preserve"><value>Scan termine</value></data>
+  <data name="EventMediaPlaybackCompletedEvent" xml:space="preserve"><value>Lecture terminee</value></data>
+  <data name="EventPlaybackStateChangedEvent" xml:space="preserve"><value>Etat de lecture change</value></data>
+  <data name="EventPlaylistCreatedEvent" xml:space="preserve"><value>Playlist creee</value></data>
+  <data name="EventPlaylistUpdatedEvent" xml:space="preserve"><value>Playlist mise a jour</value></data>
+  <data name="EventPlaylistDeletedEvent" xml:space="preserve"><value>Playlist supprimee</value></data>
+  <data name="EventPlaylistItemAddedEvent" xml:space="preserve"><value>Element de playlist ajoute</value></data>
+  <data name="EventPlaylistItemRemovedEvent" xml:space="preserve"><value>Element de playlist retire</value></data>
+  <data name="EventDeviceCreatedEvent" xml:space="preserve"><value>Appareil cree</value></data>
+  <data name="EventDeviceUpdatedEvent" xml:space="preserve"><value>Appareil mis a jour</value></data>
+  <data name="EventDeviceDeletedEvent" xml:space="preserve"><value>Appareil supprime</value></data>
+  <data name="EventCollectionCreatedEvent" xml:space="preserve"><value>Collection creee</value></data>
+  <data name="EventCollectionDeletedEvent" xml:space="preserve"><value>Collection supprimee</value></data>
+  <data name="EventDynamicPlaylistCreatedEvent" xml:space="preserve"><value>Playlist dynamique creee</value></data>
+  <data name="EventDynamicPlaylistUpdatedEvent" xml:space="preserve"><value>Playlist dynamique mise a jour</value></data>
+  <data name="EventDynamicPlaylistDeletedEvent" xml:space="preserve"><value>Playlist dynamique supprimee</value></data>
+  <data name="EventDownloadReadyEvent" xml:space="preserve"><value>Telechargement pret</value></data>
+  <data name="EventIndexedFileCreatedEvent" xml:space="preserve"><value>Fichier indexe</value></data>
+  <data name="EventIndexedFileDeletedEvent" xml:space="preserve"><value>Fichier retire</value></data>
+  <data name="EventPeerConnectivityChangedEvent" xml:space="preserve"><value>Connectivite pair changee</value></data>
+  <data name="EventTranscodeFailedEvent" xml:space="preserve"><value>Transcodage echoue</value></data>
+  <data name="EventMusicIntelligenceUnavailableEvent" xml:space="preserve"><value>AudioMuse indisponible</value></data>
+  <data name="EventClientErrorReportedEvent" xml:space="preserve"><value>Erreur client</value></data>
+  <data name="EventUserCreatedEvent" xml:space="preserve"><value>Utilisateur cree</value></data>
+  <data name="EventUserDeletedEvent" xml:space="preserve"><value>Utilisateur supprime</value></data>
+  <data name="EventApiKeyCreatedEvent" xml:space="preserve"><value>Cle API creee</value></data>
+  <data name="EventApiKeyRevokedEvent" xml:space="preserve"><value>Cle API revoquee</value></data>
+  <data name="EventClientAppPasswordCreatedEvent" xml:space="preserve"><value>Mot de passe app cree</value></data>
+  <data name="EventClientAppPasswordRevokedEvent" xml:space="preserve"><value>Mot de passe app revoque</value></data>
+  <data name="EventMediaRatedEvent" xml:space="preserve"><value>Media note</value></data>
+  <data name="EventMediaReviewUpsertedEvent" xml:space="preserve"><value>Critique mise a jour</value></data>
+  <data name="EventMediaReviewDeletedEvent" xml:space="preserve"><value>Critique supprimee</value></data>
+  <data name="EventMediaHiddenChangedEvent" xml:space="preserve"><value>Visibilite media changee</value></data>
 </root>

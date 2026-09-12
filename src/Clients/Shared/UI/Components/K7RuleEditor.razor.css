@@ -68,6 +68,13 @@
     min-width: 0;
 }
 
+.k7-rule-field-picker {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    width: 100%;
+}
+
 .k7-rule-group-actions {
     display: flex;
     gap: var(--space-2);

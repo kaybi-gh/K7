@@ -35,9 +35,21 @@
   <data name="RuleCreated" xml:space="preserve"><value>Règle créée avec succès</value></data>
   <data name="RuleUpdated" xml:space="preserve"><value>Règle mise a jour</value></data>
   <data name="RuleDeleted" xml:space="preserve"><value>Règle supprimée</value></data>
+  <data name="NotificationEnabled" xml:space="preserve"><value>Notification activee</value></data>
+  <data name="NotificationDisabled" xml:space="preserve"><value>Notification desactivee</value></data>
   <data name="TestSuccess" xml:space="preserve"><value>Notification de test envoyée avec succès</value></data>
   <data name="TestFailed" xml:space="preserve"><value>Échec de l'envoi de la notification de test</value></data>
   <data name="TestFailedWithError" xml:space="preserve"><value>Échec du webhook : {0}</value></data>
-  <data name="ConfirmDeleteTitle" xml:space="preserve"><value>Supprimer la règle</value></data>
-  <data name="ConfirmDeleteMessage" xml:space="preserve"><value>Voulez-vous vraiment supprimer la règle "{0}" ?</value></data>
+  <data name="ConfirmDeleteTitle" xml:space="preserve"><value>Supprimer la regle</value></data>
+  <data name="ConfirmDeleteMessage" xml:space="preserve"><value>Voulez-vous vraiment supprimer la regle "{0}" ?</value></data>
+  <data name="Select" xml:space="preserve"><value>Selectionner</value></data>
+  <data name="SelectAll" xml:space="preserve"><value>Tout selectionner</value></data>
+  <data name="DeselectAll" xml:space="preserve"><value>Tout deselectionner</value></data>
+  <data name="SelectedCount" xml:space="preserve"><value>{0} selectionnee(s)</value></data>
+  <data name="DeleteSelected" xml:space="preserve"><value>Supprimer</value></data>
+  <data name="DeleteSelectedTitle" xml:space="preserve"><value>Supprimer les regles</value></data>
+  <data name="DeleteSelectedMessage" xml:space="preserve"><value>Supprimer {0} regle(s) ? Cette action est irreversible.</value></data>
+  <data name="DeleteSelectedSuccess" xml:space="preserve"><value>{0} regle(s) supprimee(s)</value></data>
+  <data name="DeleteSelectedError" xml:space="preserve"><value>Impossible de supprimer les regles selectionnees</value></data>
+  <data name="DeleteSelectedPartial" xml:space="preserve"><value>{0} supprimee(s), {1} echec(s)</value></data>
 </root>

@@ -1,10 +1,11 @@
 @inject IStringLocalizer<CreateLibraryDialog> L
 @inject IStringLocalizer<SharedResource> S
 
+<div class="k7-dialog-stepper-bar">
+    <K7DialogStepper Steps="@_stepLabels" ActiveStep="_activeStep" MaxVisitedStep="_maxVisitedStep"
+                     OnStepClick="GoToStep" />
+</div>
 <div class="k7-dialog-content">
-        <K7DialogStepper Steps="@_stepLabels" ActiveStep="_activeStep" MaxVisitedStep="_maxVisitedStep"
-                         OnStepClick="GoToStep" />
-
         @* Step 1: Choose media type *@
         @if (_activeStep == 0)
         {
@@ -14,8 +15,10 @@
                          Class="@GetMediaTypeCardClass(LibraryMediaType.Movie)"
                          Style="cursor: pointer;"
                          @onclick="() => SelectMediaType(LibraryMediaType.Movie)"
+                         @onkeydown="@(e => OnMediaTypeKeyDown(e, LibraryMediaType.Movie))"
                          tabindex="0"
                          role="button"
+                         @attributes="InitialFocusAttributes"
                          aria-pressed="@(_mediaTypeSelected && _selectedMediaType == LibraryMediaType.Movie ? "true" : "false")">
                     <div class="media-type-card">
                         <K7Icon Icon="@Phosphor.FilmStrip"  IconSize="@K7IconSize.Lg" Color="@GetMediaTypeColor(LibraryMediaType.Movie)" />
@@ -27,6 +30,7 @@
                          Class="@GetMediaTypeCardClass(LibraryMediaType.Serie)"
                          Style="cursor: pointer;"
                          @onclick="() => SelectMediaType(LibraryMediaType.Serie)"
+                         @onkeydown="@(e => OnMediaTypeKeyDown(e, LibraryMediaType.Serie))"
                          tabindex="0"
                          role="button"
                          aria-pressed="@(_mediaTypeSelected && _selectedMediaType == LibraryMediaType.Serie ? "true" : "false")">
@@ -40,6 +44,7 @@
                          Class="@GetMediaTypeCardClass(LibraryMediaType.Music)"
                          Style="cursor: pointer;"
                          @onclick="() => SelectMediaType(LibraryMediaType.Music)"
+                         @onkeydown="@(e => OnMediaTypeKeyDown(e, LibraryMediaType.Music))"
                          tabindex="0"
                          role="button"
                          aria-pressed="@(_mediaTypeSelected && _selectedMediaType == LibraryMediaType.Music ? "true" : "false")">

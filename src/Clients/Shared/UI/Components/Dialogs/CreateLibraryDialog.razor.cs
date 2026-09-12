@@ -45,6 +45,11 @@ public partial class CreateLibraryDialog
     private Guid? _selectedGroupId;
     private bool _createNewGroup = true;
 
+    private static readonly Dictionary<string, object> InitialFocusAttributes = new()
+    {
+        ["data-initial-focus"] = true
+    };
+
     private async Task SelectMediaType(LibraryMediaType mediaType)
     {
         _selectedMediaType = mediaType;
@@ -66,6 +71,12 @@ public partial class CreateLibraryDialog
         _selectedGroupId = null;
     }
 
+    private async Task OnMediaTypeKeyDown(KeyboardEventArgs e, LibraryMediaType mediaType)
+    {
+        if (e.Key is "Enter" or " ")
+            await SelectMediaType(mediaType);
+    }
+
     private void SelectGroup(Guid? groupId)
     {
         _selectedGroupId = groupId;
@@ -76,8 +87,8 @@ public partial class CreateLibraryDialog
     private string GetMediaTypeCardClass(LibraryMediaType type)
     {
         return _mediaTypeSelected && _selectedMediaType == type
-            ? "k7-paper--selected"
-            : "";
+            ? "k7-paper--selected focusable"
+            : "focusable";
     }
 
     private string GetMediaTypeColor(LibraryMediaType type)
@@ -145,7 +156,8 @@ public partial class CreateLibraryDialog
             { x => x.InitialPath, string.IsNullOrWhiteSpace(_rootPath) ? null : _rootPath }
         };
 
-        var options = new K7DialogOptions {
+        var options = new K7DialogOptions
+        {
             MaxWidth = K7DialogMaxWidth.Small,
             FullWidth = true,
             CloseOnEscapeKey = true

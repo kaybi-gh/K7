@@ -137,6 +137,12 @@ public partial class K7SearchSelect : ComponentBase, IAsyncDisposable
             await OnDebouncedCommit.InvokeAsync(suggestion);
     }
 
+    private async Task OnSuggestionKeyDown(KeyboardEventArgs e, string suggestion)
+    {
+        if (e.Key is "Enter" or " ")
+            await SelectSuggestionAsync(suggestion);
+    }
+
     private async Task OnInputKeyDown(KeyboardEventArgs e)
     {
         if (e.Key is "Enter" && !_editing && !_open)

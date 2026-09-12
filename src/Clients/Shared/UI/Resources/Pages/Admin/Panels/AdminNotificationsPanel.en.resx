@@ -35,9 +35,21 @@
   <data name="RuleCreated" xml:space="preserve"><value>Rule created successfully</value></data>
   <data name="RuleUpdated" xml:space="preserve"><value>Rule updated</value></data>
   <data name="RuleDeleted" xml:space="preserve"><value>Rule deleted</value></data>
+  <data name="NotificationEnabled" xml:space="preserve"><value>Notification enabled</value></data>
+  <data name="NotificationDisabled" xml:space="preserve"><value>Notification disabled</value></data>
   <data name="TestSuccess" xml:space="preserve"><value>Test notification sent successfully</value></data>
   <data name="TestFailed" xml:space="preserve"><value>Failed to send test notification</value></data>
   <data name="TestFailedWithError" xml:space="preserve"><value>Webhook failed: {0}</value></data>
   <data name="ConfirmDeleteTitle" xml:space="preserve"><value>Delete rule</value></data>
   <data name="ConfirmDeleteMessage" xml:space="preserve"><value>Are you sure you want to delete the rule "{0}"?</value></data>
+  <data name="Select" xml:space="preserve"><value>Select</value></data>
+  <data name="SelectAll" xml:space="preserve"><value>Select all</value></data>
+  <data name="DeselectAll" xml:space="preserve"><value>Deselect all</value></data>
+  <data name="SelectedCount" xml:space="preserve"><value>{0} selected</value></data>
+  <data name="DeleteSelected" xml:space="preserve"><value>Delete</value></data>
+  <data name="DeleteSelectedTitle" xml:space="preserve"><value>Delete rules</value></data>
+  <data name="DeleteSelectedMessage" xml:space="preserve"><value>Delete {0} rule(s)? This cannot be undone.</value></data>
+  <data name="DeleteSelectedSuccess" xml:space="preserve"><value>{0} rule(s) deleted</value></data>
+  <data name="DeleteSelectedError" xml:space="preserve"><value>Could not delete the selected rules</value></data>
+  <data name="DeleteSelectedPartial" xml:space="preserve"><value>{0} deleted, {1} failed</value></data>
 </root>

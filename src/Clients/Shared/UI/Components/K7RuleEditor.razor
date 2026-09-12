@@ -20,12 +20,15 @@
                     <span class="k7-rule-group-title">@GetGroupTitle(groupNumber)</span>
                 }
 
-                <K7Select TValue="RuleMatchCondition" Value="group.MatchCondition"
-                           ValueChanged="(v) => OnMatchConditionChanged(group, v)"
-                           Variant="outlined" Style="width: 140px;">
-                    <K7SelectItem Value="@RuleMatchCondition.All" Text="@L["MatchAll"]">@L["MatchAll"]</K7SelectItem>
-                    <K7SelectItem Value="@RuleMatchCondition.Any" Text="@L["MatchAny"]">@L["MatchAny"]</K7SelectItem>
-                </K7Select>
+                @if (group.Items.Count > 0)
+                {
+                    <K7Select TValue="RuleMatchCondition" Value="group.MatchCondition"
+                               ValueChanged="(v) => OnMatchConditionChanged(group, v)"
+                               Variant="outlined" Style="width: 140px;">
+                        <K7SelectItem Value="@RuleMatchCondition.All" Text="@L["MatchAll"]">@L["MatchAll"]</K7SelectItem>
+                        <K7SelectItem Value="@RuleMatchCondition.Any" Text="@L["MatchAny"]">@L["MatchAny"]</K7SelectItem>
+                    </K7Select>
+                }
 
                 @if (parent is not null)
                 {
@@ -35,6 +38,13 @@
                                    OnClick="() => RemoveItem(parent, indexInParent)" />
                 }
             </div>
+
+            @if (parent is null && group.Items.Count == 0 && !string.IsNullOrWhiteSpace(EmptyHint))
+            {
+                <p class="text-sm k7-rule-empty-hint" style="color: var(--color-text-muted); margin: 0 0 var(--space-2);">
+                    @EmptyHint
+                </p>
+            }
 
             <div class="k7-rule-group-items">
                 @for (var i = 0; i < group.Items.Count; i++)
@@ -56,14 +66,37 @@
                             </div>
 
                             <div class="k7-rule-item-body">
-                                <K7Select TValue="string" Value="rule.Field"
-                                           ValueChanged="(v) => OnFieldChanged(group, index, v)"
-                                           Variant="outlined" Style="min-width: 160px;">
-                                    @foreach (var field in FieldDescriptors)
-                                    {
-                                        <K7SelectItem Value="@field.FieldName" Text="@field.DisplayName">@field.DisplayName</K7SelectItem>
-                                    }
-                                </K7Select>
+                                @if (HasGroupedFields)
+                                {
+                                    <div class="k7-rule-field-picker">
+                                        <K7Button Variant="outlined" Size="sm"
+                                                  OnClick="() => ToggleFieldPicker(group, index)">
+                                            @(descriptor?.DisplayName ?? L["SelectField"])
+                                        </K7Button>
+                                        @if (IsFieldPickerOpen(group, index))
+                                        {
+                                            <K7GroupedList TItem="RuleFieldDescriptorDto"
+                                                           Groups="FieldGroups"
+                                                           Searchable="true"
+                                                           SearchPlaceholder="@L["SearchFields"]"
+                                                           ItemLabel="@(f => f.DisplayName)"
+                                                           ItemDescription="@(f => f.FieldName)"
+                                                           ItemKeySelector="@(f => f.FieldName)"
+                                                           ItemClicked="@(f => OnGroupedFieldSelected(group, index, f.FieldName))" />
+                                        }
+                                    </div>
+                                }
+                                else
+                                {
+                                    <K7Select TValue="string" Value="rule.Field"
+                                               ValueChanged="(v) => OnFieldChanged(group, index, v)"
+                                               Variant="outlined" Style="min-width: 160px;">
+                                        @foreach (var field in FieldDescriptors)
+                                        {
+                                            <K7SelectItem Value="@field.FieldName" Text="@field.DisplayName">@field.DisplayName</K7SelectItem>
+                                        }
+                                    </K7Select>
+                                }
 
                                 <K7Select TValue="RuleOperator" Value="rule.Operator"
                                            ValueChanged="(v) => OnOperatorChanged(group, index, v)"
