@@ -299,6 +299,7 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
                 AttachSidecarLayer();
                 Attach();
                 _awaitingFirstFrame = true;
+                _userPaused = false;
 #if ANDROID
                 _tvResyncPending = true;
 #endif
@@ -327,6 +328,7 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
                 HideChrome(force: true);
                 ClearStartFailure();
                 _awaitingFirstFrame = false;
+                _seekSpinnerActive = false;
                 ClearSidecarSubtitles();
                 DetachSidecarLayer();
                 SetLoadingVeil(false);
@@ -344,6 +346,12 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
     }
 
     private bool _awaitingFirstFrame = true;
+    private bool _seekSpinnerActive;
+#if WINDOWS
+    private bool _seekSawBuffering;
+#endif
+    private bool _userPaused;
+    private DateTime _firstFrameUtc;
 #if ANDROID
     private bool _tvResyncPending;
 #endif
@@ -359,6 +367,7 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
 
             if (!IsVisible)
             {
+                _seekSpinnerActive = false;
                 _loadingVeil.IsVisible = false;
                 _loadingSpinner.IsVisible = false;
                 _loadingSpinner.IsRunning = false;
@@ -385,15 +394,22 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
     }
 
     /// <summary>
-    /// Cover the decode surface again (VLC audio reopen / mid-GOP seek) until
-    /// <see cref="NotifyFirstFrameReady"/> runs.
+    /// Cover the decode surface again (VLC audio reopen) until
+    /// <see cref="NotifyFirstFrameReady"/> runs. Seek buffering uses
+    /// <see cref="ShowSeekSpinner"/> instead (last frame stays visible).
     /// </summary>
-    public void ShowTransientVeil()
+    public void ShowTransientVeil(bool dimBackground = true)
     {
+        if (!NativeSeekSpinnerPolicy.ShouldArmStartupVeil(dimBackground))
+        {
+            ShowSeekSpinner();
+            return;
+        }
+
         MainThread.BeginInvokeOnMainThread(() =>
         {
             _awaitingFirstFrame = true;
-            _loadingVeil.IsVisible = true;
+            _loadingVeil.IsVisible = !_startFailureVisible;
             _loadingSpinner.IsVisible = !_startFailureVisible;
             _loadingSpinner.IsRunning = !_startFailureVisible;
             StopHideTimer();
@@ -403,17 +419,61 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
         });
     }
 
+    /// <summary>Spinner only while a seek rebuffers. Keeps the last decoded frame.</summary>
+    public void ShowSeekSpinner()
+    {
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+            if (!IsVisible || _startFailureVisible)
+                return;
+
+            _seekSpinnerActive = true;
+#if WINDOWS
+            _seekSawBuffering = false;
+#endif
+            _loadingVeil.IsVisible = false;
+            _loadingSpinner.IsVisible = true;
+            _loadingSpinner.IsRunning = true;
+            NativeVideoDebug.Log("SeekSpinner show");
+        });
+    }
+
+    public void HideSeekSpinner()
+    {
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+            if (!_seekSpinnerActive)
+                return;
+
+            _seekSpinnerActive = false;
+#if WINDOWS
+            _seekSawBuffering = false;
+#endif
+            if (_awaitingFirstFrame)
+                return;
+
+            _loadingSpinner.IsVisible = false;
+            _loadingSpinner.IsRunning = false;
+            NativeVideoDebug.Log("SeekSpinner hide");
+        });
+    }
+
     /// <summary>First Playing frame - drop the startup veil and allow seek without black cover.</summary>
     public void NotifyFirstFrameReady()
     {
         MainThread.BeginInvokeOnMainThread(() =>
         {
             _awaitingFirstFrame = false;
+            _seekSpinnerActive = false;
             ClearStartFailure();
             _loadingVeil.IsVisible = false;
             _loadingSpinner.IsVisible = false;
             _loadingSpinner.IsRunning = false;
             NativeVideoDebug.Log("SetLoadingVeil loading=False firstFrame");
+            _firstFrameUtc = DateTime.UtcNow;
+            if (!_userPaused)
+                _player.PlaybackState = PlaybackState.Playing;
+            UpdateTransport();
             ResetHideTimer();
             SyncTvSurfaceComposition();
         });
@@ -428,6 +488,7 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
         {
             _startFailureVisible = true;
             _awaitingFirstFrame = false;
+            _userPaused = true;
             _startFailureLabel.Text = message;
             _startFailureBanner.IsVisible = true;
             _loadingVeil.IsVisible = true;
@@ -1347,6 +1408,7 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
     private void SubscribePlayer()
     {
         _player.PlaybackStateChanged += OnPlayerChanged;
+        _player.SeekRequested += OnSeekRequestedShowSpinner;
         _player.CurrentTimeChanged += OnTimeChanged;
         _player.BufferedTimeChanged += OnBufferedChanged;
         _player.VolumeChanged += OnVolumeChanged;
@@ -1381,6 +1443,7 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
     private void UnsubscribePlayer()
     {
         _player.PlaybackStateChanged -= OnPlayerChanged;
+        _player.SeekRequested -= OnSeekRequestedShowSpinner;
         _player.CurrentTimeChanged -= OnTimeChanged;
         _player.BufferedTimeChanged -= OnBufferedChanged;
         _player.VolumeChanged -= OnVolumeChanged;
@@ -1425,12 +1488,60 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
 
     private void OnBackPressed() => MainThread.BeginInvokeOnMainThread(() => HandleBack());
 
+    private Task OnSeekRequestedShowSpinner(double _)
+    {
+        ShowSeekSpinner();
+        return Task.CompletedTask;
+    }
+
+    private bool DecoderOwnsFirstFrame()
+    {
+#if WINDOWS
+        return WindowsVideoPlayback.ShouldUseLibVlc(_player.Source?.MimeType, _player.Source?.Url);
+#else
+        return true;
+#endif
+    }
+
+    private bool HoldsRemuxSeekSpinner() =>
+        NativeSeekSpinnerPolicy.ShouldHoldUntilDecoderReachesSeek(
+            _player.SelectedQuality?.IsOriginal == true,
+            StreamingSourceKind.IsHls(_player.Source?.MimeType, _player.Source?.Url));
+
     private void OnPlayerChanged(PlaybackState state) =>
         MainThread.BeginInvokeOnMainThread(() =>
         {
-            // Windows HLS (Video.js): no LibVLC FirstFrame - lift the veil once Playing.
-            if (state == PlaybackState.Playing && _awaitingFirstFrame)
+            if (state == PlaybackState.Playing
+                && NativeSeekSpinnerPolicy.ShouldLiftVeilOnPlaying(
+                    _awaitingFirstFrame,
+                    _seekSpinnerActive,
+                    decoderOwnsFirstFrame: DecoderOwnsFirstFrame()))
                 NotifyFirstFrameReady();
+
+#if WINDOWS
+            if (state == PlaybackState.Buffering && _seekSpinnerActive)
+                _seekSawBuffering = true;
+
+            if (NativeSeekSpinnerPolicy.ShouldHideOnPlaying(
+                    isWindows: true,
+                    _seekSawBuffering,
+                    holdUntilDecoderReachesSeek: HoldsRemuxSeekSpinner())
+                && state == PlaybackState.Playing)
+                HideSeekSpinner();
+            else if (NativeSeekSpinnerPolicy.ShouldShowOnMidPlayBuffering(
+                    isWindows: true,
+                    awaitingFirstFrame: _awaitingFirstFrame)
+                && state == PlaybackState.Buffering)
+                ShowSeekSpinner();
+#endif
+
+            if (NativePlayPauseTransportPolicy.ShouldIgnoreEngineIdleOrPaused(
+                    _userPaused,
+                    _awaitingFirstFrame,
+                    _firstFrameUtc,
+                    DateTime.UtcNow,
+                    state))
+                return;
 
             UpdateTransport();
             if (state == PlaybackState.Ended)
@@ -1454,6 +1565,7 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
                 _seekBar.Refresh();
             }
 
+            TryHideRemuxSeekSpinnerFromBuffer();
             UpdateSkipSegment(time);
             // Sidecar VTT follows the held resume clock; do not paint cues over the veil.
             // Android: Exo SubtitleView owns text - no XAML sidecar.
@@ -1471,10 +1583,23 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
 
     private void OnBufferedChanged(double _)
     {
-        if (!IsChromeVisible)
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+            TryHideRemuxSeekSpinnerFromBuffer();
+            if (IsChromeVisible)
+                _seekBar.Refresh();
+        });
+    }
+
+    private void TryHideRemuxSeekSpinnerFromBuffer()
+    {
+        if (!_seekSpinnerActive || !HoldsRemuxSeekSpinner())
             return;
 
-        MainThread.BeginInvokeOnMainThread(_seekBar.Refresh);
+        // Video.js has no decoder first-frame. Once remux has media past the playhead
+        // the landing window is serving and the frozen keep-frame can drop.
+        if (_player.BufferedTime > Math.Max(_player.CurrentTime, 0) + 0.4)
+            HideSeekSpinner();
     }
 
     private void OnSourceChanged(PlayerSource source) =>
@@ -1583,7 +1708,9 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
 
     private void UpdateTransport()
     {
-        var playing = _player.PlaybackState is PlaybackState.Playing or PlaybackState.Buffering;
+        var playing = NativePlayPauseTransportPolicy.ShouldShowPauseGlyph(
+            _userPaused,
+            _player.PlaybackState);
         _playPauseButton.Text = playing ? NativePlayerGlyphs.Pause : NativePlayerGlyphs.Play;
         var volume = DisplayedVolume;
         _volumeButton.Text = _player.IsMuted || volume <= 0.001
@@ -2011,10 +2138,20 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
 
     private void TogglePlayPause()
     {
-        if (_player.PlaybackState is PlaybackState.Playing or PlaybackState.Buffering)
+        if (NativePlayPauseTransportPolicy.ShouldRequestPauseOnToggle(
+            _userPaused,
+            _player.PlaybackState))
+        {
+            _userPaused = true;
             _player.Pause();
+        }
         else
+        {
+            _userPaused = false;
             _player.Play();
+        }
+
+        UpdateTransport();
         ResetHideTimer();
     }
 
