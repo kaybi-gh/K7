@@ -36,6 +36,21 @@ public class FfmpegAudioEncoderResolverTests
     }
 
     [Test]
+    public void BuildAacEncodeArguments_ShouldOmitChannelFlag_WhenForceChannelsNull()
+    {
+        var args = FfmpegAudioEncoderResolver.BuildAacEncodeArguments(
+            "aac",
+            forceChannels: null,
+            sampleRateHz: FfmpegAudioEncoderResolver.DefaultSampleRateHz);
+
+        args.Should().Equal(
+            "-c:a aac",
+            "-ar 48000",
+            "-b:a 256000");
+        args.Should().NotContain(a => a.StartsWith("-ac ", StringComparison.Ordinal));
+    }
+
+    [Test]
     public void BuildAacEncodeArguments_ShouldUseLibfdkVbr_WhenPreferred()
     {
         var args = FfmpegAudioEncoderResolver.BuildAacEncodeArguments(

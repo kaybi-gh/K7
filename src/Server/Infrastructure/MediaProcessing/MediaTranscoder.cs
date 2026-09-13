@@ -548,9 +548,13 @@ public class MediaTranscoder : IMediaTranscoder
         {
             var capabilities = await _ffmpegCapabilitiesService.GetCapabilitiesAsync(cancellationToken);
             var encoder = FfmpegAudioEncoderResolver.ResolveAacEncoder(capabilities.VideoEncoders);
+            // Keep the source channel layout (no -ac). A server-side downmix to stereo can
+            // mute some 5.1 layouts and, more importantly, contradicts the master manifest,
+            // which advertises the source CHANNELS. Announce N, deliver N, and let ExoPlayer
+            // (or any client) downmix to the device output.
             aacEncodeArgs = FfmpegAudioEncoderResolver.BuildAacEncodeArguments(
                 encoder,
-                forceChannels: FfmpegAudioEncoderResolver.HlsStereoChannels,
+                forceChannels: null,
                 sampleRateHz: FfmpegAudioEncoderResolver.DefaultSampleRateHz);
             aacEncoderDelay = TimeSpan.FromSeconds(
                 FfmpegAudioEncoderResolver.GetAacEncoderDelaySeconds(
