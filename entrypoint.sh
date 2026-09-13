@@ -50,5 +50,23 @@ if [ -d /dev/dri ]; then
     done
 fi
 
+# NVIDIA NVENC devices from nvidia-container-toolkit. Same GID grant as /dev/dri
+# when the nodes are not world-accessible.
+for device in /dev/nvidia*; do
+    [ -e "$device" ] || continue
+    [ -c "$device" ] || continue
+    gid=$(stat -c '%g' "$device" 2>/dev/null || true)
+    [ -n "${gid:-}" ] || continue
+    [ "$gid" != "0" ] || continue
+    if ! getent group "$gid" >/dev/null 2>&1; then
+        groupadd -g "$gid" "host-gid-$gid" 2>/dev/null || true
+    fi
+    gname=$(getent group "$gid" | cut -d: -f1)
+    if [ -n "$gname" ]; then
+        usermod -aG "$gname" appuser 2>/dev/null || true
+        echo "Granted appuser access to $device via group $gname ($gid)"
+    fi
+done
+
 # Run the application as appuser
 exec gosu appuser dotnet K7.Server.Web.dll "$@"

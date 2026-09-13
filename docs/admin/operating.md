@@ -155,7 +155,9 @@ Size the transcoding volume for concurrent streams. Safe to wipe between runs (c
 
 ### Hardware acceleration
 
-The server probes ffmpeg once per process lifetime (in-memory cache), then **verifies** each candidate hardware encoder with a short encode test. Only encoders that actually work are listed under Admin -> Transcoding. Built-in ffmpeg encoder names (for example `h264_nvenc` on Ubuntu packages) are **not** enough - the GPU device and drivers must be reachable inside the container. Failed probes (for example NVENC without a GPU) are summarized once at Information without dumping full ffmpeg stderr; details stay at Debug.
+The server probes ffmpeg once per process lifetime (in-memory cache), then **verifies** each candidate hardware encoder with a short encode test. Only encoders that actually work are listed under Admin -> Transcoding. Built-in ffmpeg encoder names (for example `h264_nvenc` on Ubuntu packages) are **not** enough - the GPU device and drivers must be reachable inside the container. Failed probes (for example NVENC without a GPU) are summarized once at Information without dumping full ffmpeg stderr. Details stay at Debug.
+
+NVENC verification encodes a few lavfi frames from system memory. It does **not** require the `scale_cuda` filter (often missing from distro ffmpeg) or an explicit CUDA device init. If `scale_cuda` and the `cuda` hwaccel are both present, transcode keeps decode/scale on the GPU. Otherwise NVENC still encodes, with scale on the CPU.
 
 Supported families:
 
@@ -200,10 +202,13 @@ K7 initializes VAAPI with `-init_hw_device vaapi=va:/dev/dri/renderD*` before th
 
 PGS subtitle burn-in still does the overlay on the CPU (`scale2ref` / `overlay`). When VAAPI (or another encoder that sets a post-overlay `-vf`) is selected, K7 appends that filter inside the same `-filter_complex` (for VAAPI: `format=nv12,hwupload`) so encode can stay on the GPU. Decode stays software for burn-in so the overlay filters keep system-memory frames.
 
-**NVIDIA (NVENC)** - NVIDIA Container Toolkit on the host, then either:
+**NVIDIA (NVENC)** - NVIDIA Container Toolkit on the host, then:
 
 ```yaml
 gpus: all
+environment:
+  NVIDIA_VISIBLE_DEVICES: all
+  NVIDIA_DRIVER_CAPABILITIES: compute,utility,video
 # or, Compose deploy form:
 # deploy:
 #   resources:
@@ -214,7 +219,9 @@ gpus: all
 #           capabilities: [gpu]
 ```
 
-After recreate: open Admin -> Transcoding, confirm detected hardware encoders lists only working encoders, and run **Test encoder**.
+`NVIDIA_DRIVER_CAPABILITIES` must include `video`. Without it the toolkit does not inject `libnvidia-encode` and NVENC probes fail even when `gpus: all` is set.
+
+After recreate: open Admin -> Transcoding, confirm detected hardware encoders lists only working encoders, and run **Test encoder**. Recreate the container (or restart the Aspire/local process) so the in-memory probe runs again.
 
 Users pick stream quality in the player; that drives whether a remux/transcode session is needed.
 

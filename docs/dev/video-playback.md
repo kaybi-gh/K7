@@ -301,7 +301,7 @@ absolute and window-relative `tfdt` (rewind + cuts). Video **encode** (720p and 
 align and subtracts the first-sample CTS. Hardware-encoder delay (VAAPI / NVENC / AMF,
 often hundreds of ms) sits under 1s and otherwise stays as late video that ExoPlayer
 drops (lipsync + sporadic rewind). HLS encode forces `-bf 0`, disables scene-cut
-(`-sc_threshold 0`, nvenc `-no-scenecut 1 -zerolatency 1`), and applies the ladder
+(`-sc_threshold 0`, nvenc `-no-scenecut 1`), and applies the ladder
 `b:v` / `maxrate` / `bufsize` 5x (720p is 2.8 / 3.5 Mbps, not scale-only). Extra
 scene-cut IDRs make `-f segment` cut off the shared keyframe timeline.
 

@@ -47,6 +47,7 @@ services:
     #   - /dev/dri:/dev/dri
     # NVIDIA NVENC (requires nvidia-container-toolkit) - /dev/dri alone is not enough
     # gpus: all
+    # NVIDIA_DRIVER_CAPABILITIES must include video or libnvidia-encode is not injected
     volumes:
       # Persist config keys, metadata artwork, logs, and transcoding cache across recreates.
       - k7-data:/data
@@ -75,6 +76,9 @@ services:
       # BaseUrl: https://k7.example.com
       # Optional display name used when inviting federation peers.
       # Server__Name: Home
+      # NVIDIA NVENC (uncomment with gpus: all). video is required for NVENC.
+      # NVIDIA_VISIBLE_DEVICES: all
+      # NVIDIA_DRIVER_CAPABILITIES: compute,utility,video
     healthcheck:
       # /alive is liveness (Kestrel up). /health also waits on Postgres CanConnect.
       # interval 5s so healthy follows "Now listening on :7080" instead of the next 30s tick.

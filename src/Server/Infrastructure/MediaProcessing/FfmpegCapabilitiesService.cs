@@ -66,7 +66,8 @@ public partial class FfmpegCapabilitiesService(
     private static async Task<(int ExitCode, string Stdout, string Stderr)> RunCaptureAsync(
         string fileName,
         string arguments,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        TimeSpan? timeout = null)
     {
         var stdout = new List<string>();
         var stderr = new List<string>();
@@ -75,6 +76,7 @@ public partial class FfmpegCapabilitiesService(
             arguments,
             line => stdout.Add(line),
             line => stderr.Add(line),
+            timeout: timeout,
             cancellationToken: cancellationToken);
 
         return (exitCode, string.Join('\n', stdout), string.Join('\n', stderr));
@@ -82,6 +84,11 @@ public partial class FfmpegCapabilitiesService(
 
     private const int TestFrameWidth = 320;
     private const int TestFrameHeight = 240;
+    private const string ProbeClipDuration = "0.1";
+    // NVENC production args can fail LockBitstream on a 2-frame flush. Admin
+    // Test encoder uses 1s. Capability probes stay at 0.1s plus -frames:v 5.
+    private const string TestClipDuration = "1";
+    private static readonly TimeSpan ProbeEncodeTimeout = TimeSpan.FromSeconds(5);
 
     public async Task<FfmpegTranscodeTestResultDto> TestEncoderAsync(CancellationToken cancellationToken = default)
     {
@@ -100,7 +107,12 @@ public partial class FfmpegCapabilitiesService(
         }
 
         var ffmpegPath = GlobalFFOptions.GetFFMpegBinaryPath();
-        var result = await TryEncodeAsync(ffmpegPath, selection, cancellationToken);
+        var result = await TryEncodeAsync(
+            ffmpegPath,
+            selection,
+            TestClipDuration,
+            cancellationToken,
+            TimeSpan.FromSeconds(15));
         if (!result.Success)
         {
             return new FfmpegTranscodeTestResultDto
@@ -137,6 +149,13 @@ public partial class FfmpegCapabilitiesService(
             .Where(e => PreferredHardwareEncoders.Contains(e, StringComparer.OrdinalIgnoreCase))
             .ToList();
 
+        var filtersResult = await RunCaptureAsync(ffmpegPath, "-hide_banner -filters", cancellationToken);
+        var cudaScaleFilterAvailable = HasFilter(filtersResult.Stdout, "scale_cuda");
+        if (cudaScaleFilterAvailable)
+            logger.LogDebug("ffmpeg scale_cuda filter is available");
+        else
+            logger.LogDebug("ffmpeg scale_cuda filter is not available (NVENC will encode from system memory)");
+
         var vaapiDevice = FfmpegVideoEncoderBuilder.FindVaapiRenderNode();
         if (vaapiDevice is not null)
             logger.LogInformation("VAAPI render node detected: {Device}", vaapiDevice);
@@ -147,11 +166,22 @@ public partial class FfmpegCapabilitiesService(
         var failedHardwareEncoders = new List<string>();
         foreach (var encoderName in candidateHardwareEncoders)
         {
-            var selection = FfmpegVideoEncoderBuilder.CreateHardwareSelection(encoderName);
+            if (!FfmpegVideoEncoderBuilder.CanProbeHardwareEncoder(encoderName))
+            {
+                logger.LogDebug("Skipping hardware encoder {Encoder} (not usable on this OS/device)", encoderName);
+                continue;
+            }
+
+            var selection = FfmpegVideoEncoderBuilder.CreateHardwareProbeSelection(encoderName);
             if (selection is null)
                 continue;
 
-            var probe = await TryEncodeAsync(ffmpegPath, selection, cancellationToken);
+            var probe = await TryEncodeAsync(
+                ffmpegPath,
+                selection,
+                ProbeClipDuration,
+                cancellationToken,
+                ProbeEncodeTimeout);
             if (probe.Success)
             {
                 verifiedHardwareEncoders.Add(encoderName);
@@ -190,14 +220,17 @@ public partial class FfmpegCapabilitiesService(
             FfmpegVersion = versionLine,
             HardwareAccelerators = hwaccels,
             VideoEncoders = encoders,
-            AvailableHardwareEncoders = verifiedHardwareEncoders
+            AvailableHardwareEncoders = verifiedHardwareEncoders,
+            CudaScaleFilterAvailable = cudaScaleFilterAvailable
         };
     }
 
     private static async Task<(bool Success, string Stderr)> TryEncodeAsync(
         string ffmpegPath,
         VideoEncoderSelection selection,
-        CancellationToken cancellationToken)
+        string clipDuration,
+        CancellationToken cancellationToken,
+        TimeSpan? timeout = null)
     {
         // ffmpeg requires -init_hw_device (and friends) before -i.
         var global = string.IsNullOrWhiteSpace(selection.GlobalArguments)
@@ -207,11 +240,11 @@ public partial class FfmpegCapabilitiesService(
             ? string.Empty
             : $"-vf \"{selection.VideoFilter}\" ";
         var args =
-            $"-hide_banner {global}-f lavfi -i color=c=black:s={TestFrameWidth}x{TestFrameHeight}:d=0.1 {filter}{selection.EncoderArguments} -f null -";
+            $"-hide_banner {global}-f lavfi -i color=c=black:s={TestFrameWidth}x{TestFrameHeight}:d={clipDuration} {filter}{selection.EncoderArguments} -f null -";
 
         try
         {
-            var result = await RunCaptureAsync(ffmpegPath, args, cancellationToken);
+            var result = await RunCaptureAsync(ffmpegPath, args, cancellationToken, timeout);
             return (result.ExitCode == 0, result.Stderr);
         }
         catch (Exception ex)
@@ -271,6 +304,21 @@ public partial class FfmpegCapabilitiesService(
         return [.. lines.Where(l => !string.IsNullOrWhiteSpace(l))];
     }
 
+    internal static bool HasFilter(string filtersOutput, string filterName)
+    {
+        foreach (var line in filtersOutput.Split('\n', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var match = FilterLineRegex().Match(line);
+            if (match.Success
+                && match.Groups[1].Value.Equals(filterName, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private static List<string> ParseEncoderNames(string output)
     {
         var encoders = new List<string>();
@@ -286,4 +334,7 @@ public partial class FfmpegCapabilitiesService(
 
     [GeneratedRegex(@"^\s*[AVSFDK][\w\.]+\s+([\w\-]+)\s+", RegexOptions.CultureInvariant)]
     private static partial Regex EncoderLineRegex();
+
+    [GeneratedRegex(@"^\s*[A-Za-z.]+\s+([\w\-]+)\s+", RegexOptions.CultureInvariant)]
+    private static partial Regex FilterLineRegex();
 }

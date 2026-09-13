@@ -59,7 +59,7 @@ Set these to match the owner of your media mounts. The entrypoint also `chown`s 
 
 ## Hardware transcoding (optional)
 
-The sample Compose file does not pass through a GPU. For Intel/AMD VAAPI mount `/dev/dri`; for NVIDIA NVENC use the NVIDIA Container Toolkit (`gpus: all`). Details and examples: [Operating - Hardware acceleration](operating.md#hardware-acceleration).
+The sample Compose file does not pass through a GPU. For Intel/AMD VAAPI mount `/dev/dri`. For NVIDIA NVENC use the NVIDIA Container Toolkit (`gpus: all` plus `NVIDIA_DRIVER_CAPABILITIES=compute,utility,video`). Details and examples: [Operating - Hardware acceleration](operating.md#hardware-acceleration).
 
 ## First-run setup
 

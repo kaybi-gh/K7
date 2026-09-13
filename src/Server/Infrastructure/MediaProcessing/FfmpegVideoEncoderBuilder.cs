@@ -51,7 +51,7 @@ public static class FfmpegVideoEncoderBuilder
                 if (!capabilities.AvailableHardwareEncoders.Contains(hwEncoder, StringComparer.OrdinalIgnoreCase))
                     continue;
 
-                return CreateHardware(hwEncoder);
+                return CreateHardware(hwEncoder, capabilities);
             }
 
             if (settings.EncoderMode == HardwareEncoderMode.HardwarePreferred)
@@ -62,7 +62,7 @@ public static class FfmpegVideoEncoderBuilder
     }
 
     /// <summary>
-    /// Builds arguments for a named hardware encoder (used by capability probes).
+    /// Builds arguments for a named hardware encoder (used by transcode and tests).
     /// Returns null when the name is not a known hardware encoder.
     /// </summary>
     public static VideoEncoderSelection? CreateHardwareSelection(string encoderName)
@@ -71,6 +71,49 @@ public static class FfmpegVideoEncoderBuilder
             .Any(e => string.Equals(e, encoderName, StringComparison.OrdinalIgnoreCase));
 
         return known ? CreateHardware(encoderName) : null;
+    }
+
+    /// <summary>
+    /// True when a lavfi probe is worth running. Skip VideoToolbox off macOS and
+    /// VAAPI when no render node exists (those probes hang or take many seconds).
+    /// </summary>
+    public static bool CanProbeHardwareEncoder(string encoderName)
+    {
+        if (encoderName.Contains("videotoolbox", StringComparison.OrdinalIgnoreCase))
+            return OperatingSystem.IsMacOS();
+
+        if (encoderName.Contains("vaapi", StringComparison.OrdinalIgnoreCase))
+            return FindVaapiRenderNode() is not null;
+
+        return true;
+    }
+
+    /// <summary>
+    /// Builds a lavfi verification encode. NVENC is probed from system memory so the
+    /// test does not require scale_cuda or -init_hw_device cuda (both fail on many
+    /// distro ffmpeg builds and on CUDA filter graphs without a device context).
+    /// All probes cap output at 5 frames so Admin capabilities stays fast.
+    /// </summary>
+    public static VideoEncoderSelection? CreateHardwareProbeSelection(string encoderName)
+    {
+        var known = CodecMap.SelectMany(m => m.HardwareEncoders)
+            .Any(e => string.Equals(e, encoderName, StringComparison.OrdinalIgnoreCase));
+        if (!known)
+            return null;
+
+        if (encoderName.Contains("nvenc", StringComparison.OrdinalIgnoreCase))
+        {
+            return new VideoEncoderSelection(
+                encoderName,
+                GlobalArguments: null,
+                EncoderArguments: $"-c:v {encoderName} -frames:v 5 -pix_fmt yuv420p",
+                VideoFilter: null,
+                IsHardwareAccelerated: true,
+                UsesHardwareDecode: false);
+        }
+
+        var selection = CreateHardware(encoderName);
+        return selection with { EncoderArguments = $"{selection.EncoderArguments} -frames:v 5" };
     }
 
     /// <summary>
@@ -165,13 +208,15 @@ public static class FfmpegVideoEncoderBuilder
         return new VideoEncoderSelection(map.SoftwareEncoder, null, args, null, false, false);
     }
 
-    private static VideoEncoderSelection CreateHardware(string encoder)
+    private static VideoEncoderSelection CreateHardware(
+        string encoder,
+        FfmpegCapabilitiesDto? capabilities = null)
     {
         if (encoder.Contains("vaapi", StringComparison.OrdinalIgnoreCase))
             return CreateVaapi(encoder);
 
         if (encoder.Contains("nvenc", StringComparison.OrdinalIgnoreCase))
-            return CreateNvenc(encoder);
+            return CreateNvenc(encoder, capabilities);
 
         if (encoder.Contains("amf", StringComparison.OrdinalIgnoreCase))
             return CreateAmf(encoder);
@@ -203,22 +248,43 @@ public static class FfmpegVideoEncoderBuilder
             UsesHardwareDecode: false);
     }
 
-    private static VideoEncoderSelection CreateNvenc(string encoder)
+    private static VideoEncoderSelection CreateNvenc(string encoder, FfmpegCapabilitiesDto? capabilities)
     {
-        // Stay on GPU for the whole dec/scale/enc path. CPU scale=-2:H between
-        // Auto hwaccel and NVENC resets PTS so force_key_frames never fire.
-        var args =
-            $"-c:v {encoder} -preset p4 -rc vbr -no-scenecut 1 -zerolatency 1 -rc-lookahead 0 -pix_fmt yuv420p";
+        // CUDA decode + scale_cuda keeps PTS on the GPU. Distro ffmpeg often has
+        // NVENC without scale_cuda: then decode on CPU so scale=-2:H does not
+        // download CUDA frames (that reset PTS and break force_key_frames).
+        var cudaGpuPath = capabilities is null || CanUseCudaScale(capabilities);
+        // Do not pair -rc vbr with -zerolatency: NVENC LockBitstream returns
+        // invalid param (8) on flush (FFmpeg 8 / short lavfi tests). HLS already
+        // forces -bf 0 and -no-scenecut. -rc-lookahead 0 keeps encoder delay down.
+        // CUDA path: no -pix_fmt yuv420p. FFmpeg inserts auto_scale after
+        // scale_cuda and cannot convert cuda -> yuv420p. Use
+        // -noautoscale + scale_cuda=format=nv12 instead.
+        var args = cudaGpuPath
+            ? $"-noautoscale -c:v {encoder} -preset p4 -bf 0 -rc-lookahead 0"
+            : $"-c:v {encoder} -preset p4 -bf 0 -rc-lookahead 0 -pix_fmt yuv420p";
+        // Named CUDA device for hwupload / scale_cuda. Do not pass
+        // -hwaccel_device cu: ffmpeg then falls back to the software decoder
+        // (h264 native) while the filter graph stays on CUDA.
+        const string cudaDevice = "-init_hw_device cuda=cu:0 -filter_hw_device cu";
         return new VideoEncoderSelection(
             encoder,
-            GlobalArguments: null,
+            GlobalArguments: cudaGpuPath ? cudaDevice : null,
             EncoderArguments: args,
-            VideoFilter: "format=nv12|cuda,hwupload,scale_cuda=format=nv12",
+            VideoFilter: null,
             IsHardwareAccelerated: true,
-            UsesHardwareDecode: true,
-            DecodeArguments: "-hwaccel cuda -hwaccel_output_format cuda",
-            HardwareScaleFilterTemplate: "format=nv12|cuda,hwupload,scale_cuda={0}:{1}:format=nv12");
+            UsesHardwareDecode: cudaGpuPath,
+            DecodeArguments: cudaGpuPath
+                ? "-hwaccel cuda -hwaccel_output_format cuda"
+                : null,
+            HardwareScaleFilterTemplate: cudaGpuPath
+                ? "scale_cuda={0}:{1}:format=nv12"
+                : null);
     }
+
+    private static bool CanUseCudaScale(FfmpegCapabilitiesDto capabilities) =>
+        capabilities.CudaScaleFilterAvailable
+        && capabilities.HardwareAccelerators.Contains("cuda", StringComparer.OrdinalIgnoreCase);
 
     private static VideoEncoderSelection CreateVaapi(string encoder)
     {
