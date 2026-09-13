@@ -64,21 +64,24 @@ public class GetSubtitleVttQueryHandler : IRequestHandler<GetSubtitleVttQuery, H
             entity.Id,
             query.SubtitleTrackIndex);
 
-        var ready = await HlsSubtitleVttExtractor.EnsureExtractedAsync(
-            _mediaTranscoder,
-            entity.Path,
-            query.SubtitleTrackIndex,
-            vttCachePath,
-            _logger,
-            cancellationToken);
-
-        if (!ready)
+        if (!HlsSubtitleVttExtractor.IsReady(vttCachePath))
         {
-            _logger.LogWarning(
-                "Subtitle VTT extract failed for file {IndexedFileId} track {Track}",
+            // Never block: extract in the background and let the client poll. Blocking here
+            // makes Android/web wait on ffmpeg before playback and stalls the request thread.
+            _logger.LogDebug(
+                "Subtitle VTT cache miss for file {IndexedFileId} track {Track} - extract in background",
                 entity.Id,
                 query.SubtitleTrackIndex);
-            return new EmptyHttpContentResult(404);
+            HlsSubtitleVttExtractor.StartBackgroundExtract(
+                _mediaTranscoder,
+                entity.Path,
+                query.SubtitleTrackIndex,
+                vttCachePath,
+                _logger);
+            return new TextHttpContentResult(
+                "Subtitle extract in progress",
+                "text/plain",
+                503);
         }
 
         var vtt = await File.ReadAllTextAsync(vttCachePath, cancellationToken);

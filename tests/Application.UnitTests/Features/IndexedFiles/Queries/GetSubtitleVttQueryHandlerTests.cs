@@ -172,20 +172,44 @@ public class GetSubtitleVttQueryHandlerTests
     }
 
     [Test]
-    public async Task Handle_ShouldReturnVtt_WhenExtractSucceeds()
+    public async Task Handle_ShouldReturn503AndStartBackgroundExtract_WhenCacheMissing()
     {
-        const string vtt = "WEBVTT\n\n00:00:01.000 --> 00:00:02.000\nHi\n";
+        var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         _transcoder.ExtractSubtitleAsVttAsync(
                 Arg.Any<string>(),
                 Arg.Any<int>(),
                 Arg.Any<string>(),
                 Arg.Any<CancellationToken>())
-            .Returns(call =>
+            .Returns(async call =>
             {
+                started.SetResult();
+                await Task.Delay(50);
                 var path = call.ArgAt<string>(2);
                 Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-                return File.WriteAllTextAsync(path, vtt);
+                await File.WriteAllTextAsync(path, "WEBVTT\n\n");
             });
+
+        var result = await _handler.Handle(
+            new GetSubtitleVttQuery(_indexedFileId, 3),
+            CancellationToken.None);
+
+        result.Should().BeOfType<TextHttpContentResult>();
+        ((TextHttpContentResult)result).StatusCode.Should().Be(503);
+        await started.Task.WaitAsync(TimeSpan.FromSeconds(2));
+        await _transcoder.Received(1).ExtractSubtitleAsVttAsync(
+            _mediaFilePath,
+            3,
+            HlsSubtitleVttExtractor.GetCachePath(_transcodeDir, _indexedFileId, 3),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Test]
+    public async Task Handle_ShouldReturnVtt_WhenCacheReady()
+    {
+        const string vtt = "WEBVTT\n\n00:00:01.000 --> 00:00:02.000\nHi\n";
+        var cachePath = HlsSubtitleVttExtractor.GetCachePath(_transcodeDir, _indexedFileId, 3);
+        Directory.CreateDirectory(Path.GetDirectoryName(cachePath)!);
+        await File.WriteAllTextAsync(cachePath, vtt);
 
         var result = await _handler.Handle(
             new GetSubtitleVttQuery(_indexedFileId, 3),
@@ -195,10 +219,7 @@ public class GetSubtitleVttQueryHandlerTests
         var text = (TextHttpContentResult)result;
         text.Content.Should().Be(vtt);
         text.ContentType.Should().StartWith("text/vtt");
-        await _transcoder.Received(1).ExtractSubtitleAsVttAsync(
-            _mediaFilePath,
-            3,
-            HlsSubtitleVttExtractor.GetCachePath(_transcodeDir, _indexedFileId, 3),
-            Arg.Any<CancellationToken>());
+        await _transcoder.DidNotReceiveWithAnyArgs()
+            .ExtractSubtitleAsVttAsync(default!, default, default!, default);
     }
 }
