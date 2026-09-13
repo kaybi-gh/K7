@@ -48,6 +48,7 @@ internal sealed class ExoPlaybackBridge : Java.Lang.Object, IPlayerListener
         if (ReferenceEquals(_exo, exo) && _attached)
         {
             _playerView = playerView;
+            PublishPlaybackState();
             return;
         }
 
@@ -57,6 +58,9 @@ internal sealed class ExoPlaybackBridge : Java.Lang.Object, IPlayerListener
         _attached = true;
         exo.AddListener(this);
         PublishTimeline();
+        // First launch often reaches READY+playing before this listener exists.
+        // Without a snapshot the overlay play button stays on Play.
+        PublishPlaybackState();
         StartTimelineLoop();
     }
 
