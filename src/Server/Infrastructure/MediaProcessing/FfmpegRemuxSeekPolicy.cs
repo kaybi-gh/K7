@@ -63,17 +63,18 @@ internal static class FfmpegRemuxSeekPolicy
         IReadOnlyList<Domain.Entities.HlsSegment> allSegments)
     {
         var min = double.PositiveInfinity;
-        foreach (var (tip, until, running) in liveHeads)
+        foreach (var (tip, _, running) in liveHeads)
         {
             if (!running)
                 continue;
 
-            if (requestedIndex >= tip && requestedIndex <= until)
+            // A head only actually covers up to its live TIP. Its target end (UntilInclusive)
+            // is EOF for a copy head, so [tip, until] would wrongly mark every forward seek as
+            // covered and make the client wait on linear catch-up instead of spawning a head.
+            if (requestedIndex <= tip)
                 return 0;
 
-            var from = Math.Min(tip, requestedIndex);
-            var to = Math.Max(tip, requestedIndex);
-            min = Math.Min(min, SumDurationsSeconds(allSegments, from, to));
+            min = Math.Min(min, SumDurationsSeconds(allSegments, tip, requestedIndex));
         }
 
         return double.IsPositiveInfinity(min) ? double.PositiveInfinity : min;

@@ -73,15 +73,29 @@ public class FfmpegRemuxSeekPolicyTests
     }
 
     [Test]
-    public void MinDistanceSecondsToLiveHead_ShouldBeZero_WhenInsideRunningWindow()
+    public void MinDistanceSecondsToLiveHead_ShouldBeZero_WhenTipHasReachedIndex()
     {
+        var segments = BuildFourSecondSegments(20);
+        var distance = FfmpegRemuxSeekPolicy.MinDistanceSecondsToLiveHead(
+            requestedIndex: 3,
+            liveHeads: [(TipIndex: 5, UntilInclusive: 19, Running: true)],
+            segments);
+
+        distance.Should().Be(0);
+    }
+
+    [Test]
+    public void MinDistanceSecondsToLiveHead_ShouldMeasureForwardGap_WhenAheadOfTipInsideTarget()
+    {
+        // Ahead of the tip but still inside the head's EOF target window: not covered.
+        // The head has only produced up to segment 5, so a request at 8 is 3 * 4s = 12s away.
         var segments = BuildFourSecondSegments(20);
         var distance = FfmpegRemuxSeekPolicy.MinDistanceSecondsToLiveHead(
             requestedIndex: 8,
             liveHeads: [(TipIndex: 5, UntilInclusive: 19, Running: true)],
             segments);
 
-        distance.Should().Be(0);
+        distance.Should().Be(12);
     }
 
     [Test]
@@ -112,6 +126,41 @@ public class FfmpegRemuxSeekPolicyTests
         FfmpegRemuxSeekPolicy.IsClientSeekJump(previousClientRequest: 20, requestedIndex: 25)
             .Should().BeFalse();
         FfmpegRemuxSeekPolicy.IsClientSeekJump(previousClientRequest: 20, requestedIndex: 35)
+            .Should().BeTrue();
+    }
+
+    [Test]
+    public void MinDistanceSecondsToLiveHead_ShouldIgnoreStoppedHeads()
+    {
+        var segments = BuildFourSecondSegments(20);
+        var distance = FfmpegRemuxSeekPolicy.MinDistanceSecondsToLiveHead(
+            requestedIndex: 15,
+            liveHeads:
+            [
+                (TipIndex: 5, UntilInclusive: 19, Running: false),
+                (TipIndex: 12, UntilInclusive: 19, Running: true)
+            ],
+            segments);
+
+        distance.Should().Be(12);
+    }
+
+    [Test]
+    public void MinDistanceSecondsToLiveHead_ShouldBeInfinity_WhenNoRunningHeads()
+    {
+        var segments = BuildFourSecondSegments(20);
+        var distance = FfmpegRemuxSeekPolicy.MinDistanceSecondsToLiveHead(
+            requestedIndex: 8,
+            liveHeads: [(TipIndex: 5, UntilInclusive: 19, Running: false)],
+            segments);
+
+        distance.Should().Be(double.PositiveInfinity);
+    }
+
+    [Test]
+    public void IsClientSeekJump_ShouldBeTrue_WhenSeekingBackward()
+    {
+        FfmpegRemuxSeekPolicy.IsClientSeekJump(previousClientRequest: 80, requestedIndex: 20)
             .Should().BeTrue();
     }
 
