@@ -36,7 +36,7 @@ Android emulator often needs `http://10.0.2.2:PORT` instead of `localhost`. Phys
 
 Native video chrome on Android/iOS/Windows is documented in [video-playback.md](video-playback.md). When `MauiNativeVideoChrome.IsEnabled` is true, the host shows `NativeVideoPlayerOverlay` above ExoPlayer (Android), MediaElement (iOS), LibVLC (Windows Direct Play), or Video.js in WebView2 (Windows HLS) instead of the Blazor HUD. Web WASM stays on Video.js + full Blazor controls.
 
-OIDC on MAUI includes `http://localhost/` redirect URIs - register compatible URIs at your IdP when testing SSO.
+OIDC on MAUI uses `k7://callback/login` on all platforms (Windows included). The unpackaged Windows build registers that protocol under HKCU at startup (no admin). After Windows system-browser sign-in the server sends the tab to `/auth/complete` (close message) then that page opens `k7://`. Android/iOS keep the direct custom-scheme 302. `http://localhost/` remains accepted by the server for older clients. Register compatible URIs at your IdP when testing SSO.
 
 Android (single TFM via `K7PublishPlatform`; do not pass global `-p:TargetFrameworks=`):
 

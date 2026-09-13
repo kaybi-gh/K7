@@ -156,14 +156,20 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
             // yields to the run loop, so presenting on the main thread does not freeze the UI.
             async Task RunInteractiveLoginAsync()
             {
+                var authorizeParameters = new Dictionary<string, OpenIddict.Abstractions.OpenIddictParameter>
+                {
+                    ["prompt"] = "login"
+                };
+#if WINDOWS
+                // OIDC display=page: server swaps the k7:// 302 for /auth/complete
+                // so the system browser is not left on /sign-in.
+                authorizeParameters["display"] = "page";
+#endif
                 var challenge = await _openIddictClientService.ChallengeInteractivelyAsync(new()
                 {
                     CancellationToken = timeout.Token,
                     ProviderName = "K7",
-                    AdditionalAuthorizationRequestParameters = new Dictionary<string, OpenIddict.Abstractions.OpenIddictParameter>
-                    {
-                        ["prompt"] = "login"
-                    }
+                    AdditionalAuthorizationRequestParameters = authorizeParameters
                 }).ConfigureAwait(false);
 
                 NativeAuthTrace.Write("challenge-ready");

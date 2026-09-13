@@ -76,9 +76,9 @@ Typical sequence for a healthy native login:
 
 1. `GET /connect/authorize` -> `location welcome` or `sign-in` (cookie missing)
 2. `POST /sign-in` -> `returnUrl local-authorize` and `location local-authorize`
-3. `GET /connect/authorize` -> `location loopback` (`locationHost localhost:port`)
+3. `GET /connect/authorize` -> `location loopback` (`locationHost localhost:port`), `custom-scheme` (`k7://callback/login` on Android/iOS), or `auth-complete` (Windows system browser)
 4. `POST /connect/token` -> 200, `grant authorization_code`, `client k7-native`
-5. `GET /auth/complete` -> 200
+5. `GET /auth/complete` -> 200 (Windows and older loopback clients). The page says the tab can be closed and opens `k7://callback/login`
 6. Client breadcrumbs: `login-start` -> `challenge-ready` -> `loopback` -> `authenticate-ready` -> `persist-ok` -> `login-complete`
 
 How to read a stuck attempt:
@@ -148,11 +148,14 @@ Symptom in logs: `AntiforgeryOptions.Cookie.SecurePolicy = Always, but the curre
 
 ### Native Windows login stays on /sign-in
 
-The Windows app opens the system browser and waits for `http://localhost:{port}/`. After a successful password sign-in the server must redirect back to `/connect/authorize?...` (that URL is in `ReturnUrl`). If the browser never leaves `/sign-in?ReturnUrl=/connect/authorize...`, the app keeps spinning.
+The Windows app opens the system browser. After a successful password sign-in the server must redirect back to `/connect/authorize?...` (that URL is in `ReturnUrl`). Current builds then send the tab to `/auth/complete` (same close message as TV device login) and that page opens `k7://callback/login`. If the browser never leaves `/sign-in?ReturnUrl=/connect/authorize...`, the app keeps spinning.
 
+A successful handoff writes `protocol-file` or `activated` then `protocol` then `authenticate-ready` then `login-complete` in `%LOCALAPPDATA%\K7\com.k7.maui\Data\k7-auth.log`. `login-start` then `challenge-ready` then a new `appdata=` line and nothing else means a second process started and never gave the code back to the waiting Sign in window.
+
+- Current Windows builds register `k7://` under the current user (`HKCU\SOFTWARE\Classes\k7`) at startup. Older builds waited on `http://localhost:{port}/` instead. The server still accepts both.
 - Use the same URL scheme the browser can store cookies on. `Security__ForceHttps=true` (default) issues Secure / `__Host-` cookies: they work on `https://` and on `http://localhost`, but **not** on `http://192.168.x.x` or other LAN hosts. Sample Compose sets `Security__ForceHttps=false` for plain HTTP on :7080.
 - Behind a TLS proxy, keep `ForceHttps=true` and send `X-Forwarded-Proto: https`. Nginx Proxy Manager does this by default when Force SSL is on and the proxy host is on a private IP (`TrustPrivateProxies`).
-- **Nginx Proxy Manager "Block Common Exploits":** can stay on. That rule 403s a raw `param=http://` (including `redirect_uri=http://localhost:{port}/`). Current K7 re-encodes the post-login authorize redirect (`http%3A%2F%2Flocalhost...`) so the rule does not match. On older builds, turn the option off for the K7 host or upgrade.
+- **Nginx Proxy Manager "Block Common Exploits":** can stay on. That rule 403s a raw `param=http://` (including `redirect_uri=http://localhost:{port}/` on older Windows clients). Current K7 re-encodes those authorize redirects. The `k7://` callback avoids that hop.
 
 ### OIDC login fails
 

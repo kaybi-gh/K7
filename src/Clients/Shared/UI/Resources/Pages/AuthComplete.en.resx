@@ -26,4 +26,5 @@
   <data name="DeniedMessage" xml:space="preserve"><value>Authorization was denied. You can close this page.</value></data>
   <data name="ErrorTitle" xml:space="preserve"><value>Authentication failed</value></data>
   <data name="ErrorMessage" xml:space="preserve"><value>An error occurred during authentication. You can close this page.</value></data>
+  <data name="OpenApp" xml:space="preserve"><value>Open the application</value></data>
 </root>

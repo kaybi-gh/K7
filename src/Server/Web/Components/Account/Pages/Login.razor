@@ -108,13 +108,13 @@
     [SupplyParameterFromForm]
     private InputModel? Input { get; set; }
 
-    [SupplyParameterFromQuery]
+    [SupplyParameterFromQuery(Name = "ReturnUrl")]
     private string? ReturnUrlQuery { get; set; }
 
     [SupplyParameterFromForm(Name = "ReturnUrl")]
     private string? ReturnUrlForm { get; set; }
 
-    private string? ReturnUrl => string.IsNullOrEmpty(ReturnUrlForm) ? ReturnUrlQuery : ReturnUrlForm;
+    private string? ReturnUrl => IdentityRedirectUri.Coalesce(ReturnUrlForm, ReturnUrlQuery, HttpContext?.Request.Query);
 
     [SupplyParameterFromQuery]
     private string? Error { get; set; }
@@ -180,7 +180,7 @@
         {
             RedirectManager.RedirectTo(
                 "/sign-in/two-factor",
-                new() { ["returnUrl"] = ReturnUrl, ["rememberMe"] = Input.RememberMe });
+                new() { ["ReturnUrl"] = ReturnUrl, ["rememberMe"] = Input.RememberMe });
         }
         else if (result.IsLockedOut)
         {

@@ -16,6 +16,7 @@ public class MauiHostSmokeTests
 
         registration.ClientId.Should().Be("k7-native");
         registration.Issuer.Should().Be(new Uri("https://k7.local"));
+        registration.RedirectUri.Should().Be(new Uri("k7://callback/login"));
         registration.Scopes.Should().Contain("api");
     }
 

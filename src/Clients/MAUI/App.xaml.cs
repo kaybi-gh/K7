@@ -7,6 +7,9 @@ using K7.Shared.Interfaces;
 #if ANDROID
 using K7.Clients.MAUI.Platforms.Android;
 #endif
+#if WINDOWS
+using K7.Clients.MAUI.Platforms.Windows;
+#endif
 
 namespace K7.Clients.MAUI;
 
@@ -214,6 +217,9 @@ public partial class App : Application
     protected override void OnAppLinkRequestReceived(Uri uri)
     {
         Debug.WriteLine($"K7 MAUI - App.xaml.cs - OnAppLinkRequestReceived - Uri: {uri}");
+#if WINDOWS
+        WindowsProtocolActivation.HandleUri(uri);
+#endif
         base.OnAppLinkRequestReceived(uri);
     }
 

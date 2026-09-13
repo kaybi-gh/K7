@@ -44,3 +44,13 @@
     background: color-mix(in srgb, var(--color-error) 15%, transparent);
     color: var(--color-error);
 }
+
+.auth-complete__launch {
+    display: none;
+}
+
+.auth-complete__open {
+    color: var(--color-primary);
+    font-size: var(--text-sm);
+    text-decoration: underline;
+}

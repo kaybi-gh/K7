@@ -115,6 +115,7 @@ try
     app.UseLinkPreviewDocuments();
     app.UseAuthorization();
     app.UseAuthFlowLogging();
+    app.UseNativeAuthorizationLanding();
     app.UseAntiforgery();
     app.UseMiddleware<FederationGuardMiddleware>();
 

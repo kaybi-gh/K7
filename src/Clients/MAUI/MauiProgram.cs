@@ -40,6 +40,7 @@ public static partial class MauiProgram
         // Capture JSException.Message (VS only shows "Exception thrown" without details).
         // Also reports a rate-limited sample to the server via IClientErrorReporter once DI is ready.
         JsExceptionDebugListener.Install();
+        WindowsNativeProtocol.EnsureRegistered();
 #endif
         NativeAuthTrace.Install();
 
@@ -68,6 +69,7 @@ public static partial class MauiProgram
                 windows.OnWindowCreated(nativeWindow =>
                 {
                     WindowGeometryPersistence.Attach(nativeWindow);
+                    WindowsProtocolActivation.Attach();
                 });
             });
 #elif ANDROID
@@ -262,6 +264,9 @@ public static partial class MauiProgram
         System.Diagnostics.Debug.WriteLine("K7 MAUI - Calling builder.Build()");
         var app = builder.Build();
         NativeAuthTrace.Configure(app.Services);
+#if WINDOWS
+        WindowsProtocolActivation.Attach();
+#endif
         System.Diagnostics.Debug.WriteLine("K7 MAUI - builder.Build() completed");
 
         var offlineDbFactory = app.Services.GetRequiredService<IDbContextFactory<OfflineMediaDbContext>>();
@@ -337,11 +342,9 @@ public static partial class MauiProgram
                 // Required whenever authorization code flow is enabled, even before a
                 // server URL/registration exists (first-run SetupPage). Without this,
                 // IOptions validation throws SR.ID0356 on first CurrentValue access.
-#if ANDROID || IOS || MACCATALYST
+                // Windows uses the same custom scheme as mobile so the system browser
+                // returns the code to the running app instead of http://localhost.
                 options.SetRedirectionEndpointUris(new Uri("k7://callback/login", UriKind.Absolute));
-#else
-                options.SetRedirectionEndpointUris(new Uri("http://localhost/", UriKind.Absolute));
-#endif
 
                 options.UseSystemIntegration();
                 options.UseSystemNetHttp()
@@ -407,11 +410,7 @@ public static partial class MauiProgram
             ProviderName = "K7",
             RegistrationId = $"K7:{serverUrl}",
             ClientId = "k7-native",
-#if ANDROID || IOS || MACCATALYST
             RedirectUri = new Uri("k7://callback/login", UriKind.Absolute),
-#else
-            RedirectUri = new Uri("http://localhost/", UriKind.Absolute),
-#endif
             Scopes = { Scopes.Email, Scopes.Profile, Scopes.Roles, Scopes.OfflineAccess, "api" }
         };
     }

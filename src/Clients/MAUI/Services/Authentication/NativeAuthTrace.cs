@@ -19,17 +19,20 @@ internal static class NativeAuthTrace
 
     public static void Install()
     {
-        if (Interlocked.Exchange(ref _installed, 1) != 0)
-            return;
+        if (Interlocked.Exchange(ref _installed, 1) == 0)
+        {
+            try
+            {
+                _tempLogPath = Path.Combine(Path.GetTempPath(), "k7-auth.log");
+                WriteLine($"K7 auth trace started {DateTime.Now:O} temp={_tempLogPath}");
+            }
+            catch
+            {
+            }
+        }
 
-        try
-        {
-            _tempLogPath = Path.Combine(Path.GetTempPath(), "k7-auth.log");
-            WriteLine($"K7 auth trace started {DateTime.Now:O} temp={_tempLogPath}");
-        }
-        catch
-        {
-        }
+        if (_appLogPath is not null)
+            return;
 
         try
         {

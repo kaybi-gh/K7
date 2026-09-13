@@ -19,5 +19,10 @@
             <h2 class="auth-complete__title">@_title</h2>
             <div class="auth-complete__alert auth-complete__alert--success">@_message</div>
         }
+        @if (_launchUri is not null)
+        {
+            <iframe class="auth-complete__launch" title="k7-native-launch" src="@_launchUri"></iframe>
+            <a class="auth-complete__open" href="@_launchUri">@L["OpenApp"]</a>
+        }
     </div>
 </div>

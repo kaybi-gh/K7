@@ -9,10 +9,12 @@ public partial class AuthComplete
     private string _title = "";
     private string _message = "";
     private bool _isError;
+    private string? _launchUri;
 
     protected override void OnInitialized()
     {
         var status = GetQueryValue("status");
+        _launchUri = ResolveLaunchUri(GetQueryValue("launch"));
 
         (_title, _message, _isError) = status?.ToLowerInvariant() switch
         {
@@ -20,6 +22,20 @@ public partial class AuthComplete
             "error" => (L["ErrorTitle"].Value, L["ErrorMessage"].Value, true),
             _ => (L["SuccessTitle"].Value, L["SuccessMessage"].Value, false)
         };
+    }
+
+    internal static string? ResolveLaunchUri(string? raw)
+    {
+        if (!Uri.TryCreate(raw, UriKind.Absolute, out var uri)
+            || !string.Equals(uri.Scheme, "k7", StringComparison.OrdinalIgnoreCase)
+            || !string.Equals(uri.Host, "callback", StringComparison.OrdinalIgnoreCase))
+            return null;
+
+        if (!string.Equals(uri.AbsolutePath, "/login", StringComparison.OrdinalIgnoreCase)
+            && !string.Equals(uri.AbsolutePath, "/logout", StringComparison.OrdinalIgnoreCase))
+            return null;
+
+        return uri.AbsoluteUri;
     }
 
     private string? GetQueryValue(string key)

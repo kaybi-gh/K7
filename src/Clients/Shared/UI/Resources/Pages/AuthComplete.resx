@@ -26,4 +26,5 @@
   <data name="DeniedMessage" xml:space="preserve"><value>L'autorisation a ete refusee. Vous pouvez fermer cette page.</value></data>
   <data name="ErrorTitle" xml:space="preserve"><value>Echec de l'authentification</value></data>
   <data name="ErrorMessage" xml:space="preserve"><value>Une erreur est survenue lors de l'authentification. Vous pouvez fermer cette page.</value></data>
+  <data name="OpenApp" xml:space="preserve"><value>Ouvrir l'application</value></data>
 </root>

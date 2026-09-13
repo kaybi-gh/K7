@@ -3,6 +3,7 @@
 @using K7.Server.Application.Common.Settings
 @using K7.Server.Application.Features.LinkPreview.Queries.GetLinkPreview
 @using K7.Server.Domain.Settings
+@using K7.Server.Web.Components.Account
 @using K7.Server.Web.Infrastructure
 @using Microsoft.AspNetCore.Components.Endpoints
 @using Microsoft.Extensions.Configuration
@@ -33,6 +34,11 @@
     <meta name="twitter:title" content="@PageTitle" />
     <meta name="twitter:description" content="@PageDescription" />
     <meta name="twitter:image" content="@ImageUrl" />
+    @if (NativeLaunchUri is not null)
+    {
+        <meta http-equiv="refresh" content="0; url=@NativeLaunchUri" />
+        <script src="@Assets["_content/K7.Clients.Shared.UI/js/auth-complete-launch.js"]"></script>
+    }
     <base href="/" />
 
     <script src="@Assets["_content/K7.Clients.Shared.UI/js/tv-layout.js"]"></script>
@@ -156,6 +162,11 @@
         Assets[LinkPreviewUrls.ImageAsset]);
 
     private string TwitterCard => "summary_large_image";
+
+    private string? NativeLaunchUri =>
+        IdentityRedirectUri.TryGetNativeCallback(HttpContext.Request.Query["launch"].ToString(), out var callback)
+            ? callback.AbsoluteUri
+            : null;
 
     protected override async Task OnInitializedAsync()
     {
