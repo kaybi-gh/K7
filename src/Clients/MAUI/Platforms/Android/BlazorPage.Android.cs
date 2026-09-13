@@ -12,6 +12,7 @@ using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Clients.Shared.Services;
 using K7.Shared.Dtos.Entities.Metadatas.Files.Tracks;
+using K7.Shared.QueryBuilders;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.JSInterop;
 
@@ -24,9 +25,12 @@ public partial class BlazorPage
     private string? _directTrackOverrideUrl;
     private int _androidHttpTimeoutRetryCount;
     private int _androidDirectPlayRuntimeRetryCount;
+    private bool? _androidLastSourceWasHls;
+    private int _androidPlaceholderSuppressGeneration;
     private DefaultHttpDataSource.Factory? _exoHttpDataSourceFactory;
     private Dictionary<string, string>? _exoHttpRequestHeaders;
     private ExoPlaybackBridge? _exoPlaybackBridge;
+    private CancellationTokenSource? _androidSubtitleWarmCts;
     private static DateTime _lastTvBridgeRestartUtc;
     private bool _tvBridgeCheckPosted;
 
@@ -121,6 +125,27 @@ public partial class BlazorPage
         var playerView = platformView is null ? null : FindPlayerView(platformView);
         AndroidExoHlsTuning.ReapplyHardwareOverlayFlatten(playerView);
         LogVideoSurfaceSnapshot("first-frame");
+
+        var source = _playerService.Source;
+        var holdRemuxSeek = NativeSeekSpinnerPolicy.ShouldHoldStartupFirstFrameForSeek(
+            _playerService.SelectedQuality?.IsOriginal == true,
+            StreamingSourceKind.IsHls(source?.MimeType, source?.Url),
+            _chainedSeekTargetSeconds is not null,
+            DateTime.UtcNow - _chainedSeekUtc);
+        if (holdRemuxSeek
+            && _chainedSeekTargetSeconds is double seekTarget
+            && !NativeSeekSpinnerPolicy.ShouldAcceptSeekFirstFrame(
+                GetExoPlaybackPositionSeconds(),
+                seekTarget))
+        {
+            NativeVideoDebug.Log(
+                "SeekSpinner keep firstFrame pos="
+                + GetExoPlaybackPositionSeconds().ToString("F1")
+                + "s target="
+                + seekTarget.ToString("F1")
+                + "s");
+            return;
+        }
 
         _nativeOverlay?.NotifyFirstFrameReady();
     }
@@ -422,6 +447,8 @@ public partial class BlazorPage
     partial void DetachPlayerPlatform()
     {
         _directTrackOverrideUrl = null;
+        _androidSubtitleWarmCts?.Cancel();
+        _androidSubtitleWarmCts = null;
         if (_exoPlaybackBridge is not null)
         {
             _exoPlaybackBridge.FirstFrameRendered = null;
@@ -466,6 +493,10 @@ public partial class BlazorPage
             exo.PlayWhenReady = true;
             exo.SetMediaSource(mediaSource);
             exo.Prepare();
+            // Start with text off so an AUTOSELECT/forced HLS subtitle rendition cannot
+            // auto-load and 503-stall before the sidecar VTT is extracted. The explicit
+            // (warm-gated) selection re-enables it once the server can serve the cues.
+            TryDisableAndroidTextTrack(exo);
             ApplyAndroidHlsAvSyncSettings(exo);
             AttachExoPlaybackBridge(exo);
             TryPublishExoTimelineFromPlayer(exo);
@@ -489,19 +520,55 @@ public partial class BlazorPage
     private void OpenAndroidExoSource(string url)
     {
         NativePlayer.ShouldAutoPlay = true;
+        CancelAndroidPlaceholderReSuppress();
+        ClearChainedSeekTarget();
+
+        // URL only: a leftover HLS mime on /direct-stream must not skip the surface reset.
+        var isHls = StreamingSourceKind.IsHls(mimeType: null, url);
+        var switchedPipeline = _androidLastSourceWasHls is bool previousWasHls && previousWasHls != isHls;
+
+        var platformView = NativePlayer.Handler?.PlatformView as Android.Views.View;
+        var playerView = platformView is null ? null : FindPlayerView(platformView);
+        AndroidExoHlsTuning.RestoreVideoSurfaceForPlayback(playerView);
+        try
+        {
+            if (platformView is not null)
+                platformView.Visibility = Android.Views.ViewStates.Visible;
+        }
+        catch
+        {
+        }
+
+        if (switchedPipeline)
+        {
+            AndroidExoHlsTuning.PrepareSurfaceForPipelineSwitch(playerView);
+            NativeVideoDebug.Log(
+                "OpenNativePlayerSource pipeline switch hls=" + isHls
+                + " url=" + (LocalPlaybackUrl.IsLocalFile(url) ? "file" : "http"));
+        }
+
+        _androidLastSourceWasHls = isHls;
         var needToolkitSource = LocalPlaybackUrl.IsLocalFile(url)
             || NativePlayer.Handler?.PlatformView is null;
 
         NativePlayer.Stop();
-        if (needToolkitSource)
-            NativePlayer.Source = CreateMediaSourceWithAuth(url);
-
         NativeVideoDebug.Log(
             "OpenNativePlayerSource local=" + LocalPlaybackUrl.IsLocalFile(url)
             + " host=exo toolkitSource=" + needToolkitSource
             + " url=" + (LocalPlaybackUrl.IsLocalFile(url) ? "file" : "http"));
         ConfigureNativeVideoPlayerAfterOpen();
-        BindAndroidExoPlayerWithLongHttpTimeouts(url);
+
+        platformView = NativePlayer.Handler?.PlatformView as Android.Views.View;
+        playerView = platformView is null ? null : FindPlayerView(platformView);
+        AndroidExoHlsTuning.ReattachPlayerToSurfaceBeforePrepare(playerView, GetPlayer(NativePlayer));
+        if (switchedPipeline)
+            AndroidExoHlsTuning.PrepareSurfaceForPipelineSwitch(playerView);
+
+        if (needToolkitSource)
+            NativePlayer.Source = CreateMediaSourceWithAuth(url);
+        else
+            BindAndroidExoPlayerWithLongHttpTimeouts(url);
+
         if (!TrySetAndroidVideoPlayWhenReady(true))
             NativePlayer.Play();
     }
@@ -539,12 +606,48 @@ public partial class BlazorPage
             exo.PlayWhenReady = false;
             exo.Stop();
             exo.ClearMediaItems();
+            _androidLastSourceWasHls = null;
+            ClearChainedSeekTarget();
             SuppressAndroidPlayerViewPlaceholder();
             return true;
         }
         catch
         {
             return false;
+        }
+    }
+
+    // Setting NativePlayer.Source = null on close can raise a late ExoPlayer error that
+    // PlayerView renders (default artwork + "media could not be loaded"). The error is
+    // posted after our synchronous suppression, so re-hide the chrome on the next frames.
+    internal void CancelAndroidPlaceholderReSuppress() =>
+        _androidPlaceholderSuppressGeneration++;
+
+    internal void ScheduleAndroidPlaceholderReSuppress()
+    {
+        try
+        {
+            SuppressAndroidPlayerViewPlaceholder();
+            if (NativePlayer.Handler?.PlatformView is not Android.Views.View platformView)
+                return;
+
+            var generation = ++_androidPlaceholderSuppressGeneration;
+            void ReSuppressIfStillHidden()
+            {
+                if (generation != _androidPlaceholderSuppressGeneration)
+                    return;
+                if (_playerService.IsVisible)
+                    return;
+                SuppressAndroidPlayerViewPlaceholder();
+            }
+
+            platformView.PostDelayed(ReSuppressIfStillHidden, 120);
+            platformView.PostDelayed(ReSuppressIfStillHidden, 450);
+            platformView.PostDelayed(ReSuppressIfStillHidden, 900);
+            platformView.PostDelayed(ReSuppressIfStillHidden, 1800);
+        }
+        catch
+        {
         }
     }
 
@@ -555,6 +658,9 @@ public partial class BlazorPage
             var platformView = NativePlayer.Handler?.PlatformView as Android.Views.View;
             var playerView = platformView is null ? null : FindPlayerView(platformView);
             AndroidExoHlsTuning.SuppressPlayerViewPlaceholder(playerView);
+            AndroidExoHlsTuning.DropKeptPlayerContent(playerView);
+            if (platformView is not null)
+                platformView.Visibility = Android.Views.ViewStates.Gone;
         }
         catch
         {
@@ -693,6 +799,10 @@ public partial class BlazorPage
             exo.PlayWhenReady = true;
             exo.SetMediaSource(mediaSource);
             exo.Prepare();
+            // Start with text off so an AUTOSELECT/forced HLS subtitle rendition cannot
+            // auto-load and 503-stall before the sidecar VTT is extracted. The explicit
+            // (warm-gated) selection re-enables it once the server can serve the cues.
+            TryDisableAndroidTextTrack(exo);
             ApplyAndroidHlsAvSyncSettings(exo);
             AttachExoPlaybackBridge(exo);
         }
@@ -721,9 +831,9 @@ public partial class BlazorPage
     }
 
     /// <summary>
-    /// Seek via ExoPlayer with PREVIOUS_SYNC + segment-aligned target. MediaElement.SeekTo uses
-    /// exact mid-GOP seeks; on HLS that leaves a frozen TextureView frame while audio plays
-    /// until the next independent segment.
+    /// Seek via the tuned Exo instance. Remux Original uses EXACT (open-GOP: only t=0 is a
+    /// true IDR, so PREVIOUS_SYNC snaps video back while AAC audio seeks). Encode HLS uses
+    /// PREVIOUS_SYNC so mid-GOP taps land on a forced IDR.
     /// </summary>
     private Task SeekAndroidVideoAsync(double positionSeconds) =>
         MainThread.InvokeOnMainThreadAsync(() =>
@@ -747,6 +857,7 @@ public partial class BlazorPage
             {
                 if (_playerService.Source is { } nearSource)
                     nearSource.PendingSeekTime = null;
+                _nativeOverlay?.HideSeekSpinner();
                 NativeVideoDebug.Log(
                     "SeekAndroid skip near-current target=" + targetSeconds.ToString("F1")
                     + "s pos=" + currentPos.ToString("F1") + "s");
@@ -754,8 +865,12 @@ public partial class BlazorPage
             }
 
             // Do not floor to a fake 6s grid: video playlists use keyframe-aligned EXTINF.
-            // PREVIOUS_SYNC + INDEPENDENT-SEGMENTS snaps to the real segment start.
             RememberSeekTarget(targetSeconds);
+
+            // Spinner only (keep the last frame, no black shutter) while ExoPlayer rebuffers
+            // and the server transcodes the seeked window. Cleared by the post-seek first
+            // frame (OnRenderedFirstFrame -> NotifyFirstFrameReady).
+            _nativeOverlay?.ShowTransientVeil(dimBackground: false);
             NativeVideoDebug.Log(
                 "SeekAndroid target=" + targetSeconds.ToString("F1")
                 + "s resumePlay=" + resumePlayback
@@ -812,7 +927,8 @@ public partial class BlazorPage
             if (resumePlayback && !TrySetAndroidVideoPlayWhenReady(true))
                 NativePlayer.Play();
 
-            // Soft invalidate only - never null PlayerView.Player (mutes / freezes TextureView).
+            // Soft invalidate only. Do not null PlayerView.Player here (seek) or after
+            // Prepare (HLS to Direct): both detach the surface and leave a black veil.
             TryInvalidateVideoSurface();
             OnAfterNativeVideoSeek();
         });
@@ -1306,10 +1422,22 @@ public partial class BlazorPage
         HandleNativeVideoMediaFailed(detail);
     }
 
-    private static void ApplyAndroidHlsAvSyncSettings(IPlayer? player)
+    private void ApplyAndroidHlsAvSyncSettings(IPlayer? player)
     {
-        TryApplyPreviousSyncSeekParameters(player);
+        TryApplySeekParameters(player, useExact: ShouldUseExactAndroidSeek());
         TryDisableSkipSilence(player);
+    }
+
+    /// <summary>
+    /// Remux Original HLS is open-GOP (IDR at t=0, CRA elsewhere). PREVIOUS_SYNC walks
+    /// video back to the last real sync while independent AAC audio seeks, which freezes
+    /// the last frame. Encode playlists advertise INDEPENDENT-SEGMENTS and need the snap.
+    /// </summary>
+    private bool ShouldUseExactAndroidSeek()
+    {
+        var source = _playerService.Source;
+        var isHls = StreamingSourceKind.IsHls(source?.MimeType, source?.Url);
+        return isHls && (_playerService.SelectedQuality?.IsOriginal ?? true);
     }
 
     private static void TryDisableSkipSilence(IPlayer? player)
@@ -1325,7 +1453,7 @@ public partial class BlazorPage
         }
     }
 
-    private static bool TryApplyPreviousSyncSeekParameters(IPlayer? player)
+    private static bool TryApplySeekParameters(IPlayer? player, bool useExact)
     {
         try
         {
@@ -1333,17 +1461,20 @@ public partial class BlazorPage
             if (player is null)
                 return false;
 
+            var fieldName = useExact ? "EXACT" : "PREVIOUS_SYNC";
+            var fallback = useExact ? SeekParameters.Exact : SeekParameters.PreviousSync;
+
             // Prefer JNI setSeekParameters on the concrete Java type. Assigning
             // IExoPlayer.SeekParameters on IExoPlayerInvoker can report success without
-            // updating ExoPlayerImpl (exact mid-GOP seek -> frozen TextureView + live audio).
+            // updating ExoPlayerImpl (wrong snap -> frozen TextureView + live audio).
             if (player is Java.Lang.Object javaObj)
             {
                 var seekParamsClass = Java.Lang.Class.ForName("androidx.media3.exoplayer.SeekParameters");
                 if (seekParamsClass is not null)
                 {
-                    var previous = seekParamsClass.GetField("PREVIOUS_SYNC")?.Get(null)
-                        ?? seekParamsClass.GetDeclaredField("PREVIOUS_SYNC")?.Get(null);
-                    if (previous is not null)
+                    var chosen = seekParamsClass.GetField(fieldName)?.Get(null)
+                        ?? seekParamsClass.GetDeclaredField(fieldName)?.Get(null);
+                    if (chosen is not null)
                     {
                         for (var cls = javaObj.Class; cls is not null; cls = cls.Superclass)
                         {
@@ -1371,7 +1502,7 @@ public partial class BlazorPage
                                 continue;
 
                             method.Accessible = true;
-                            method.Invoke(javaObj, previous);
+                            method.Invoke(javaObj, chosen);
                             return true;
                         }
                     }
@@ -1380,7 +1511,7 @@ public partial class BlazorPage
 
             if (player is IExoPlayer exo)
             {
-                exo.SeekParameters = SeekParameters.PreviousSync;
+                exo.SeekParameters = fallback;
                 return true;
             }
         }
@@ -1597,7 +1728,12 @@ public partial class BlazorPage
         // Must not depend on the Blazor dispatcher - it can be stalled after scrub/seek, which
         // leaves body.native-player-active set and looks like a dead black screen.
         if (TryEvaluateWebViewJs(
-                "try{if(window.K7&&K7.setNativePlayerActive)K7.setNativePlayerActive(false,false);}catch(e){}"))
+                "try{"
+                + "if(window.blankK7VideoSurfaces)blankK7VideoSurfaces();"
+                + "document.querySelectorAll('.video-container,.video-js,.vjs-error-display,.vjs-modal-dialog,.vjs-poster,video')"
+                + ".forEach(function(n){n.style.display='none';n.style.visibility='hidden';n.style.background='#0d0907';});"
+                + "if(window.K7&&K7.setNativePlayerActive)K7.setNativePlayerActive(false,false);"
+                + "}catch(e){}"))
         {
             return;
         }
@@ -1755,7 +1891,90 @@ public partial class BlazorPage
 
     private void OnSwitchSubtitleTrack(string? slug)
     {
-        MainThread.BeginInvokeOnMainThread(() => TrySwitchSubtitleTrack(slug, attempt: 0));
+        MainThread.BeginInvokeOnMainThread(() => BeginAndroidSubtitleSelection(slug));
+    }
+
+    private void BeginAndroidSubtitleSelection(string? slug)
+    {
+        // Drop any warm still pending from a previous selection.
+        _androidSubtitleWarmCts?.Cancel();
+        _androidSubtitleWarmCts = null;
+
+        if (slug is null)
+        {
+            TrySwitchSubtitleTrack(null, attempt: 0);
+            return;
+        }
+
+        // Direct play exposes embedded text tracks - select immediately, no server VTT.
+        var isHls = _playerService.Source?.MimeType?.Contains(
+            "mpegurl", StringComparison.OrdinalIgnoreCase) == true;
+        var fileId = _playerService.Source?.IndexedFileId;
+        if (!isHls || fileId is null || !int.TryParse(slug.AsSpan(4), out var trackIndex))
+        {
+            TrySwitchSubtitleTrack(slug, attempt: 0);
+            return;
+        }
+
+        // HLS: keep text disabled so audio/video start now. Warm the sidecar VTT in the
+        // background, then select the Exo text rendition only once the server can serve it.
+        // The selected rendition never hits a 503, so playback is never stalled by ffmpeg.
+        TrySwitchSubtitleTrack(null, attempt: 0);
+        var cts = new CancellationTokenSource();
+        _androidSubtitleWarmCts = cts;
+        _ = WarmAndroidHlsSubtitleThenSelectAsync(fileId.Value, trackIndex, slug, cts);
+    }
+
+    private async Task WarmAndroidHlsSubtitleThenSelectAsync(
+        Guid fileId,
+        int trackIndex,
+        string slug,
+        CancellationTokenSource cts)
+    {
+        var relative = GetIndexedFileSubtitleVttQueryUriBuilder.Build(fileId, trackIndex);
+        var uri = _k7ServerService.GetAbsoluteUri(relative);
+        if (uri is null)
+            return;
+
+        try
+        {
+            const int maxAttempts = 40;
+            for (var attempt = 0; attempt < maxAttempts; attempt++)
+            {
+                cts.Token.ThrowIfCancellationRequested();
+                using var response = await _k7ServerService.HttpClient.GetAsync(uri, cts.Token);
+
+                if ((int)response.StatusCode == 503)
+                {
+                    await Task.Delay(1000, cts.Token);
+                    continue;
+                }
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    NativeVideoDebug.Log(
+                        "WarmHlsSubtitle fail status=" + (int)response.StatusCode + " track=" + trackIndex);
+                    return;
+                }
+
+                // VTT ready: enabling the rendition now loads 200 segments.
+                MainThread.BeginInvokeOnMainThread(() =>
+                {
+                    if (!ReferenceEquals(_androidSubtitleWarmCts, cts))
+                        return;
+                    NativeVideoDebug.Log("WarmHlsSubtitle ready track=" + trackIndex);
+                    TrySwitchSubtitleTrack(slug, attempt: 0);
+                });
+                return;
+            }
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (HttpRequestException ex)
+        {
+            NativeVideoDebug.Log("WarmHlsSubtitle error " + ex.GetType().Name);
+        }
     }
 
     private void TrySwitchSubtitleTrack(string? slug, int attempt)
@@ -1837,6 +2056,21 @@ public partial class BlazorPage
         }
         else
             NativeVideoDebug.Log("SelectTextTrack miss slug=" + slug);
+    }
+
+    private static void TryDisableAndroidTextTrack(IPlayer player)
+    {
+        try
+        {
+            player.TrackSelectionParameters = player.TrackSelectionParameters!
+                .BuildUpon()!
+                .ClearOverridesOfType(C.TrackTypeText)!
+                .SetTrackTypeDisabled(C.TrackTypeText, true)!
+                .Build();
+        }
+        catch
+        {
+        }
     }
 
     private static void SelectTextTrack(IPlayer player, Tracks.Group group, int trackIdx)

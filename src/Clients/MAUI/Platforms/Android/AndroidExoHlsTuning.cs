@@ -403,21 +403,62 @@ internal static class AndroidExoHlsTuning
         }
 
         FlattenPlayerViewForHardwareOverlay(playerView);
-        playerView.Visibility = global::Android.Views.ViewStates.Visible;
+        RestoreVideoSurfaceForPlayback(playerView);
+        SetKeepContentOnPlayerReset(playerView, keep: true);
+    }
+
+    /// <summary>
+    /// Close parks PlayerView and VideoSurfaceView as GONE. Unpark must restore both
+    /// or the next title has audio and no decoder output (black + startup spinner).
+    /// </summary>
+    internal static void RestoreVideoSurfaceForPlayback(PlayerView? playerView)
+    {
+        if (playerView is null)
+            return;
 
         try
         {
-            var boolClass = Java.Lang.Boolean.Type;
-            if (boolClass is not null)
-            {
-                var method = playerView.Class?.GetMethod("setKeepContentOnPlayerReset", boolClass);
-                if (method is not null)
-                    method.Invoke(playerView, true);
-            }
+            playerView.Visibility = global::Android.Views.ViewStates.Visible;
+            if (playerView.VideoSurfaceView is global::Android.Views.View surface)
+                surface.Visibility = global::Android.Views.ViewStates.Visible;
         }
         catch
         {
         }
+
+        FlattenPlayerViewForHardwareOverlay(playerView);
+    }
+
+    /// <summary>
+    /// HLS to Direct: drop the remux frame. Keep the SurfaceView visible.
+    /// </summary>
+    internal static void PrepareSurfaceForPipelineSwitch(PlayerView? playerView)
+    {
+        SetKeepContentOnPlayerReset(playerView, keep: false);
+    }
+
+    /// <summary>
+    /// PlayerView.setPlayer is a no-op when the instance is already attached, so a
+    /// surface destroyed on close is never given back. Null then set before Prepare.
+    /// Never do this after SetMediaSource: the first frame can fire while detached
+    /// and later frames never present (audio-only, veil waits forever).
+    /// </summary>
+    internal static void ReattachPlayerToSurfaceBeforePrepare(PlayerView? playerView, IPlayer? player)
+    {
+        if (playerView is null || player is null)
+            return;
+
+        try
+        {
+            playerView.Player = null;
+            playerView.Player = player;
+        }
+        catch
+        {
+        }
+
+        RestoreVideoSurfaceForPlayback(playerView);
+        SetKeepContentOnPlayerReset(playerView, keep: true);
     }
 
     /// <summary>
@@ -430,25 +471,33 @@ internal static class AndroidExoHlsTuning
         if (playerView is null)
             return;
 
+        SetKeepContentOnPlayerReset(playerView, keep: false);
+
         try
         {
-            var boolClass = Java.Lang.Boolean.Type;
-            if (boolClass is not null)
-            {
-                var method = playerView.Class?.GetMethod("setKeepContentOnPlayerReset", boolClass);
-                if (method is not null)
-                    method.Invoke(playerView, false);
-            }
+            HidePlayerViewIdleChrome(playerView);
+            playerView.Visibility = global::Android.Views.ViewStates.Gone;
+            if (playerView.VideoSurfaceView is global::Android.Views.View surface)
+                surface.Visibility = global::Android.Views.ViewStates.Gone;
         }
         catch
         {
         }
+    }
+
+    private static void SetKeepContentOnPlayerReset(PlayerView? playerView, bool keep)
+    {
+        if (playerView is null)
+            return;
 
         try
         {
-            playerView.Visibility = global::Android.Views.ViewStates.Gone;
-            if (playerView.VideoSurfaceView is global::Android.Views.View surface)
-                surface.Visibility = global::Android.Views.ViewStates.Gone;
+            var boolClass = Java.Lang.Boolean.Type;
+            if (boolClass is null)
+                return;
+
+            var method = playerView.Class?.GetMethod("setKeepContentOnPlayerReset", boolClass);
+            method?.Invoke(playerView, keep);
         }
         catch
         {
@@ -503,6 +552,75 @@ internal static class AndroidExoHlsTuning
         TrySetIntProperty(playerView, "ArtworkDisplayMode", 0);
         TryInvokeJavaInt(playerView, "setArtworkDisplayMode", 0);
         TryInvokeJavaInt(playerView, "setShowBuffering", 0);
+        TryDisablePlayerViewErrorMessage(playerView);
+        TryHidePlayerViewById(playerView, "exo_artwork");
+        TryHidePlayerViewById(playerView, "exo_error_message");
+    }
+
+    /// <summary>
+    /// Install a no-op ErrorMessageProvider so PlayerView never renders its error TextView
+    /// ("media could not be loaded"). On close, setting Source=null can raise a late
+    /// PlaybackException that PlayerView shows after our synchronous suppression; a null
+    /// provider makes the error text impossible regardless of timing.
+    /// </summary>
+    private static void TryDisablePlayerViewErrorMessage(PlayerView playerView)
+    {
+        try
+        {
+            var providerClass = Java.Lang.Class.ForName("androidx.media3.common.util.ErrorMessageProvider");
+            if (providerClass is null)
+                return;
+
+            for (var cls = playerView.Class; cls is not null; cls = cls.Superclass)
+            {
+                Java.Lang.Reflect.Method? method = null;
+                try
+                {
+                    method = cls.GetMethod("setErrorMessageProvider", providerClass);
+                }
+                catch (Java.Lang.NoSuchMethodException)
+                {
+                }
+
+                if (method is null)
+                    continue;
+
+                method.Accessible = true;
+                method.Invoke(playerView, new Java.Lang.Object[] { null! });
+                return;
+            }
+        }
+        catch
+        {
+        }
+    }
+
+    private static void TryHidePlayerViewById(PlayerView playerView, string idName)
+    {
+        try
+        {
+            var resources = playerView.Resources;
+            if (resources is null)
+                return;
+
+            var id = resources.GetIdentifier(idName, "id", playerView.Context?.PackageName);
+            if (id == 0)
+                id = resources.GetIdentifier(idName, "id", "androidx.media3.ui");
+            if (id == 0)
+                return;
+
+            if (playerView.FindViewById(id) is not global::Android.Views.View view)
+                return;
+
+            view.Visibility = global::Android.Views.ViewStates.Gone;
+            if (view is global::Android.Widget.TextView text)
+                text.Text = null;
+            if (view is global::Android.Widget.ImageView image)
+                image.SetImageDrawable(null);
+        }
+        catch
+        {
+        }
     }
 
     /// <summary>
@@ -567,7 +685,10 @@ internal static class AndroidExoHlsTuning
             return false;
 
         if (view is global::Android.Views.SurfaceView or global::Android.Views.TextureView)
+        {
+            view.Visibility = global::Android.Views.ViewStates.Visible;
             return true;
+        }
 
         if (view is SubtitleView subtitle)
         {

@@ -26,8 +26,18 @@ long connect/read timeouts for slow HLS init. Direct Play MKV resume uses HTTP R
 Android uses `AndroidViewType=SurfaceView` and `setKeepContentOnPlayerReset`. PlayerView
 artwork and the idle play-in-circle bitmap (`exo_edit_mode_logo`) stay off: close/stop
 keeps a black shutter instead of scaling that placeholder to the panel. When video **hides**
-(close or switch to audio) the MediaElement is parked off-screen and keep-content is dropped
-so the last frame cannot linger over the Blazor shell. HDMI tunneling stays **off** on every device, including Amlogic TV boxes
+(close or switch to audio) the MediaElement is parked / `GONE` **before** `Stop`. Do not
+set `MediaElement.Source = null` on Android: that posts a late `PlaybackException` and
+PlayerView paints "media could not be loaded" plus the edit-mode logo. Keep-content is
+dropped so the last frame cannot linger over the Blazor shell. The next open must restore
+PlayerView and VideoSurfaceView to `VISIBLE` and reattach `PlayerView.Player` **before**
+`SetMediaSource` / `Prepare`. `PlayerView.setPlayer` is a no-op when the instance is already
+set, so a surface destroyed on close is never given back unless the player is nulled then
+set again. Do that only before Prepare. Doing it after Prepare (or calling
+`clearVideoSurface` on stop) leaves audio with no video output and the startup veil waits
+forever. Delayed placeholder `GONE` posts after close are ignored once video is visible
+again, so a quick HLS reopen cannot hide the new surface. `exo_error_message` and
+`exo_artwork` are forced `GONE`. HDMI tunneling stays **off** on every device, including Amlogic TV boxes
 (Nokia Streaming Box 8000). Tunneling plus EAC3 Direct Play can throw ExoPlayer
 `ERROR_CODE_FAILED_RUNTIME_CHECK` (1004) at t=0 depending on HDMI sink and firmware, so two
 identical boxes can disagree. NVIDIA Shield already needed tunneling off (Media3 hitch on Tegra).
@@ -92,9 +102,11 @@ AFR / DV / tunneling). The toggle is
 (`VideoDvDecode`: empty = hevc on TV, native on phones). Native keeps `video/dolby-vision`
 (TV DV banner). HEVC answers MediaCodec with `video/hevc` so the HAL plays the HDR10
 base layer. Restart playback after changing it. If playback dies at start (ExoPlayer 1004 /
-decoder init), native chrome stays usable and walks **Direct Play -> remux HLS (Original) ->
-same-height encode, then lower transcode rungs** with no on-screen fallback copy (logged to
-`/api/diagnostics/client-errors` as `NativePlayer.QualityFallback`). If the ladder is exhausted
+decoder init), native chrome stays usable and walks **Direct Play -> remux HLS (Original)**.
+Cold remux `init.m4s` 503 looks like Video.js error 4 ("format not supported"). Stay on
+remux for 25s instead of jumping to 1080p encode. Do not reload the HLS source (that
+flips play/pause). Encode ladder only after that remux window. Logged as
+`NativePlayer.QualityFallback`. If the ladder is exhausted
 the player closes (`NativePlayer.PlaybackAborted`) and K7Snackbar shows MediaPlaybackUnplayable
 after the Blazor WebView is restored. Closing the player force-hides chrome and resets overlay composition so the
 Blazor UI is not left covered. Overlay chrome does not refresh the seek bar
@@ -110,6 +122,9 @@ Offline / local files (`file://` or a filesystem path from the download store) o
 `FromUri(file://...)` on Android (Exo DefaultDataSource) and `FromFile` on iOS.
 `StreamUriService` builds a `file://` URI for offline sessions (`new Uri(androidPath)` throws
 `UriFormatException` because the path has no scheme).
+
+Seek buffering shows the overlay spinner only (last frame stays, no black veil). Android
+lifts it on the next decoded frame. Windows Video.js lifts it when playback resumes.
 
 `NativeVideoPlayerOverlay` (`src/Clients/MAUI/Controls/Video/`) targets 1:1 parity with the Blazor
 `VideoPlayerControlsOverlay`: transport, seek bar with chapter ticks/sprite thumbnail preview and
@@ -186,7 +201,10 @@ Otherwise GetStreamUri encodes to H.264. Demuxed `CODECS` is video-only (`hvc1` 
 general_level_idc (`L120` for 4.0, not `L4`). AC3/EAC3 use the same MSE probe
 (`ac-3` / `ec-3`). If the browser reports them, HLS remuxes audio, else AAC.
 Native HLS (Android Exo) still encodes AC3/EAC3: copy often never finishes
-`init.m4s`. DTS/TrueHD still encode to AAC. Video.js
+`init.m4s`. DTS/TrueHD still encode to AAC. The AAC encode keeps the source channel
+layout (no server-side `-ac` downmix): the master advertises the source `CHANNELS`, so
+announcing N while delivering a forced stereo stream is what muted some 5.1 layouts.
+ExoPlayer (or any client) downmixes N channels to the device output. Video.js
 `MEDIA_ERR_DECODE` / `MEDIA_ERR_SRC_NOT_SUPPORTED` on Original quality steps the
 encode ladder. Audio-only Direct Play is unchanged. Windows MAUI reports
 LibVLC Direct Play formats (`LibVlcWindowsCapabilities`) instead of MSE.
@@ -268,7 +286,11 @@ the decoder at that flag, so linear play cuts at every GOP even with a single ff
 process and correct `tfdt`. Remux keeps sync RAP flags on disk so Video.js / MSE can
 seek into the shared cache. Android Exo demotes CRA sync **in memory on serve only**
 (never rewrite shared `.m4s`). Head-start RAP segments keep sync. IDR files stay sync.
-Android Original seek uses EXACT so PREVIOUS_SYNC does not snap back to t=0.
+Android Original remux seek uses EXACT so PREVIOUS_SYNC does not snap video back
+to t=0 (or the last RAP) while independent AAC audio seeks. That froze the last
+frame with a moving seek bar. Encode HLS keeps PREVIOUS_SYNC (forced IDR /
+`#EXT-X-INDEPENDENT-SEGMENTS`). A remux seek jump also marks the landing index as
+RAP so an already-ready `.m4s` is served with its CRA sync flag (no new head).
 
 Remux copy uses **multi-head** ffmpeg: ready `N.m4s` files are immutable
 (staging `head-{id}/` then atomic promote, never overwrite). A seek/resume that lands
@@ -329,8 +351,18 @@ not past mid-GOP. Do not micro-rebase **audio copy** onto `#EXTINF`.
 - remux copy keeps cooperative heads to EOF. Seek never purges ready shared `.m4s`.
   Missing far targets spawn another head. Near targets wait on an existing tip
   (~60s). Ready segments stay immutable across clients
+- deleting the transcode cache under a live job must reset that job. An empty output
+  plus a stale EOF `TargetSegmentIndex` used to start `init.m4s` near the end (70s wait,
+  then Video.js error 4 / 1080p fallback). Recover stops zombie ffmpeg, forgets landings,
+  and starts init at 0
 
 - encode keeps `EncoderThrottleBufferSegments` (`requested + BufferSize` windows)
+- encode seek no longer purges ready `.m4s`. Far-forward and seek-back both re-anchor the
+  window (`TranscodeJob.WindowStartIndex`) and keep existing segments, so a seek back into an
+  already-encoded range serves instantly instead of re-encoding. `GetCurrentSegmentIndex`
+  reports the contiguous ready run from `WindowStartIndex` (not the lowest index on disk), so
+  far-away kept segments cannot fool the scan. Remux jobs leave `WindowStartIndex` at -1 and
+  keep the disk scan
 - when `HlsSegments` rows exist they drive copy and transcode (shared audio group / ABR).
   Without them, playback starts immediately on a 6s equal-length transcode grid
 - new keyframe HLS rows collapse bursts from `RemuxSeekClearanceMs` (250ms) up to 1s
@@ -339,9 +371,10 @@ not past mid-GOP. Do not micro-rebase **audio copy** onto `#EXTINF`.
   lower PTS are also excluded: ffmpeg `-f segment` drops those trailing B-frames and
   leaves multi-frame holes in remux playlists. Existing rows stay until HLS is recomputed
 
-- sidecar WebVTT extract must not block `.vtt` HTTP. A cache miss returns 503 and ffmpeg
-  fills the cache in the background. Do not return empty WEBVTT 200: ExoPlayer caches that
-  and never shows cues. Waiting on extract (~10s) stalled A/V prefetch.
+- HLS media `init.m4s` waits up to 90s and `N.m4s` up to 180s before 503. That is not an
+  early 503. Sidecar WebVTT extract must not block `.vtt` HTTP. A cache miss returns 503
+  immediately and ffmpeg fills the cache in the background. Do not return empty WEBVTT 200:
+  ExoPlayer caches that and never shows cues. Waiting on extract (~10s) stalled A/V prefetch.
 - Web Video.js remembers the selected subtitle slug and re-applies it on `seeked` (and after
   plain `seek()`). VHS often disables EXT-X-MEDIA text tracks after a seek discontinuity
   even when A/V remux continues on the same master.
@@ -352,8 +385,14 @@ not past mid-GOP. Do not micro-rebase **audio copy** onto `#EXTINF`.
   and inject them on a remote text track **without** `src` (`manualCleanup` so quality/encode
   `src` swaps do not auto-drop the track). Pending sidecar is re-applied on `loadedmetadata`.
   A `blob:` `src` fails when the media element uses credentials (`ProgressEvent` status 0).
-  Segmented HLS subtitle playlists are not used. Android Exo still uses HLS VTT segments with
-  its own 503 retry policy.
+  Segmented HLS subtitle playlists are not used. Android Exo uses HLS VTT segments but
+  never selects a text rendition until the sidecar VTT is ready: playback starts with text
+  disabled (`TryDisableAndroidTextTrack` right after `Prepare`, so a forced/AUTOSELECT
+  rendition cannot auto-load and 503-stall A/V), then `WarmAndroidHlsSubtitleThenSelectAsync`
+  polls `GET /subtitles/{index}.vtt` (503 retry) and applies the Exo text override once the
+  server returns 200. Audio and video are never gated on ffmpeg subtitle extraction, and the
+  selected rendition never hits a 503 (which previously surfaced as an ExoPlayer
+  "media could not be loaded" error and its placeholder art on the panel).
 
 Android video clock comes from ExoPlayer (`ExoPlaybackBridge` / `GetExoPlaybackPositionSeconds`
 into `IPlayerService`), not toolkit `MediaElement.Position`. A skip or seekbar tap on a stale

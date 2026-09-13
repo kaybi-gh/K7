@@ -377,6 +377,12 @@ public partial class BlazorPage : ContentPage
         _chainedSeekUtc = DateTime.UtcNow;
     }
 
+    private void ClearChainedSeekTarget()
+    {
+        _chainedSeekTargetSeconds = null;
+        _chainedSeekUtc = default;
+    }
+
     internal void DispatchBackAsEscape()
     {
         MainThread.BeginInvokeOnMainThread(() =>
@@ -581,7 +587,11 @@ public partial class BlazorPage : ContentPage
             if (TryHandleWindowsVlcPlay())
                 return;
             if (IsWindowsWebVideoActive)
+            {
+                TryEvaluateWebViewJs(
+                    "try{if(window.playAllK7Video)playAllK7Video();}catch(e){}");
                 return;
+            }
 #endif
 #if ANDROID
             if (TrySetAndroidVideoPlayWhenReady(true))
@@ -610,7 +620,11 @@ public partial class BlazorPage : ContentPage
             if (TryHandleWindowsVlcPause())
                 return;
             if (IsWindowsWebVideoActive)
+            {
+                TryEvaluateWebViewJs(
+                    "try{if(window.pauseAllK7Video)pauseAllK7Video();}catch(e){}");
                 return;
+            }
 #endif
 #if ANDROID
             if (TrySetAndroidVideoPlayWhenReady(false))
@@ -1052,15 +1066,35 @@ public partial class BlazorPage : ContentPage
         NativePlayer.TranslationX = park ? HiddenNativeVideoTranslationX : 0;
         NativePlayer.Opacity = park ? 0 : 1;
 #if ANDROID
+        var platformView = NativePlayer.Handler?.PlatformView as global::Android.Views.View;
+        var playerView = platformView is null ? null : FindPlayerView(platformView);
         if (park)
         {
-            var platformView = NativePlayer.Handler?.PlatformView as global::Android.Views.View;
-            var playerView = platformView is null ? null : FindPlayerView(platformView);
             AndroidExoHlsTuning.DropKeptPlayerContent(playerView);
+            try
+            {
+                if (platformView is not null)
+                    platformView.Visibility = global::Android.Views.ViewStates.Gone;
+            }
+            catch
+            {
+            }
+
             Platforms.Android.AndroidOverlayComposition.SetDraws(NativePlayer, draws: false);
         }
         else
         {
+            CancelAndroidPlaceholderReSuppress();
+            try
+            {
+                if (platformView is not null)
+                    platformView.Visibility = global::Android.Views.ViewStates.Visible;
+            }
+            catch
+            {
+            }
+
+            AndroidExoHlsTuning.RestoreVideoSurfaceForPlayback(playerView);
             Platforms.Android.AndroidOverlayComposition.Reset(NativePlayer);
         }
 #endif
@@ -1114,27 +1148,36 @@ public partial class BlazorPage : ContentPage
                 BackgroundColor = BrandShellColor;
                 blazorWebView.BackgroundColor = BrandShellColor;
 #if ANDROID
+                // Opaque shell first so a lingering SurfaceView cannot punch through.
+                ApplyAndroidWebViewShellBrand();
+                ClearNativePlayerActiveShell();
+                NativePlayer.IsVisible = false;
+                // Park / GONE before Stop so a late PlaybackException cannot paint
+                // exo_edit_mode_logo or "media could not be loaded" on the shell.
+                ClearChainedSeekTarget();
+                ParkNativeVideoSurface(park: true);
                 SuppressAndroidPlayerViewPlaceholder();
                 TryStopAndroidVideo();
-#endif
+                NativePlayer.Stop();
+                NativePlayer.IsVisible = false;
+                // Stop can re-show PlayerView artwork behind the WebView.
+                ParkNativeVideoSurface(park: true);
+                SuppressAndroidPlayerViewPlaceholder();
+                ScheduleAndroidPlaceholderReSuppress();
+                AndroidDisplayAfr.Restore();
+                SetVideoFocusOwnership(active: false);
+#else
                 NativePlayer.Stop();
                 NativePlayer.Source = null;
-#if ANDROID
-                SuppressAndroidPlayerViewPlaceholder();
-                AndroidDisplayAfr.Restore();
 #endif
 #if ANDROID || IOS
                 DeviceDisplay.Current.KeepScreenOn = false;
                 Microsoft.Maui.Devices.DeviceDisplay.Current.MainDisplayInfoChanged -= OnDisplayInfoChanged;
                 RestoreOrientation();
 #endif
-#if ANDROID
-                // Video closed: brand shell, drop focus bounce, clear native-player-active.
-                ApplyAndroidWebViewShellBrand();
-                SetVideoFocusOwnership(active: false);
-                ClearNativePlayerActiveShell();
-#endif
+#if !ANDROID
                 ParkNativeVideoSurface(park: true);
+#endif
             }
 #endif
         });

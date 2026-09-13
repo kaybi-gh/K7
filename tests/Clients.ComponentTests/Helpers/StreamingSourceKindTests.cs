@@ -25,6 +25,14 @@ public class StreamingSourceKindTests
     }
 
     [Test]
+    public void IsHls_ShouldIgnoreStaleHlsMime_WhenClassifyingByUrlOnly()
+    {
+        var direct = "https://host/api/indexed-files/x/direct-stream";
+        StreamingSourceKind.IsHls("application/vnd.apple.mpegurl", direct).Should().BeTrue();
+        StreamingSourceKind.IsHls(mimeType: null, direct).Should().BeFalse();
+    }
+
+    [Test]
     public void TryBuildHlsManifestUrl_ShouldReplaceDirectStreamPath()
     {
         StreamingSourceKind.TryBuildHlsManifestUrl(
