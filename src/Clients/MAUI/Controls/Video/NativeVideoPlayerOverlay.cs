@@ -289,6 +289,11 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
             NativeVideoDebug.Log("SetActive active=" + active + " device=" + _deviceType);
             if (active)
             {
+#if ANDROID
+                Platforms.Android.AndroidOverlayComposition.Reset(this);
+#endif
+                TranslationX = 0;
+                Opacity = 1;
                 IsVisible = true;
                 ClearStartFailure();
                 AttachSidecarLayer();
@@ -322,14 +327,18 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
                 HideChrome(force: true);
                 ClearStartFailure();
                 _awaitingFirstFrame = false;
-#if ANDROID
-                Platforms.Android.AndroidOverlayComposition.Reset(this);
-#endif
                 ClearSidecarSubtitles();
                 DetachSidecarLayer();
                 SetLoadingVeil(false);
                 Detach();
                 IsVisible = false;
+                Opacity = 0;
+                TranslationX = 4096;
+#if ANDROID
+                // HideAsync used to Reset the overlay then set IsVisible=false. MAUI can
+                // remap the platform view back to Visible, so the ended SurfaceView stays.
+                Platforms.Android.AndroidOverlayComposition.SetDraws(this, draws: false);
+#endif
             }
         });
     }

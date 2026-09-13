@@ -17,26 +17,61 @@ public class MediaPlayerService : IMediaPlayerService
         _audioPlayer = audioPlayer;
 
         _videoPlayer.SourceChanged += OnVideoSourceChanged;
+        _videoPlayer.IsVisibleChanged += OnVideoVisibilityChanged;
         _audioPlayer.SourceChanged += OnAudioSourceChanged;
+        _audioPlayer.IsVisibleChanged += OnAudioVisibilityChanged;
     }
 
-    private void OnVideoSourceChanged(PlayerSource source)
-    {
-        if (ActivePlayer == ActivePlayerType.Video) return;
+    private void OnVideoSourceChanged(PlayerSource source) => SwitchToVideo();
 
-        ActivePlayer = ActivePlayerType.Video;
-        ActivePlayerChanged?.Invoke(ActivePlayerType.Video);
+    private void OnVideoVisibilityChanged()
+    {
+        if (_videoPlayer.IsVisible)
+            SwitchToVideo();
+    }
+
+    private void OnAudioSourceChanged(PlayerSource source) => SwitchToAudio();
+
+    private void OnAudioVisibilityChanged()
+    {
+        if (_audioPlayer.IsVisible)
+            SwitchToAudio();
+    }
+
+    private void SwitchToVideo()
+    {
+        SetActivePlayer(ActivePlayerType.Video);
+        HideAudioIfVisible();
+    }
+
+    private void SwitchToAudio()
+    {
+        SetActivePlayer(ActivePlayerType.Audio);
+        HideVideoIfVisible();
+    }
+
+    private void SetActivePlayer(ActivePlayerType player)
+    {
+        if (ActivePlayer == player)
+            return;
+
+        ActivePlayer = player;
+        ActivePlayerChanged?.Invoke(player);
+    }
+
+    private void HideAudioIfVisible()
+    {
+        if (!_audioPlayer.IsVisible)
+            return;
 
         _audioPlayer.Stop();
         _ = _audioPlayer.HideAsync();
     }
 
-    private void OnAudioSourceChanged(PlayerSource source)
+    private void HideVideoIfVisible()
     {
-        if (ActivePlayer == ActivePlayerType.Audio) return;
-
-        ActivePlayer = ActivePlayerType.Audio;
-        ActivePlayerChanged?.Invoke(ActivePlayerType.Audio);
+        if (!_videoPlayer.IsVisible)
+            return;
 
         _videoPlayer.Stop();
         _ = _videoPlayer.HideAsync();
@@ -45,6 +80,8 @@ public class MediaPlayerService : IMediaPlayerService
     public void Dispose()
     {
         _videoPlayer.SourceChanged -= OnVideoSourceChanged;
+        _videoPlayer.IsVisibleChanged -= OnVideoVisibilityChanged;
         _audioPlayer.SourceChanged -= OnAudioSourceChanged;
+        _audioPlayer.IsVisibleChanged -= OnAudioVisibilityChanged;
     }
 }

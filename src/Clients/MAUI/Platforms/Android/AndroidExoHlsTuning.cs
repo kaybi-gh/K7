@@ -421,6 +421,41 @@ internal static class AndroidExoHlsTuning
     }
 
     /// <summary>
+    /// Drop the last decoded frame when leaving video. Keep-content stays on between
+    /// title changes so the shutter is not empty. On hide it must be cleared or the
+    /// ended frame remains on SurfaceView after the player is no longer visible.
+    /// </summary>
+    internal static void DropKeptPlayerContent(PlayerView? playerView)
+    {
+        if (playerView is null)
+            return;
+
+        try
+        {
+            var boolClass = Java.Lang.Boolean.Type;
+            if (boolClass is not null)
+            {
+                var method = playerView.Class?.GetMethod("setKeepContentOnPlayerReset", boolClass);
+                if (method is not null)
+                    method.Invoke(playerView, false);
+            }
+        }
+        catch
+        {
+        }
+
+        try
+        {
+            playerView.Visibility = global::Android.Views.ViewStates.Gone;
+            if (playerView.VideoSurfaceView is global::Android.Views.View surface)
+                surface.Visibility = global::Android.Views.ViewStates.Gone;
+        }
+        catch
+        {
+        }
+    }
+
+    /// <summary>
     /// Media3 PlayerView idle/artwork is a tiny play-in-circle bitmap
     /// (<c>exo_edit_mode_logo</c>) scaled to the panel. Hide it and keep a black
     /// shutter so close/stop does not flash that placeholder. Do not apply the

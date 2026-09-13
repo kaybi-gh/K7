@@ -25,7 +25,9 @@ without a MediaManager listener. Auth is `Authorization` on a shared `DefaultHtt
 long connect/read timeouts for slow HLS init. Direct Play MKV resume uses HTTP Range seeks natively.
 Android uses `AndroidViewType=SurfaceView` and `setKeepContentOnPlayerReset`. PlayerView
 artwork and the idle play-in-circle bitmap (`exo_edit_mode_logo`) stay off: close/stop
-keeps a black shutter instead of scaling that placeholder to the panel. HDMI tunneling stays **off** on every device, including Amlogic TV boxes
+keeps a black shutter instead of scaling that placeholder to the panel. When video **hides**
+(close or switch to audio) the MediaElement is parked off-screen and keep-content is dropped
+so the last frame cannot linger over the Blazor shell. HDMI tunneling stays **off** on every device, including Amlogic TV boxes
 (Nokia Streaming Box 8000). Tunneling plus EAC3 Direct Play can throw ExoPlayer
 `ERROR_CODE_FAILED_RUNTIME_CHECK` (1004) at t=0 depending on HDMI sink and firmware, so two
 identical boxes can disagree. NVIDIA Shield already needed tunneling off (Media3 hitch on Tegra).

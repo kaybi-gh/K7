@@ -54,6 +54,8 @@ public partial class BlazorPage : ContentPage
     private int _nativeAuthRecoveryCount;
     private DateTime _lastNativeAuthRecoveryUtc = DateTime.MinValue;
 #if !WINDOWS
+    private static readonly Color BrandShellColor = Color.FromRgb(13, 9, 7);
+    private const float HiddenNativeVideoTranslationX = 4096f;
     private bool _openingNativeSource;
 #endif
     private bool _nativeStartRecoveryInFlight;
@@ -1044,6 +1046,27 @@ public partial class BlazorPage : ContentPage
     }
 #endif
 
+#if !WINDOWS
+    private void ParkNativeVideoSurface(bool park)
+    {
+        NativePlayer.TranslationX = park ? HiddenNativeVideoTranslationX : 0;
+        NativePlayer.Opacity = park ? 0 : 1;
+#if ANDROID
+        if (park)
+        {
+            var platformView = NativePlayer.Handler?.PlatformView as global::Android.Views.View;
+            var playerView = platformView is null ? null : FindPlayerView(platformView);
+            AndroidExoHlsTuning.DropKeptPlayerContent(playerView);
+            Platforms.Android.AndroidOverlayComposition.SetDraws(NativePlayer, draws: false);
+        }
+        else
+        {
+            Platforms.Android.AndroidOverlayComposition.Reset(NativePlayer);
+        }
+#endif
+    }
+#endif
+
     private void OnIsVisibleChanged()
     {
         MainThread.BeginInvokeOnMainThread(() =>
@@ -1054,11 +1077,9 @@ public partial class BlazorPage : ContentPage
             OnNativeVideoVisibilityChanged(_playerService.IsVisible);
             DeviceDisplay.Current.KeepScreenOn = _playerService.IsVisible;
 #else
-#if ANDROID
             NativePlayer.IsVisible = _playerService.IsVisible;
-#else
-            NativePlayer.IsVisible = _playerService.IsVisible;
-#endif
+            if (_playerService.IsVisible)
+                ParkNativeVideoSurface(park: false);
             OnNativeVideoVisibilityChanged(_playerService.IsVisible);
 
             if (_playerService.IsVisible)
@@ -1090,8 +1111,8 @@ public partial class BlazorPage : ContentPage
             }
             else
             {
-                BackgroundColor = Colors.Transparent;
-                blazorWebView.BackgroundColor = Colors.Transparent;
+                BackgroundColor = BrandShellColor;
+                blazorWebView.BackgroundColor = BrandShellColor;
 #if ANDROID
                 SuppressAndroidPlayerViewPlaceholder();
                 TryStopAndroidVideo();
@@ -1113,6 +1134,7 @@ public partial class BlazorPage : ContentPage
                 SetVideoFocusOwnership(active: false);
                 ClearNativePlayerActiveShell();
 #endif
+                ParkNativeVideoSurface(park: true);
             }
 #endif
         });
