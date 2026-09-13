@@ -276,9 +276,8 @@ internal class PlayerService(
     private string? _baseManifestUrl;
 
     private int _playbackStartRecoveryAttempts;
+    private int _remuxReloadsDone;
     private const int MaxPlaybackStartRecoveryAttempts = 4;
-    // Windows Video.js only: avoid stacking burn-in jobs / reload thrash on hard SRC_NOT_SUPPORTED.
-    private static readonly TimeSpan MinQualityFallbackInterval = TimeSpan.FromSeconds(25);
     private DateTime _lastQualityFallbackUtc = DateTime.MinValue;
     private readonly SemaphoreSlim _playbackStartRecoveryLock = new(1, 1);
 
@@ -353,6 +352,7 @@ internal class PlayerService(
 
         _baseManifestUrl = session.Source.Uri.OriginalString;
         _playbackStartRecoveryAttempts = 0;
+        _remuxReloadsDone = 0;
         _lastQualityFallbackUtc = DateTime.MinValue;
         PlaybackStartFailureMessageKey = null;
 
@@ -431,6 +431,7 @@ internal class PlayerService(
 
         _baseManifestUrl = session.Source.Uri.OriginalString;
         _playbackStartRecoveryAttempts = 0;
+        _remuxReloadsDone = 0;
         _lastQualityFallbackUtc = DateTime.MinValue;
         PlaybackStartFailureMessageKey = null;
 
@@ -577,6 +578,7 @@ internal class PlayerService(
 
         // Explicit user quality changes reset Windows Video.js recovery budget for the new selection.
         _playbackStartRecoveryAttempts = 0;
+        _remuxReloadsDone = 0;
         var previousQuality = _selectedQuality;
 
         if (quality is { IsOriginal: false }
@@ -649,9 +651,6 @@ internal class PlayerService(
         await _playbackStartRecoveryLock.WaitAsync(cancellationToken);
         try
         {
-            if (_playbackStartRecoveryAttempts >= MaxPlaybackStartRecoveryAttempts)
-                return false;
-
             // Web: growing buffer / playing means black frames are a display issue.
             // Native Direct Play 1004 happens at decoder t=0 even when the resume clock is set.
             if (isWebVideoPlayer
@@ -672,23 +671,10 @@ internal class PlayerService(
             if (!allowQualityLadder)
                 return false;
 
-            // Web Video.js: avoid stacking burn-in jobs. Native 1004 at t=0 must step
-            // Direct -> remux -> transcode immediately.
-            if (isWebVideoPlayer)
-            {
-                var sinceLastFallback = DateTime.UtcNow - _lastQualityFallbackUtc;
-                if (_lastQualityFallbackUtc != DateTime.MinValue
-                    && sinceLastFallback < MinQualityFallbackInterval)
-                {
-                    return true;
-                }
-            }
-
-            _playbackStartRecoveryAttempts++;
-
             var url = Source?.Url ?? _baseManifestUrl;
+            var isHls = StreamingSourceKind.IsHls(Source?.MimeType, url);
             if (_selectedQuality?.IsOriginal == true
-                && !StreamingSourceKind.IsHls(Source?.MimeType, url)
+                && !isHls
                 && TryPromoteDirectToHls())
             {
                 NativeVideoDebug.Log("RecoverPlaybackStart DirectPlay to remux");
@@ -696,6 +682,27 @@ internal class PlayerService(
                 ReloadCurrentSource();
                 return true;
             }
+
+            // Cold remux init.m4s 503 looks like Video.js error 4. Stay on Original
+            // (reload once or twice) and only encode after the remux window.
+            var now = DateTime.UtcNow;
+            if (PlaybackStartRecoveryPolicy.ShouldStayOnRemux(
+                    _selectedQuality?.IsOriginal == true,
+                    isHls,
+                    _remuxReloadsDone,
+                    _lastQualityFallbackUtc,
+                    now))
+            {
+                if (_lastQualityFallbackUtc == DateTime.MinValue)
+                    _lastQualityFallbackUtc = now;
+
+                return true;
+            }
+
+            if (_playbackStartRecoveryAttempts >= MaxPlaybackStartRecoveryAttempts)
+                return false;
+
+            _playbackStartRecoveryAttempts++;
 
             if (_selectedQuality?.IsOriginal == true)
             {
@@ -787,9 +794,9 @@ internal class PlayerService(
             StreamSessionId = previous.StreamSessionId,
             IndexedFileId = previous.IndexedFileId,
             Url = url,
-            MimeType = StreamingSourceKind.IsHls(previous.MimeType, url)
+            MimeType = StreamingSourceKind.IsHls(mimeType: null, url)
                 ? "application/vnd.apple.mpegurl"
-                : previous.MimeType ?? "application/vnd.apple.mpegurl",
+                : "video/mp4",
             ThumbnailsUrl = previous.ThumbnailsUrl,
             Chapters = previous.Chapters,
             KnownDurationSeconds = previous.KnownDurationSeconds,

@@ -32,16 +32,26 @@ public class PlayerServicePlaybackRecoveryTests
     }
 
     [Test]
-    public async Task TryRecoverPlaybackStartAsync_ShouldStepFromOriginalToTranscode_WhenRemuxFails()
+    public async Task TryRecoverPlaybackStartAsync_ShouldStayOnOriginal_WhenRemuxInitIsNotReadyYet()
     {
         await StartPlaybackAsync();
 
         var recovered = await _sut.TryRecoverPlaybackStartAsync(allowQualityLadder: true);
 
         recovered.Should().BeTrue();
-        _sut.SelectedQuality.Should().NotBeNull();
-        _sut.SelectedQuality!.IsOriginal.Should().BeFalse();
-        _sut.Source.Url.Should().Contain("Quality=");
+        _sut.SelectedQuality!.IsOriginal.Should().BeTrue();
+        _sut.Source.Url.Should().NotContain("Quality=");
+    }
+
+    [Test]
+    public async Task TryRecoverPlaybackStartAsync_ShouldKeepOriginal_ThroughRepeatedColdStartErrors()
+    {
+        await StartPlaybackAsync();
+
+        (await _sut.TryRecoverPlaybackStartAsync(allowQualityLadder: true)).Should().BeTrue();
+        (await _sut.TryRecoverPlaybackStartAsync(allowQualityLadder: true)).Should().BeTrue();
+        (await _sut.TryRecoverPlaybackStartAsync(allowQualityLadder: true)).Should().BeTrue();
+        _sut.SelectedQuality!.IsOriginal.Should().BeTrue();
     }
 
     [Test]

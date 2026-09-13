@@ -216,7 +216,9 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
     private int _playGeneration;
     private CancellationTokenSource? _playCts;
     private int _playbackStartRecoveryAttempts;
+    private int _remuxReloadsDone;
     private const int MaxPlaybackStartRecoveryAttempts = 4;
+    private DateTime _lastRemuxRetryUtc = DateTime.MinValue;
     private readonly SemaphoreSlim _playbackStartRecoveryLock = new(1, 1);
 
     public async Task PlayIndexedFileAsync(Guid indexedFileId, IEnumerable<AudioFileTrackDto> audioTracks, IEnumerable<SubtitleFileTrackDto>? subtitleTracks = null, int? audioTrackIndex = null, int? subtitleTrackIndex = null, VideoResolutionIdentifier? videoResolution = null, string? thumbnailsUrl = null, Guid? mediaId = null, string? title = null, string? coverUrl = null, double? startPosition = null, IReadOnlyList<ChapterMarkerDto>? chapters = null, double? durationSeconds = null, CancellationToken cancellationToken = default)
@@ -229,6 +231,8 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
 
         _currentIndexedFileId = indexedFileId;
         _playbackStartRecoveryAttempts = 0;
+        _remuxReloadsDone = 0;
+        _lastRemuxRetryUtc = DateTime.MinValue;
         _lastKnownPlaybackTime = startPosition is > 1 ? startPosition.Value : 0;
         _audioTracks = audioTracks.ToList();
         SetSubtitleTracks(subtitleTracks);
@@ -322,6 +326,8 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
 
         _currentIndexedFileId = null;
         _playbackStartRecoveryAttempts = 0;
+        _remuxReloadsDone = 0;
+        _lastRemuxRetryUtc = DateTime.MinValue;
         _lastKnownPlaybackTime = startPosition is > 1 ? startPosition.Value : 0;
         _audioTracks = audioTracks.ToList();
         SetSubtitleTracks(subtitleTracks);
@@ -724,9 +730,6 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
         await _playbackStartRecoveryLock.WaitAsync(cancellationToken);
         try
         {
-            if (_playbackStartRecoveryAttempts >= MaxPlaybackStartRecoveryAttempts)
-                return false;
-
             if (PlaybackState is PlaybackState.Playing && CurrentTime > 0)
                 return true;
 
@@ -739,6 +742,24 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
             {
                 return true;
             }
+
+            var isHls = StreamingSourceKind.IsHls(Source?.MimeType, Source?.Url);
+            var now = DateTime.UtcNow;
+            if (PlaybackStartRecoveryPolicy.ShouldStayOnRemux(
+                    SelectedQuality?.IsOriginal != false,
+                    isHls,
+                    _remuxReloadsDone,
+                    _lastRemuxRetryUtc,
+                    now))
+            {
+                if (_lastRemuxRetryUtc == DateTime.MinValue)
+                    _lastRemuxRetryUtc = now;
+
+                return true;
+            }
+
+            if (_playbackStartRecoveryAttempts >= MaxPlaybackStartRecoveryAttempts)
+                return false;
 
             _playbackStartRecoveryAttempts++;
 
