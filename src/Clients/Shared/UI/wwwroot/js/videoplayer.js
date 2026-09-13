@@ -447,10 +447,90 @@ window.initVideoJs = function (id, videoPlayer, videoContainer, options, dotNetR
     return player;
 }
 
+window.pauseAllK7Video = function () {
+    Object.keys(players || {}).forEach(function (id) {
+        try { players[id].pause(); } catch (e) { }
+    });
+    document.querySelectorAll('video').forEach(function (video) {
+        try { video.pause(); } catch (e2) { }
+    });
+};
+
+window.playAllK7Video = function () {
+    Object.keys(players || {}).forEach(function (id) {
+        try { players[id].play(); } catch (e) { }
+    });
+};
+
+window.blankK7VideoSurfaces = function () {
+    Object.keys(players || {}).forEach(function (id) {
+        try {
+            window.disposeVideoJs(id);
+        } catch (e0) { }
+    });
+    document.querySelectorAll('video').forEach(function (video) {
+        try {
+            video.pause();
+            video.removeAttribute('src');
+            video.removeAttribute('poster');
+            while (video.firstChild)
+                video.removeChild(video.firstChild);
+            video.load();
+        } catch (e3) { }
+        video.style.display = 'none';
+        video.style.visibility = 'hidden';
+        video.style.opacity = '0';
+        video.style.background = '#0d0907';
+    });
+    document.querySelectorAll('.video-container, .video-js, .vjs-error-display, .vjs-modal-dialog, .vjs-poster').forEach(function (node) {
+        if (!node || !node.style)
+            return;
+        node.style.display = 'none';
+        node.style.visibility = 'hidden';
+        node.style.opacity = '0';
+        node.style.background = '#0d0907';
+    });
+};
+
+window.hideVideoJs = function (id) {
+    var player = players[id];
+    var hideNode = function (node) {
+        if (!node || !node.style)
+            return;
+        node.style.display = 'none';
+        node.style.visibility = 'hidden';
+        node.style.opacity = '0';
+        node.style.background = '#0d0907';
+    };
+    try {
+        if (player) {
+            try { player.error(null); } catch (e) { }
+            try { player.pause(); } catch (e2) { }
+            hideNode(player.el());
+        }
+    } catch (e3) {
+    }
+    window.blankK7VideoSurfaces();
+    document.querySelectorAll('.video-container, .video-js, .vjs-error-display, .vjs-modal-dialog, .vjs-poster').forEach(hideNode);
+};
+
 window.disposeVideoJs = function (id) {
     const player = players[id];
     if (player) {
         try {
+            // Clear the default "media could not be loaded" poster before dispose.
+            // A late error after close otherwise stays painted on the WebView.
+            try {
+                player.error(null);
+            } catch (clearErr) {
+            }
+            var el = player.el();
+            if (el) {
+                el.style.display = 'none';
+                el.querySelectorAll('.vjs-error-display, .vjs-modal-dialog, .vjs-poster').forEach(function (node) {
+                    node.style.display = 'none';
+                });
+            }
             player.dispose();
         } catch (e) {
             console.warn('Error disposing Video.js player', e);

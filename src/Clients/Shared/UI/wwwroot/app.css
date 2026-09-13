@@ -632,6 +632,12 @@ body.native-player-active.windows-web-video .vjs-big-play-button,
 .video-container .vjs-loading-spinner:before,
 .video-container .vjs-loading-spinner:after,
 .video-container .vjs-big-play-button,
+.video-container .vjs-error-display,
+.video-container .vjs-modal-dialog,
+body.native-player-active.windows-web-video .vjs-error-display,
+body.native-player-active.windows-web-video .vjs-modal-dialog,
+.video-js .vjs-error-display,
+.video-js.vjs-error .vjs-modal-dialog,
 .video-js.vjs-waiting .vjs-loading-spinner,
 .video-js.vjs-seeking .vjs-loading-spinner {
     display: none !important;

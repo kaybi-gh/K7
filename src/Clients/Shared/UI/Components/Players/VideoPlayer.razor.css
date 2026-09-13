@@ -83,6 +83,15 @@ body.native-player-playing .video-container.native-overlay {
     opacity: 1 !important;
 }
 
+.video-container ::deep .vjs-error-display,
+.video-container ::deep .vjs-modal-dialog,
+.video-container ::deep .vjs-error-display .vjs-modal-dialog-content {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
 .video-container ::deep .video-js .vjs-tech {
     pointer-events: none;
     visibility: visible !important;

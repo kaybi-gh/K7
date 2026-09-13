@@ -122,7 +122,11 @@ public partial class BlazorPage
             {
             }
 
-            BackgroundColor = Colors.Transparent;
+            BackgroundColor = Color.FromRgb(13, 9, 7);
+            blazorWebView.BackgroundColor = Color.FromRgb(13, 9, 7);
+            TryEvaluateWebViewJs(
+                "try{if(window.blankK7VideoSurfaces)blankK7VideoSurfaces();"
+                + "if(window.K7&&K7.setNativePlayerActive)K7.setNativePlayerActive(false,false);}catch(e){}");
             StopWindowsVlc();
         }
     }
@@ -146,6 +150,13 @@ public partial class BlazorPage
             return false;
 
         EnsureWindowsCloseHandler();
+        // WebView2 keeps a HWND compositor on top of LibVLC (ZIndex does not win).
+        // Dispose Video.js and hide the WebView before Play or Direct audio starts
+        // under a leftover HLS frame.
+        TryEvaluateWebViewJs(
+            "try{if(window.blankK7VideoSurfaces)blankK7VideoSurfaces();"
+            + "if(window.K7&&K7.setNativePlayerActive)K7.setNativePlayerActive(true,false);}catch(e){}");
+        HideBlazorWebViewForNativeVideo();
         NativePlayer.IsVisible = false;
         try
         {

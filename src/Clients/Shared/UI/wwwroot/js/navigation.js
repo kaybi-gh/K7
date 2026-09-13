@@ -3289,6 +3289,16 @@ K7.setNativePlayerActive = function (active, windowsWebVideo) {
     var useWindowsWebVideo = !!active && !!windowsWebVideo;
     document.documentElement.classList.toggle('windows-web-video', useWindowsWebVideo);
     document.body.classList.toggle('windows-web-video', useWindowsWebVideo);
+    if (!useWindowsWebVideo) {
+        if (window.blankK7VideoSurfaces)
+            window.blankK7VideoSurfaces();
+        document.querySelectorAll('.video-container, .video-js, .vjs-error-display, .vjs-modal-dialog, .vjs-poster, video').forEach(function (node) {
+            node.style.display = 'none';
+            node.style.visibility = 'hidden';
+            node.style.opacity = '0';
+            node.style.background = '#0d0907';
+        });
+    }
     if (!active) {
         document.documentElement.classList.remove('native-player-playing');
         document.body.classList.remove('native-player-playing');

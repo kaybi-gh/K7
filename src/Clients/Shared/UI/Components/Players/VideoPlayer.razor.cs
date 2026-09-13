@@ -201,8 +201,26 @@ public partial class VideoPlayer : IAsyncDisposable
 
     private void OnVisibilityChanged()
     {
+        if (!PlayerService.IsVisible)
+            HideWebVideoSurface();
+
         StateHasChanged();
         SyncNativePlayerShellCss();
+    }
+
+    private void HideWebVideoSurface()
+    {
+        if (!UsesWebVideoPlayer())
+            return;
+
+        try
+        {
+            if (!string.IsNullOrEmpty(_lastPlayerId))
+                _ = JSRuntime.InvokeVoidAsync("hideVideoJs", _lastPlayerId);
+        }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException or ObjectDisposedException)
+        {
+        }
     }
 
     private void SyncNativePlayerShellCss()
@@ -368,7 +386,17 @@ public partial class VideoPlayer : IAsyncDisposable
         }
 
         if (_webPipelineActive && !useWeb)
+        {
+            try
+            {
+                await JSRuntime.InvokeVoidAsync("blankK7VideoSurfaces");
+            }
+            catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException or ObjectDisposedException)
+            {
+            }
+
             await DisposeWebPlayerAsync();
+        }
 
         if (!_webPipelineActive && useWeb)
         {
@@ -793,7 +821,15 @@ public partial class VideoPlayer : IAsyncDisposable
         {
             // Fired when the user agent begins looking for media data
             case "loadstart":
-                PlayerService.PlaybackState = PlaybackState.Idle;
+                // HLS playlist reloads fire loadstart after playing. Do not snap the
+                // play button back to Play while media is already running.
+                if (PlayerService.PlaybackState is not PlaybackState.Playing
+                    and not PlaybackState.Buffering
+                    and not PlaybackState.Paused)
+                {
+                    PlayerService.PlaybackState = PlaybackState.Idle;
+                }
+
                 break;
 
             // Fires when the loading of an audio/video is aborted.
@@ -812,7 +848,12 @@ public partial class VideoPlayer : IAsyncDisposable
 
             // Fires when the current playlist is empty.
             case "emptied":
-                PlayerService.PlaybackState = PlaybackState.Idle;
+                if (PlayerService.PlaybackState is not PlaybackState.Playing
+                    and not PlaybackState.Buffering)
+                {
+                    PlayerService.PlaybackState = PlaybackState.Idle;
+                }
+
                 break;
 
             // Fires when the browser has loaded the current frame of the audio/video.
@@ -850,6 +891,7 @@ public partial class VideoPlayer : IAsyncDisposable
 
             // Fired whenever the player is jumping to a new time
             case "seeking":
+                PlayerService.PlaybackState = PlaybackState.Buffering;
                 break;
 
             // The media is no longer blocked from playback, and has started playing.

@@ -121,6 +121,9 @@ public partial class BlazorPage
             }
             else
             {
+                _ = TryEvaluateWebViewJs(
+                    "try{if(window.blankK7VideoSurfaces)blankK7VideoSurfaces();"
+                    + "if(window.K7&&K7.setNativePlayerActive)K7.setNativePlayerActive(false,false);}catch(e){}");
                 RestoreBlazorWebViewAfterNativeVideo();
 #if ANDROID
                 if (!_playerService.IsVisible)
@@ -161,6 +164,9 @@ public partial class BlazorPage
             _nativeVideoWebViewShellSaved = true;
         }
 
+        _ = TryEvaluateWebViewJs(
+            "try{if(window.blankK7VideoSurfaces)blankK7VideoSurfaces();"
+            + "if(window.pauseAllK7Video)pauseAllK7Video();}catch(e){}");
         blazorWebView.Opacity = 0;
         blazorWebView.InputTransparent = true;
         blazorWebView.IsVisible = false;
