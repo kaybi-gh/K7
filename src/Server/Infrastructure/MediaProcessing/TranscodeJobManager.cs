@@ -48,6 +48,7 @@ public class TranscodeJobManager(
         {
             existingJob.AttachedStreamSessions.TryAdd(streamSessionId, 0);
             existingJob.LastPingTime = DateTime.UtcNow;
+            await RecoverWipedOutputIfNeededAsync(existingJob, cancellationToken);
             logger.LogDebug(
                 "Reusing existing transcode job {JobId} for session {SessionId}",
                 existingJob.JobId,
@@ -63,6 +64,7 @@ public class TranscodeJobManager(
             {
                 existingJob.AttachedStreamSessions.TryAdd(streamSessionId, 0);
                 existingJob.LastPingTime = DateTime.UtcNow;
+                await RecoverWipedOutputIfNeededAsync(existingJob, cancellationToken);
                 return existingJob;
             }
 
@@ -162,6 +164,8 @@ public class TranscodeJobManager(
             throw new InvalidOperationException($"Job {jobId} not found");
         }
 
+        await RecoverWipedOutputIfNeededAsync(job, cancellationToken);
+
         // init.m4s: never map to media segment 0 (that false-triggers seek-to-start on resume).
         if (requestedSegmentIndex < 0)
         {
@@ -169,8 +173,19 @@ public class TranscodeJobManager(
             return;
         }
 
+        var previousClientRequest = job.LastClientMediaSegmentRequest;
         job.LastClientMediaSegmentRequest = requestedSegmentIndex;
         job.LastRequestedSegmentIndex = Math.Max(job.LastRequestedSegmentIndex, requestedSegmentIndex);
+
+        // Open-GOP remux: CRA is demoted on serve so linear play does not flush every GOP.
+        // A seek landing must keep the sync flag even when the .m4s already exists (no new
+        // head). Otherwise ExoPlayer has audio at T and no video RAP, so the last frame freezes.
+        if (!job.IsAudioOnly
+            && job.IsCopyRemux
+            && FfmpegRemuxSeekPolicy.IsClientSeekJump(previousClientRequest, requestedSegmentIndex))
+        {
+            job.RemuxRapSegmentIndices[requestedSegmentIndex] = 0;
+        }
 
         // Advertise the real target early so a racing init request does not assume cold start at 0.
         job.TargetSegmentIndex = FfmpegWindowAutoContinue.ResolveAdvertisedTarget(
@@ -231,8 +246,11 @@ public class TranscodeJobManager(
             var liveHeads = job.RemuxHeads.Values
                 .Select(h => (TipIndex: h.TipIndex, From: h.From, UntilInclusive: h.UntilInclusive, Running: h.IsRunning))
                 .ToList();
+            // Covered only up to the live TIP (segment produced), not the head's EOF target.
+            // Using UntilInclusive made a far forward seek look covered by the 0-head, so no
+            // new head spawned and the client waited on the slow linear catch-up.
             var covered = liveHeads.Any(h =>
-                h.Running && requestedSegmentIndex >= h.From && requestedSegmentIndex <= h.UntilInclusive);
+                h.Running && requestedSegmentIndex >= h.From && requestedSegmentIndex <= h.TipIndex);
             var distance = FfmpegRemuxSeekPolicy.MinDistanceSecondsToLiveHead(
                 requestedSegmentIndex,
                 liveHeads.Select(h => (h.TipIndex, h.UntilInclusive, h.Running)),
@@ -339,13 +357,26 @@ public class TranscodeJobManager(
 
             if (gap > 30 || gapDuration.TotalSeconds > 60)
             {
+                // Far forward seek: re-anchor the window but keep already-encoded segments so a
+                // later seek back into them serves instantly instead of re-encoding.
                 var startSegmentIndex = Math.Clamp(requestedSegmentIndex - 5, 0, allSegments.Count - 1);
-                await RestartJobWithSeekAsync(job, startSegmentIndex, allSegments, cancellationToken);
+                await RestartJobWithSeekAsync(
+                    job,
+                    startSegmentIndex,
+                    allSegments,
+                    cancellationToken,
+                    purgeExisting: false);
             }
             else if (gap < 0)
             {
+                // Seek back before the current window: re-anchor, keep existing segments.
                 var startSegmentIndex = Math.Clamp(requestedSegmentIndex - 5, 0, allSegments.Count - 1);
-                await RestartJobWithSeekAsync(job, startSegmentIndex, allSegments, cancellationToken);
+                await RestartJobWithSeekAsync(
+                    job,
+                    startSegmentIndex,
+                    allSegments,
+                    cancellationToken,
+                    purgeExisting: false);
             }
             else if (requestedSegmentIndex >= job.TargetSegmentIndex
                      || requestedSegmentIndex > job.GeneratingUntilSegmentIndex
@@ -611,7 +642,8 @@ public class TranscodeJobManager(
             if (HlsSegmentFileWaiter.IsInitReadyOnDisk(job.OutputDirectory))
                 return;
 
-            // Active remux head or encode ffmpeg will write init.m4s; do not restart from segment 0.
+            // Active remux head or encode ffmpeg will write init.m4s; do not restart from segment 0
+            // unless the cache was wiped under that process (Recover already stopped it).
             if (job.IsFfmpegRunning)
             {
                 logger.LogDebug(
@@ -628,33 +660,24 @@ public class TranscodeJobManager(
                 job.FfmpegTask = null;
             }
 
-            // Prefer an existing media window, else the advertised target (mid-resume), else 0.
+            // Prefer an existing media window, else the last client media GET (resume), else 0.
             // Never "wait for media-driven ffmpeg": ExoPlayer fetches init.m4s before any
             // media segment, so that wait deadlocks demuxed HLS (client 8s timeout -> HTTP 499).
+            // Never use a stale Target near EOF when the disk is empty: that remuxes from
+            // the end and the client waits tens of seconds for init (then Video.js error 4).
             var currentIndex = job.GetCurrentSegmentIndex();
-            int startSegmentIndex;
-            if (currentIndex >= 0)
-            {
-                startSegmentIndex = Math.Clamp(currentIndex - 5, 0, allSegments.Count - 1);
-            }
-            else if (job.TargetSegmentIndex > job.BufferSize)
-            {
-                startSegmentIndex = Math.Clamp(
-                    job.TargetSegmentIndex - job.BufferSize,
-                    0,
-                    allSegments.Count - 1);
-            }
-            else
-            {
-                startSegmentIndex = 0;
-            }
+            var startSegmentIndex = TranscodeInitStartPolicy.ResolveStartIndex(
+                currentIndex,
+                job.LastClientMediaSegmentRequest,
+                allSegments.Count);
 
             logger.LogInformation(
-                "Job {JobId}: init.m4s not ready; starting ffmpeg at segment {Start} (target={Target}, current={Current})",
+                "Job {JobId}: init.m4s not ready; starting ffmpeg at segment {Start} (target={Target}, current={Current}, lastClient={LastClient})",
                 job.JobId,
                 startSegmentIndex,
                 job.TargetSegmentIndex,
-                currentIndex);
+                currentIndex,
+                job.LastClientMediaSegmentRequest);
 
             if (job.IsCopyRemux)
                 await SpawnRemuxHeadAsync(job, startSegmentIndex, allSegments, cancellationToken);
@@ -665,6 +688,93 @@ public class TranscodeJobManager(
         {
             job.FfmpegStartLock.Release();
         }
+    }
+
+    /// <summary>
+    /// Manual delete of the transcode cache leaves the in-memory job alive. ffmpeg may
+    /// still be "running" against missing files, and Target sits near EOF from the last
+    /// seek. Reset so the next init GET starts at 0 (or the resume landing) instead of
+    /// remuxing the last 10 segments for 70s.
+    /// </summary>
+    private async Task RecoverWipedOutputIfNeededAsync(TranscodeJob job, CancellationToken cancellationToken)
+    {
+        if (!IsOutputCacheEmpty(job) || !NeedsWipedOutputReset(job))
+            return;
+
+        await job.FfmpegStartLock.WaitAsync(cancellationToken);
+        try
+        {
+            if (!IsOutputCacheEmpty(job) || !NeedsWipedOutputReset(job))
+                return;
+
+            logger.LogWarning(
+                "Job {JobId}: output cache empty under a live job (target={Target}, lastClient={LastClient}) - reset generation",
+                job.JobId,
+                job.TargetSegmentIndex,
+                job.LastClientMediaSegmentRequest);
+
+            await StopFfmpegAsync(job);
+            job.WindowStartIndex = -1;
+            job.GeneratingFromSegmentIndex = -1;
+            job.GeneratingUntilSegmentIndex = -1;
+            job.RemuxSegmentOwners.Clear();
+            job.RemuxRapSegmentIndices.Clear();
+            // Forget landings from the wiped generation so init starts at 0, not a stale EOF.
+            job.LastClientMediaSegmentRequest = -1;
+            job.LastRequestedSegmentIndex = -1;
+            job.TargetSegmentIndex = 0;
+            Directory.CreateDirectory(job.OutputDirectory);
+        }
+        finally
+        {
+            job.FfmpegStartLock.Release();
+        }
+    }
+
+    private static bool NeedsWipedOutputReset(TranscodeJob job)
+    {
+        // A cold start has an empty cache for a few seconds. Do not kill that ffmpeg.
+        // Reset only when prior playback left a high target / landing, or the directory
+        // itself is gone under a live process.
+        if (!Directory.Exists(job.OutputDirectory))
+        {
+            return job.IsFfmpegRunning
+                || job.LastRequestedSegmentIndex >= 0
+                || job.TargetSegmentIndex > 0;
+        }
+
+        return job.LastRequestedSegmentIndex >= 0
+            || job.TargetSegmentIndex > job.BufferSize
+            || job.WindowStartIndex > 0
+            || job.GeneratingFromSegmentIndex > job.BufferSize;
+    }
+
+    private static bool IsOutputCacheEmpty(TranscodeJob job)
+    {
+        if (HlsSegmentFileWaiter.IsInitReadyOnDisk(job.OutputDirectory))
+            return false;
+
+        if (!Directory.Exists(job.OutputDirectory))
+            return true;
+
+        try
+        {
+            foreach (var file in Directory.EnumerateFiles(job.OutputDirectory, "*.m4s"))
+            {
+                var name = Path.GetFileNameWithoutExtension(file);
+                if (string.Equals(name, "init", StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                if (HlsSegmentFileWaiter.IsSegmentFileReady(file))
+                    return false;
+            }
+        }
+        catch (IOException)
+        {
+            return true;
+        }
+
+        return true;
     }
 
     public void DetachSession(Guid jobId, Guid streamSessionId)
@@ -821,6 +931,11 @@ public class TranscodeJobManager(
 
         if (purgeExisting)
             PurgeGeneratedSegments(job.OutputDirectory);
+
+        // Re-anchor the contiguous-ready scan at this window start. Preserved across
+        // cooperative continues (which call StartFfmpegAsync directly, not this method), so a
+        // no-purge seek that keeps far-away segments cannot fool GetCurrentSegmentIndex.
+        job.WindowStartIndex = startSegmentIndex;
 
         job.TargetSegmentIndex = FfmpegWindowAutoContinue.ResolveAdvertisedTarget(
             startSegmentIndex,
@@ -982,6 +1097,11 @@ public class TranscodeJobManager(
             await SpawnRemuxHeadAsync(job, startSegmentIndex, allSegments, cancellationToken);
             return;
         }
+
+        // Anchor the first encode window here. Seeks re-anchor via RestartJobWithSeekAsync;
+        // cooperative continues keep the original anchor so the whole window stays contiguous.
+        if (job.WindowStartIndex < 0)
+            job.WindowStartIndex = startSegmentIndex;
 
         var segmentsToGenerate = job.TargetSegmentIndex - startSegmentIndex + 1;
         if (segmentsToGenerate <= 0)

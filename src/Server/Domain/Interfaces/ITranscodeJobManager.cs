@@ -97,6 +97,14 @@ public class TranscodeJob
     /// Highest segment index the currently running encode ffmpeg will produce (inclusive).
     /// </summary>
     public int GeneratingUntilSegmentIndex { get; set; } = -1;
+    /// <summary>
+    /// Anchor index of the current encode window (the segment a seek/initial start began at).
+    /// Set on every encode (re)start and preserved across cooperative continues, so a
+    /// no-purge seek that keeps far-away segments from a previous window does not fool the
+    /// contiguous scan (which otherwise anchors at the lowest index on disk). Remux jobs
+    /// leave this at -1 and use the disk scan.
+    /// </summary>
+    public int WindowStartIndex { get; set; } = -1;
     public int BufferSize { get; init; } = 10;
     /// <summary>
     /// Cooperative remux heads. Encode jobs leave this empty.
@@ -145,6 +153,23 @@ public class TranscodeJob
     {
         if (!Directory.Exists(OutputDirectory))
             return -1;
+
+        // Encode windows anchor at WindowStartIndex: report the contiguous ready run starting
+        // exactly there. Kept segments from an earlier (no-purge) seek window sit at unrelated
+        // indices and must not be picked up by the lowest-index disk scan below. Encode always
+        // produces in order, so leading unready placeholders cannot precede the anchor.
+        if (WindowStartIndex >= 0)
+        {
+            var tip = WindowStartIndex - 1;
+            var expectedFromAnchor = WindowStartIndex;
+            while (IsReadyMediaSegment(Path.Combine(OutputDirectory, $"{expectedFromAnchor}.m4s")))
+            {
+                tip = expectedFromAnchor;
+                expectedFromAnchor++;
+            }
+
+            return tip;
+        }
 
         var indices = Directory.GetFiles(OutputDirectory, "*.m4s")
             .Select(static f =>
