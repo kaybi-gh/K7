@@ -90,6 +90,10 @@ Movie and series trailers play in K7 by default. **Open trailers in YouTube** (S
 - **Theme song not generated** (warning): series with generation on, at least one detection-eligible season (2+ episodes with files), and no theme file. Fix with **Generate theme song** (extracts if an Intro already exists; otherwise queues intro/outro detection on eligible seasons, which then queues theme extract).
 - **Intro/outro missing** (warning): episodes in intro-detection-enabled libraries whose season is eligible and that have neither Intro nor Outro segments. Fix with **Detect intros/outros** (queues season-level detection; multiple episodes in the same season share one background task). Re-running detection also queues theme extract when intros are found and theme generation is on.
 
+### Shared URL previews
+
+Discord, Telegram, Slack, and iMessage can show a media title, overview, and poster when someone pastes a movie, series, or album URL. Recipients still sign in to open the app. This is **on by default**. Turn it off under **Admin -> Experience -> General** to keep crawlers on the K7 card only. See [configuration.md](configuration.md#shared-url-previews).
+
 ### Folder and naming conventions
 
 The scanner derives titles from filenames and folders. Prefer consistent layouts:

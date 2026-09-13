@@ -27,4 +27,7 @@
   <data name="PlayThemeSongs" xml:space="preserve"><value>Enable theme songs</value></data>
   <data name="PlayThemeSongsHint" xml:space="preserve"><value>Plays the theme in the background on series or movie pages when a theme file is available. Default for users without a personal preference.</value></data>
   <data name="SaveSuccess" xml:space="preserve"><value>Settings saved</value></data>
+  <data name="MediaLinkPreviewsSection" xml:space="preserve"><value>Link previews</value></data>
+  <data name="MediaLinkPreviews" xml:space="preserve"><value>Include title and poster</value></data>
+  <data name="MediaLinkPreviewsHint" xml:space="preserve"><value>When a movie, series, or album URL is pasted into Discord, Telegram, or iMessage, the preview shows the title, overview, and poster without an account. The app still requires login. Turn off to show only the K7 card.</value></data>
 </root>

@@ -2,6 +2,7 @@ using K7.Server.Application.Features.ServerSettings.Commands.UpdateServerFeature
 using K7.Server.Domain.Constants;
 using K7.Shared.Dtos;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace K7.Server.Web.Endpoints.Admin;
 
@@ -15,9 +16,11 @@ public class UpdateServerFeatureFlags : IEndpoint
         endpointRouteBuilder.MapPut("/api/server/preferences/feature-flags", async (
             [FromBody] ServerFeatureFlagsDto flags,
             [FromServices] ISender sender,
+            [FromServices] IMemoryCache memoryCache,
             CancellationToken cancellationToken) =>
         {
             await sender.Send(new UpdateServerFeatureFlagsCommand { Flags = flags }, cancellationToken);
+            memoryCache.Remove(ServerFeatureFlagsCache.Key);
             return Results.NoContent();
         })
         .RequireAuthorization(Policies.AdminOnly)

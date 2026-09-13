@@ -108,6 +108,11 @@ public class WebHostSmokeTests
 
         response.IsSuccessStatusCode.Should().BeTrue();
         response.Content.Headers.ContentType!.MediaType.Should().Be("image/png");
+        var bytes = await response.Content.ReadAsByteArrayAsync();
+        System.Buffers.Binary.BinaryPrimitives.ReadInt32BigEndian(bytes.AsSpan(16, 4))
+            .Should().Be(LinkPreviewUrls.ImageWidth);
+        System.Buffers.Binary.BinaryPrimitives.ReadInt32BigEndian(bytes.AsSpan(20, 4))
+            .Should().Be(LinkPreviewUrls.ImageHeight);
     }
 
     [Test]

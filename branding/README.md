@@ -2,7 +2,7 @@
 
 Pre-colored SVG copies of the Design System brand variants. Construction source: `logo-build.svg`.
 
-Asset backgrounds are transparent. README previews bake the Design System surfaces (`#0d0907` / `#e4e3d9`) so they stay visible on GitHub. `logo.svg` and `symbol.svg` are the default marks. `icon.png` is the 512px square app icon (mark on `#0d0907`) for places that need a PNG.
+Asset backgrounds are transparent. README previews bake the Design System surfaces (`#0d0907` / `#e4e3d9`) so they stay visible on GitHub. `logo.svg` and `symbol.svg` are the default marks. `icon.png` is the 512px square app icon (mark on `#0d0907`) for places that need a PNG. `og-image.svg` / the published `og-image.png` is the 1200x630 Open Graph card (wordmark on dark).
 
 ## App icon (512x512 PNG)
 

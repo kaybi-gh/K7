@@ -28,6 +28,14 @@ public class LinkPreviewRouteTests
         LinkPreviewRoute.TryParse($"/series/{id}/seasons/2/episodes/7/", out var episode).Should().BeTrue();
         episode.Kind.Should().Be(LinkPreviewKind.Episode);
         episode.EpisodeNumber.Should().Be(7);
+
+        LinkPreviewRoute.TryParse(
+                "/series/019fc962-182a-7399-ae88-34e8a26ab7e3/seasons/1/episodes/1",
+                out var uuidv7)
+            .Should().BeTrue();
+        uuidv7.Kind.Should().Be(LinkPreviewKind.Episode);
+        uuidv7.SeasonNumber.Should().Be(1);
+        uuidv7.EpisodeNumber.Should().Be(1);
     }
 
     [Test]

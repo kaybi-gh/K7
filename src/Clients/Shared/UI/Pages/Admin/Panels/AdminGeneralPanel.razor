@@ -43,6 +43,15 @@ else
                           Class="mt-2" />
                 <span class="text-caption mt-1" Color="secondary">@L["PlayThemeSongsHint"]</span>
             </div>
+
+            <div>
+                <h6>@L["MediaLinkPreviewsSection"]</h6>
+                <K7Switch Label="@L["MediaLinkPreviews"]"
+                          Value="_mediaLinkPreviewsEnabled"
+                          ValueChanged="OnMediaLinkPreviewsChanged"
+                          Class="mt-2" />
+                <span class="text-caption mt-1" Color="secondary">@L["MediaLinkPreviewsHint"]</span>
+            </div>
         </div>
 
         <K7SettingsActionBar IsDirty="IsDirty"

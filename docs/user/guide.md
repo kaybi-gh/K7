@@ -165,6 +165,8 @@ Session **quality** stays in the player menu only (not a saved preference).
 
 Libraries are on Home (and library browse). What you see depends on admin library / profile access, plus your own library exclusions above.
 
+Paste a movie, series, season, episode, album, or artist URL into Discord, Telegram, Slack, or iMessage. The preview shows that title, overview, and poster (unless the admin turned media previews off under Admin -> Experience -> General). Opening the link still requires signing in.
+
 **Explore** lists your library groups as category cards. Tapping a card opens that group's feed by default, or the library browse page when **Settings -> Libraries -> tap / click action** is set to Browse (admin default: Admin -> Library groups). Long-press or right-click on a card still offers both destinations.
 
 **My Space** is your personal corner:

@@ -67,4 +67,26 @@ public class LinkPreviewUrlsTests
         LinkPreviewUrls.CanonicalPage("https://k7.example.com", "/movies/42")
             .Should().Be("https://k7.example.com/movies/42");
     }
+
+    [Test]
+    public void Image_ShouldUseMetadataPicture_WhenIdPresent()
+    {
+        var id = Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddddd");
+        LinkPreviewUrls.Image("https://k7.example.com", id, LinkPreviewUrls.ImageAsset)
+            .Should().Be("https://k7.example.com/api/metadata-pictures/dddddddd-dddd-dddd-dddd-dddddddddddd?size=Medium");
+    }
+
+    [Test]
+    public void Image_ShouldUseFallback_WhenIdMissing()
+    {
+        LinkPreviewUrls.Image("https://k7.example.com", null, LinkPreviewUrls.ImageAsset)
+            .Should().Be("https://k7.example.com/_content/K7.Clients.Shared.UI/assets/og-image.png");
+    }
+
+    [Test]
+    public void IconAsset_ShouldBeSquareAppIcon()
+    {
+        LinkPreviewUrls.IconAsset.Should().Be("_content/K7.Clients.Shared.UI/assets/icon.png");
+        LinkPreviewUrls.ImageAsset.Should().NotBe(LinkPreviewUrls.IconAsset);
+    }
 }

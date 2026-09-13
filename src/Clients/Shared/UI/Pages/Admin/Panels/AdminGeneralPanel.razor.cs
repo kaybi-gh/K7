@@ -10,7 +10,11 @@ namespace K7.Clients.Shared.UI.Pages.Admin.Panels;
 
 public partial class AdminGeneralPanel
 {
-    private sealed record GeneralFormState(string Language, string ThemeCssDataAttribute, bool PlayThemeSongs);
+    private sealed record GeneralFormState(
+        string Language,
+        string ThemeCssDataAttribute,
+        bool PlayThemeSongs,
+        bool MediaLinkPreviewsEnabled);
 
     [Inject] private IServerInfoService ServerInfoService { get; set; } = default!;
     [Inject] private IServerPreferencesService ServerPreferencesService { get; set; } = default!;
@@ -21,12 +25,18 @@ public partial class AdminGeneralPanel
     private VideoPlayerSettingsDto _videoPlayerSettings = new();
     private bool _playThemeSongs = true;
     private bool _savedPlayThemeSongs = true;
+    private bool _mediaLinkPreviewsEnabled = true;
+    private bool _savedMediaLinkPreviewsEnabled = true;
     private bool _isLoading = true;
     private bool _saving;
     private readonly SettingsFormTracker<GeneralFormState> _formTracker = new();
 
     private bool IsDirty =>
-        _formTracker.IsDirty(new GeneralFormState(_defaultLanguage, _defaultTheme.CssDataAttribute, _playThemeSongs));
+        _formTracker.IsDirty(new GeneralFormState(
+            _defaultLanguage,
+            _defaultTheme.CssDataAttribute,
+            _playThemeSongs,
+            _mediaLinkPreviewsEnabled));
 
     protected override async Task OnInitializedAsync()
     {
@@ -43,6 +53,9 @@ public partial class AdminGeneralPanel
                                    ?? new VideoPlayerSettingsDto();
             _playThemeSongs = _videoPlayerSettings.PlayThemeSongs;
 
+            var flags = await ServerPreferencesService.GetServerFeatureFlagsAsync();
+            _mediaLinkPreviewsEnabled = flags.MediaLinkPreviewsEnabled;
+
             CaptureFormState();
         }
         finally
@@ -53,8 +66,13 @@ public partial class AdminGeneralPanel
 
     private void CaptureFormState()
     {
-        _formTracker.Capture(new GeneralFormState(_defaultLanguage, _defaultTheme.CssDataAttribute, _playThemeSongs));
+        _formTracker.Capture(new GeneralFormState(
+            _defaultLanguage,
+            _defaultTheme.CssDataAttribute,
+            _playThemeSongs,
+            _mediaLinkPreviewsEnabled));
         _savedPlayThemeSongs = _playThemeSongs;
+        _savedMediaLinkPreviewsEnabled = _mediaLinkPreviewsEnabled;
     }
 
     private void CancelChanges()
@@ -64,6 +82,7 @@ public partial class AdminGeneralPanel
         _defaultTheme = Themes.FromCssDataAttribute(state.ThemeCssDataAttribute) ?? Themes.DefaultDark;
         _playThemeSongs = state.PlayThemeSongs;
         _videoPlayerSettings.PlayThemeSongs = state.PlayThemeSongs;
+        _mediaLinkPreviewsEnabled = state.MediaLinkPreviewsEnabled;
     }
 
     private void OnDefaultLanguageChanged(string language)
@@ -85,6 +104,12 @@ public partial class AdminGeneralPanel
         StateHasChanged();
     }
 
+    private void OnMediaLinkPreviewsChanged(bool enabled)
+    {
+        _mediaLinkPreviewsEnabled = enabled;
+        StateHasChanged();
+    }
+
     private async Task SaveAsync()
     {
         if (_saving || !IsDirty)
@@ -97,6 +122,12 @@ public partial class AdminGeneralPanel
             await ServerInfoService.UpdateDefaultThemeAsync(_defaultTheme.CssDataAttribute);
             if (_playThemeSongs != _savedPlayThemeSongs)
                 await ServerPreferencesService.UpdateServerVideoPlayerSettingsAsync(_videoPlayerSettings);
+            if (_mediaLinkPreviewsEnabled != _savedMediaLinkPreviewsEnabled)
+            {
+                var current = await ServerPreferencesService.GetServerFeatureFlagsAsync();
+                await ServerPreferencesService.UpdateServerFeatureFlagsAsync(
+                    current with { MediaLinkPreviewsEnabled = _mediaLinkPreviewsEnabled });
+            }
 
             CaptureFormState();
             Snackbar.Add(L["SaveSuccess"], K7Severity.Success);

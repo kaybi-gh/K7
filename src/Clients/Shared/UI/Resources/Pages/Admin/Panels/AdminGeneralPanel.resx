@@ -27,4 +27,7 @@
   <data name="PlayThemeSongs" xml:space="preserve"><value>Activer le thème musical</value></data>
   <data name="PlayThemeSongsHint" xml:space="preserve"><value>Joue le thème en fond sur la page série ou film lorsqu'un fichier thème est disponible. Valeur par défaut pour les utilisateurs sans préférence personnelle.</value></data>
   <data name="SaveSuccess" xml:space="preserve"><value>Paramètres enregistrés</value></data>
+  <data name="MediaLinkPreviewsSection" xml:space="preserve"><value>Aperçus de liens</value></data>
+  <data name="MediaLinkPreviews" xml:space="preserve"><value>Inclure titre et poster</value></data>
+  <data name="MediaLinkPreviewsHint" xml:space="preserve"><value>Quand une URL de film, série ou album est collée dans Discord, Telegram ou iMessage, l'aperçu montre le titre, le synopsis et le poster sans compte. L'application reste derrière le login. Désactivez pour n'afficher que la carte K7.</value></data>
 </root>

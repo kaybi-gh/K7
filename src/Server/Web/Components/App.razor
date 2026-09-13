@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 @using K7.Server.Application.Common.Interfaces
+@using K7.Server.Application.Common.Settings
 @using K7.Server.Application.Features.LinkPreview.Queries.GetLinkPreview
 @using K7.Server.Domain.Settings
 @using K7.Server.Web.Infrastructure
 @using Microsoft.AspNetCore.Components.Endpoints
 @using Microsoft.Extensions.Configuration
 @using Microsoft.Extensions.DependencyInjection
+@using Microsoft.Extensions.Logging
 <html lang="@System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName">
 <head>
     <meta charset="utf-8" />
@@ -23,8 +25,8 @@
     @if (_preview?.PictureId is null)
     {
         <meta property="og:image:type" content="image/png" />
-        <meta property="og:image:width" content="512" />
-        <meta property="og:image:height" content="512" />
+        <meta property="og:image:width" content="@LinkPreviewUrls.ImageWidth" />
+        <meta property="og:image:height" content="@LinkPreviewUrls.ImageHeight" />
     }
     <meta property="og:image:alt" content="@PageTitle" />
     <meta name="twitter:card" content="@TwitterCard" />
@@ -46,9 +48,9 @@
     <link rel="modulepreload" href="@Assets["_content/K7.Clients.Shared.UI/js/carousel.js"]" />
     <link rel="modulepreload" href="@Assets["_content/K7.Clients.Shared.UI/js/home-restore.js"]" />
     <link rel="modulepreload" href="@Assets["_content/K7.Clients.Shared.UI/js/vertical-carousel.js"]" />
-    <link rel="icon" type="image/png" sizes="512x512" href="@Assets[LinkPreviewUrls.ImageAsset]" />
+    <link rel="icon" type="image/png" sizes="512x512" href="@Assets[LinkPreviewUrls.IconAsset]" />
     <link rel="icon" type="image/svg+xml" href="@Assets["_content/K7.Clients.Shared.UI/assets/favicon.svg"]" />
-    <link rel="apple-touch-icon" href="@Assets[LinkPreviewUrls.ImageAsset]" />
+    <link rel="apple-touch-icon" href="@Assets[LinkPreviewUrls.IconAsset]" />
     @if (IsAuthSsrPath)
     {
         <link rel="modulepreload" href="@Assets["_framework/blazor.web.js"]" />
@@ -122,6 +124,9 @@
     [Inject]
     private IStringLocalizer<App> L { get; set; } = default!;
 
+    [Inject]
+    private ILogger<App> Logger { get; set; } = default!;
+
     [CascadingParameter]
     private HttpContext HttpContext { get; set; } = default!;
 
@@ -134,7 +139,7 @@
 
     private string Description => L["Description"];
 
-    private string PageTitle => _preview?.Title ?? ServerName;
+    private string PageTitle => LinkPreviewDocument.ResolveTitle(ServerName, Description, _preview);
 
     private string PageDescription =>
         !string.IsNullOrWhiteSpace(_preview?.Description) ? _preview.Description : Description;
@@ -145,11 +150,12 @@
 
     private string CanonicalUrl => LinkPreviewUrls.CanonicalPage(CanonicalOrigin, HttpContext.Request.Path);
 
-    private string ImageUrl => _preview?.PictureId is { } pictureId
-        ? LinkPreviewUrls.Combine(CanonicalOrigin, LinkPreviewUrls.MetadataPicturePath(pictureId))
-        : LinkPreviewUrls.Combine(CanonicalOrigin, Assets[LinkPreviewUrls.ImageAsset]);
+    private string ImageUrl => LinkPreviewUrls.Image(
+        CanonicalOrigin,
+        _preview?.PictureId,
+        Assets[LinkPreviewUrls.ImageAsset]);
 
-    private string TwitterCard => _preview?.PictureId is not null ? "summary_large_image" : "summary";
+    private string TwitterCard => "summary_large_image";
 
     protected override async Task OnInitializedAsync()
     {
@@ -162,8 +168,19 @@
         if (!LinkPreviewRoute.TryParse(path, out _))
             return;
 
-        var sender = scope.ServiceProvider.GetRequiredService<ISender>();
-        _preview = await sender.Send(new GetLinkPreviewQuery(path), HttpContext.RequestAborted);
+        var flags = await serverSettings.GetFeatureFlagsAsync(HttpContext.RequestAborted);
+        if (!flags.MediaLinkPreviewsEnabled)
+            return;
+
+        try
+        {
+            var sender = scope.ServiceProvider.GetRequiredService<ISender>();
+            _preview = await sender.Send(new GetLinkPreviewQuery(path), HttpContext.RequestAborted);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Link preview lookup failed for {Path}", path);
+        }
     }
 
     private IComponentRenderMode? PageRenderMode => IsAuthSsrPath

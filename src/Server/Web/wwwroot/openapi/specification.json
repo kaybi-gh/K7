@@ -20396,6 +20396,9 @@
           },
           "federationInvitationsEnabled": {
             "type": "boolean"
+          },
+          "mediaLinkPreviewsEnabled": {
+            "type": "boolean"
           }
         }
       },

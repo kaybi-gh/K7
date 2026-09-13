@@ -9,9 +9,15 @@ Install first: [install.md](install.md). Day-to-day features: [operating.md](ope
 | Key | Env | Default | Description |
 |---|---|---|---|
 | `BaseUrl` | `BaseUrl` | `https://localhost:7443` | Public URL of this instance. Must match what browsers and federation peers use. Required for OIDC redirects and peering. |
-| `Server:Name` | `Server__Name` | *(empty)* | Display name for federation invitations and shared-URL previews (title). Empty: federation uses the `BaseUrl` host then the machine name, previews use K7. Media pages (`/movies/...`, `/series/...`, music artist/album) add title, overview, and poster. |
+| `Server:Name` | `Server__Name` | *(empty)* | Display name for federation invitations and shared-URL previews (title). Empty: federation uses the `BaseUrl` host then the machine name, previews use K7. Media pages (`/movies/...`, `/series/...`, music artist/album) add title, overview, and poster for unauthenticated crawlers (Discord, Telegram, iMessage) without a login redirect. |
 | `Cors:Origins` | `Cors__Origins` | `[]` | Allowed CORS origins. Non-empty: only those. Empty + Development: loopback. Empty + Production: deny all. Needed if WASM is hosted on another origin. |
 | `AllowedHosts` | `AllowedHosts` | `*` | Standard ASP.NET host filtering. `*` disables host filtering; set explicit hostnames in production behind a known public URL. |
+
+## Shared URL previews
+
+Discord, Telegram, Slack, and iMessage fetch the media URL **without** a session cookie. K7 answers those GETs **before** login redirection, with a small public HTML document. Recipients still sign in to open the app. The `og:image` host must be reachable from the internet (reverse proxy TLS plus forwarded `Host` / `X-Forwarded-Proto`, or `BaseUrl` when Host is missing).
+
+Media title, overview, and poster are **on by default**. Turn them off under **Admin -> Experience -> General** (`MediaLinkPreviewsEnabled`) to keep crawlers on the 1200x630 K7 card only. The public HTML (and no login redirect) stays either way.
 
 ## Database
 
@@ -251,7 +257,7 @@ While setup is incomplete, every server restart logs a Warning banner containing
 
 Configured in the admin UI (or APIs), not via `appsettings.json`:
 
-- Feature flags (including federation)
+- Feature flags (federation, media link previews)
 - Transcode settings, background task limits
 - Server-wide default playback / home / track-selection preferences
 - Notification (webhook) rules

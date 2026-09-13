@@ -110,6 +110,9 @@ try
     app.UseCors();
     app.UseMiddleware<SignalRAccessTokenMiddleware>();
     app.UseAuthentication();
+    // Before UseAuthorization: Blazor [Authorize] pages 302 crawlers to /sign-in,
+    // so Discord would scrape the login shell instead of the media preview.
+    app.UseLinkPreviewDocuments();
     app.UseAuthorization();
     app.UseAuthFlowLogging();
     app.UseAntiforgery();

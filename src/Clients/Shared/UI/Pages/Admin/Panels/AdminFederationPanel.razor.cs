@@ -1,5 +1,5 @@
-using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Helpers;
+using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Clients.Shared.Services;
 using K7.Clients.Shared.UI.Extensions;
@@ -7,8 +7,8 @@ using K7.Clients.Shared.UI.Pages.Admin.Dialogs;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos;
 using K7.Shared.Dtos.Entities;
-using K7.Shared.Dtos.Requests;
 using K7.Shared.Dtos.Federation.Social;
+using K7.Shared.Dtos.Requests;
 using K7.Shared.Interfaces;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Logging;
@@ -196,11 +196,13 @@ public partial class AdminFederationPanel : IDisposable
     {
         try
         {
-            await ServerPreferencesService.UpdateServerFeatureFlagsAsync(new ServerFeatureFlagsDto
-            {
-                FederationEnabled = _federationEnabled,
-                FederationInvitationsEnabled = _invitationsEnabled
-            });
+            var current = await ServerPreferencesService.GetServerFeatureFlagsAsync();
+            await ServerPreferencesService.UpdateServerFeatureFlagsAsync(
+                current with
+                {
+                    FederationEnabled = _federationEnabled,
+                    FederationInvitationsEnabled = _invitationsEnabled
+                });
         }
         catch
         {
