@@ -90,7 +90,7 @@ Typical sequence for a returning multi-user device: Android DecorView Lottie pla
 
 Android `MainActivity` ignores restored instance state so a TV/process death cannot paint a frozen Blazor snapshot (visible select-profile, dead remote). `OnResume` re-enables the WebView, dismisses leftover splash overlays, re-inits spatial nav, and recreates the activity if the JS bridge is gone. `AppLifecycleGate` suppresses music UI renders while the host is paused so the mini player does not replay every track change when the screen turns back on.
 
-On Android the Lottie is attached to the activity DecorView so it stays above WebView / MediaElement and survives `BlazorPage` construction. Windows / iOS keep `SKLottieView` on the Blazor overlay.
+On Android the Lottie is attached to the activity DecorView so it stays above WebView / MediaElement and survives `BlazorPage` construction. Windows / iOS keep `SKLottieView` on the Blazor overlay. The Android 12+ system splash icon is always a circle, so `MauiSplashScreen` is brand color only (`#0d0907`). The 128x70 wordmark is the overlay (`k7_logo` then `splash.json`), not the circular tile.
 
 ## DesignSystem
 

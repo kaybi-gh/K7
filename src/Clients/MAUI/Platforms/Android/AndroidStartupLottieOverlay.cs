@@ -17,6 +17,11 @@ namespace K7.Clients.MAUI.Platforms.Android;
 /// </summary>
 internal static class AndroidStartupLottieOverlay
 {
+    // splash.json is 128x70. A square box stretched the mark and Android 12
+    // then clipped it to a circle (sides cut off).
+    private const int LogoWidthDip = 220;
+    private const int LogoHeightDip = 120;
+
     private static FrameLayout? _root;
     private static ImageView? _logo;
     private static SplashSkottieView? _lottie;
@@ -109,8 +114,10 @@ internal static class AndroidStartupLottieOverlay
 
     private static FrameLayout.LayoutParams CenteredLogoParams(Context context)
     {
-        var px = (int)TypedValue.ApplyDimension(ComplexUnitType.Dip, 120, context.Resources!.DisplayMetrics);
-        return new FrameLayout.LayoutParams(px, px)
+        var metrics = context.Resources!.DisplayMetrics;
+        var widthPx = (int)TypedValue.ApplyDimension(ComplexUnitType.Dip, LogoWidthDip, metrics);
+        var heightPx = (int)TypedValue.ApplyDimension(ComplexUnitType.Dip, LogoHeightDip, metrics);
+        return new FrameLayout.LayoutParams(widthPx, heightPx)
         {
             Gravity = GravityFlags.Center
         };
@@ -220,7 +227,7 @@ internal sealed class SplashSkottieView : SKCanvasView
                 _animation.SeekFrameTime(t);
             }
 
-            _animation.Render(canvas, new SKRect(0, 0, e.Info.Width, e.Info.Height));
+            _animation.Render(canvas, FitAnimationRect(e.Info.Width, e.Info.Height, _animation.Size));
         }
 
         if (!_firstFrameRaised)
@@ -228,5 +235,20 @@ internal sealed class SplashSkottieView : SKCanvasView
             _firstFrameRaised = true;
             FirstFramePainted?.Invoke();
         }
+    }
+
+    private static SKRect FitAnimationRect(int canvasWidth, int canvasHeight, SKSize animationSize)
+    {
+        var animW = animationSize.Width;
+        var animH = animationSize.Height;
+        if (animW <= 0 || animH <= 0)
+            return new SKRect(0, 0, canvasWidth, canvasHeight);
+
+        var scale = Math.Min(canvasWidth / animW, canvasHeight / animH);
+        var width = animW * scale;
+        var height = animH * scale;
+        var left = (canvasWidth - width) / 2f;
+        var top = (canvasHeight - height) / 2f;
+        return new SKRect(left, top, left + width, top + height);
     }
 }
