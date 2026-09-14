@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/sdk:10.0-noble@sha256:4beef5b8919dcaa2dc924233bd069257e883cc7a061e09088a97d152d6a48510 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0-noble@sha256:2fa828c68761b1b8c23d7662dc134421b9d3b59fe1425fdbc80804e390cdb24d AS build
 WORKDIR /src
 
 RUN dotnet tool install --global Microsoft.Web.LibraryManager.Cli
@@ -51,7 +51,7 @@ RUN apt-get update \
 EXPOSE 7080 7443
 
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble@sha256:011bb5f30180717b1c8b65822ff2c99bcb96bc65af0164589751b83c7b4949f7 AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble@sha256:6a94333d37514e385650a3c81a55e5350b67253dbe136e9cf17e499c35606a8c AS runtime
 # va-driver-all pulls arch-appropriate VAAPI drivers (Intel packages are amd64/i386 only).
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
