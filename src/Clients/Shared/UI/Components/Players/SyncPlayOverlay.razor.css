@@ -45,7 +45,7 @@
 
 .syncplay-waiting {
     font-size: var(--text-xs);
-    color: var(--color-on-surface-variant);
+    color: var(--color-text-secondary);
     animation: pulse 1.5s ease-in-out infinite;
 }
 
@@ -70,7 +70,7 @@
     gap: 0.25rem;
     background: none;
     border: none;
-    color: var(--color-on-surface);
+    color: var(--color-text);
     padding: 0.5rem;
     border-radius: var(--radius-full);
     cursor: pointer;

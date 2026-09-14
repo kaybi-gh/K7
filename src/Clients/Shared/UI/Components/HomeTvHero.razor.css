@@ -79,7 +79,7 @@
     font-weight: 700;
     line-height: 1.15;
     color: var(--color-text-on-media);
-    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+    text-shadow: var(--media-copy-shadow);
     max-width: 600px;
     display: -webkit-box;
     -webkit-line-clamp: 2;
@@ -92,7 +92,7 @@
     font-size: var(--text-base);
     font-weight: 500;
     color: var(--color-text-on-media-muted);
-    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 0, 0, 0.4);
+    text-shadow: var(--media-copy-shadow);
     white-space: nowrap;
     text-overflow: ellipsis;
     overflow: hidden;
@@ -104,7 +104,7 @@
     gap: 14px;
     font-size: var(--text-base);
     color: var(--color-text-on-media-muted);
-    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 0, 0, 0.4);
+    text-shadow: var(--media-copy-shadow);
 }
 
 .home-tv-hero__meta-item {
@@ -122,7 +122,7 @@
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    color: var(--color-warning, #f5c518);
+    color: var(--color-warning);
 }
 
 .home-tv-hero__genres {
@@ -139,7 +139,7 @@
     margin: 0;
     font-size: var(--text-xl);
     color: var(--color-text-on-media-muted);
-    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 0, 0, 0.4);
+    text-shadow: var(--media-copy-shadow);
     line-height: 1.6;
     max-width: 600px;
     display: -webkit-box;

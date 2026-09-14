@@ -28,6 +28,6 @@
 
 .syncplay-join-card p {
     margin: 0;
-    color: var(--color-on-surface-variant);
+    color: var(--color-text-secondary);
     text-align: center;
 }

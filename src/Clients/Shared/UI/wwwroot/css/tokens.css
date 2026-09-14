@@ -13,6 +13,7 @@
     --text-xs:   0.75rem;  /* 12px */
     --text-sm:   0.875rem; /* 14px */
     --text-base: 1rem;     /* 16px */
+    --text-md:   var(--text-base);
     --text-lg:   1.125rem; /* 18px */
     --text-xl:   1.25rem;  /* 20px */
     --text-2xl:  1.5rem;   /* 24px */
@@ -59,11 +60,12 @@
     --radius-2xl:  24px;
     --radius-full: 9999px;
 
-    /* --- Shadows --- */
-    --shadow-sm:  0 1px 3px rgba(0,0,0,.3), 0 1px 2px rgba(0,0,0,.2);
-    --shadow-md:  0 4px 6px rgba(0,0,0,.3), 0 2px 4px rgba(0,0,0,.2);
-    --shadow-lg:  0 10px 15px rgba(0,0,0,.4), 0 4px 6px rgba(0,0,0,.3);
-    --shadow-xl:  0 20px 25px rgba(0,0,0,.5), 0 10px 10px rgba(0,0,0,.3);
+    /* --- Shadows (themes override --shadow-color and the recipes) --- */
+    --shadow-color: #000;
+    --shadow-sm:  0 1px 3px color-mix(in srgb, var(--shadow-color) 30%, transparent), 0 1px 2px color-mix(in srgb, var(--shadow-color) 20%, transparent);
+    --shadow-md:  0 4px 6px color-mix(in srgb, var(--shadow-color) 30%, transparent), 0 2px 4px color-mix(in srgb, var(--shadow-color) 20%, transparent);
+    --shadow-lg:  0 10px 15px color-mix(in srgb, var(--shadow-color) 40%, transparent), 0 4px 6px color-mix(in srgb, var(--shadow-color) 30%, transparent);
+    --shadow-xl:  0 20px 25px color-mix(in srgb, var(--shadow-color) 50%, transparent), 0 10px 10px color-mix(in srgb, var(--shadow-color) 30%, transparent);
 
     /* --- Transitions --- */
     --duration-fast:   120ms;

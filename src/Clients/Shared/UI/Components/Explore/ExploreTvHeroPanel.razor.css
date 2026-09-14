@@ -24,7 +24,7 @@
     font-size: var(--text-2xl);
     font-weight: 600;
     color: var(--color-text-on-media);
-    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 0, 0, 0.4);
+    text-shadow: var(--media-copy-shadow);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;

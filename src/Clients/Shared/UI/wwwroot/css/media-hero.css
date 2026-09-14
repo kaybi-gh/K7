@@ -18,7 +18,6 @@
     --media-copy: var(--color-text-on-media);
     --media-copy-muted: var(--color-text-on-media-muted);
     --media-copy-accent: var(--color-text-on-media-accent, var(--color-text-on-media));
-    --media-copy-shadow: 0 1px 2px rgba(0, 0, 0, 0.92);
     position: relative;
     display: flex;
     flex-direction: column;
@@ -269,7 +268,7 @@
         margin: 0;
         text-align: center;
         color: var(--color-text-on-media);
-        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.92);
+        text-shadow: var(--media-copy-shadow);
     }
 }
 
@@ -323,9 +322,8 @@
     }
 }
 
-/* Light theme: same scrim opacities as dark, beige instead of black.
-   Backgrounds are duplicated here so they beat scoped rgba even if the
-   MediaPageBackdrop bundle is stale. --media-scrim covers a rebuilt bundle. */
+/* Light heroes inherit --media-scrim from the theme. Keep position so
+   scrims still paint if a scoped MediaPageBackdrop bundle is stale. */
 html[data-theme="default-light"] .media-page-backdrop {
     --media-scrim: var(--color-bg);
 }
@@ -337,154 +335,22 @@ html[data-theme="default-light"] .media-page-backdrop__scrim-bottom {
     z-index: 1;
 }
 
-html[data-theme="default-light"] .media-page-backdrop__scrim-side {
-    background:
-        linear-gradient(
-            to right,
-            color-mix(in srgb, var(--color-bg) 70%, transparent) 0%,
-            color-mix(in srgb, var(--color-bg) 45%, transparent) 22%,
-            color-mix(in srgb, var(--color-bg) 20%, transparent) 42%,
-            color-mix(in srgb, var(--color-bg) 6%, transparent) 58%,
-            transparent 75%
-        ),
-        linear-gradient(
-            to left,
-            color-mix(in srgb, var(--color-bg) 42%, transparent) 0%,
-            color-mix(in srgb, var(--color-bg) 18%, transparent) 40%,
-            transparent 100%
-        );
-}
-
-html[data-theme="default-light"] .media-page-backdrop__scrim-bottom {
-    background: linear-gradient(
-        to top,
-        color-mix(in srgb, var(--color-bg) 62%, transparent) 0%,
-        color-mix(in srgb, var(--color-bg) 30%, transparent) 24%,
-        color-mix(in srgb, var(--color-bg) 10%, transparent) 44%,
-        transparent 72%
-    );
-}
-
 html[data-theme="default-light"] .media-page-backdrop__scroll-fade {
     background: var(--color-bg);
-}
-
-html[data-theme="default-light"] .media-page-backdrop.media-page-backdrop--soft-still .media-page-backdrop__scrim-side {
-    background:
-        linear-gradient(
-            to right,
-            color-mix(in srgb, var(--color-bg) 84%, transparent) 0%,
-            color-mix(in srgb, var(--color-bg) 66%, transparent) 26%,
-            color-mix(in srgb, var(--color-bg) 42%, transparent) 46%,
-            color-mix(in srgb, var(--color-bg) 20%, transparent) 62%,
-            transparent 84%
-        ),
-        linear-gradient(
-            to left,
-            color-mix(in srgb, var(--color-bg) 48%, transparent) 0%,
-            color-mix(in srgb, var(--color-bg) 20%, transparent) 42%,
-            transparent 100%
-        );
-}
-
-html[data-theme="default-light"] .media-page-backdrop.media-page-backdrop--soft-still .media-page-backdrop__scrim-bottom {
-    background: linear-gradient(
-        to top,
-        color-mix(in srgb, var(--color-bg) 80%, transparent) 0%,
-        color-mix(in srgb, var(--color-bg) 52%, transparent) 28%,
-        color-mix(in srgb, var(--color-bg) 26%, transparent) 50%,
-        transparent 78%
-    );
-}
-
-html[data-theme="default-light"] .media-page-backdrop.media-page-backdrop--soft-still::after {
-    background: radial-gradient(
-        ellipse 90% 75% at 50% 28%,
-        transparent 18%,
-        color-mix(in srgb, var(--color-bg) 28%, transparent) 58%,
-        color-mix(in srgb, var(--color-bg) 52%, transparent) 100%
-    );
-}
-
-@media (max-width: 599.98px) {
-    html[data-theme="default-light"] .media-page-backdrop__scrim-side {
-        background:
-            linear-gradient(
-                to right,
-                color-mix(in srgb, var(--color-bg) 66%, transparent) 0%,
-                color-mix(in srgb, var(--color-bg) 22%, transparent) 12%,
-                transparent 26%
-            ),
-            linear-gradient(
-                to left,
-                color-mix(in srgb, var(--color-bg) 66%, transparent) 0%,
-                color-mix(in srgb, var(--color-bg) 22%, transparent) 12%,
-                transparent 26%
-            );
-    }
-
-    html[data-theme="default-light"] .media-page-backdrop__scrim-bottom {
-        background:
-            radial-gradient(
-                ellipse 140% 90% at 50% 100%,
-                color-mix(in srgb, var(--color-bg) 72%, transparent) 0%,
-                color-mix(in srgb, var(--color-bg) 38%, transparent) 32%,
-                transparent 64%
-            ),
-            linear-gradient(
-                to top,
-                var(--media-wash-color, var(--color-bg)) 0%,
-                color-mix(in srgb, var(--media-wash-color, var(--color-bg)) 55%, transparent) 40%,
-                transparent 68%
-            );
-    }
-
-    html[data-theme="default-light"] .media-page-backdrop.media-page-backdrop--soft-still .media-page-backdrop__scrim-side {
-        background:
-            linear-gradient(
-                to right,
-                color-mix(in srgb, var(--color-bg) 78%, transparent) 0%,
-                color-mix(in srgb, var(--color-bg) 34%, transparent) 14%,
-                transparent 30%
-            ),
-            linear-gradient(
-                to left,
-                color-mix(in srgb, var(--color-bg) 78%, transparent) 0%,
-                color-mix(in srgb, var(--color-bg) 34%, transparent) 14%,
-                transparent 30%
-            );
-    }
-
-    html[data-theme="default-light"] .media-page-backdrop.media-page-backdrop--soft-still .media-page-backdrop__scrim-bottom {
-        background:
-            radial-gradient(
-                ellipse 140% 90% at 50% 100%,
-                color-mix(in srgb, var(--color-bg) 82%, transparent) 0%,
-                color-mix(in srgb, var(--color-bg) 48%, transparent) 34%,
-                transparent 68%
-            ),
-            linear-gradient(
-                to top,
-                var(--media-wash-color, var(--color-bg)) 0%,
-                color-mix(in srgb, var(--media-wash-color, var(--color-bg)) 62%, transparent) 42%,
-                transparent 72%
-            );
-    }
 }
 
 [data-theme="default-light"] .media-hero .media-hero-title,
 [data-theme="default-light"] .media-hero .media-logo-title {
     color: var(--color-text);
-    text-shadow: none;
+    text-shadow: var(--media-copy-shadow);
 }
 
 [data-theme="default-light"] .media-hero-body {
     --media-copy: var(--color-text);
     --media-copy-muted: var(--color-text-secondary);
     --media-copy-accent: var(--color-accent-text);
-    --media-copy-shadow: none;
     color: var(--color-text);
-    text-shadow: none;
+    text-shadow: var(--media-copy-shadow);
 }
 
 [data-theme="default-light"] .media-hero-body .k7-icon-btn,
@@ -510,5 +376,5 @@ html[data-theme="default-light"] .media-page-backdrop.media-page-backdrop--soft-
 }
 
 html[data-theme="default-light"] .artist-name {
-    text-shadow: 0 2px 10px var(--color-bg);
+    text-shadow: var(--media-copy-shadow);
 }

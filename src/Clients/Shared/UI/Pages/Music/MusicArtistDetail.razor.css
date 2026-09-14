@@ -60,7 +60,7 @@
 .artist-name {
     font-weight: 800;
     letter-spacing: -1px;
-    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+    text-shadow: var(--media-copy-shadow);
     min-width: 0;
 }
 

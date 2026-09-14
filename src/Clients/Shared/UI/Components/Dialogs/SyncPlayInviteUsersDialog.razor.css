@@ -33,7 +33,7 @@
 
 .syncplay-invite-device {
     font-size: var(--text-sm);
-    color: var(--color-on-surface-variant);
+    color: var(--color-text-secondary);
     white-space: nowrap;
 }
 
@@ -42,20 +42,20 @@
     padding: 0.125rem 0.5rem;
     border-radius: var(--radius-full);
     background: var(--color-surface-variant);
-    color: var(--color-on-surface-variant);
+    color: var(--color-text-secondary);
 }
 
 .syncplay-invite-badge.sent {
-    background: var(--color-primary-container);
-    color: var(--color-on-primary-container);
+    background: color-mix(in srgb, var(--color-accent) 15%, transparent);
+    color: var(--color-text);
     display: inline-flex;
     align-items: center;
     gap: 0.25rem;
 }
 
 .syncplay-invite-badge.error {
-    background: var(--color-error-container);
-    color: var(--color-on-error-container);
+    background: color-mix(in srgb, var(--color-error) 15%, transparent);
+    color: var(--color-error);
     display: inline-flex;
     align-items: center;
     gap: 0.25rem;

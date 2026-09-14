@@ -14,11 +14,11 @@
 .syncplay-invitation-text {
     font-size: var(--text-sm);
     line-height: 1.4;
-    color: var(--color-on-surface);
+    color: var(--color-text);
 }
 
 .syncplay-invitation-device {
-    color: var(--color-on-surface-variant);
+    color: var(--color-text-secondary);
     font-size: var(--text-sm);
 }
 
@@ -28,7 +28,7 @@
     align-items: center;
     gap: 0.375rem;
     font-size: var(--text-sm);
-    color: var(--color-on-surface-variant);
+    color: var(--color-text-secondary);
 }
 
 .syncplay-invitation-error {

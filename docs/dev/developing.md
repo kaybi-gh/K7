@@ -116,7 +116,7 @@ Standalone URL: see `src/Clients/DesignSystem/Properties/launchSettings.json` (t
 6. Run DesignSystem and confirm the home page no longer flags the component as missing.
 7. Extend `Clients.DesignSystem.SmokeTests` only if new host DI is required for startup.
 
-Visual rules: [design.md](design.md).
+Visual rules and the public theme contract: [design.md](design.md).
 
 ## Localization
 

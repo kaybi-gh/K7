@@ -257,16 +257,16 @@
     margin: 0 0 4px;
     padding-inline-start: var(--carousel-margin-start);
     color: var(--color-text-on-media);
-    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 0, 0, 0.4);
+    text-shadow: var(--media-copy-shadow);
 }
 
 .season-tv ::deep .carousel-wrapper h6 {
     color: var(--color-text-on-media);
-    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 0, 0, 0.4);
+    text-shadow: var(--media-copy-shadow);
 }
 
 .season-tv ::deep .media-card-title,
 .season-tv ::deep .media-card-subtitle {
     color: var(--color-text-on-media);
-    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+    text-shadow: var(--media-copy-shadow);
 }

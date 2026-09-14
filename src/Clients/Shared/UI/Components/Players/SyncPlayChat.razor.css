@@ -50,7 +50,7 @@
 }
 
 .syncplay-chat-text {
-    color: var(--color-on-surface);
+    color: var(--color-text);
     word-break: break-word;
 }
 
@@ -60,7 +60,7 @@
 }
 
 .syncplay-chat-message--system .syncplay-chat-text {
-    color: var(--color-on-surface-variant);
+    color: var(--color-text-secondary);
     font-size: var(--text-xs);
 }
 
@@ -77,11 +77,11 @@
     background: transparent;
     border: none;
     outline: none;
-    color: var(--color-on-surface);
+    color: var(--color-text);
     font-size: var(--text-sm);
     padding: 0.25rem;
 }
 
 .syncplay-chat-input input::placeholder {
-    color: var(--color-on-surface-variant);
+    color: var(--color-text-secondary);
 }
