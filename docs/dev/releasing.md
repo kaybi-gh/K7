@@ -11,7 +11,7 @@
    - `K7-{version}-ios-sideload.ipa` - ad-hoc-signed iOS client for AltStore / SideStore / Sideloadly, plus AltStore source `apps.json`
 5. Maintainers **publish the draft** (human / non-`GITHUB_TOKEN`). That triggers **sync-version** and **docker-release**.
 6. **sync-version** rewrites `<Version>` in `Directory.Build.props` to match the tag and commits `chore: sync version to ...`.
-7. **docker-release** builds and pushes `ghcr.io/kaybi-gh/k7` with semver tags and `latest`, passing `APP_VERSION` as a Docker build-arg.
+7. **docker-release** builds and pushes `ghcr.io/kaybi-gh/k7` and `ghcr.io/kaybi-gh/k7-import` with semver tags and `latest`, passing `APP_VERSION` as a Docker build-arg.
 
 Example:
 
@@ -49,7 +49,8 @@ Client assets land on the draft; publishing the draft triggers **docker-release*
 
 | Artifact | Path / reference |
 |---|---|
-| Docker | `ghcr.io/kaybi-gh/k7:$RESOLVED_VERSION` (also `latest`) |
+| Docker (server) | `ghcr.io/kaybi-gh/k7:$RESOLVED_VERSION` (also `latest`) |
+| Docker (import) | `ghcr.io/kaybi-gh/k7-import:$RESOLVED_VERSION` (also `latest`) |
 | Android | Release asset `K7-{version}-android.apk` |
 | Windows | Release asset `K7-{version}-win-x64.zip` |
 | iOS | Release assets `K7-{version}-ios-sideload.ipa`, `apps.json` |
@@ -78,11 +79,12 @@ If secrets are missing, CI generates an ephemeral keystore (sideload only; signa
 
 `.github/labeler.yml` via `label-pr.yml`: `server`, `clients`, `ci`, `tests`, etc. release-drafter also autolabels from Conventional Commit prefixes.
 
-## Docker image
+## Docker images
 
 | Item | Value |
 |---|---|
-| Image | `ghcr.io/kaybi-gh/k7` |
+| Server image | `ghcr.io/kaybi-gh/k7` (`Dockerfile`) |
+| Import image | `ghcr.io/kaybi-gh/k7-import` (`tools/K7.Import/Dockerfile`) |
 | Trigger | Published GitHub Release |
 | Build arg | `APP_VERSION` -> `dotnet publish -p:Version=...` |
 

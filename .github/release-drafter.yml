@@ -19,7 +19,8 @@ template: |
 
   ## Artifacts
 
-  - **Docker:** `ghcr.io/kaybi-gh/k7:$RESOLVED_VERSION`
+  - **Docker (server):** `ghcr.io/kaybi-gh/k7:$RESOLVED_VERSION`
+  - **Docker (import):** `ghcr.io/kaybi-gh/k7-import:$RESOLVED_VERSION`
   - **Android:** `K7-$RESOLVED_VERSION-android.apk`
   - **Windows:** `K7-$RESOLVED_VERSION-win-x64.zip`
   - **iOS:** `K7-$RESOLVED_VERSION-ios-sideload.ipa` (AltStore source: `apps.json`)

@@ -181,7 +181,7 @@ Pin a semver tag in production. Breaking changes are called out in GitHub Releas
 
 ### Migrating from another media server
 
-Use the import tool: [tools/K7.Import/README.md](../../tools/K7.Import/README.md).
+Use the import tool: [tools/K7.Import/README.md](../../tools/K7.Import/README.md). Prefer the one-shot Docker image `ghcr.io/kaybi-gh/k7-import` if you do not have the .NET SDK.
 
 **Back up the database first.** The import tool has no rollback; a failed or unwanted import is recovered by restoring that backup (see [Backup and troubleshooting](backup-and-troubleshooting.md)).
 

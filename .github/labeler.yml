@@ -5,6 +5,7 @@ server:
           - 'Dockerfile'
           - 'entrypoint.sh'
           - 'docker-compose*.yaml'
+          - 'tools/K7.Import/**'
 
 clients:
   - changed-files:

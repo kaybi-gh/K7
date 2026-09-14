@@ -85,6 +85,53 @@ Pass both `--spotify-data-dir` and `--source-api-key` for history import: the ex
 
 ## Installation
 
+### Docker (recommended without the .NET SDK)
+
+Published on GHCR with the same semver tags as the server image (`latest`, `x.y.z`, ...):
+
+```bash
+docker pull ghcr.io/kaybi-gh/k7-import:latest
+```
+
+One-shot run (`-it` is required for the K7 device-code login prompt):
+
+```bash
+docker run --rm -it \
+  ghcr.io/kaybi-gh/k7-import:latest \
+  --source plex \
+  --source-url http://host.docker.internal:32400 \
+  --source-api-key "your-plex-token" \
+  --k7-url http://host.docker.internal:7080
+```
+
+On Linux, prefer `--network host` (or replace `host.docker.internal` with the host LAN IP) so the container can reach Plex / K7 on the host.
+
+Mount host files when you need `--plex-db`, `--spotify-data-dir`, or `--report`:
+
+```bash
+docker run --rm -it \
+  -v "$PWD/plex-db:/data:ro" \
+  -v "$PWD/out:/out" \
+  ghcr.io/kaybi-gh/k7-import:latest \
+  --source plex \
+  --source-url http://host.docker.internal:32400 \
+  --source-api-key "your-plex-token" \
+  --k7-url http://host.docker.internal:7080 \
+  --plex-db /data/com.plexapp.plugins.library.db \
+  --dry-run \
+  --report /out/plex-dry-run.txt
+```
+
+Build the image locally from the repo root:
+
+```bash
+docker build -f tools/K7.Import/Dockerfile -t k7-import:local .
+```
+
+Same CLI flags as the native binary. Back up the database first (see below).
+
+### From source
+
 ```bash
 dotnet build tools/K7.Import/K7.Import.csproj -c Release
 ```

@@ -555,4 +555,4 @@ When disabled, AI discovery stays hidden; basic radios still work. User features
 
 ### Import from other servers
 
-[tools/K7.Import/README.md](../../tools/K7.Import/README.md) - import from other libraries and services. Back up the database first. There is no import undo (see [Backup and troubleshooting](backup-and-troubleshooting.md)).
+[tools/K7.Import/README.md](../../tools/K7.Import/README.md) - import from other libraries and services (also available as `ghcr.io/kaybi-gh/k7-import`). Back up the database first. There is no import undo (see [Backup and troubleshooting](backup-and-troubleshooting.md)).
