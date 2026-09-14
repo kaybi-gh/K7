@@ -853,7 +853,7 @@ public sealed class ImportCommand
                 }
             }
 
-            var tempUsername = $"{sourceType}-{sourceUser.Name.ToLowerInvariant().Replace(' ', '-')}";
+            var tempUsername = TempUsername.FromSource(sourceType, sourceUser.Name);
             var existingTemp = k7Users.FirstOrDefault(u =>
                 string.Equals(u.UserName, tempUsername, StringComparison.OrdinalIgnoreCase));
 
@@ -883,16 +883,32 @@ public sealed class ImportCommand
                 continue;
             }
 
-            var created = await k7Client.CreateUserAsync(tempUsername, "User", cancellationToken);
-            k7Users.Add(created);
-            plans.Add(new UserPlan
+            try
             {
-                Source = sourceUser,
-                K7UserId = created.Id,
-                TargetUsername = tempUsername,
-                Kind = UserMappingKind.CreatedTemp
-            });
-            AnsiConsole.MarkupLine($"[green]Created temp K7 user '{tempUsername}'[/]");
+                var created = await k7Client.CreateUserAsync(tempUsername, "User", cancellationToken);
+                k7Users.Add(created);
+                plans.Add(new UserPlan
+                {
+                    Source = sourceUser,
+                    K7UserId = created.Id,
+                    TargetUsername = tempUsername,
+                    Kind = UserMappingKind.CreatedTemp
+                });
+                AnsiConsole.MarkupLine($"[green]Created temp K7 user '{tempUsername}'[/]");
+            }
+            catch (HttpRequestException ex)
+            {
+                plans.Add(new UserPlan
+                {
+                    Source = sourceUser,
+                    K7UserId = Guid.Empty,
+                    TargetUsername = tempUsername,
+                    Kind = UserMappingKind.Skipped,
+                    SkipReason = $"temp user create failed: {ex.Message}"
+                });
+                AnsiConsole.MarkupLine(
+                    $"[yellow]Failed to create temp user '{tempUsername}' for {sourceUser.Name}: {Markup.Escape(ex.Message)}. Skipping.[/]");
+            }
         }
 
         return plans;

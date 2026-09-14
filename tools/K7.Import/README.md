@@ -248,7 +248,7 @@ No API key or password is passed on the command line for K7.
 
 ## User Mapping
 
-When no `--user-mapping` is provided, the tool creates **temporary users** on K7 (e.g. `plex-john`, `jellyfin-jane`). You can then merge these into real K7 users via the admin UI (Settings > Users > merge button).
+When no `--user-mapping` is provided, the tool creates **temporary users** on K7 (e.g. `plex-john`, `jellyfin-jane`). Source names are sanitized to ASP.NET Identity's allowed username characters (diacritics stripped, other symbols replaced with `-`), so a name like `Neo^2` becomes `plex-neo-2`. A failed temp-user create skips that source user and continues the import. You can then merge temp users into real K7 users via the admin UI (Settings > Users > merge button).
 
 With `--auto-map-users`, source users whose name matches an existing K7 username (case-insensitive) are mapped automatically; remaining users still get temp accounts.
 
