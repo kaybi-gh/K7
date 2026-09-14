@@ -40,7 +40,7 @@
 }
 
 ::deep .current-user {
-    border-color: var(--color-accent);
+    border-color: var(--color-accent-text);
     border-width: 2px;
 }
 
@@ -128,7 +128,7 @@
 }
 
 .users-select-card.is-selected ::deep .k7-paper {
-    border-color: var(--color-accent);
+    border-color: var(--color-accent-text);
     border-width: 2px;
 }
 
@@ -140,7 +140,7 @@
 }
 
 .users-select-card.is-selected .users-select-card__check {
-    color: var(--color-accent);
+    color: var(--color-accent-text);
 }
 
 ::deep .row-highlighted {

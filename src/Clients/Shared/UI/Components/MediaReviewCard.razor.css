@@ -462,7 +462,7 @@ a.media-review-card__name:hover {
 .media-review-card--activatable:hover.media-review-card--compact .media-review-card__surface::after,
 .media-review-card--activatable:focus-visible.media-review-card--compact .media-review-card__surface::after {
     opacity: 1;
-    border-color: var(--color-accent);
+    border-color: var(--color-accent-text);
 }
 
 .media-review-card--spoiler-blurred .media-review-card__layout {

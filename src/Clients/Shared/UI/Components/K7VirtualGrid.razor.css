@@ -38,7 +38,7 @@
 
 .k7-virtual-grid-placeholder-focus:focus,
 .k7-virtual-grid-placeholder-focus:focus-visible {
-    border-color: var(--color-accent);
+    border-color: var(--color-accent-text);
     box-shadow: 0 0 0 1px var(--color-accent);
 }
 

@@ -25,11 +25,32 @@ K7.Lottie = {
             .catch(function () { });
     },
 
+    // Match branding/logo-on-light.svg (ink #262420, accent #c49a48).
+    // Used for #preload splash and the reconnection overlay on light theme.
+    _recolorSplashOnLight: function (data) {
+        var clone = JSON.parse(JSON.stringify(data));
+        var ink = [0.149, 0.141, 0.125, 1];
+        var accent = [0.769, 0.604, 0.282, 1];
+        (function walk(node) {
+            if (!node || typeof node !== 'object') return;
+            if (node.ty === 'fl' && node.c && Array.isArray(node.c.k) && node.c.k.length >= 3) {
+                node.c.k = node.c.k[0] > 0.9 ? ink.slice() : accent.slice();
+            }
+            if (Array.isArray(node)) {
+                for (var i = 0; i < node.length; i++) walk(node[i]);
+                return;
+            }
+            Object.keys(node).forEach(function (key) { walk(node[key]); });
+        })(clone);
+        return clone;
+    },
+
     play: function (container, path) {
         var self = this;
         return this._ensurePlayer().then(function () {
             if (!container || !window.lottie) return;
             container.innerHTML = '';
+            var onLight = document.documentElement.getAttribute('data-theme') === 'default-light';
             var cached = self._cache[path];
             var opts = {
                 container: container,
@@ -37,12 +58,25 @@ K7.Lottie = {
                 loop: true,
                 autoplay: true
             };
-            if (cached) {
-                opts.animationData = cached;
-            } else {
-                opts.path = path;
+            if (!onLight) {
+                if (cached) {
+                    opts.animationData = cached;
+                } else {
+                    opts.path = path;
+                }
+                window.lottie.loadAnimation(opts);
+                return;
             }
-            window.lottie.loadAnimation(opts);
+            var source = cached
+                ? Promise.resolve(cached)
+                : fetch(path).then(function (r) { return r.json(); }).then(function (data) {
+                    self._cache[path] = data;
+                    return data;
+                });
+            return source.then(function (data) {
+                opts.animationData = self._recolorSplashOnLight(data);
+                window.lottie.loadAnimation(opts);
+            });
         });
     },
 

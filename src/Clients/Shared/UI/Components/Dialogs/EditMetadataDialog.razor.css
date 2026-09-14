@@ -117,7 +117,7 @@
 }
 
 ::deep .lock-btn--locked {
-    color: var(--color-accent);
+    color: var(--color-accent-text);
 }
 
 .image-lock-row {
@@ -310,7 +310,7 @@
 }
 
 .provider-image-item:hover {
-    border-color: var(--color-accent);
+    border-color: var(--color-accent-text);
 }
 
 .provider-image-item--importing {

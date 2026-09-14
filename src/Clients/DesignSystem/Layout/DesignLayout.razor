@@ -1,6 +1,9 @@
 @inherits LayoutComponentBase
 @implements IDisposable
+@using K7.Clients.Shared.Services.Resources
 @inject NavigationManager Nav
+@inject ThemeService ThemeService
+@inject IJSRuntime JS
 
 @{
     var page = new Uri(Nav.Uri).AbsolutePath.TrimStart('/').Split('/')[0] switch { "" => "index", var s => s };
@@ -114,6 +117,21 @@
                 </ul>
             }
         </ul>
+
+        <div class="ds-theme-toggle">
+            <button type="button"
+                    class="@ThemeButtonClass(Themes.DefaultDark)"
+                    @onclick="() => SetThemeAsync(Themes.DefaultDark)">
+                <K7Icon Icon="@Phosphor.Moon" />
+                Dark
+            </button>
+            <button type="button"
+                    class="@ThemeButtonClass(Themes.DefaultLight)"
+                    @onclick="() => SetThemeAsync(Themes.DefaultLight)">
+                <K7Icon Icon="@Phosphor.Sun" />
+                Light
+            </button>
+        </div>
     </nav>
 
     <main class="ds-content">
@@ -129,6 +147,41 @@
     protected override void OnInitialized()
     {
         Nav.LocationChanged += OnLocationChanged;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+            return;
+
+        try
+        {
+            var saved = await JS.InvokeAsync<string?>("K7.getSavedTheme");
+            var theme = Themes.FromCssDataAttribute(saved) ?? Themes.DefaultDark;
+            if (ThemeService.Theme != theme)
+            {
+                ThemeService.Theme = theme;
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        catch (JSException)
+        {
+        }
+    }
+
+    private string ThemeButtonClass(ThemeDefinition theme) =>
+        ThemeService.Theme == theme ? "ds-theme-toggle__btn is-active" : "ds-theme-toggle__btn";
+
+    private async Task SetThemeAsync(ThemeDefinition theme)
+    {
+        ThemeService.Theme = theme;
+        try
+        {
+            await JS.InvokeVoidAsync("K7.applyTheme", theme.CssDataAttribute);
+        }
+        catch (JSException)
+        {
+        }
     }
 
     private void OnLocationChanged(object? sender, LocationChangedEventArgs e)

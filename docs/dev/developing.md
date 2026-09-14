@@ -104,7 +104,7 @@ dotnet run --project src/Clients/DesignSystem
 dotnet run --project src/Shared/Aspire/AppHost
 ```
 
-Standalone URL: see `src/Clients/DesignSystem/Properties/launchSettings.json` (typically `https://localhost:61567`).
+Standalone URL: see `src/Clients/DesignSystem/Properties/launchSettings.json` (typically `https://localhost:61567`). Use the Dark / Light toggle in the catalog sidebar to check contrast.
 
 ### Adding or changing a shared component
 

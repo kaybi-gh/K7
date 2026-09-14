@@ -64,7 +64,7 @@
 .vertical-carousel__chevron {
     font-size: var(--text-sm);
     line-height: 1;
-    color: color-mix(in srgb, var(--color-text-primary, #fff) 45%, transparent);
+    color: color-mix(in srgb, var(--color-text-on-media) 45%, transparent);
     opacity: 0.85;
 }
 
@@ -84,7 +84,7 @@
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: color-mix(in srgb, var(--color-text-primary, #fff) 35%, transparent);
+    background: color-mix(in srgb, var(--color-text-on-media) 35%, transparent);
     transition: width 0.25s ease, height 0.25s ease, background 0.25s ease, border-radius 0.25s ease;
     flex-shrink: 0;
 }
@@ -99,5 +99,5 @@
     width: 6px;
     height: 18px;
     border-radius: 3px;
-    background: color-mix(in srgb, var(--color-text-primary, #fff) 35%, transparent);
+    background: color-mix(in srgb, var(--color-text-on-media) 35%, transparent);
 }

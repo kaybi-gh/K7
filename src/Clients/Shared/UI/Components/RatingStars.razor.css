@@ -7,6 +7,7 @@
     padding: 2px;
     border-radius: var(--radius-sm);
     touch-action: none;
+    text-shadow: none;
 }
 
 .rating-star {

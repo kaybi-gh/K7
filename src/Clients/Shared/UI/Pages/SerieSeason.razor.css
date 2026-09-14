@@ -9,10 +9,17 @@
     overflow-y: auto;
     overflow-x: hidden;
     padding-bottom: max(var(--space-8), var(--k7-safe-bottom, 0px));
+    color: var(--color-text);
+    text-shadow: none;
 }
 
 ::deep .season-detail-wash {
     height: 100%;
+}
+
+.season-detail-page ::deep .media-logo-title {
+    color: var(--color-text);
+    text-shadow: none;
 }
 
 .season-header {
@@ -61,6 +68,8 @@
 .season-title {
     margin: 0;
     font-weight: 700;
+    color: var(--color-text);
+    text-shadow: none;
 }
 
 .season-actions {
@@ -81,7 +90,6 @@
 
 .season-overview {
     margin: 0;
-    opacity: 0.85;
     line-height: 1.6;
     display: -webkit-box;
     -webkit-line-clamp: 3;
@@ -98,10 +106,16 @@
     padding: 0 var(--space-6) var(--space-4);
     display: flex;
     flex-direction: column;
+    text-shadow: none;
 }
 
-.season-episodes ::deep .episode-card-info {
-    text-shadow: #000 0 0 5px;
+.season-episodes ::deep .episode-card,
+.season-episodes ::deep .episode-card-info,
+.season-episodes ::deep .episode-card-title,
+.season-episodes ::deep .episode-card-synopsis,
+.season-episodes ::deep .episode-card-number,
+.season-episodes ::deep .episode-card-duration {
+    text-shadow: none;
 }
 
 .season-episodes > div:not(:last-child) ::deep .episode-card {
@@ -242,9 +256,17 @@
 .tv-season-title {
     margin: 0 0 4px;
     padding-inline-start: var(--carousel-margin-start);
+    color: var(--color-text-on-media);
     text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 0, 0, 0.4);
 }
 
 .season-tv ::deep .carousel-wrapper h6 {
+    color: var(--color-text-on-media);
     text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 0, 0, 0.4);
+}
+
+.season-tv ::deep .media-card-title,
+.season-tv ::deep .media-card-subtitle {
+    color: var(--color-text-on-media);
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
 }

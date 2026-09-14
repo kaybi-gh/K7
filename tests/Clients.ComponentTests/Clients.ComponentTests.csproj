@@ -25,4 +25,8 @@
         <ProjectReference Include="..\..\src\Clients\Web\K7.Clients.Web.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+        <None Include="..\..\src\Clients\Shared\UI\wwwroot\css\themes\*.css" CopyToOutputDirectory="PreserveNewest" Link="themes\%(Filename)%(Extension)" />
+    </ItemGroup>
+
 </Project>

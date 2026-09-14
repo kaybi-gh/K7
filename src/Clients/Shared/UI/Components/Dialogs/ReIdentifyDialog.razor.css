@@ -71,12 +71,12 @@
 
 .k7-list li:focus-visible {
     outline: none;
-    border-color: var(--color-accent);
+    border-color: var(--color-accent-text);
     background: var(--color-surface-hover);
 }
 
 .k7-list li.selected {
-    border-color: var(--color-accent);
+    border-color: var(--color-accent-text);
     background: rgba(var(--color-accent-rgb, 139, 92, 246), 0.1);
 }
 

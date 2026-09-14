@@ -139,7 +139,7 @@
 }
 
 .library-browse-filters__option--selected {
-    color: var(--color-accent);
+    color: var(--color-accent-text);
 }
 
 .library-browse-filters__option-label {

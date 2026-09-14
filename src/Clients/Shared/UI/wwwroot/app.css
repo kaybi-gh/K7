@@ -326,7 +326,7 @@ html.platform-tv .k7-dialog-paper {
 
 .k7-virtual-grid-placeholder-focus:focus,
 .k7-virtual-grid-placeholder-focus:focus-visible {
-    border-color: var(--color-accent);
+    border-color: var(--color-accent-text);
     box-shadow: 0 0 0 1px var(--color-accent);
 }
 
@@ -338,7 +338,7 @@ html.platform-tv .k7-virtual-grid-placeholder-focus:hover:not(:focus) {
 html.platform-tv .k7-virtual-grid-placeholder-focus:focus,
 html.platform-tv .k7-virtual-grid-placeholder-focus:focus-visible {
     outline: none;
-    border-color: var(--color-accent);
+    border-color: var(--color-accent-text);
     box-shadow: 0 0 0 3px var(--color-accent);
 }
 

@@ -62,7 +62,7 @@
 }
 
 .restriction-select-item.is-selected ::deep .k7-paper {
-    border-color: var(--color-accent);
+    border-color: var(--color-accent-text);
     border-width: 2px;
 }
 
@@ -79,7 +79,7 @@
 }
 
 .restriction-select-item.is-selected .restriction-select-item__check {
-    color: var(--color-accent);
+    color: var(--color-accent-text);
 }
 
 .empty-state {

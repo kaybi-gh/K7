@@ -67,7 +67,7 @@
 }
 
 .my-space-select-item.is-selected .my-space-select-item__check {
-    color: var(--color-accent);
+    color: var(--color-accent-text);
 }
 
 .my-space-select-list-item {
@@ -103,5 +103,5 @@
 }
 
 .my-space-select-list-item.is-selected .my-space-select-list-item__check {
-    color: var(--color-accent);
+    color: var(--color-accent-text);
 }

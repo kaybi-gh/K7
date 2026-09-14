@@ -18,7 +18,7 @@
 
 .ai-smart-playlist-dialog__chip:hover,
 .ai-smart-playlist-dialog__chip:focus-visible {
-    border-color: var(--color-accent);
+    border-color: var(--color-accent-text);
     color: var(--color-text);
 }
 

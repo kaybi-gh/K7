@@ -31,7 +31,7 @@
 
 .k7-jump-index-item:hover,
 .k7-jump-index-item--active {
-    color: var(--color-accent);
+    color: var(--color-accent-text);
     background: color-mix(in srgb, var(--color-accent) 15%, transparent);
 }
 

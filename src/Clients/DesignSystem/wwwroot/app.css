@@ -1,4 +1,4 @@
-﻿/* Design System shell */
+/* Design System shell */
 
 /* Alias spacing tokens to the shared --space-N scale */
 :root {
@@ -18,6 +18,8 @@
     display: flex;
     height: 100%;
     overflow: hidden;
+    background: var(--color-bg);
+    color: var(--color-text);
 }
 
 /* Nav sidebar */
@@ -51,6 +53,7 @@
     display: flex;
     flex-direction: column;
     gap: 2px;
+    flex: 1;
 }
 
 .ds-nav-links li a,
@@ -73,7 +76,7 @@
 
 .ds-nav-links li a.active {
     background: var(--color-primary);
-    color: #fff;
+    color: var(--color-accent-fg);
 }
 
 .ds-nav-group {
@@ -84,6 +87,42 @@
     color: var(--color-text-disabled);
     padding: var(--spacing-3) var(--spacing-3) var(--spacing-1);
     pointer-events: none;
+}
+
+.ds-theme-toggle {
+    display: flex;
+    gap: var(--spacing-2);
+    padding: var(--spacing-3) var(--spacing-4);
+    border-top: 1px solid var(--color-border);
+}
+
+.ds-theme-toggle__btn {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-2);
+    min-height: 36px;
+    padding: var(--spacing-2);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--color-text-secondary);
+    font-family: var(--font-body);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.ds-theme-toggle__btn:hover {
+    color: var(--color-text);
+    background: var(--color-surface-hover);
+}
+
+.ds-theme-toggle__btn.is-active {
+    background: var(--color-accent);
+    border-color: var(--color-accent);
+    color: var(--color-accent-fg);
 }
 
 /* Main content */
@@ -215,7 +254,7 @@ section[id] {
 
 .ds-track-row:hover { background: var(--color-surface-hover); }
 
-.ds-track-row--active { background: var(--color-surface-hover); color: var(--color-accent); }
+.ds-track-row--active { background: var(--color-surface-hover); color: var(--color-accent-text); }
 
 .ds-track-info {
     flex: 1;
@@ -294,7 +333,7 @@ section[id] {
 
 .ds-nav-sub li a:hover {
     color: var(--color-text);
-    border-left-color: var(--color-accent);
+    border-left-color: var(--color-accent-text);
 }
 
 /* Tokens page */
@@ -334,6 +373,11 @@ section[id] {
     font-size: var(--text-base);
     font-weight: 600;
     align-items: center;
+}
+
+.ds-token-swatch--on-media {
+    background: #0d0907;
+    color: var(--color-text-on-media);
 }
 
 .ds-token-radius {
@@ -700,7 +744,7 @@ section[id] {
     white-space: nowrap;
 }
 
-.dsl-badge--nav     { background: color-mix(in srgb, var(--color-accent) 20%, transparent); color: var(--color-accent); }
+.dsl-badge--nav     { background: color-mix(in srgb, var(--color-accent) 20%, transparent); color: var(--color-accent-text); }
 .dsl-badge--sidebar { background: color-mix(in srgb, #a78bfa 20%, transparent); color: #a78bfa; }
 .dsl-badge--main    { background: color-mix(in srgb, #4ade80 20%, transparent); color: #4ade80; }
 .dsl-badge--player  { background: color-mix(in srgb, #f59e0b 20%, transparent); color: #f59e0b; }

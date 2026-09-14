@@ -38,8 +38,18 @@
     position: absolute;
     inset: 0;
     background:
-        linear-gradient(to right, rgba(0, 0, 0, 0.88) 0%, rgba(0, 0, 0, 0.4) 50%, transparent 100%),
-        linear-gradient(to top, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.3) 30%, transparent 60%);
+        linear-gradient(
+            to right,
+            color-mix(in srgb, var(--media-scrim) 88%, transparent) 0%,
+            color-mix(in srgb, var(--media-scrim) 40%, transparent) 50%,
+            transparent 100%
+        ),
+        linear-gradient(
+            to top,
+            color-mix(in srgb, var(--media-scrim) 70%, transparent) 0%,
+            color-mix(in srgb, var(--media-scrim) 30%, transparent) 30%,
+            transparent 60%
+        );
     pointer-events: none;
     z-index: 1;
 }
@@ -68,7 +78,7 @@
     font-size: var(--text-3xl);
     font-weight: 700;
     line-height: 1.15;
-    color: var(--color-text-primary, #fff);
+    color: var(--color-text-on-media);
     text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
     max-width: 600px;
     display: -webkit-box;
@@ -81,7 +91,7 @@
     margin: 0;
     font-size: var(--text-base);
     font-weight: 500;
-    color: var(--color-text-muted, rgba(255, 255, 255, 0.65));
+    color: var(--color-text-on-media-muted);
     text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 0, 0, 0.4);
     white-space: nowrap;
     text-overflow: ellipsis;
@@ -93,7 +103,7 @@
     align-items: center;
     gap: 14px;
     font-size: var(--text-base);
-    color: var(--color-text-muted, rgba(255, 255, 255, 0.65));
+    color: var(--color-text-on-media-muted);
     text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 0, 0, 0.4);
 }
 
@@ -102,7 +112,7 @@
 }
 
 .home-tv-hero__badge {
-    border: 1px solid var(--color-text-secondary, rgba(255, 255, 255, 0.4));
+    border: 1px solid color-mix(in srgb, var(--color-text-on-media) 40%, transparent);
     border-radius: 3px;
     padding: 1px 6px;
     font-size: var(--text-sm);
@@ -128,7 +138,7 @@
 .home-tv-hero__overview {
     margin: 0;
     font-size: var(--text-xl);
-    color: var(--color-text-secondary, rgba(255, 255, 255, 0.7));
+    color: var(--color-text-on-media-muted);
     text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 0, 0, 0.4);
     line-height: 1.6;
     max-width: 600px;

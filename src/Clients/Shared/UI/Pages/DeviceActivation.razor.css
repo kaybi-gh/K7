@@ -81,7 +81,7 @@
 .device-activation__url {
     font-size: var(--text-3xl);
     font-weight: 700;
-    color: var(--color-accent);
+    color: var(--color-accent-text);
     text-align: center;
 }
 

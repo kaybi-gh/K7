@@ -1,4 +1,4 @@
-﻿.diagnostics-dashboard {
+.diagnostics-dashboard {
     display: flex;
     flex-direction: column;
     gap: var(--space-5);
@@ -205,7 +205,7 @@
     margin: 0;
     border: 0;
     background: transparent;
-    color: var(--color-accent);
+    color: var(--color-accent-text);
     font: inherit;
     font-size: var(--text-sm, 0.875rem);
     font-weight: 600;

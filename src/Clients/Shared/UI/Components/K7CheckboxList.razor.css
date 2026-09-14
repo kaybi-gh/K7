@@ -46,7 +46,7 @@
     width: 1rem;
     height: 1rem;
     flex-shrink: 0;
-    accent-color: var(--color-accent);
+    accent-color: var(--color-accent-text);
     pointer-events: none;
 }
 

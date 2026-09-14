@@ -1,4 +1,4 @@
-﻿.album-detail-page {
+.album-detail-page {
     position: relative;
     display: flex;
     flex-direction: column;
@@ -190,7 +190,7 @@
 }
 
 .track-playing {
-    color: var(--color-accent);
+    color: var(--color-accent-text);
 }
 
 .track-artist {

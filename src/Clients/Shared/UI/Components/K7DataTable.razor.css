@@ -83,7 +83,7 @@
 .k7-data-table-el input[type="checkbox"] {
     width: 18px;
     height: 18px;
-    accent-color: var(--color-accent);
+    accent-color: var(--color-accent-text);
     cursor: pointer;
     vertical-align: middle;
     flex-shrink: 0;

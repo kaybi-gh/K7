@@ -8,7 +8,8 @@ Small private installs: the owner plus family/friends. Same people on desktop, p
 
 ## Look and feel
 
-- Dark mode is the default (deep blue-gray canvas, roughly `#0c1018`-`#131821`). Light mode must be equally usable, not a harsh invert.
+- Dark mode is the default (warm near-black canvas). Light mode is a first-class theme, not a harsh invert.
+- Surface chrome uses `--color-text` and `--color-accent-text` (a darker copper that meets WCAG AA on `--color-bg`). Copy over artwork uses `--color-text-on-media` on dark scrims. In light theme media heroes (desktop, mobile, and TV) use beige `--color-bg` scrims at the same opacities as dark, so logo, meta, and overview use `--color-text` like section titles.
 - Media artwork (posters, covers, stills) carries the UI. Chrome stays quiet; do not decorate over the content.
 - Ambient color (player backdrop, album hero blur) comes from the media when possible, not from a fixed brand palette.
 - Accent is copper (`#CC7A3E`) via CSS tokens only - never hard-coded hex in components. Hex values in this doc are token references only.
@@ -38,4 +39,6 @@ Component catalog: [developing.md - DesignSystem](developing.md#designsystem). B
 
 - Glassmorphism, gradient text, identical card grids, nested cards, hero-metric dashboards
 - Bounce/elastic easing; gray text on colored backgrounds; pure `#000` / `#fff`
+- Using `--color-accent` for labels on light surfaces (too light). Use `--color-accent-text`. Filled rating stars keep `--color-accent` so they stay gold in both themes.
+- Falling back to `#fff` when a text token is missing
 - Hiding primary actions behind mobile-only overflow menus when desktop shows them plainly

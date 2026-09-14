@@ -37,7 +37,7 @@
 
 .k7-emoji-picker-btn.is-selected {
     background: color-mix(in srgb, var(--color-accent) 18%, transparent);
-    border-color: var(--color-accent);
+    border-color: var(--color-accent-text);
 }
 
 .k7-emoji-picker-btn:focus-visible {

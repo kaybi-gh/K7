@@ -52,7 +52,8 @@
 }
 
 /* Scrims must stay above every image layer (including temporary fades).
-   A higher z-index on the image made Medium/original look more saturated. */
+   A higher z-index on the image made Medium/original look more saturated.
+   --media-scrim is the theme token (black, or --color-bg in light). */
 .media-page-backdrop__scrim-side {
     position: absolute;
     inset: 0;
@@ -60,16 +61,16 @@
     background:
         linear-gradient(
             to right,
-            rgba(0, 0, 0, 0.7) 0%,
-            rgba(0, 0, 0, 0.45) 22%,
-            rgba(0, 0, 0, 0.2) 42%,
-            rgba(0, 0, 0, 0.06) 58%,
+            color-mix(in srgb, var(--media-scrim, #000) 70%, transparent) 0%,
+            color-mix(in srgb, var(--media-scrim, #000) 45%, transparent) 22%,
+            color-mix(in srgb, var(--media-scrim, #000) 20%, transparent) 42%,
+            color-mix(in srgb, var(--media-scrim, #000) 6%, transparent) 58%,
             transparent 75%
         ),
         linear-gradient(
             to left,
-            rgba(0, 0, 0, 0.42) 0%,
-            rgba(0, 0, 0, 0.18) 40%,
+            color-mix(in srgb, var(--media-scrim) 42%, transparent) 0%,
+            color-mix(in srgb, var(--media-scrim) 18%, transparent) 40%,
             transparent 100%
         );
     transform: translateZ(0);
@@ -81,9 +82,9 @@
     z-index: 1;
     background: linear-gradient(
         to top,
-        rgba(0, 0, 0, 0.62) 0%,
-        rgba(0, 0, 0, 0.3) 24%,
-        rgba(0, 0, 0, 0.1) 44%,
+        color-mix(in srgb, var(--media-scrim) 62%, transparent) 0%,
+        color-mix(in srgb, var(--media-scrim) 30%, transparent) 24%,
+        color-mix(in srgb, var(--media-scrim) 10%, transparent) 44%,
         transparent 72%
     );
     transform: translateZ(0);
@@ -106,16 +107,16 @@
     background:
         linear-gradient(
             to right,
-            rgba(0, 0, 0, 0.84) 0%,
-            rgba(0, 0, 0, 0.66) 26%,
-            rgba(0, 0, 0, 0.42) 46%,
-            rgba(0, 0, 0, 0.2) 62%,
+            color-mix(in srgb, var(--media-scrim) 84%, transparent) 0%,
+            color-mix(in srgb, var(--media-scrim) 66%, transparent) 26%,
+            color-mix(in srgb, var(--media-scrim) 42%, transparent) 46%,
+            color-mix(in srgb, var(--media-scrim) 20%, transparent) 62%,
             transparent 84%
         ),
         linear-gradient(
             to left,
-            rgba(0, 0, 0, 0.48) 0%,
-            rgba(0, 0, 0, 0.2) 42%,
+            color-mix(in srgb, var(--media-scrim) 48%, transparent) 0%,
+            color-mix(in srgb, var(--media-scrim) 20%, transparent) 42%,
             transparent 100%
         );
 }
@@ -123,9 +124,9 @@
 .media-page-backdrop--soft-still .media-page-backdrop__scrim-bottom {
     background: linear-gradient(
         to top,
-        rgba(0, 0, 0, 0.8) 0%,
-        rgba(0, 0, 0, 0.52) 28%,
-        rgba(0, 0, 0, 0.26) 50%,
+        color-mix(in srgb, var(--media-scrim) 80%, transparent) 0%,
+        color-mix(in srgb, var(--media-scrim) 52%, transparent) 28%,
+        color-mix(in srgb, var(--media-scrim) 26%, transparent) 50%,
         transparent 78%
     );
 }
@@ -138,8 +139,8 @@
     background: radial-gradient(
         ellipse 90% 75% at 50% 28%,
         transparent 18%,
-        rgba(0, 0, 0, 0.28) 58%,
-        rgba(0, 0, 0, 0.52) 100%
+        color-mix(in srgb, var(--media-scrim) 28%, transparent) 58%,
+        color-mix(in srgb, var(--media-scrim) 52%, transparent) 100%
     );
     transform: translateZ(0);
 }
@@ -175,16 +176,26 @@
 
     .media-page-backdrop__scrim-side {
         background:
-            linear-gradient(to right, rgba(0, 0, 0, 0.66) 0%, rgba(0, 0, 0, 0.22) 12%, transparent 26%),
-            linear-gradient(to left, rgba(0, 0, 0, 0.66) 0%, rgba(0, 0, 0, 0.22) 12%, transparent 26%);
+            linear-gradient(
+                to right,
+                color-mix(in srgb, var(--media-scrim) 66%, transparent) 0%,
+                color-mix(in srgb, var(--media-scrim) 22%, transparent) 12%,
+                transparent 26%
+            ),
+            linear-gradient(
+                to left,
+                color-mix(in srgb, var(--media-scrim) 66%, transparent) 0%,
+                color-mix(in srgb, var(--media-scrim) 22%, transparent) 12%,
+                transparent 26%
+            );
     }
 
     .media-page-backdrop__scrim-bottom {
         background:
             radial-gradient(
                 ellipse 140% 90% at 50% 100%,
-                rgba(0, 0, 0, 0.72) 0%,
-                rgba(0, 0, 0, 0.38) 32%,
+                color-mix(in srgb, var(--media-scrim) 72%, transparent) 0%,
+                color-mix(in srgb, var(--media-scrim) 38%, transparent) 32%,
                 transparent 64%
             ),
             linear-gradient(
@@ -205,16 +216,26 @@
 
     .media-page-backdrop--soft-still .media-page-backdrop__scrim-side {
         background:
-            linear-gradient(to right, rgba(0, 0, 0, 0.78) 0%, rgba(0, 0, 0, 0.34) 14%, transparent 30%),
-            linear-gradient(to left, rgba(0, 0, 0, 0.78) 0%, rgba(0, 0, 0, 0.34) 14%, transparent 30%);
+            linear-gradient(
+                to right,
+                color-mix(in srgb, var(--media-scrim) 78%, transparent) 0%,
+                color-mix(in srgb, var(--media-scrim) 34%, transparent) 14%,
+                transparent 30%
+            ),
+            linear-gradient(
+                to left,
+                color-mix(in srgb, var(--media-scrim) 78%, transparent) 0%,
+                color-mix(in srgb, var(--media-scrim) 34%, transparent) 14%,
+                transparent 30%
+            );
     }
 
     .media-page-backdrop--soft-still .media-page-backdrop__scrim-bottom {
         background:
             radial-gradient(
                 ellipse 140% 90% at 50% 100%,
-                rgba(0, 0, 0, 0.82) 0%,
-                rgba(0, 0, 0, 0.48) 34%,
+                color-mix(in srgb, var(--media-scrim) 82%, transparent) 0%,
+                color-mix(in srgb, var(--media-scrim) 48%, transparent) 34%,
                 transparent 68%
             ),
             linear-gradient(
@@ -225,3 +246,5 @@
             );
     }
 }
+
+/* Light-theme --media-scrim: wwwroot/css/media-hero.css (global). */

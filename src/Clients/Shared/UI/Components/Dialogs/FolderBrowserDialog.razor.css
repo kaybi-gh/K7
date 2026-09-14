@@ -16,7 +16,7 @@
 }
 
 .folder-item:nth-child(even) {
-    background-color: var(--color-surface-variant, rgba(255, 255, 255, 0.03));
+    background-color: var(--color-surface-variant);
 }
 
 .folder-item--parent {

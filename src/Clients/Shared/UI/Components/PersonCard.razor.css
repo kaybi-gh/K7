@@ -128,6 +128,6 @@
     }
 
     .personrole-item:focus-visible ::deep .k7-avatar {
-        outline-color: var(--color-accent);
+        outline-color: var(--color-accent-text);
     }
 }

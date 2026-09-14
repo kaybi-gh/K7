@@ -51,3 +51,83 @@ html.platform-tv .vertical-carousel:not([data-vcarousel-ready]) .vertical-carous
     overflow: hidden;
     max-height: min(42vh, 420px);
 }
+
+/* Light theme TV: beige scrims and dark copy, same as desktop media heroes. */
+html[data-theme="default-light"] .home-tv-hero__backdrop-fixed {
+    --media-scrim: var(--color-bg);
+}
+
+html[data-theme="default-light"] .home-tv-hero__backdrop-fixed .home-tv-hero__gradient {
+    background:
+        linear-gradient(
+            to right,
+            color-mix(in srgb, var(--color-bg) 88%, transparent) 0%,
+            color-mix(in srgb, var(--color-bg) 40%, transparent) 50%,
+            transparent 100%
+        ),
+        linear-gradient(
+            to top,
+            color-mix(in srgb, var(--color-bg) 70%, transparent) 0%,
+            color-mix(in srgb, var(--color-bg) 30%, transparent) 30%,
+            transparent 60%
+        );
+}
+
+html[data-theme="default-light"] .home-tv-hero .home-tv-hero__title,
+html[data-theme="default-light"] .home-tv-hero .home-tv-hero__subtitle,
+html[data-theme="default-light"] .home-tv-hero .home-tv-hero__meta,
+html[data-theme="default-light"] .home-tv-hero .home-tv-hero__overview,
+html[data-theme="default-light"] .explore-tv-hero__group-title,
+html[data-theme="default-light"] .tv-hero .tv-episode-label,
+html[data-theme="default-light"] .tv-hero .tv-episode-title,
+html[data-theme="default-light"] .tv-hero .tv-episode-date,
+html[data-theme="default-light"] .tv-hero .tv-episode-overview,
+html[data-theme="default-light"] .tv-season-title,
+html[data-theme="default-light"] .season-tv .carousel-wrapper h6,
+html[data-theme="default-light"] .season-tv .media-card-title,
+html[data-theme="default-light"] .tv-feed-page .vertical-carousel .carousel-wrapper h6 {
+    color: var(--color-text);
+    text-shadow: none;
+}
+
+html[data-theme="default-light"] .home-tv-hero .home-tv-hero__subtitle,
+html[data-theme="default-light"] .home-tv-hero .home-tv-hero__meta,
+html[data-theme="default-light"] .home-tv-hero .home-tv-hero__overview,
+html[data-theme="default-light"] .tv-hero .tv-episode-label,
+html[data-theme="default-light"] .tv-hero .tv-episode-date,
+html[data-theme="default-light"] .tv-hero .tv-episode-overview,
+html[data-theme="default-light"] .season-tv .media-card-subtitle {
+    color: var(--color-text-secondary);
+    text-shadow: none;
+}
+
+html[data-theme="default-light"] .home-tv-hero .home-tv-hero__badge {
+    border-color: color-mix(in srgb, var(--color-text) 40%, transparent);
+}
+
+html[data-theme="default-light"] .home-tv-hero .k7-chip--outlined,
+html[data-theme="default-light"] .tv-hero .k7-chip--outlined,
+html[data-theme="default-light"] .tv-hero .k7-btn--outlined,
+html[data-theme="default-light"] .tv-hero .k7-btn--text,
+html[data-theme="default-light"] .tv-hero .k7-icon-btn,
+html[data-theme="default-light"] .home-tv-hero .k7-icon-btn {
+    color: var(--color-text);
+}
+
+html[data-theme="default-light"] .tv-hero .k7-btn--outlined.k7-btn--primary {
+    color: var(--color-accent-text);
+    border-color: var(--color-accent-text);
+}
+
+html[data-theme="default-light"] .vertical-carousel__chevron {
+    color: color-mix(in srgb, var(--color-text) 55%, transparent);
+}
+
+html[data-theme="default-light"] .vertical-carousel__dots .vertical-carousel__dot:not(.vertical-carousel__dot--active),
+html[data-theme="default-light"] .vertical-carousel__dots .vertical-carousel__dot--overflow {
+    background: color-mix(in srgb, var(--color-text) 35%, transparent);
+}
+
+html[data-theme="default-light"] .vertical-carousel__dots .vertical-carousel__dot--active {
+    background: var(--color-accent);
+}

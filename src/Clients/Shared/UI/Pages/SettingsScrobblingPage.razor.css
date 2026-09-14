@@ -22,7 +22,7 @@
 }
 
 .scrobble-select-item.is-selected .scrobble-select-item__check {
-  color: var(--color-accent);
+  color: var(--color-accent-text);
 }
 
 .scrobble-select-item__paper {
@@ -31,7 +31,7 @@
 }
 
 .scrobble-select-item.is-selected ::deep .scrobble-select-item__paper {
-  border-color: var(--color-accent);
+  border-color: var(--color-accent-text);
 }
 
 .scrobble-select-item:focus-visible {

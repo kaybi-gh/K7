@@ -1,4 +1,4 @@
-﻿.admin-devices-page {
+.admin-devices-page {
     display: flex;
     flex-direction: column;
     height: 100%;
@@ -29,7 +29,7 @@
 }
 
 ::deep .current-device {
-    border-color: var(--color-accent);
+    border-color: var(--color-accent-text);
     border-width: 2px;
 }
 
@@ -136,7 +136,7 @@
 }
 
 .device-select-item.is-selected ::deep .device-card-paper {
-    border-color: var(--color-accent);
+    border-color: var(--color-accent-text);
     border-width: 2px;
 }
 
@@ -148,7 +148,7 @@
 }
 
 .device-select-item.is-selected .device-select-item__check {
-    color: var(--color-accent);
+    color: var(--color-accent-text);
 }
 
 @media (max-width: 599.98px) {

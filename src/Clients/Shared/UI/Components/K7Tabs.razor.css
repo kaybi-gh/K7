@@ -24,6 +24,6 @@
 }
 
 .k7-tab--active {
-    color: var(--color-accent);
-    border-bottom-color: var(--color-accent);
+    color: var(--color-accent-text);
+    border-bottom-color: var(--color-accent-text);
 }

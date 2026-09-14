@@ -10,20 +10,37 @@
     --color-surface-hover: rgba(241, 233, 218, .06);
     --color-drawer:        #110d0a;
     --color-bg-gray:       #15100c;
+    --color-surface-raised: var(--color-surface);
+    --color-surface-variant: var(--color-surface-2);
+    --color-surface-container: var(--color-surface);
 
     /* Accent */
     --color-accent:        #d9b060;
     --color-accent-hover:  #e8c878;
     --color-accent-fg:     #241a0c;
+    --color-accent-text:   var(--color-accent);
     --color-primary:       var(--color-accent);
     --color-primary-hover: var(--color-accent-hover);
+    --color-on-primary:    var(--color-accent-fg);
+    --color-on-primary-container: var(--color-text);
+    --on-primary:          var(--color-accent-fg);
+    --color-secondary:     var(--color-text-secondary);
+    --primary:             var(--color-accent);
+    --surface-1:           var(--color-surface);
+    --surface-2:           var(--color-surface-2);
+    --text-1:              var(--color-text);
+    --border-subtle:       var(--color-border-subtle);
 
     /* Text */
     --color-text:          #f3ecde;
+    --color-text-primary:  var(--color-text);
     --color-text-secondary:#a99c87;
     --color-text-muted:    #8a7e6a;
     --color-text-disabled: #5c5345;
     --color-text-on-accent:#241a0c;
+    --color-text-on-media: #f3ecde;
+    --color-text-on-media-muted: #e8e0ce;
+    --color-text-on-media-accent: #f0d78c;
 
     /* Feedback */
     --color-success:       #4DB288;
@@ -41,6 +58,7 @@
 
     /* Overlay */
     --color-overlay:       rgba(7, 5, 4, .82);
+    --media-scrim:         #000;
 
     /* Scrollbar */
     --scrollbar-thumb:     rgba(206, 170, 102, .35);

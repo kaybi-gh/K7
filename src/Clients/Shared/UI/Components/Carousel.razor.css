@@ -189,7 +189,7 @@
 }
 
 .carousel-loop-back__visual:has(.carousel-loop-back__image:focus-visible)::after {
-    border-color: var(--color-accent);
+    border-color: var(--color-accent-text);
 }
 
 .carousel-container:has(.media-card--cover) .carousel-loop-back__visual,
@@ -261,10 +261,11 @@
     width: 100%;
     text-align: center;
     overflow: hidden;
-    color: var(--color-text-secondary);
+    color: var(--color-text);
     font-size: var(--text-sm);
     margin-top: 8px;
     font-weight: 500;
+    text-shadow: none;
 }
 
 .carousel-loop-back-card .media-card-subtitle {

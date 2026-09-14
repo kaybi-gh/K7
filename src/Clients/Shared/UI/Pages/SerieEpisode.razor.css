@@ -65,7 +65,8 @@
     flex-direction: column;
     gap: var(--space-3);
     max-width: 800px;
-    text-shadow: 0 1px 8px rgba(0, 0, 0, 0.6);
+    color: var(--media-copy, var(--color-text-on-media));
+    text-shadow: var(--media-copy-shadow, 0 1px 2px rgba(0, 0, 0, 0.92));
 }
 
 .episode-meta {
@@ -73,12 +74,12 @@
     align-items: center;
     gap: var(--space-2);
     font-size: var(--text-sm);
-    color: var(--color-text-secondary);
+    color: var(--media-copy-muted, var(--color-text-on-media-muted));
     flex-wrap: wrap;
 }
 
 .episode-serie-link {
-    color: var(--color-accent);
+    color: var(--media-copy-accent, var(--color-text-on-media-accent));
     text-decoration: none;
     font-weight: 500;
 }
@@ -88,18 +89,20 @@
 }
 
 .episode-meta-separator {
-    color: var(--color-text-muted);
+    color: inherit;
+    opacity: 0.7;
 }
 
 .episode-meta-text {
-    color: var(--color-text-secondary);
+    color: inherit;
 }
 
 .episode-title {
     margin: 0;
     font-size: var(--text-2xl);
     font-weight: 700;
-    color: var(--color-text-primary);
+    color: var(--color-text-on-media);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.92);
 }
 
 .episode-details {
@@ -111,7 +114,7 @@
 
 .episode-detail-item {
     font-size: var(--text-sm);
-    color: var(--color-text-secondary);
+    color: var(--media-copy-muted, var(--color-text-on-media-muted));
 }
 
 .episode-ratings {
@@ -185,7 +188,6 @@
 
 .episode-overview {
     margin: 0;
-    opacity: 0.85;
     line-height: 1.6;
     display: -webkit-box;
     -webkit-line-clamp: 3;
@@ -193,7 +195,7 @@
     overflow: hidden;
     text-overflow: ellipsis;
     font-size: var(--text-sm);
-    color: var(--color-text-secondary);
+    color: var(--media-copy-muted, var(--color-text-on-media-muted));
 }
 
 .overview-clickable {
@@ -325,8 +327,15 @@
         flex-shrink: 0;
         padding-top: var(--space-3);
     }
+}
 
-    .episode-page ::deep .carousel-header h6 {
-        text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 0, 0, 0.4);
-    }
+.episode-page-content ::deep .carousel-header h6,
+.episode-page-content ::deep .media-card-title {
+    color: var(--color-text);
+    text-shadow: none;
+}
+
+.episode-page-content ::deep .media-card-subtitle {
+    color: var(--color-text-muted);
+    text-shadow: none;
 }

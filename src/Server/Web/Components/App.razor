@@ -76,19 +76,14 @@
     <Routes @rendermode="PageRenderMode" />
 
     <script src="@Assets["_content/K7.Clients.Shared.UI/dist/lottie/build/player/lottie_light.min.js"]"></script>
+    <script src="@Assets["_content/K7.Clients.Shared.UI/js/lottie-interop.js"]"></script>
     <script>
-        if (window.lottie) {
-            lottie.loadAnimation({
-                container: document.getElementById('preload-animation'),
-                renderer: 'svg',
-                loop: true,
-                autoplay: true,
-                path: '_content/K7.Clients.Shared.UI/animations/splash.json'
-            });
+        var preload = document.getElementById('preload-animation');
+        if (preload) {
+            K7.Lottie.play(preload, '_content/K7.Clients.Shared.UI/animations/splash.json');
         }
     </script>
     <script src="@Assets["_framework/blazor.web.js"]"></script>
-    <script src="@Assets["_content/K7.Clients.Shared.UI/js/lottie-interop.js"]"></script>
     <script>K7.Lottie.preload('_content/K7.Clients.Shared.UI/animations/splash.json');</script>
     <script src="@Assets["_content/K7.Clients.Shared.UI/dist/embla-carousel/embla-carousel.umd.js"]"></script>
     <script src="@Assets["_content/K7.Clients.Shared.UI/lib/js-spatial-navigation/spatial_navigation.js"]"></script>

@@ -92,7 +92,7 @@
     display: flex;
     align-items: center;
     gap: var(--space-2);
-    color: var(--color-accent);
+    color: var(--color-accent-text);
     font-weight: 700;
     flex-shrink: 0;
     padding: var(--space-1) var(--space-2);
@@ -153,12 +153,12 @@
 
 ::deep .app-nav-link.active,
 ::deep .app-nav-link.active:hover {
-    color: var(--color-accent);
+    color: var(--color-accent-text);
     background: color-mix(in srgb, var(--color-accent) 10%, transparent);
 }
 
 ::deep .k7-btn.active {
-    color: var(--color-accent);
+    color: var(--color-accent-text);
 }
 
 /* Desktop: more generous spacing on main nav links */

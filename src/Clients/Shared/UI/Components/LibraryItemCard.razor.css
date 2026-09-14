@@ -7,7 +7,7 @@
 
 .library-item-card:hover,
 .library-item-card:focus-within {
-    border-color: var(--color-accent);
+    border-color: var(--color-accent-text);
 }
 
 .library-item-card:focus-visible {
@@ -111,5 +111,5 @@
 }
 
 :global(html.platform-tv) .library-item-card:focus-visible {
-    border-color: var(--color-accent);
+    border-color: var(--color-accent-text);
 }
