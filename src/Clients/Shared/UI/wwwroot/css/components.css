@@ -29,10 +29,10 @@
 /* variants */
 .k7-btn--filled { background: var(--color-surface-2); color: var(--color-text); }
 .k7-btn--filled:hover:not(:disabled) { filter: brightness(1.15); }
-.k7-btn--filled.k7-btn--primary { background: var(--color-accent); color: var(--color-accent-fg); }
-.k7-btn--filled.k7-btn--primary:hover:not(:disabled) { filter: brightness(1.1); }
-.k7-btn--filled.k7-btn--error { background: var(--color-error); color: var(--color-text-on-media); }
-.k7-btn--filled.k7-btn--success { background: var(--color-success); color: var(--color-text-on-media); }
+.k7-btn--filled.k7-btn--primary { background: var(--color-primary); color: var(--color-on-fill); }
+.k7-btn--filled.k7-btn--primary:hover:not(:disabled) { background: var(--color-primary-hover); filter: none; }
+.k7-btn--filled.k7-btn--error { background: var(--color-error-fill); color: var(--color-on-fill); }
+.k7-btn--filled.k7-btn--success { background: var(--color-success-fill); color: var(--color-on-fill); }
 .k7-btn--outlined, .k7-btn--outline { background: transparent; border: 1px solid var(--color-text-muted); color: var(--color-text); }
 .k7-btn--outlined.k7-btn--primary, .k7-btn--outline.k7-btn--primary { border-color: var(--color-accent-text); color: var(--color-accent-text); }
 .k7-btn--outlined:hover:not(:disabled), .k7-btn--outline:hover:not(:disabled) { background: var(--color-surface-hover); }
@@ -53,8 +53,8 @@
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background: var(--color-accent);
-  color: var(--color-accent-fg);
+  background: var(--color-primary);
+  color: var(--color-on-fill);
   border: none;
   cursor: pointer;
   transition: filter var(--transition-fast), transform var(--transition-fast);
@@ -203,11 +203,11 @@
 .k7-chip--sm { padding: var(--space-1) var(--space-2); font-size: var(--text-2xs); }
 .k7-chip--lg { padding: var(--space-2) var(--space-4); font-size: var(--text-sm); }
 .k7-chip--outlined { background: transparent; border: 1px solid var(--color-text-muted); }
-.k7-chip--primary { background: var(--color-accent); color: var(--color-accent-fg); }
+.k7-chip--primary { background: var(--color-primary); color: var(--color-on-fill); }
 .k7-chip--primary.k7-chip--outlined { background: transparent; border-color: var(--color-accent-text); color: var(--color-accent-text); }
-.k7-chip--success { background: var(--color-success); color: var(--color-text-on-media); }
-.k7-chip--error { background: var(--color-error); color: var(--color-text-on-media); }
-.k7-chip--warning { background: var(--color-warning); color: var(--color-accent-fg); }
+.k7-chip--success { background: var(--color-success-fill); color: var(--color-on-fill); }
+.k7-chip--error { background: var(--color-error-fill); color: var(--color-on-fill); }
+.k7-chip--warning { background: var(--color-warning-fill); color: var(--color-on-fill); }
 .k7-chip-close { background: none; border: none; cursor: pointer; padding: 0; display: inline-flex; color: inherit; opacity: 0.7; }
 .k7-chip-close:hover { opacity: 1; }
 .k7-chip--clickable {
@@ -708,11 +708,11 @@ input[data-sn-editing="true"].k7-range::-moz-range-thumb {
   gap: var(--space-3);
   padding: 0 var(--space-4) 0 0;
   border-radius: var(--radius-md);
-  background: #282a2d;
-  box-shadow: 0 8px 24px rgba(0,0,0,.5);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-lg);
   font-size: var(--text-sm);
-  color: #fff;
-  border: none;
+  color: var(--color-text);
+  border: 1px solid var(--color-border-subtle);
   overflow: hidden;
   pointer-events: all;
   animation: k7-toast-in 0.2s ease;
@@ -728,17 +728,17 @@ input[data-sn-editing="true"].k7-range::-moz-range-thumb {
   font-size: var(--text-lg);
   flex-shrink: 0;
 }
-.k7-toast--info    .k7-toast-accent { background: #4da8cf; }
-.k7-toast--info    i.ph             { color: #4da8cf; }
-.k7-toast--success .k7-toast-accent { background: #4db288; }
-.k7-toast--success i.ph             { color: #4db288; }
-.k7-toast--warning .k7-toast-accent { background: #e5a644; }
-.k7-toast--warning i.ph             { color: #e5a644; }
-.k7-toast--error   .k7-toast-accent { background: #e5404f; }
-.k7-toast--error   i.ph             { color: #e5404f; }
+.k7-toast--info    .k7-toast-accent { background: var(--color-info); }
+.k7-toast--info    i.ph             { color: var(--color-info); }
+.k7-toast--success .k7-toast-accent { background: var(--color-success); }
+.k7-toast--success i.ph             { color: var(--color-success); }
+.k7-toast--warning .k7-toast-accent { background: var(--color-warning); }
+.k7-toast--warning i.ph             { color: var(--color-warning); }
+.k7-toast--error   .k7-toast-accent { background: var(--color-error); }
+.k7-toast--error   i.ph             { color: var(--color-error); }
 .k7-toast-msg { flex: 1; padding: var(--space-3) 0; }
-.k7-toast-close { background: none; border: none; cursor: pointer; color: rgba(255,255,255,.45); font-size: var(--text-base); padding: 0; display: flex; flex-shrink: 0; }
-.k7-toast-close:hover { color: #fff; }
+.k7-toast-close { background: none; border: none; cursor: pointer; color: var(--color-text-muted); font-size: var(--text-base); padding: 0; display: flex; flex-shrink: 0; }
+.k7-toast-close:hover { color: var(--color-text); }
 
 /* ── Tabs ────────────────────────────────────────────────────────────────────── */
 .k7-tabs { width: 100%; }
@@ -1398,7 +1398,7 @@ hr.k7-menu-divider { border: none; border-top: 1px solid var(--color-border); ma
 
 .media-hero .media-logo-title {
   color: var(--color-text-on-media);
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.92);
+  text-shadow: var(--media-copy-shadow);
 }
 
 .media-page-content .media-logo-title,
@@ -1457,7 +1457,7 @@ hr.k7-menu-divider { border: none; border-top: 1px solid var(--color-border); ma
 
 /* ── FAB (Floating Action Button) size modifiers ─────────────────────────────── */
 .k7-fab--surface { background: var(--color-surface-2); color: var(--color-text); }
-.k7-fab--error { background: var(--color-error); color: #fff; }
+.k7-fab--error { background: var(--color-error-fill); color: var(--color-on-fill); }
 .k7-fab:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
 .k7-fab:disabled,
 .k7-fab[disabled] { opacity: 0.45; cursor: not-allowed; pointer-events: none; }
@@ -1470,7 +1470,7 @@ hr.k7-menu-divider { border: none; border-top: 1px solid var(--color-border); ma
   right: 0;
   transform: translate(40%, -40%);
   background: var(--color-accent);
-  color: var(--color-accent-fg);
+  color: var(--color-on-fill);
   font-size: var(--text-2xs);
   font-weight: 700;
   min-width: 18px;
@@ -1483,8 +1483,8 @@ hr.k7-menu-divider { border: none; border-top: 1px solid var(--color-border); ma
   line-height: 1;
 }
 .k7-badge--dot { width: 8px; height: 8px; min-width: 8px; padding: 0; }
-.k7-badge--error { background: var(--color-error); color: #fff; }
-.k7-badge--success { background: var(--color-success); color: #fff; }
+.k7-badge--error { background: var(--color-error-fill); color: var(--color-on-fill); }
+.k7-badge--success { background: var(--color-success-fill); color: var(--color-on-fill); }
 
 /* ── DateRangePicker ─────────────────────────────────────────────────────────── */
 .k7-date-picker {
@@ -1892,6 +1892,12 @@ hr.k7-menu-divider { border: none; border-top: 1px solid var(--color-border); ma
 .k7-filter-menu__option-chevron {
   flex-shrink: 0;
   color: var(--color-text-muted);
+}
+
+/* Wins over Blazor scoped MediaCard.css when the theme sheet loads after. */
+html[data-theme="default-light"] .media-card-watched,
+html[data-theme="default-dark"] .media-card-watched {
+  background-color: var(--media-watched-chip);
 }
 
 @media (max-width: 599.98px) {

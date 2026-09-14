@@ -76,7 +76,7 @@
 
 .ds-nav-links li a.active {
     background: var(--color-primary);
-    color: var(--color-accent-fg);
+    color: var(--color-on-fill);
 }
 
 .ds-nav-group {
@@ -120,9 +120,9 @@
 }
 
 .ds-theme-toggle__btn.is-active {
-    background: var(--color-accent);
-    border-color: var(--color-accent);
-    color: var(--color-accent-fg);
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: var(--color-on-fill);
 }
 
 /* Main content */

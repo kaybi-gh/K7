@@ -41,7 +41,7 @@ Asset backgrounds are transparent. README previews bake the Design System surfac
     <td align="center">
       <code>logo-on-light.svg</code><br>
       Brand (black + accent)<br>
-      ink <code>#262420</code> + accent <code>#c49a48</code>
+      ink <code>#262420</code> + accent <code>#a67c32</code>
     </td>
   </tr>
   <tr>
@@ -86,7 +86,7 @@ Asset backgrounds are transparent. README previews bake the Design System surfac
     <td align="center">
       <code>symbol-on-light.svg</code><br>
       Accent on light<br>
-      <code>#c49a48</code>
+      <code>#a67c32</code>
     </td>
   </tr>
   <tr>

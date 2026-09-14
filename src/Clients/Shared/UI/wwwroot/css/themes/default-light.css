@@ -1,4 +1,6 @@
-/* K7 Default Light Theme */
+/* K7 Default Light Theme
+   Public contract: docs/dev/design.md (Theme tokens).
+   Hex lives here. Components consume semantic names only. */
 [data-theme="default-light"] {
     color-scheme: light;
 
@@ -12,22 +14,15 @@
     --color-surface-variant: var(--color-surface-2);
     --color-surface-container: var(--color-surface);
 
-    --color-accent:        #c49a48;
-    --color-accent-hover:  #a67c32;
+    --color-accent:        #d9b060;
+    --color-accent-hover:  #e8c878;
     --color-accent-fg:     #241a0c;
     /* Darker copper for text/icons on light surfaces (WCAG AA on --color-bg). */
     --color-accent-text:   #6e4b16;
-    --color-primary:       var(--color-accent);
-    --color-primary-hover: var(--color-accent-hover);
+    --color-primary:       #d9b060;
+    --color-primary-hover: #e8c878;
     --color-on-primary:    var(--color-accent-fg);
-    --color-on-primary-container: var(--color-text);
-    --on-primary:          var(--color-accent-fg);
     --color-secondary:     var(--color-text-secondary);
-    --primary:             var(--color-accent);
-    --surface-1:           var(--color-surface);
-    --surface-2:           var(--color-surface-2);
-    --text-1:              var(--color-text);
-    --border-subtle:       var(--color-border-subtle);
 
     --color-text:          #262420;
     --color-text-primary:  var(--color-text);
@@ -41,23 +36,30 @@
 
     --color-success:       #2E8A62;
     --color-error:         #B32121;
-    --color-warning:       #C07C14;
+    --color-warning:       #C25618;
     --color-info:          #1F7FA8;
+    --color-on-fill:       var(--color-on-primary);
+    --color-success-fill:  #4DB288;
+    --color-error-fill:    #E5505F;
+    --color-warning-fill:  #E88B4A;
 
     --color-border:        rgba(110, 75, 22, .28);
     --color-border-subtle: rgba(110, 75, 22, .14);
 
-    --color-focus:         #6e4b16;
+    --color-focus:         var(--color-accent);
     --focus-ring:          0 0 0 2px var(--color-focus);
 
     --color-overlay:       rgba(38, 36, 32, .45);
     --media-scrim:         var(--color-bg);
+    --media-copy-shadow:   none;
+    --media-watched-chip:  color-mix(in srgb, var(--color-surface) 85%, transparent);
 
     --scrollbar-thumb:     #b8b2a4;
     --scrollbar-track:     transparent;
 
-    --shadow-sm:  0 1px 2px rgba(64, 60, 48, .08), 0 1px 3px rgba(64, 60, 48, .06);
-    --shadow-md:  0 4px 20px rgba(64, 60, 48, .14), 0 2px 6px rgba(64, 60, 48, .08);
-    --shadow-lg:  0 12px 32px rgba(64, 60, 48, .18), 0 4px 12px rgba(64, 60, 48, .10);
-    --shadow-xl:  0 24px 48px rgba(64, 60, 48, .22), 0 8px 20px rgba(64, 60, 48, .12);
+    --shadow-color: #403c30;
+    --shadow-sm:  0 1px 2px color-mix(in srgb, var(--shadow-color) 8%, transparent), 0 1px 3px color-mix(in srgb, var(--shadow-color) 6%, transparent);
+    --shadow-md:  0 4px 20px color-mix(in srgb, var(--shadow-color) 14%, transparent), 0 2px 6px color-mix(in srgb, var(--shadow-color) 8%, transparent);
+    --shadow-lg:  0 12px 32px color-mix(in srgb, var(--shadow-color) 18%, transparent), 0 4px 12px color-mix(in srgb, var(--shadow-color) 10%, transparent);
+    --shadow-xl:  0 24px 48px color-mix(in srgb, var(--shadow-color) 22%, transparent), 0 8px 20px color-mix(in srgb, var(--shadow-color) 12%, transparent);
 }

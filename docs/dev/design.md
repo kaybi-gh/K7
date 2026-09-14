@@ -12,7 +12,7 @@ Small private installs: the owner plus family/friends. Same people on desktop, p
 - Surface chrome uses `--color-text` and `--color-accent-text` (a darker copper that meets WCAG AA on `--color-bg`). Copy over artwork uses `--color-text-on-media` on dark scrims. In light theme media heroes (desktop, mobile, and TV) use beige `--color-bg` scrims at the same opacities as dark, so logo, meta, and overview use `--color-text` like section titles.
 - Media artwork (posters, covers, stills) carries the UI. Chrome stays quiet; do not decorate over the content.
 - Ambient color (player backdrop, album hero blur) comes from the media when possible, not from a fixed brand palette.
-- Accent is copper (`#CC7A3E`) via CSS tokens only - never hard-coded hex in components. Hex values in this doc are token references only.
+- Accent is copper via `--color-accent` (`#d9b060` in both themes). Never hard-code palette hex in components. Hex in this doc is a token reference only.
 - Fonts: Epilogue for headings, Manrope for body (`--font-heading` / `--font-body`). Do not use Inter/Roboto/Arial or monospace as a style gimmick.
 
 ## Loading
@@ -26,6 +26,24 @@ Library browse episode stills use the same tile height as posters (wider 16:9 ce
 Library filter and sort overlays stay hidden until JS has written their position. C# owns `--placed` and `--teleported` on `K7Select` / `K7Menu` so a later render cannot wipe those classes and hide an open panel. They are not re-anchored on later renders (submenu, filter apply). On TV they open under the toolbar control. Focus inside menus and dialogs does not scroll the browse page. Media card overflow menus use a fixed width (title ellipsizes) so carousel cards do not open panels of different sizes. If the menu would clip the top of the page (first browse row), it opens below the trigger instead.
 
 Component catalog: [developing.md - DesignSystem](developing.md#designsystem). Brand SVGs: [`branding/`](../../branding/).
+
+## Theme tokens
+
+Themes are a product surface. A later branding pass can ship a custom `[data-theme]` sheet or inject CSS through `K7.applyCustomCss`. Until then, hex lives only in `src/Clients/Shared/UI/wwwroot/css/themes/`. Override the names below, not component CSS.
+
+**Surfaces:** `--color-bg`, `--color-surface`, `--color-surface-2`, `--color-drawer`, `--color-overlay`
+
+**Brand:** `--color-primary` / `--color-primary-hover` / `--color-on-primary` are the shared brand gold (`#d9b060` / `#e8c878`) in every theme. `--color-accent` and `--color-accent-hover` match that gold. `--color-accent-text` is the darker copper for labels on light surfaces.
+
+**Text:** `--color-text`, `--color-text-secondary`, `--color-text-muted`, `--color-text-on-media`, `--color-text-on-media-muted`, `--color-text-on-media-accent`
+
+**Feedback:** `--color-success`, `--color-error`, `--color-warning`, `--color-info` are for text and icons. Filled chips and buttons use `--color-success-fill`, `--color-error-fill`, `--color-warning-fill` with `--color-on-fill` (same dark ink as `--color-on-primary`).
+
+**Media heroes:** `--media-scrim` (black in dark, `--color-bg` in light) and `--media-copy-shadow` (tight scrim shadow in dark, `none` in light). `--media-watched-chip` is the watched badge on posters (dark translucent overlay in dark, translucent `--color-surface` in light). Artwork overlays such as poster titles and video chrome may keep a real black shadow. `#000` masks stay as masks.
+
+**Elevation:** `--shadow-color` plus `--shadow-sm` through `--shadow-xl` (`color-mix` of `--shadow-color`)
+
+Type, space, and radius stay in `tokens.css` (Open Props-style scales, not the package).
 
 ## Rules
 

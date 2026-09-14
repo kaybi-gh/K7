@@ -13,9 +13,16 @@ public class ThemeCssTokenTests
         "--color-accent-text:",
         "--media-scrim:",
         "--color-on-primary:",
+        "--color-on-fill:",
+        "--color-error-fill:",
+        "--color-success-fill:",
+        "--color-warning-fill:",
         "--color-surface-variant:",
         "--color-surface-container:",
         "--color-surface-raised:",
+        "--shadow-color:",
+        "--media-copy-shadow:",
+        "--media-watched-chip:",
     ];
 
     [TestCase("default-light.css")]
@@ -35,8 +42,21 @@ public class ThemeCssTokenTests
 
         css.Should().Contain("--color-accent-text:");
         css.Should().Contain("#6e4b16");
+        css.Should().MatchRegex(@"--color-accent:\s*#d9b060");
+        css.Should().MatchRegex(@"--color-accent-hover:\s*#e8c878");
         css.Should().NotContain("#837f70");
+        css.Should().NotContain("#a67c32");
+        css.Should().NotContain("#8a5f1f");
         css.Should().NotContain("rgba(243, 236, 222, 0.78)");
+    }
+
+    [Test]
+    public void BothThemes_ShouldShareTheSamePrimaryGold()
+    {
+        ReadTheme("default-light.css").Should().MatchRegex(@"--color-primary:\s*#d9b060");
+        ReadTheme("default-dark.css").Should().MatchRegex(@"--color-primary:\s*#d9b060");
+        ReadTheme("default-light.css").Should().MatchRegex(@"--color-primary-hover:\s*#e8c878");
+        ReadTheme("default-dark.css").Should().MatchRegex(@"--color-primary-hover:\s*#e8c878");
     }
 
     private static string ReadTheme(string fileName)

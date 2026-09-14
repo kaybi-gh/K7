@@ -25,12 +25,12 @@ K7.Lottie = {
             .catch(function () { });
     },
 
-    // Match branding/logo-on-light.svg (ink #262420, accent #c49a48).
+    // Match branding/logo-on-light.svg (ink #262420, accent #a67c32).
     // Used for #preload splash and the reconnection overlay on light theme.
     _recolorSplashOnLight: function (data) {
         var clone = JSON.parse(JSON.stringify(data));
         var ink = [0.149, 0.141, 0.125, 1];
-        var accent = [0.769, 0.604, 0.282, 1];
+        var accent = [0.651, 0.486, 0.196, 1];
         (function walk(node) {
             if (!node || typeof node !== 'object') return;
             if (node.ty === 'fl' && node.c && Array.isArray(node.c.k) && node.c.k.length >= 3) {
