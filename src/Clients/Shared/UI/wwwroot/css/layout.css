@@ -155,7 +155,7 @@ svg.k7-icon.k7-icon--xl { width: 3rem; }
     display: flex;
     align-items: center;
     gap: var(--space-2);
-    color: var(--color-accent-text);
+    color: var(--color-accent);
     text-decoration: none;
     font-weight: 700;
     font-size: var(--text-lg);
@@ -164,7 +164,7 @@ svg.k7-icon.k7-icon--xl { width: 3rem; }
 .sidebar-logo-text {
     font-family: var(--font-heading);
     font-size: var(--text-xl);
-    color: var(--color-accent-text);
+    color: var(--color-accent);
     white-space: nowrap;
     overflow: hidden;
     max-width: 0;
@@ -173,6 +173,16 @@ svg.k7-icon.k7-icon--xl { width: 3rem; }
 
 .sidebar.open .sidebar-logo-text {
     max-width: 100px;
+}
+
+html .app-nav-logo {
+    color: var(--color-accent);
+}
+
+html .app-nav-main .k7-btn--text:hover:not(:disabled),
+html .app-nav-main .k7-btn--text:focus-visible,
+html .app-nav-main .k7-btn.active {
+    color: var(--color-accent);
 }
 
 .sidebar-toggle {
@@ -255,12 +265,12 @@ svg.k7-icon.k7-icon--xl { width: 3rem; }
 
 .nav-link:hover,
 .nav-link:focus-visible {
-    color: var(--color-text);
+    color: var(--color-accent);
     background: var(--color-surface-hover);
 }
 
 .nav-link.active {
-    color: var(--color-accent-text);
+    color: var(--color-accent);
     background: var(--color-surface-hover);
 }
 
@@ -303,7 +313,7 @@ svg.k7-icon.k7-icon--xl { width: 3rem; }
 .page-sidebar .nav-group-items .nav-link.active:focus,
 .page-sidebar .nav-group-items .nav-link.active:focus-visible,
 .page-sidebar .nav-group-items .nav-link.active:focus-within {
-    color: var(--color-accent-text);
+    color: var(--color-accent);
 }
 
 /* Nav group (collapsible) */
@@ -910,10 +920,10 @@ svg.k7-icon.k7-icon--xl { width: 3rem; }
     .page-sidebar.page-sidebar--collapsed .nav-group-flyout .nav-link.active:focus,
     .page-sidebar.page-sidebar--collapsed .nav-group-flyout .nav-link.active:focus-visible,
     .page-sidebar.page-sidebar--collapsed .nav-group-flyout .nav-link.active:focus-within {
-        color: var(--color-accent-text);
+        color: var(--color-accent);
     }
 
     .page-sidebar.page-sidebar--collapsed .nav-group--active > .nav-rail-entry .nav-icon {
-        color: var(--color-accent-text);
+        color: var(--color-accent);
     }
 }

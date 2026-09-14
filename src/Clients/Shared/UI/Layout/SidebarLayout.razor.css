@@ -114,7 +114,7 @@
 .page-sidebar ::deep .nav-link.active:focus,
 .page-sidebar ::deep .nav-link.active:focus-visible,
 .page-sidebar ::deep .nav-link.active:focus-within {
-    color: var(--color-accent-text);
+    color: var(--color-accent);
 }
 
 :global(html.platform-tv) .page-sidebar ::deep .nav-link.focusable:focus,
@@ -138,7 +138,7 @@
 }
 
 .page-sidebar ::deep .nav-link.active .nav-icon {
-    color: var(--color-accent-text);
+    color: var(--color-accent);
 }
 
 .page-sidebar ::deep summary.nav-group-toggle {
@@ -522,11 +522,11 @@
     .page-with-sidebar:not(.page-with-sidebar--mobile-drawer) .page-sidebar--collapsed ::deep .nav-group-flyout .nav-link.active:focus,
     .page-with-sidebar:not(.page-with-sidebar--mobile-drawer) .page-sidebar--collapsed ::deep .nav-group-flyout .nav-link.active:focus-visible,
     .page-with-sidebar:not(.page-with-sidebar--mobile-drawer) .page-sidebar--collapsed ::deep .nav-group-flyout .nav-link.active:focus-within {
-        color: var(--color-accent-text);
+        color: var(--color-accent);
     }
 
     .page-with-sidebar:not(.page-with-sidebar--mobile-drawer) .page-sidebar--collapsed ::deep .nav-group--active > .nav-rail-entry .nav-icon {
-        color: var(--color-accent-text);
+        color: var(--color-accent);
     }
 
     .page-with-sidebar:not(.page-with-sidebar--mobile-drawer) .page-sidebar--collapsed .page-sidebar-header {
