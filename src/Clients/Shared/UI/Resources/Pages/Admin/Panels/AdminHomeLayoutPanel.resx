@@ -25,8 +25,6 @@
   <data name="ResetToDefault" xml:space="preserve"><value>Réinitialiser</value></data>
   <data name="ResetSuccess" xml:space="preserve"><value>Disposition réinitialisée.</value></data>
   <data name="SaveSuccess" xml:space="preserve"><value>Disposition enregistrée.</value></data>
-  <data name="MoveUp" xml:space="preserve"><value>Déplacer vers le haut</value></data>
-  <data name="MoveDown" xml:space="preserve"><value>Déplacer vers le bas</value></data>
   <data name="AddRow" xml:space="preserve"><value>Ajouter une ligne</value></data>
   <data name="EditRow" xml:space="preserve"><value>Modifier la ligne</value></data>
   <data name="DeleteRow" xml:space="preserve"><value>Supprimer la ligne</value></data>

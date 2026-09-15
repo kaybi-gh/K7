@@ -101,7 +101,7 @@
     height: 40px;
 }
 
-.library-group-browse ::deep .library-toolbar-trailing > .library-toolbar-smart-playlist.k7-btn {
+.library-group-browse ::deep .library-toolbar-trailing .library-toolbar-smart-playlist.k7-btn {
     flex-shrink: 0;
     width: 40px;
     min-width: 40px;
@@ -119,7 +119,7 @@
     line-height: var(--leading-normal);
 }
 
-.library-group-browse ::deep .library-toolbar-trailing > .library-toolbar-smart-playlist.k7-btn:hover:not(:disabled) {
+.library-group-browse ::deep .library-toolbar-trailing .library-toolbar-smart-playlist.k7-btn:hover:not(:disabled) {
     background: var(--color-surface-hover);
     color: var(--color-text-secondary);
     border-color: var(--color-border);

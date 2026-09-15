@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="FeedRowTitle" xml:space="preserve"><value>Raccourcis</value></data>
+  <data name="More" xml:space="preserve"><value>Plus</value></data>
+  <data name="RouteSearch" xml:space="preserve"><value>Recherche</value></data>
+  <data name="RouteMySpace" xml:space="preserve"><value>Mon espace</value></data>
+  <data name="RoutePlaylists" xml:space="preserve"><value>Playlists</value></data>
+  <data name="RouteCollections" xml:space="preserve"><value>Collections</value></data>
+  <data name="RouteStats" xml:space="preserve"><value>Statistiques</value></data>
+  <data name="RouteHistory" xml:space="preserve"><value>Historique</value></data>
+  <data name="RouteReviews" xml:space="preserve"><value>Critiques</value></data>
+  <data name="RouteDownloads" xml:space="preserve"><value>Téléchargements</value></data>
+  <data name="RouteSettings" xml:space="preserve"><value>Paramètres</value></data>
+  <data name="RouteLibraries" xml:space="preserve"><value>Bibliothèques</value></data>
+  <data name="RouteHomeSettings" xml:space="preserve"><value>Disposition de l'accueil</value></data>
+  <data name="RouteUsers" xml:space="preserve"><value>Utilisateurs</value></data>
+  <data name="RouteAdminDashboard" xml:space="preserve"><value>Tableau de bord</value></data>
+  <data name="RouteAdminLibraries" xml:space="preserve"><value>Bibliothèques</value></data>
+  <data name="RouteAdminLibraryGroups" xml:space="preserve"><value>Groupes de bibliothèques</value></data>
+  <data name="RouteAdminUsers" xml:space="preserve"><value>Utilisateurs</value></data>
+  <data name="RouteAdminDevices" xml:space="preserve"><value>Appareils</value></data>
+  <data name="RouteAdminRestrictions" xml:space="preserve"><value>Restrictions</value></data>
+  <data name="RouteAdminAuthentication" xml:space="preserve"><value>Authentification</value></data>
+  <data name="RouteAdminGeneral" xml:space="preserve"><value>Général</value></data>
+  <data name="RouteAdminHomeLayout" xml:space="preserve"><value>Disposition de l'accueil</value></data>
+  <data name="RouteAdminNavigation" xml:space="preserve"><value>Navigation</value></data>
+  <data name="RouteAdminAudioPlayback" xml:space="preserve"><value>Lecture audio</value></data>
+  <data name="RouteAdminVideoPlayback" xml:space="preserve"><value>Lecture vidéo</value></data>
+  <data name="RouteAdminTranscoding" xml:space="preserve"><value>Transcodage</value></data>
+  <data name="RouteAdminPlaybackHistory" xml:space="preserve"><value>Historique de lecture</value></data>
+  <data name="RouteAdminStats" xml:space="preserve"><value>Statistiques</value></data>
+  <data name="RouteAdminBackgroundTasks" xml:space="preserve"><value>Tâches d'arrière-plan</value></data>
+  <data name="RouteAdminDiagnostics" xml:space="preserve"><value>Diagnostic</value></data>
+  <data name="RouteAdminFederation" xml:space="preserve"><value>Fédération</value></data>
+  <data name="RouteAdminNotifications" xml:space="preserve"><value>Notifications</value></data>
+  <data name="RouteAdminScrobbling" xml:space="preserve"><value>Scrobbling</value></data>
+  <data name="RouteAdminApiKeys" xml:space="preserve"><value>Clés API</value></data>
+  <data name="RouteAdminMusicIntelligence" xml:space="preserve"><value>Intelligence musicale</value></data>
+</root>

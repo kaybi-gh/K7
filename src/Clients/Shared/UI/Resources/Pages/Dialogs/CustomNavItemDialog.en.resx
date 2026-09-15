@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="Kind" xml:space="preserve"><value>Type</value></data>
+  <data name="KindLibraryGroup" xml:space="preserve"><value>Library group</value></data>
+  <data name="KindLibraryBrowse" xml:space="preserve"><value>Filtered browse</value></data>
+  <data name="KindAppRoute" xml:space="preserve"><value>App page</value></data>
+  <data name="KindAdminRoute" xml:space="preserve"><value>Admin page</value></data>
+  <data name="KindCollection" xml:space="preserve"><value>Collection</value></data>
+  <data name="KindPlaylist" xml:space="preserve"><value>Playlist</value></data>
+  <data name="Collection" xml:space="preserve"><value>Collection</value></data>
+  <data name="Playlist" xml:space="preserve"><value>Playlist</value></data>
+  <data name="NoCollections" xml:space="preserve"><value>No collections</value></data>
+  <data name="NoPlaylists" xml:space="preserve"><value>No playlists</value></data>
+  <data name="NoCollectionsTip" xml:space="preserve"><value>Create a collection under My Space - Collections first, then pin it here.</value></data>
+  <data name="NoPlaylistsTip" xml:space="preserve"><value>Create a playlist under My Space - Playlists first, then pin it here.</value></data>
+  <data name="LibraryGroup" xml:space="preserve"><value>Group</value></data>
+  <data name="TapAction" xml:space="preserve"><value>Tap action</value></data>
+  <data name="TapActionDefault" xml:space="preserve"><value>Group default</value></data>
+  <data name="TapActionSuggestions" xml:space="preserve"><value>Suggestions</value></data>
+  <data name="TapActionBrowse" xml:space="preserve"><value>Browse</value></data>
+  <data name="BrowseQuery" xml:space="preserve"><value>Browse query</value></data>
+  <data name="BrowseQueryHint" xml:space="preserve"><value>Optional. Paste the query string from a library browse URL, for example filter=...&amp;sort=title.</value></data>
+  <data name="Route" xml:space="preserve"><value>Page</value></data>
+  <data name="TitleOverride" xml:space="preserve"><value>Label (optional)</value></data>
+  <data name="AppearanceSection" xml:space="preserve"><value>Display</value></data>
+  <data name="MatchGroupAppearance" xml:space="preserve"><value>Same as target</value></data>
+  <data name="MatchGroupAppearanceHint" xml:space="preserve"><value>Uses the library group or My Space page icon, cover, and color. Updates if the target changes.</value></data>
+  <data name="IconLabel" xml:space="preserve"><value>Icon</value></data>
+  <data name="IconNone" xml:space="preserve"><value>None</value></data>
+  <data name="IconChange" xml:space="preserve"><value>Choose</value></data>
+  <data name="IconReset" xml:space="preserve"><value>Reset</value></data>
+  <data name="IconSearch" xml:space="preserve"><value>Search icons...</value></data>
+  <data name="CoverLabel" xml:space="preserve"><value>Cover image</value></data>
+  <data name="CoverNone" xml:space="preserve"><value>None</value></data>
+  <data name="CoverChange" xml:space="preserve"><value>Choose</value></data>
+  <data name="RemoveCover" xml:space="preserve"><value>Reset</value></data>
+  <data name="ColorLabel" xml:space="preserve"><value>Card color</value></data>
+  <data name="UseCoverDominantColor" xml:space="preserve"><value>Use image color</value></data>
+  <data name="PreviewLabel" xml:space="preserve"><value>Preview</value></data>
+</root>

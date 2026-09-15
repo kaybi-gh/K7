@@ -398,6 +398,25 @@
         </div>
     </section>
 
+    <section id="k7-sortable-list" class="ds-section">
+        <h2>K7SortableList</h2>
+        <p class="ds-description">Compact reorderable rows. Drag the handle (a gap shows the drop slot). Keyboard: Enter to pick up, arrows to move, Enter to drop, Escape to cancel.</p>
+
+        <h3>Interactive</h3>
+        <div class="ds-preview ds-preview--column ds-preview--narrow">
+            <K7SortableList TItem="SortableDemoItem" Items="_sortableItems" ItemKey="@(item => item.Id)">
+                <span class="text-sm">@context.Title</span>
+            </K7SortableList>
+        </div>
+
+        <h3>Disabled</h3>
+        <div class="ds-preview ds-preview--column ds-preview--narrow">
+            <K7SortableList TItem="SortableDemoItem" Items="_sortableDisabledItems" ItemKey="@(item => item.Id)" Disabled="true">
+                <span class="text-sm">@context.Title</span>
+            </K7SortableList>
+        </div>
+    </section>
+
     <section id="k7-grouped-list" class="ds-section">
         <h2>K7GroupedList</h2>
         <p class="ds-description">Searchable catalog with sticky group headers. Used for notification parameters, rule fields, and other pickers.</p>
@@ -504,7 +523,7 @@
 
     <section id="k7-category-card" class="ds-section">
         <h2>K7CategoryCard</h2>
-        <p class="ds-description">Full-width card with gradient background, bold italic title, description, and icon badge. Optional long-press / right-click menu for alternate destinations.</p>
+        <p class="ds-description">Full-width card with gradient background, bold italic title, description, and icon badge. Optional long-press / right-click menu for alternate destinations. <code>k7-category-card--sm</code> is the compact Home shortcut size (smaller title and icon).</p>
         <div class="ds-preview ds-preview--block" style="max-width:480px">
             <div style="display:flex;flex-direction:column;gap:var(--space-3)">
                 <K7CategoryCard Title="Films"
@@ -530,6 +549,13 @@
                                 Description="Sonic journeys"
                                 Icon="@Phosphor.MusicNote"
                                 GradientStart="rgba(10,65,65,0.92)"                                IconColor="rgba(0,0,0,0.55)" />
+                <div style="width:240px">
+                    <K7CategoryCard Title="Shortcuts"
+                                    Icon="film-slate"
+                                    GradientStart="rgba(110,25,25,0.92)"
+                                    IconColor="rgba(0,0,0,0.55)"
+                                    Class="k7-category-card--sm" />
+                </div>
             </div>
         </div>
     </section>
@@ -746,6 +772,26 @@
         else
             _selectedItems.Remove(item);
     }
+
+    private sealed class SortableDemoItem
+    {
+        public string Id { get; init; } = "";
+        public string Title { get; set; } = "";
+    }
+
+    private readonly List<SortableDemoItem> _sortableItems =
+    [
+        new() { Id = "1", Title = "Continue watching" },
+        new() { Id = "2", Title = "Recently added" },
+        new() { Id = "3", Title = "Movies" },
+        new() { Id = "4", Title = "TV Shows" }
+    ];
+
+    private readonly List<SortableDemoItem> _sortableDisabledItems =
+    [
+        new() { Id = "d1", Title = "Cannot drag this" },
+        new() { Id = "d2", Title = "Or this" }
+    ];
 
     private string? _lastGroupedClick;
     private static readonly IReadOnlyList<K7GroupedListGroup<string>> _groupedListGroups =

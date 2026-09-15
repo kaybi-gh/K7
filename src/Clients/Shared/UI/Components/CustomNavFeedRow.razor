@@ -1,0 +1,30 @@
+@namespace K7.Clients.Shared.UI.Components
+
+@if (Visible)
+{
+    <div class="custom-nav-feed-row">
+        <Carousel Title="@RowTitle" ContentKey="@ContentKey">
+        @foreach (var item in VisibleItems)
+        {
+            var href = GetHref(item);
+            var title = GetTitle(item);
+            var icon = CustomNavHrefHelper.GetIcon(item, Store.Groups, Store.Collections, Store.Playlists);
+            var (gs, ic) = CustomNavHrefHelper.GetCardTone(item, Store.Groups);
+            var cardColor = CustomNavHrefHelper.GetCardColor(item, Store.Groups);
+            var imageUrl = GetImageUrl(item);
+            <CarouselItem @key="item.Id">
+                <div class="custom-nav-feed-card">
+                    <K7CategoryCard Title="@title"
+                                    Icon="@icon"
+                                    GradientStart="@gs"
+                                    IconColor="@ic"
+                                    ImageUrl="@imageUrl"
+                                    CardColor="@cardColor"
+                                    Class="k7-category-card--sm"
+                                    OnClick="@(() => Navigate(href))" />
+                </div>
+            </CarouselItem>
+        }
+        </Carousel>
+    </div>
+}

@@ -28,13 +28,21 @@
                 </NavLink>
                 @if (!_isGuest)
                 {
-                    <NavLink class="nav-link focusable" href="/settings/video-playback">
-                        <span class="nav-icon"><K7Icon Icon="@Phosphor.Play" /></span>
-                        <span class="nav-label">@L["VideoPlayback"]</span>
+                    <NavLink class="nav-link focusable" href="/settings/home-layout">
+                        <span class="nav-icon"><K7Icon Icon="@Phosphor.House" /></span>
+                        <span class="nav-label">@L["HomeLayout"]</span>
+                    </NavLink>
+                    <NavLink class="nav-link focusable" href="/settings/navigation">
+                        <span class="nav-icon"><K7Icon Icon="@Phosphor.NavigationArrow" /></span>
+                        <span class="nav-label">@L["CustomNav"]</span>
                     </NavLink>
                     <NavLink class="nav-link focusable" href="/settings/audio-player">
                         <span class="nav-icon"><K7Icon Icon="@Phosphor.MusicNotes" /></span>
-                        <span class="nav-label">@L["AudioPlayer"]</span>
+                        <span class="nav-label">@L["AudioPlayback"]</span>
+                    </NavLink>
+                    <NavLink class="nav-link focusable" href="/settings/video-playback">
+                        <span class="nav-icon"><K7Icon Icon="@Phosphor.Play" /></span>
+                        <span class="nav-label">@L["VideoPlayback"]</span>
                     </NavLink>
                 }
             </SidebarNavGroup>
@@ -45,10 +53,6 @@
                     <NavLink class="nav-link focusable" href="/settings/libraries">
                         <span class="nav-icon"><K7Icon Icon="@Phosphor.Books" /></span>
                         <span class="nav-label">@L["Libraries"]</span>
-                    </NavLink>
-                    <NavLink class="nav-link focusable" href="/settings/home">
-                        <span class="nav-icon"><K7Icon Icon="@Phosphor.House" /></span>
-                        <span class="nav-label">@L["Home"]</span>
                     </NavLink>
                     <NavLink class="nav-link focusable" href="/settings/social">
                         <span class="nav-icon"><K7Icon Icon="@Phosphor.GlobeHemisphereWest" /></span>

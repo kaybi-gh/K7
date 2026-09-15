@@ -86,6 +86,7 @@
 
     /* --- Layout --- */
     --nav-height:          56px;
+    --custom-nav-height:   0px;
     --sidebar-width-mini:  56px;
     --sidebar-width-open:  240px;
     --mini-player-height:  60px;

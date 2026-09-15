@@ -19,7 +19,7 @@
   </xsd:schema>
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
-  <data name="Title" xml:space="preserve"><value>Audio player</value></data>
+  <data name="Title" xml:space="preserve"><value>Audio playback</value></data>
   <data name="LoudnessNormalization" xml:space="preserve"><value>Loudness normalization</value></data>
   <data name="EnableLoudness" xml:space="preserve"><value>Enable loudness normalization</value></data>
   <data name="TargetLoudness" xml:space="preserve"><value>Target loudness (LUFS)</value></data>

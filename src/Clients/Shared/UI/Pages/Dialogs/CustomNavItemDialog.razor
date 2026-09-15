@@ -1,0 +1,220 @@
+@using K7.Server.Domain.Enums
+@using K7.Shared.CustomNav
+@using K7.Shared.Enums
+@inject IStringLocalizer<CustomNavItemDialog> L
+@inject IStringLocalizer<CustomNavStrings> NavL
+@inject IStringLocalizer<SharedResource> S
+
+<div class="k7-dialog-content">
+    <div class="d-flex flex-col gap-3 mt-2">
+        <K7Select TValue="CustomNavItemKind" @bind-Value="KindChoice" @bind-Value:after="OnKindChangedAsync" Label="@L["Kind"]" Variant="outlined">
+            <K7SelectItem Value="@CustomNavItemKind.LibraryGroup" Text="@L["KindLibraryGroup"]">@L["KindLibraryGroup"]</K7SelectItem>
+            <K7SelectItem Value="@CustomNavItemKind.Collection" Text="@L["KindCollection"]">@L["KindCollection"]</K7SelectItem>
+            <K7SelectItem Value="@CustomNavItemKind.Playlist" Text="@L["KindPlaylist"]">@L["KindPlaylist"]</K7SelectItem>
+            <K7SelectItem Value="@CustomNavItemKind.AppRoute" Text="@L["KindAppRoute"]">@L["KindAppRoute"]</K7SelectItem>
+            @if (_canAccessAdmin)
+            {
+                <K7SelectItem Value="@CustomNavItemKind.AdminRoute" Text="@L["KindAdminRoute"]">@L["KindAdminRoute"]</K7SelectItem>
+            }
+            @if (_kind == CustomNavItemKind.LibraryBrowse)
+            {
+                <K7SelectItem Value="@CustomNavItemKind.LibraryBrowse" Text="@L["KindLibraryBrowse"]">@L["KindLibraryBrowse"]</K7SelectItem>
+            }
+        </K7Select>
+
+        @if (_kind is CustomNavItemKind.LibraryGroup or CustomNavItemKind.LibraryBrowse)
+        {
+            <K7Select TValue="Guid" @bind-Value="_libraryGroupId" @bind-Value:after="OnGroupChangedAsync" Label="@L["LibraryGroup"]" Variant="outlined">
+                @foreach (var group in Groups)
+                {
+                    <K7SelectItem TValue="Guid" Value="@group.Id" Text="@group.Title">@group.Title</K7SelectItem>
+                }
+            </K7Select>
+        }
+
+        @if (_kind == CustomNavItemKind.LibraryGroup)
+        {
+            <K7Select TValue="int" @bind-Value="_tapChoice" Label="@L["TapAction"]" Variant="outlined">
+                <K7SelectItem TValue="int" Value="@(0)" Text="@L["TapActionDefault"]">@L["TapActionDefault"]</K7SelectItem>
+                <K7SelectItem TValue="int" Value="@(1)" Text="@L["TapActionSuggestions"]">@L["TapActionSuggestions"]</K7SelectItem>
+                <K7SelectItem TValue="int" Value="@(2)" Text="@L["TapActionBrowse"]">@L["TapActionBrowse"]</K7SelectItem>
+            </K7Select>
+        }
+
+        @if (_kind == CustomNavItemKind.Collection)
+        {
+            <K7Select TValue="Guid"
+                      @bind-Value="_targetId"
+                      @bind-Value:after="OnTargetChangedAsync"
+                      Label="@L["Collection"]"
+                      Variant="outlined"
+                      Disabled="@(Collections.Count == 0)"
+                      Placeholder="@L["NoCollections"]"
+                      ToStringFunc="GetCollectionSelectLabel">
+                @foreach (var collection in Collections)
+                {
+                    <K7SelectItem TValue="Guid" Value="@collection.Id" Text="@collection.Title">@collection.Title</K7SelectItem>
+                }
+            </K7Select>
+            @if (Collections.Count == 0)
+            {
+                <K7Alert Severity="K7Severity.Info" Variant="outlined" NoIcon="true">@L["NoCollectionsTip"]</K7Alert>
+            }
+        }
+
+        @if (_kind is CustomNavItemKind.Playlist or CustomNavItemKind.DynamicPlaylist)
+        {
+            <K7Select TValue="Guid"
+                      @bind-Value="_targetId"
+                      @bind-Value:after="OnTargetChangedAsync"
+                      Label="@L["Playlist"]"
+                      Variant="outlined"
+                      Disabled="@(Playlists.Count == 0)"
+                      Placeholder="@L["NoPlaylists"]"
+                      ToStringFunc="GetPlaylistSelectLabel">
+                @foreach (var playlist in Playlists)
+                {
+                    <K7SelectItem TValue="Guid" Value="@playlist.Id" Text="@playlist.Title">@playlist.Title</K7SelectItem>
+                }
+            </K7Select>
+            @if (Playlists.Count == 0)
+            {
+                <K7Alert Severity="K7Severity.Info" Variant="outlined" NoIcon="true">@L["NoPlaylistsTip"]</K7Alert>
+            }
+        }
+
+        @if (_kind == CustomNavItemKind.LibraryBrowse)
+        {
+            <K7TextField TValue="string" @bind-Value="_browseQuery" Label="@L["BrowseQuery"]" Variant="outlined" MaxLength="2000" />
+            <p class="text-xs field-hint">@L["BrowseQueryHint"]</p>
+        }
+
+        @if (_kind == CustomNavItemKind.AppRoute)
+        {
+            <K7Select TValue="string" @bind-Value="_route" @bind-Value:after="OnRouteChangedAsync" Label="@L["Route"]" Variant="outlined">
+                @foreach (var route in VisibleAppRoutes)
+                {
+                    <K7SelectItem TValue="string" Value="@route.Path" Text="@NavL[route.LabelKey]">@NavL[route.LabelKey]</K7SelectItem>
+                }
+            </K7Select>
+        }
+
+        @if (_kind == CustomNavItemKind.AdminRoute)
+        {
+            <K7Select TValue="string" @bind-Value="_route" @bind-Value:after="OnRouteChangedAsync" Label="@L["Route"]" Variant="outlined">
+                @foreach (var route in VisibleAdminRoutes)
+                {
+                    <K7SelectItem TValue="string" Value="@route.Path" Text="@NavL[route.LabelKey]">@NavL[route.LabelKey]</K7SelectItem>
+                }
+            </K7Select>
+        }
+
+        <K7Divider Class="my-1" />
+        <span class="text-sm text-secondary">@L["AppearanceSection"]</span>
+
+        <K7TextField TValue="string" @bind-Value="_title" Label="@L["TitleOverride"]" Variant="outlined" MaxLength="80" />
+
+        @if (CanMatchTargetAppearance)
+        {
+            <K7Switch Value="@_matchGroupAppearance"
+                      ValueChanged="OnMatchGroupAppearanceChanged"
+                      Label="@L["MatchGroupAppearance"]" />
+            <p class="text-xs field-hint">@L["MatchGroupAppearanceHint"]</p>
+        }
+
+        @if (!UseTargetAppearance)
+        {
+            <div class="picker-row">
+                <span class="picker-row__label">@L["IconLabel"]</span>
+                <div class="picker-row__value">
+                    @if (!string.IsNullOrEmpty(PreviewIcon))
+                    {
+                        <i class="@PreviewIcon picker-row__icon-preview" aria-hidden="true"></i>
+                    }
+                    else
+                    {
+                        <span class="text-sm text-secondary">@L["IconNone"]</span>
+                    }
+                </div>
+                <K7Button Variant="outlined" Size="sm" OnClick="OpenIconPickerAsync">@L["IconChange"]</K7Button>
+                @if (!string.IsNullOrEmpty(_icon))
+                {
+                    <K7Button Variant="text" Size="sm" OnClick="ResetIcon">@L["IconReset"]</K7Button>
+                }
+            </div>
+
+            <div class="picker-row">
+                <span class="picker-row__label">@L["CoverLabel"]</span>
+                <div class="picker-row__value">
+                    @if (_pendingCover?.SourcePictureId.HasValue == true)
+                    {
+                        <K7Image Src="@($"/api/metadata-pictures/{_pendingCover.SourcePictureId}?size=Small")"
+                                 Class="picker-row__cover-preview"
+                                 Width="48"
+                                 Height="48"
+                                 ObjectFit="cover"
+                                 Alt="cover"
+                                 LoadingMode="K7ImageLoadingMode.Css" />
+                    }
+                    else if (_pendingCover?.File is not null)
+                    {
+                        <span class="text-sm text-secondary">@_pendingCover.File.Name</span>
+                    }
+                    else if (PreviewThumbUrl is not null)
+                    {
+                        <K7Image Src="@PreviewThumbUrl"
+                                 Class="picker-row__cover-preview"
+                                 Width="48"
+                                 Height="48"
+                                 ObjectFit="cover"
+                                 Alt="cover"
+                                 LoadingMode="K7ImageLoadingMode.Css" />
+                    }
+                    else
+                    {
+                        <span class="text-sm text-secondary">@L["CoverNone"]</span>
+                    }
+                </div>
+                <K7Button Variant="outlined" Size="sm" OnClick="OpenCoverPickerAsync">@L["CoverChange"]</K7Button>
+                @if (HasCoverOverride)
+                {
+                    <K7Button Variant="text" Size="sm" OnClick="ResetCover">@L["RemoveCover"]</K7Button>
+                }
+            </div>
+
+            <div class="color-picker-row">
+                <K7ColorPicker Label="@L["ColorLabel"]" Value="@_cardColor" ValueChanged="OnCardColorChangedAsync" />
+                <K7Button Variant="outlined"
+                          Size="sm"
+                          Class="color-picker-row__action"
+                          Disabled="@(!CanApplyCoverDominantColor)"
+                          OnClick="ApplyCoverDominantColorAsync">
+                    @L["UseCoverDominantColor"]
+                </K7Button>
+            </div>
+        }
+
+        <div>
+            <span class="picker-row__label mb-1">@L["PreviewLabel"]</span>
+            <div class="custom-nav-card-preview">
+                <K7CategoryCard Title="@PreviewTitle"
+                                Icon="@PreviewIcon"
+                                GradientStart="@_previewColors.GradientStart"
+                                IconColor="@_previewColors.IconColor"
+                                ImageUrl="@PreviewImageUrl"
+                                CardColor="@PreviewCardColor"
+                                Class="k7-category-card--sm" />
+            </div>
+        </div>
+    </div>
+</div>
+<div class="k7-dialog-actions">
+    <K7Button OnClick="Cancel" Disabled="_isSubmitting">@S["Cancel"]</K7Button>
+    <K7Button Color="primary" Variant="filled" OnClick="SubmitAsync" Disabled="@(!CanSubmit || _isSubmitting)">
+        @if (_isSubmitting)
+        {
+            <K7Spinner Size="sm" />
+        }
+        @S["Save"]
+    </K7Button>
+</div>

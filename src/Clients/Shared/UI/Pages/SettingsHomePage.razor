@@ -1,4 +1,4 @@
-@page "/settings/home"
+@page "/settings/home-layout"
 @layout SettingsLayout
 @inject IStringLocalizer<Settings> L
 @inject IStringLocalizer<SharedResource> S
@@ -17,26 +17,14 @@ else
         <div class="settings-form-page__body d-flex flex-col gap-4">
             <p class="text-sm" Color="secondary">@L["HomePageDescription"]</p>
 
-            <div class="d-flex flex-col gap-2">
-                @for (var i = 0; i < _rows.Count; i++)
-                {
-                    var row = _rows[i];
-                    var isFirst = i == 0;
-                    var isLast = i == _rows.Count - 1;
-                    <K7Paper Outlined="true" Elevation="0" Class="pa-3 d-flex align-center justify-between gap-3">
-                        <div class="d-flex align-center gap-2">
-                            <div class="d-flex flex-col gap-1">
-                                <K7IconButton Icon="@Phosphor.ArrowUp" Disabled="@isFirst"
-                                        OnClick="() => MoveUp(row)" AriaLabel="@L["MoveUp"]" />
-                                <K7IconButton Icon="@Phosphor.ArrowDown" Disabled="@isLast"
-                                        OnClick="() => MoveDown(row)" AriaLabel="@L["MoveDown"]" />
-                            </div>
-                            <span class="text-sm">@GetRowTitle(row.Title)</span>
-                        </div>
-                        <K7Switch Value="@row.IsVisible" ValueChanged="@(v => OnRowVisibilityChanged(row, v))" />
-                    </K7Paper>
-                }
-            </div>
+            <K7SortableList TItem="HomeRowEditModel"
+                            Items="_rows"
+                            ItemKey="@(row => row.Id)"
+                            Disabled="_saving"
+                            Reordered="RenumberRows">
+                <span class="text-sm">@GetRowTitle(context.Title)</span>
+                <K7Switch Value="@context.IsVisible" ValueChanged="@(v => OnRowVisibilityChanged(context, v))" />
+            </K7SortableList>
 
             <K7ExpansionPanel>
                 <TitleContent>@L["PreviewTitle"]</TitleContent>

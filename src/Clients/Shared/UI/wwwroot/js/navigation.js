@@ -34,6 +34,7 @@ var SpatialNav = (function () {
     var _lastPageContentFocusId = null;
     var _tvTextEditStartedAt = 0;
     var _tvEditDismissViaBack = false;
+    var _sortableListPausedSn = false;
     var TV_TEXT_EDIT_BLUR_GRACE_MS = 400;
 
     var FOCUSABLE = [
@@ -1426,6 +1427,15 @@ var SpatialNav = (function () {
             return;
         }
 
+        if (active && active.closest && active.closest('.k7-sortable-list__handle')
+            && active.closest('.k7-sortable-list--keyboard-grab')) {
+            active.dispatchEvent(new CustomEvent('sn:editcommit', { bubbles: false }));
+            if (window.SpatialNavigation) SpatialNavigation.resume();
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            return;
+        }
+
         var tag = (active.tagName || '').toLowerCase();
         var role = active.getAttribute('role') || '';
         if (tag === 'button' || tag === 'a') {
@@ -1455,6 +1465,11 @@ var SpatialNav = (function () {
     function handleKeyUp(e) {
         var key = e.key;
         var code = e.code || '';
+
+        if (_sortableListPausedSn && (key === 'ArrowUp' || key === 'ArrowDown')) {
+            _sortableListPausedSn = false;
+            if (window.SpatialNavigation) SpatialNavigation.resume();
+        }
 
         if (key === 'ArrowLeft' || key === 'ArrowRight' || code === 'ArrowLeft' || code === 'ArrowRight'
             || e.keyCode === 37 || e.keyCode === 39 || e.keyCode === 21 || e.keyCode === 22) {
@@ -1598,6 +1613,20 @@ var SpatialNav = (function () {
         }
 
         if (isOpenSearchSelectInput(active)) return;
+
+        var sortableGrab = active && active.closest && active.closest('.k7-sortable-list--keyboard-grab');
+        if (sortableGrab) {
+            var grabHandle = (active.closest && active.closest('.k7-sortable-list__handle'))
+                || sortableGrab.querySelector('.k7-sortable-list__handle--grabbing');
+            if (grabHandle) {
+                stopEditing(grabHandle);
+                grabHandle.dispatchEvent(new CustomEvent('sn:editcancel', { bubbles: false }));
+            }
+            if (window.SpatialNavigation) SpatialNavigation.resume();
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            return;
+        }
 
         if (tryClosePlaybackSettingsLevel()) {
             e.preventDefault();
@@ -1815,6 +1844,18 @@ var SpatialNav = (function () {
                     return;
                 }
                 // Other non-text activatables and desktop blur-to-commit keep the old behavior.
+                // Sortable handles stay in grab mode across Blazor re-renders after arrow moves.
+                if (editingEl.classList.contains('k7-sortable-list__handle')
+                    || (editingEl.closest && editingEl.closest('.k7-sortable-list__handle'))) {
+                    setTimeout(function () {
+                        var grabbed = document.querySelector('.k7-sortable-list__handle--grabbing');
+                        if (grabbed && document.activeElement !== grabbed)
+                            grabbed.focus({ preventScroll: true });
+                        else if (editingEl.isConnected)
+                            editingEl.setAttribute('data-sn-editing', 'true');
+                    }, 0);
+                    return;
+                }
                 if (!isTextInput(editingEl) || !isTvLongPressMode()) {
                     stopEditing(editingEl);
                     if (window.SpatialNavigation) SpatialNavigation.resume();
@@ -1875,6 +1916,18 @@ var SpatialNav = (function () {
                     return;
                 }
             }
+        }
+
+        if ((key === 'ArrowUp' || key === 'ArrowDown')
+            && activeEl && activeEl.closest
+            && activeEl.closest('.k7-sortable-list__handle')
+            && !activeEl.disabled
+            && (isEditing(activeEl) || activeEl.closest('.k7-sortable-list--keyboard-grab'))) {
+            if (window.SpatialNavigation) {
+                SpatialNavigation.pause();
+                _sortableListPausedSn = true;
+            }
+            return;
         }
 
         if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].indexOf(key) !== -1

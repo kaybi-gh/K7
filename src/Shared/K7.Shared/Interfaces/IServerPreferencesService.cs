@@ -1,4 +1,5 @@
 using K7.Shared.Dtos;
+using K7.Shared.Dtos.CustomNav;
 using K7.Shared.Dtos.Home;
 
 namespace K7.Shared.Interfaces;
@@ -9,6 +10,10 @@ public interface IServerPreferencesService
     Task<HomeLayoutDto> GetEffectiveServerHomeLayoutAsync(CancellationToken cancellationToken = default);
     Task UpdateServerHomeLayoutAsync(HomeLayoutDto layout, CancellationToken cancellationToken = default);
     Task DeleteServerHomeLayoutAsync(CancellationToken cancellationToken = default);
+    Task<CustomNavLayoutDto?> GetServerCustomNavLayoutAsync(CancellationToken cancellationToken = default);
+    Task<CustomNavLayoutDto> GetEffectiveServerCustomNavLayoutAsync(CancellationToken cancellationToken = default);
+    Task UpdateServerCustomNavLayoutAsync(CustomNavLayoutDto layout, CancellationToken cancellationToken = default);
+    Task DeleteServerCustomNavLayoutAsync(CancellationToken cancellationToken = default);
     Task<ServerFeatureFlagsDto> GetServerFeatureFlagsAsync(CancellationToken cancellationToken = default);
     Task UpdateServerFeatureFlagsAsync(ServerFeatureFlagsDto flags, CancellationToken cancellationToken = default);
     Task<MusicIntelligenceStatusDto> GetMusicIntelligenceStatusAsync(CancellationToken cancellationToken = default);

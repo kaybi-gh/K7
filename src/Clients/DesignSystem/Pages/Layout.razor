@@ -65,6 +65,10 @@
                 <span>Fixed top bar (<code>--nav-height: 56px</code>). Below <code>600px</code>: moves to bottom.</span>
             </div>
             <div class="ds-layout-annotation">
+                <span class="dsl-badge dsl-badge--nav">CustomNavBar</span>
+                <span>Optional text bar under AppNav (<code>--custom-nav-height: 44px</code> when enabled). Hidden below <code>600px</code> and on TV (TV uses a Home row instead).</span>
+            </div>
+            <div class="ds-layout-annotation">
                 <span class="dsl-badge dsl-badge--main">Main</span>
                 <span>Full width below nav. Independently scrollable.</span>
             </div>
@@ -246,7 +250,7 @@
                 <tr>
                     <td><code>xs</code></td>
                     <td><code>&lt; 600px</code></td>
-                    <td>AppNav moves to bottom; main content uses full height with bottom padding</td>
+                    <td>AppNav moves to bottom; main content uses full height with bottom padding. CustomNavBar and CustomNavFeedRow are hidden</td>
                 </tr>
                 <tr>
                     <td><code>sm</code></td>
@@ -283,6 +287,11 @@
                     <td><code>--nav-height</code></td>
                     <td><code>56px</code></td>
                     <td>AppNav bar height. Grid row on desktop; MiniPlayer bottom offset on mobile</td>
+                </tr>
+                <tr>
+                    <td><code>--custom-nav-height</code></td>
+                    <td><code>0px</code> (<code>44px</code> when <code>app-shell--custom-nav</code> is on desktop)</td>
+                    <td>Optional CustomNavBar under AppNav. Forced to <code>0</code> below <code>600px</code> and on TV</td>
                 </tr>
                 <tr>
                     <td><code>--page-sidebar-width</code></td>

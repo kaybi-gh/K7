@@ -6,8 +6,15 @@ namespace K7.Clients.Shared.UI.Layout;
 
 public partial class SettingsLayout
 {
-    private static readonly string[] MyContentRoutes = ["/settings/libraries", "/settings/home", "/settings/social", "/settings/hidden"];
-    private static readonly string[] ExperienceRoutes = ["/settings/general", "/settings/video-playback", "/settings/audio-player"];
+    private static readonly string[] MyContentRoutes = ["/settings/libraries", "/settings/social", "/settings/hidden"];
+    private static readonly string[] ExperienceRoutes =
+    [
+        "/settings/general",
+        "/settings/home-layout",
+        "/settings/navigation",
+        "/settings/audio-player",
+        "/settings/video-playback"
+    ];
     private static readonly string[] WatchTogetherRoutes =
     [
         "/settings/syncplay",

@@ -1,0 +1,127 @@
+@namespace K7.Clients.Shared.UI.Components
+@using K7.Shared.CustomNav
+@inject IStringLocalizer<CustomNavLayoutFields> L
+@inject IStringLocalizer<CustomNavStrings> NavL
+
+<div class="custom-nav-layout-fields d-flex flex-col gap-4">
+    <p class="text-sm" Color="secondary">@Description</p>
+
+    <div>
+        <K7Switch Value="@Model.Enabled" ValueChanged="OnEnabledChanged" Label="@EnabledLabel" Disabled="Disabled" />
+        @if (!string.IsNullOrEmpty(EnabledHint))
+        {
+            <p class="text-xs field-hint mt-1">@EnabledHint</p>
+        }
+    </div>
+
+    @if (Model.Enabled)
+    {
+        <section class="custom-nav-layout-fields__section">
+            <h6 class="custom-nav-layout-fields__heading">@L["Display"]</h6>
+
+            <div>
+                <p class="text-sm mb-1">@L["Placement"]</p>
+                <K7ButtonGroup TValue="CustomNavPlacement"
+                               Options="PlacementOptions"
+                               Value="Model.Placement"
+                               ValueChanged="OnPlacementChanged"
+                               AriaLabel="@L["Placement"]" />
+                <p class="text-xs mt-1 field-hint">@L["PlacementHint"]</p>
+            </div>
+
+            @if (Model.Placement == CustomNavPlacement.FeedRow)
+            {
+                <K7TextField TValue="string"
+                             Value="Model.FeedRowTitle"
+                             ValueChanged="OnFeedRowTitleChanged"
+                             Label="@L["FeedRowTitle"]"
+                             Placeholder="@NavL["FeedRowTitle"]"
+                             Variant="outlined"
+                             MaxLength="80"
+                             Disabled="Disabled" />
+                <p class="text-xs field-hint">@L["FeedRowTitleHint"]</p>
+            }
+            else
+            {
+                <K7Switch Value="@Model.BarShowIcons" ValueChanged="OnBarShowIconsChanged"
+                          Label="@L["BarShowIcons"]" Disabled="Disabled" />
+            }
+
+            <div>
+                <p class="text-sm mb-1">@L["ShowOn"]</p>
+                @if (Model.Placement == CustomNavPlacement.FeedRow)
+                {
+                    <K7CheckboxList TItem="string"
+                                    Class="custom-nav-layout-fields__checks"
+                                    Items="RowPageKeys"
+                                    ItemLabel="GetRowPageLabel"
+                                    IsChecked="IsRowPageChecked"
+                                    IsDisabled="IsListDisabled"
+                                    CheckedChanged="OnRowPageChecked" />
+                    <p class="text-xs mt-1 field-hint">@L["FeedRowScopeHint"]</p>
+                }
+                else
+                {
+                    <K7CheckboxList TItem="string"
+                                    Class="custom-nav-layout-fields__checks"
+                                    Items="BarPageKeys"
+                                    ItemLabel="GetBarPageLabel"
+                                    IsChecked="IsBarPageChecked"
+                                    IsDisabled="IsListDisabled"
+                                    CheckedChanged="OnBarPageChecked" />
+                }
+            </div>
+
+            <div>
+                <p class="text-sm mb-1">@L["Devices"]</p>
+                <K7CheckboxList TItem="string"
+                                Class="custom-nav-layout-fields__checks"
+                                Items="DeviceKeys"
+                                ItemLabel="GetDeviceLabel"
+                                IsChecked="IsDeviceChecked"
+                                IsDisabled="IsListDisabled"
+                                CheckedChanged="OnDeviceChecked" />
+                @if (Model.Placement == CustomNavPlacement.FeedRow)
+                {
+                    <p class="text-xs mt-1 field-hint">@L["DevicesHint"]</p>
+                }
+            </div>
+        </section>
+
+        <K7Divider />
+
+        <section class="custom-nav-layout-fields__section">
+            <div class="d-flex align-center justify-between">
+                <h6 class="custom-nav-layout-fields__heading">@L["Items"]</h6>
+                <K7Button Color="primary" Variant="outlined" StartIcon="@Phosphor.Plus"
+                          OnClick="AddItemAsync" Disabled="@(Disabled || Model.Items.Count >= CustomNavLimits.MaxItems)">
+                    @L["AddItem"]
+                </K7Button>
+            </div>
+
+            @if (Model.Items.Count == 0)
+            {
+                <p class="text-sm" Color="secondary">@ItemsEmpty</p>
+            }
+            else
+            {
+                <K7SortableList TItem="CustomNavItemEditModel"
+                                Items="Model.Items"
+                                ItemKey="@(item => item.Id)"
+                                Disabled="Disabled"
+                                Reordered="NotifyAsync">
+                    <div class="d-flex align-center gap-2">
+                        <span class="text-sm">@GetItemTitle(context)</span>
+                        <span class="text-xs" Color="secondary">@GetKindLabel(context.Kind)</span>
+                    </div>
+                    <div class="d-flex align-center gap-1">
+                        <K7IconButton Icon="@Phosphor.PencilSimple" Disabled="Disabled"
+                                OnClick="() => EditItemAsync(context)" AriaLabel="@L["EditItem"]" />
+                        <K7IconButton Icon="@Phosphor.Trash" Disabled="Disabled"
+                                OnClick="() => DeleteItem(context)" AriaLabel="@L["DeleteItem"]" />
+                    </div>
+                </K7SortableList>
+            }
+        </section>
+    }
+</div>

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="PageTitle" xml:space="preserve"><value>Navigation</value></data>
+  <data name="Description" xml:space="preserve"><value>Valeur par défaut du serveur. Chaque utilisateur peut la remplacer dans ses paramètres.</value></data>
+  <data name="Enabled" xml:space="preserve"><value>Activer par défaut</value></data>
+  <data name="ItemsEmpty" xml:space="preserve"><value>Aucun raccourci par défaut.</value></data>
+  <data name="SaveSuccess" xml:space="preserve"><value>Navigation enregistrée.</value></data>
+  <data name="ResetSuccess" xml:space="preserve"><value>Navigation réinitialisée.</value></data>
+</root>

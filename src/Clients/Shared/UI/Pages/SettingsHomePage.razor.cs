@@ -63,26 +63,6 @@ public partial class SettingsHomePage
         StateHasChanged();
     }
 
-    private void MoveUp(HomeRowEditModel row)
-    {
-        var index = _rows.IndexOf(row);
-        if (index <= 0)
-            return;
-        _rows.RemoveAt(index);
-        _rows.Insert(index - 1, row);
-        RenumberRows();
-    }
-
-    private void MoveDown(HomeRowEditModel row)
-    {
-        var index = _rows.IndexOf(row);
-        if (index >= _rows.Count - 1)
-            return;
-        _rows.RemoveAt(index);
-        _rows.Insert(index + 1, row);
-        RenumberRows();
-    }
-
     private void RenumberRows()
     {
         for (var i = 0; i < _rows.Count; i++)

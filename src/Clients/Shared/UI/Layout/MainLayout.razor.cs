@@ -1,11 +1,13 @@
 using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
+using K7.Clients.Shared.UI.Helpers;
 using K7.Clients.Shared.Services;
 using K7.Server.Domain.Enums;
 using K7.Shared;
 using K7.Shared.Interfaces;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.Components.Routing;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.DependencyInjection;
@@ -28,6 +30,7 @@ public partial class MainLayout : IDisposable
     [Inject] private IWindowsStreamFetchJsBridge WindowsStreamFetchBridge { get; set; } = default!;
     [Inject] private WebViewJsBridge WebViewJsBridge { get; set; } = default!;
     [Inject] private IPlaybackSyncService PlaybackSync { get; set; } = default!;
+    [Inject] private ICustomNavStore CustomNavStore { get; set; } = default!;
 
     private K7ErrorBoundary? _errorBoundary;
     private bool _showOverlay;
@@ -38,6 +41,7 @@ public partial class MainLayout : IDisposable
     private ElementReference _reconnectAnimationContainer;
 
     private string? _sessionUserId;
+    private bool _showCustomNavBar;
 
     private static readonly TimeSpan OverlayDelay = TimeSpan.FromSeconds(3);
 
@@ -63,6 +67,10 @@ public partial class MainLayout : IDisposable
         await EnsureUserSessionAsync();
         await BindFeedHubAsync();
         FeedHub.Changed += OnFeedHubChanged;
+        CustomNavStore.Changed += OnCustomNavChanged;
+        NavigationManager.LocationChanged += OnCustomNavLocationChanged;
+        await CustomNavStore.EnsureLoadedAsync();
+        UpdateCustomNavBarVisibility();
     }
 
     private void OnFeedHubChanged()
@@ -104,11 +112,19 @@ public partial class MainLayout : IDisposable
             if (!isAuth || string.IsNullOrEmpty(userId))
             {
                 _sessionUserId = null;
+                CustomNavStore.Invalidate();
                 return;
             }
 
             var userChanged = !string.Equals(_sessionUserId, userId, StringComparison.Ordinal);
             _sessionUserId = userId;
+
+            if (userChanged)
+            {
+                CustomNavStore.Invalidate();
+                await CustomNavStore.EnsureLoadedAsync();
+                UpdateCustomNavBarVisibility();
+            }
 
             if (userChanged && Connectivity.IsOnline)
             {
@@ -289,6 +305,8 @@ public partial class MainLayout : IDisposable
         AuthenticationStateProvider.AuthenticationStateChanged -= OnAuthenticationStateChanged;
         K7HubClient.ConnectionStateChanged -= OnConnectionStateChanged;
         FeedHub.Changed -= OnFeedHubChanged;
+        CustomNavStore.Changed -= OnCustomNavChanged;
+        NavigationManager.LocationChanged -= OnCustomNavLocationChanged;
         _overlayTimer?.Dispose();
         _selfRef?.Dispose();
         SoftKeyboardBridge.Dispose();
@@ -297,5 +315,24 @@ public partial class MainLayout : IDisposable
     private void Recover()
     {
         _errorBoundary?.Recover();
+    }
+
+    private void OnCustomNavChanged() => InvokeAsync(() =>
+    {
+        UpdateCustomNavBarVisibility();
+        StateHasChanged();
+    });
+
+    private void OnCustomNavLocationChanged(object? sender, LocationChangedEventArgs e) => InvokeAsync(() =>
+    {
+        UpdateCustomNavBarVisibility();
+        StateHasChanged();
+    });
+
+    private void UpdateCustomNavBarVisibility()
+    {
+        var path = CustomNavPath.From(NavigationManager);
+        var device = DeviceService.CachedDeviceType ?? DeviceType.Desktop;
+        _showCustomNavBar = CustomNavPath.ShouldShowBar(CustomNavStore.Layout, path, device);
     }
 }

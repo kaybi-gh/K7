@@ -1,0 +1,79 @@
+@namespace K7.Clients.Shared.UI.Components
+@using K7.Shared.CustomNav
+
+@if (Visible)
+{
+    <nav @ref="_barRef"
+         class="custom-nav-bar @(_overflowMeasured ? "custom-nav-bar--measured" : "")"
+         data-sn-section="custom-nav"
+         data-sn-enter="last-focused"
+         aria-label="@BarLabel">
+        <div class="custom-nav-bar__measure" data-custom-nav-measure aria-hidden="true">
+            @foreach (var item in VisibleItems)
+            {
+                var href = GetHref(item);
+                var title = GetTitle(item);
+                var icon = CustomNavHrefHelper.GetIcon(item, Store.Groups, Store.Collections, Store.Playlists);
+                <a href="@href"
+                   class="custom-nav-bar__item"
+                   data-custom-nav-item
+                   tabindex="-1">
+                    @if (Store.Layout.BarShowIcons && !string.IsNullOrEmpty(icon))
+                    {
+                        <span class="custom-nav-bar__icon"><K7Icon Icon="@ToPhosphorClass(icon)" /></span>
+                    }
+                    <span class="custom-nav-bar__label">@title</span>
+                </a>
+            }
+            <button type="button" class="custom-nav-bar__item custom-nav-bar__more-btn" data-custom-nav-more tabindex="-1">
+                <span class="custom-nav-bar__icon"><K7Icon Icon="@Phosphor.DotsThree" /></span>
+            </button>
+        </div>
+        <div class="custom-nav-bar__row">
+            <div class="custom-nav-bar__items">
+                @foreach (var item in VisibleItems.Take(VisibleItemCount))
+                {
+                    var href = GetHref(item);
+                    var title = GetTitle(item);
+                    var icon = CustomNavHrefHelper.GetIcon(item, Store.Groups, Store.Collections, Store.Playlists);
+                    var active = CustomNavVisibility.IsActive(href, CurrentPath);
+                    <a href="@href"
+                       class="custom-nav-bar__item focusable @(active ? "active" : "")"
+                       @onclick="@(() => Navigate(href))"
+                       @onclick:preventDefault>
+                        @if (Store.Layout.BarShowIcons && !string.IsNullOrEmpty(icon))
+                        {
+                            <span class="custom-nav-bar__icon"><K7Icon Icon="@ToPhosphorClass(icon)" /></span>
+                        }
+                        <span class="custom-nav-bar__label">@title</span>
+                    </a>
+                }
+            </div>
+            @if (HasOverflow)
+            {
+                <K7Menu Class="custom-nav-bar__more">
+                    <ActivatorContent>
+                        <button type="button"
+                                class="custom-nav-bar__item custom-nav-bar__more-btn focusable @(OverflowHasActive ? "active" : "")"
+                                aria-label="@NavL["More"]"
+                                title="@NavL["More"]">
+                            <span class="custom-nav-bar__icon"><K7Icon Icon="@Phosphor.DotsThree" /></span>
+                        </button>
+                    </ActivatorContent>
+                    <ChildContent>
+                        @foreach (var item in VisibleItems.Skip(VisibleItemCount))
+                        {
+                            var href = GetHref(item);
+                            var title = GetTitle(item);
+                            var icon = CustomNavHrefHelper.GetIcon(item, Store.Groups, Store.Collections, Store.Playlists);
+                            var active = CustomNavVisibility.IsActive(href, CurrentPath);
+                            <K7MenuItem Icon="@CustomNavHrefHelper.ToMenuIcon(icon)"
+                                        Class="@(active ? "active" : "")"
+                                        OnClick="@(() => Navigate(href))">@title</K7MenuItem>
+                        }
+                    </ChildContent>
+                </K7Menu>
+            }
+        </div>
+    </nav>
+}

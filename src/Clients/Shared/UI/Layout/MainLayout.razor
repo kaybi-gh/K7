@@ -16,7 +16,7 @@
 @inject IStringLocalizer<MainLayout> L
 
 
-<div class="app-shell">
+<div class="app-shell @(_showCustomNavBar ? "app-shell--custom-nav" : null)">
     @if (_showOverlay)
     {
         <div class="reconnection-overlay">
@@ -27,6 +27,7 @@
     }
 
     <AppNav />
+    <CustomNavBar />
 
     <main class="app-main">
         @* Players sit outside the page ErrorBoundary historically; keep a dedicated boundary so

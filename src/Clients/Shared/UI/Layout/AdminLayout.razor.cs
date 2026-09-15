@@ -4,7 +4,15 @@ public partial class AdminLayout
 {
     private static readonly string[] ContentRoutes = ["/admin/libraries", "/admin/library-groups"];
     private static readonly string[] MembersRoutes = ["/admin/users", "/admin/devices", "/admin/restrictions", "/admin/authentication"];
-    private static readonly string[] ExperienceRoutes = ["/admin/general", "/admin/home-layout", "/admin/video-playback", "/admin/transcoding", "/admin/audio-playback"];
+    private static readonly string[] ExperienceRoutes =
+    [
+        "/admin/general",
+        "/admin/home-layout",
+        "/admin/navigation",
+        "/admin/audio-playback",
+        "/admin/video-playback",
+        "/admin/transcoding"
+    ];
     private static readonly string[] ActivityRoutes = ["/admin/playback-history", "/admin/stats"];
     private static readonly string[] SystemRoutes =
         ["/admin/background-tasks", "/admin/diagnostics", "/admin/diagnostics/details"];

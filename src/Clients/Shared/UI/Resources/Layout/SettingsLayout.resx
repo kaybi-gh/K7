@@ -32,12 +32,13 @@
   <data name="Stats" xml:space="preserve"><value>Statistiques</value></data>
   <data name="History" xml:space="preserve"><value>Historique</value></data>
   <data name="Libraries" xml:space="preserve"><value>Bibliothèques</value></data>
-  <data name="Home" xml:space="preserve"><value>Accueil</value></data>
+  <data name="HomeLayout" xml:space="preserve"><value>Disposition de l'accueil</value></data>
+  <data name="CustomNav" xml:space="preserve"><value>Navigation</value></data>
   <data name="Federation" xml:space="preserve"><value>Social</value></data>
   <data name="Hidden" xml:space="preserve"><value>Masqués</value></data>
   <data name="VideoPlayer" xml:space="preserve"><value>Lecteur vidéo</value></data>
   <data name="VideoPlayback" xml:space="preserve"><value>Lecture vidéo</value></data>
-  <data name="AudioPlayer" xml:space="preserve"><value>Lecteur audio</value></data>
+  <data name="AudioPlayback" xml:space="preserve"><value>Lecture audio</value></data>
   <data name="TrackSelection" xml:space="preserve"><value>Audio et sous-titres</value></data>
   <data name="Offline" xml:space="preserve"><value>Hors-ligne</value></data>
   <data name="About" xml:space="preserve"><value>À propos</value></data>

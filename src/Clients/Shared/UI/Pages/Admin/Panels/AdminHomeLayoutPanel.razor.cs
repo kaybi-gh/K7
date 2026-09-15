@@ -69,26 +69,6 @@ public partial class AdminHomeLayoutPanel
         StateHasChanged();
     }
 
-    private void MoveUp(HomeRowEditModel row)
-    {
-        var index = _rows.IndexOf(row);
-        if (index <= 0)
-            return;
-        _rows.RemoveAt(index);
-        _rows.Insert(index - 1, row);
-        RenumberRows();
-    }
-
-    private void MoveDown(HomeRowEditModel row)
-    {
-        var index = _rows.IndexOf(row);
-        if (index >= _rows.Count - 1)
-            return;
-        _rows.RemoveAt(index);
-        _rows.Insert(index + 1, row);
-        RenumberRows();
-    }
-
     private void DeleteRow(HomeRowEditModel row)
     {
         _rows.Remove(row);

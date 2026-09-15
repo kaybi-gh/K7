@@ -1,0 +1,125 @@
+.custom-nav-bar {
+    position: fixed;
+    top: calc(var(--nav-height) + var(--k7-safe-top));
+    left: 0;
+    right: 0;
+    z-index: var(--z-drawer);
+    height: 44px;
+    border-bottom: 1px solid var(--color-border-subtle);
+    background: color-mix(in srgb, var(--color-surface) 82%, transparent);
+    backdrop-filter: blur(8px);
+}
+
+.custom-nav-bar__row,
+.custom-nav-bar__measure {
+    display: flex;
+    align-items: center;
+    height: 100%;
+    padding: 0 var(--space-5);
+    gap: var(--space-1);
+}
+
+.custom-nav-bar__row {
+    min-width: 0;
+}
+
+.custom-nav-bar:not(.custom-nav-bar--measured) .custom-nav-bar__row {
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.custom-nav-bar:not(.custom-nav-bar--measured) .custom-nav-bar__row::-webkit-scrollbar {
+    display: none;
+}
+
+.custom-nav-bar__measure {
+    position: absolute;
+    inset: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.custom-nav-bar__items {
+    display: flex;
+    align-items: center;
+    height: 100%;
+    gap: var(--space-1);
+    min-width: 0;
+    flex: 0 1 auto;
+}
+
+.custom-nav-bar--measured .custom-nav-bar__items {
+    overflow-x: clip;
+    overflow-y: visible;
+}
+
+.custom-nav-bar__item {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    height: 32px;
+    padding: 0 var(--space-3);
+    border-radius: var(--radius-md);
+    color: var(--color-text-secondary);
+    text-decoration: none;
+    font-family: var(--font-body);
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+button.custom-nav-bar__item {
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+}
+
+.custom-nav-bar__item.active {
+    color: var(--color-text);
+    background: color-mix(in srgb, var(--color-text) 8%, transparent);
+}
+
+.custom-nav-bar__item:hover,
+.custom-nav-bar__item:focus-visible {
+    color: var(--color-text);
+    background: var(--color-surface-hover);
+}
+
+.custom-nav-bar__item:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: -2px;
+}
+
+.custom-nav-bar__item.active:hover,
+.custom-nav-bar__item.active:focus-visible {
+    background: color-mix(in srgb, var(--color-text) 8%, transparent);
+}
+
+.custom-nav-bar__icon {
+    display: inline-flex;
+    line-height: 1;
+}
+
+.custom-nav-bar__more {
+    flex: 0 0 auto;
+}
+
+.custom-nav-bar__more ::deep .k7-menu-activator-inner {
+    display: flex;
+    line-height: 0;
+}
+
+.custom-nav-bar__more ::deep .k7-menu-item.active {
+    color: var(--color-text);
+}
+
+@media (max-width: 599.98px) {
+    .custom-nav-bar {
+        display: none;
+    }
+}
+
+html.platform-tv .custom-nav-bar {
+    display: none;
+}

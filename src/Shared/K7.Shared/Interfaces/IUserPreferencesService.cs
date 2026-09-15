@@ -1,4 +1,5 @@
 using K7.Shared.Dtos;
+using K7.Shared.Dtos.CustomNav;
 using K7.Shared.Dtos.Home;
 using K7.Shared.Dtos.Requests;
 
@@ -11,6 +12,16 @@ public interface IUserPreferencesService
     Task<HomeLayoutDto> GetHomeLayoutAsync(CancellationToken cancellationToken = default);
     Task UpdateHomeLayoutAsync(HomeLayoutDto layout, CancellationToken cancellationToken = default);
     Task ResetHomeLayoutAsync(CancellationToken cancellationToken = default);
+    Task<CustomNavLayoutDto> GetCustomNavLayoutAsync(CancellationToken cancellationToken = default);
+    Task UpdateCustomNavLayoutAsync(CustomNavLayoutDto layout, CancellationToken cancellationToken = default);
+    Task ResetCustomNavLayoutAsync(CancellationToken cancellationToken = default);
+    Task<Guid> UploadCustomNavCoverAsync(
+        Guid itemId,
+        Stream? stream = null,
+        string? fileName = null,
+        Guid? sourcePictureId = null,
+        Guid? replacePictureId = null,
+        CancellationToken cancellationToken = default);
     Task<GeneralPreferencesDto> GetEffectiveGeneralPreferencesAsync(CancellationToken cancellationToken = default);
     Task UpdateUserGeneralPreferencesAsync(GeneralPreferencesDto settings, CancellationToken cancellationToken = default);
     Task ResetUserGeneralPreferencesAsync(CancellationToken cancellationToken = default);

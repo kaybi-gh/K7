@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="PageTitle" xml:space="preserve"><value>Navigation</value></data>
+  <data name="Description" xml:space="preserve"><value>Shortcuts to your groups and pages, on top of the main navigation.</value></data>
+  <data name="Enabled" xml:space="preserve"><value>Enable custom navigation</value></data>
+  <data name="EnabledHint" xml:space="preserve"><value>The main navigation bar stays as is. These shortcuts are added on top.</value></data>
+  <data name="ItemsEmpty" xml:space="preserve"><value>No shortcuts yet. Add a library group, a filtered browse view, or an app page.</value></data>
+  <data name="SaveSuccess" xml:space="preserve"><value>Navigation saved.</value></data>
+  <data name="ResetSuccess" xml:space="preserve"><value>Navigation reset.</value></data>
+</root>

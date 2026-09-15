@@ -68,14 +68,12 @@
   <data name="EmptyStateTitle" xml:space="preserve"><value>Nothing to watch</value></data>
   <data name="EmptyStateSubtitle" xml:space="preserve"><value>Your library is empty, or no content is accessible to you.</value></data>
   <data name="LibrariesSaveSuccess" xml:space="preserve"><value>Libraries updated.</value></data>
-  <data name="HomePageTitle" xml:space="preserve"><value>Home</value></data>
+  <data name="HomePageTitle" xml:space="preserve"><value>Home layout</value></data>
   <data name="HomePageDescription" xml:space="preserve"><value>Your home page has been customized. Reset it to return to the default layout.</value></data>
   <data name="HomePageDefaultDescription" xml:space="preserve"><value>You are using the server default layout.</value></data>
   <data name="HomeResetLayout" xml:space="preserve"><value>Reset layout</value></data>
   <data name="HomeResetSuccess" xml:space="preserve"><value>Layout reset.</value></data>
   <data name="HomeSaveSuccess" xml:space="preserve"><value>Layout saved.</value></data>
-  <data name="MoveUp" xml:space="preserve"><value>Move up</value></data>
-  <data name="MoveDown" xml:space="preserve"><value>Move down</value></data>
   <data name="PreviewTitle" xml:space="preserve"><value>Preview</value></data>
   <data name="PreviewRefresh" xml:space="preserve"><value>Refresh preview</value></data>
   <data name="HiddenPageTitle" xml:space="preserve"><value>Hidden media</value></data>

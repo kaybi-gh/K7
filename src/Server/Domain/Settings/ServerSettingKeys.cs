@@ -23,6 +23,7 @@ public static class ServerSettingKeys
     /// </summary>
     public static readonly SettingKey<Dictionary<BackgroundTaskLane, int>> BackgroundTaskLaneLimits = new("BackgroundTaskLaneLimits", new());
     public static readonly SettingKey<string> HomeLayout = new("HomeLayout");
+    public static readonly SettingKey<string> CustomNavLayout = new("CustomNavLayout");
     public static readonly SettingKey<string> FeatureFlags = new("FeatureFlags");
     public static readonly SettingKey<string> VideoPlayerSettings = new("VideoPlayerSettings");
     public static readonly SettingKey<string> AudioPlayerSettings = new("AudioPlayerSettings");

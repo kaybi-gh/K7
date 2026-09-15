@@ -485,6 +485,51 @@
         }
       }
     },
+    "/api/users/me/preferences/custom-nav": {
+      "delete": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "DeleteUserCustomNavLayout",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "GetUserCustomNavLayout",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "UpdateUserCustomNavLayout",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CustomNavLayoutDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/users/me/preferences/general": {
       "delete": {
         "tags": [
@@ -1572,6 +1617,46 @@
           },
           "required": true
         },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/users/me/preferences/custom-nav/covers": {
+      "post": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "UploadCustomNavCover",
+        "parameters": [
+          {
+            "name": "itemId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "sourcePictureId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "replacePictureId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK"
@@ -9381,6 +9466,14 @@
               ],
               "format": "int32"
             }
+          },
+          {
+            "name": "IncludeUnavailable",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "boolean"
+            }
           }
         ],
         "responses": {
@@ -9573,6 +9666,30 @@
           },
           "required": true
         },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/collections/{id}/evaluate": {
+      "post": {
+        "tags": [
+          "Collections"
+        ],
+        "operationId": "EvaluateCollection",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK"
@@ -10156,6 +10273,51 @@
         }
       }
     },
+    "/api/server/preferences/custom-nav": {
+      "delete": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "DeleteServerCustomNavLayout",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "GetServerCustomNavLayout",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "UpdateServerCustomNavLayout",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CustomNavLayoutDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/server/preferences/home-layout": {
       "delete": {
         "tags": [
@@ -10634,6 +10796,19 @@
           },
           "required": true
         },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/server/preferences/custom-nav/effective": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "GetEffectiveServerCustomNavLayout",
         "responses": {
           "200": {
             "description": "OK"
@@ -12222,6 +12397,48 @@
               }
             ]
           },
+          "libraryGroupId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "isDynamic": {
+            "type": "boolean"
+          },
+          "ruleFilter": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RuleGroupDto"
+              }
+            ]
+          },
+          "limit": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "orderBy": {
+            "$ref": "#/components/schemas/DynamicPlaylistOrderBy"
+          },
+          "orderDescending": {
+            "type": "boolean"
+          },
+          "lastEvaluatedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
           "coverPicture": {
             "oneOf": [
               {
@@ -12391,6 +12608,38 @@
                 "$ref": "#/components/schemas/MediaType"
               }
             ]
+          },
+          "libraryGroupId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "ruleFilter": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RuleGroupDto"
+              }
+            ]
+          },
+          "limit": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "orderBy": {
+            "$ref": "#/components/schemas/DynamicPlaylistOrderBy"
+          },
+          "orderDescending": {
+            "type": "boolean"
           }
         }
       },
@@ -13044,6 +13293,177 @@
             ]
           }
         }
+      },
+      "CustomNavBarScope": {
+        "type": "integer"
+      },
+      "CustomNavFeedRowScope": {
+        "type": "integer"
+      },
+      "CustomNavItemDto": {
+        "required": [
+          "id",
+          "kind"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/CustomNavItemKind"
+          },
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "libraryGroupId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "tapAction": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ExploreTapAction"
+              }
+            ]
+          },
+          "browseQuery": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "route": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "targetId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "icon": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "cardColor": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "coverPictureId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        }
+      },
+      "CustomNavItemKind": {
+        "type": "integer"
+      },
+      "CustomNavLayoutDto": {
+        "required": [
+          "enabled",
+          "placement",
+          "barShowIcons",
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "placement": {
+            "$ref": "#/components/schemas/CustomNavPlacement"
+          },
+          "barScope": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/CustomNavBarScope"
+              }
+            ]
+          },
+          "barShowIcons": {
+            "type": "boolean"
+          },
+          "feedRowTitle": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "feedRowScope": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/CustomNavFeedRowScope"
+              }
+            ]
+          },
+          "showRowOnHome": {
+            "type": "boolean"
+          },
+          "showRowOnExploreFeeds": {
+            "type": "boolean"
+          },
+          "showBarOnHome": {
+            "type": "boolean"
+          },
+          "showBarOnExplore": {
+            "type": "boolean"
+          },
+          "showBarOnMySpace": {
+            "type": "boolean"
+          },
+          "showBarOnSettings": {
+            "type": "boolean"
+          },
+          "showBarOnMedia": {
+            "type": "boolean"
+          },
+          "showOnDesktop": {
+            "type": "boolean"
+          },
+          "showOnPhone": {
+            "type": "boolean"
+          },
+          "showOnTv": {
+            "type": "boolean"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CustomNavItemDto"
+            }
+          }
+        }
+      },
+      "CustomNavPlacement": {
+        "type": "integer"
       },
       "DayOfWeekPointDto": {
         "required": [
@@ -14705,6 +15125,9 @@
                 "$ref": "#/components/schemas/MediaType"
               }
             ]
+          },
+          "isDynamic": {
+            "type": "boolean"
           },
           "coverPicture": {
             "oneOf": [
@@ -21329,6 +21752,48 @@
           },
           "visibilityScope": {
             "$ref": "#/components/schemas/VisibilityScope"
+          },
+          "mediaType": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MediaType"
+              }
+            ]
+          },
+          "libraryGroupId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "ruleFilter": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RuleGroupDto"
+              }
+            ]
+          },
+          "limit": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "orderBy": {
+            "$ref": "#/components/schemas/DynamicPlaylistOrderBy"
+          },
+          "orderDescending": {
+            "type": "boolean"
           }
         }
       },

@@ -1,0 +1,37 @@
+@page "/settings/navigation"
+@layout SettingsLayout
+@inject IStringLocalizer<SettingsCustomNavPage> L
+@inject IStringLocalizer<SharedResource> S
+
+<PageTitle>@L["PageTitle"]</PageTitle>
+
+<h4 class="mb-4">@L["PageTitle"]</h4>
+
+@if (_isLoading)
+{
+    <K7ProgressBar Indeterminate="true" />
+}
+else
+{
+    <div class="settings-form-page">
+        <div class="settings-form-page__body d-flex flex-col gap-4">
+            <CustomNavLayoutFields Model="_model"
+                                   Groups="_groups"
+                                   Collections="CustomNavStore.Collections"
+                                   Playlists="CustomNavStore.Playlists"
+                                   Description="@L["Description"]"
+                                   EnabledLabel="@L["Enabled"]"
+                                   EnabledHint="@L["EnabledHint"]"
+                                   ItemsEmpty="@L["ItemsEmpty"]"
+                                   Disabled="_saving"
+                                   Changed="StateHasChanged" />
+        </div>
+
+        <K7SettingsActionBar IsDirty="IsDirty"
+                             IsSaving="_saving"
+                             ResetDisabled="ResetDisabled"
+                             OnSave="SaveAsync"
+                             OnCancel="CancelChanges"
+                             OnResetToDefaults="ResetAsync" />
+    </div>
+}

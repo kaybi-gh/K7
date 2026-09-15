@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="Display" xml:space="preserve"><value>Display</value></data>
+  <data name="Placement" xml:space="preserve"><value>Placement</value></data>
+  <data name="PlacementFeedRow" xml:space="preserve"><value>Home row</value></data>
+  <data name="PlacementBar" xml:space="preserve"><value>Bar under the menu</value></data>
+  <data name="PlacementHint" xml:space="preserve"><value>The row uses small cards. The bar is text-only, with optional icons.</value></data>
+  <data name="FeedRowTitle" xml:space="preserve"><value>Row title</value></data>
+  <data name="FeedRowTitleHint" xml:space="preserve"><value>Leave empty to use Shortcuts (follows the interface language).</value></data>
+  <data name="ShowOn" xml:space="preserve"><value>Show on</value></data>
+  <data name="FeedRowScopeHome" xml:space="preserve"><value>Home</value></data>
+  <data name="FeedRowScopeExploreFeeds" xml:space="preserve"><value>Explore feeds</value></data>
+  <data name="FeedRowScopeHint" xml:space="preserve"><value>Pick at least one. The Explore group grid never shows this row. On phones, only Home.</value></data>
+  <data name="ScopeHome" xml:space="preserve"><value>Home</value></data>
+  <data name="ScopeExplore" xml:space="preserve"><value>Explore</value></data>
+  <data name="ScopeMySpace" xml:space="preserve"><value>My Space</value></data>
+  <data name="ScopeSettings" xml:space="preserve"><value>Settings and admin</value></data>
+  <data name="ScopeMedia" xml:space="preserve"><value>Media pages</value></data>
+  <data name="BarShowIcons" xml:space="preserve"><value>Show icons</value></data>
+  <data name="Devices" xml:space="preserve"><value>Devices</value></data>
+  <data name="DeviceDesktop" xml:space="preserve"><value>Desktop</value></data>
+  <data name="DevicePhone" xml:space="preserve"><value>Phone</value></data>
+  <data name="DeviceTv" xml:space="preserve"><value>TV</value></data>
+  <data name="DevicesHint" xml:space="preserve"><value>On phones, only the Home row, never the bar or Explore feeds.</value></data>
+  <data name="Items" xml:space="preserve"><value>Shortcuts</value></data>
+  <data name="AddItem" xml:space="preserve"><value>Add</value></data>
+  <data name="EditItem" xml:space="preserve"><value>Edit</value></data>
+  <data name="DeleteItem" xml:space="preserve"><value>Delete</value></data>
+  <data name="KindLibraryGroup" xml:space="preserve"><value>Group</value></data>
+  <data name="KindLibraryBrowse" xml:space="preserve"><value>Browse</value></data>
+  <data name="KindAppRoute" xml:space="preserve"><value>Page</value></data>
+  <data name="KindAdminRoute" xml:space="preserve"><value>Admin</value></data>
+  <data name="KindCollection" xml:space="preserve"><value>Collection</value></data>
+  <data name="KindPlaylist" xml:space="preserve"><value>Playlist</value></data>
+</root>

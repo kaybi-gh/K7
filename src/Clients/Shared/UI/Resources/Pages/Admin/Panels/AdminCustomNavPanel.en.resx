@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="PageTitle" xml:space="preserve"><value>Navigation</value></data>
+  <data name="Description" xml:space="preserve"><value>Server default. Users can override it in their settings.</value></data>
+  <data name="Enabled" xml:space="preserve"><value>Enable by default</value></data>
+  <data name="ItemsEmpty" xml:space="preserve"><value>No default shortcuts.</value></data>
+  <data name="SaveSuccess" xml:space="preserve"><value>Navigation saved.</value></data>
+  <data name="ResetSuccess" xml:space="preserve"><value>Navigation reset.</value></data>
+</root>

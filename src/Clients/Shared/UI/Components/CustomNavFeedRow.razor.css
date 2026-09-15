@@ -1,0 +1,12 @@
+.custom-nav-feed-card {
+    width: 240px;
+    flex: 0 0 240px;
+    min-width: 240px;
+    max-width: 240px;
+}
+
+.custom-nav-feed-card ::deep .k7-category-card {
+    width: 240px;
+    min-width: 0;
+    max-width: 240px;
+}

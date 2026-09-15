@@ -611,6 +611,7 @@ body.native-player-active:not(.windows-web-video) .video-controls-overlay {
 body.native-player-active.windows-web-video .app-nav,
 body.native-player-active.windows-web-video .app-nav-bar,
 body.native-player-active.windows-web-video .app-nav-popover,
+body.native-player-active.windows-web-video .custom-nav-bar,
 body.native-player-active.windows-web-video .page-viewport,
 body.native-player-active.windows-web-video .mini-player-dock,
 body.native-player-active.windows-web-video .k7-menu-dropdown {

@@ -44,6 +44,20 @@ svg.k7-icon.k7-icon--xl { width: 3rem; }
     overflow: hidden;
 }
 
+.app-shell--custom-nav {
+    --custom-nav-height: 44px;
+}
+
+@media (max-width: 599.98px) {
+    .app-shell--custom-nav {
+        --custom-nav-height: 0px;
+    }
+}
+
+html.platform-tv .app-shell--custom-nav {
+    --custom-nav-height: 0px;
+}
+
 .app-main {
     grid-column: 1;
     grid-row: 1;
@@ -52,7 +66,7 @@ svg.k7-icon.k7-icon--xl { width: 3rem; }
     flex-direction: column;
     min-height: 0;
     position: relative;
-    padding-top: calc(var(--nav-height) + var(--k7-safe-top));
+    padding-top: calc(var(--nav-height) + var(--custom-nav-height, 0px) + var(--k7-safe-top));
     padding-left: var(--k7-safe-left);
     padding-right: var(--k7-safe-right);
     background-image: radial-gradient(circle at 0% 0%, rgba(214, 155, 83, 0.08) 0%, transparent 50%);

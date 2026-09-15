@@ -52,6 +52,7 @@ Open `http://localhost:7080` and complete first-run setup. Install details: [doc
 **Personalization**
 - **Server-wide defaults** - the admin can set default values for almost all customization (home layout, video player, playback, track selection, and more); each user can override them in their own settings
 - **Custom home page** - pin what matters to you instead of a one-size-fits-all dashboard
+- **Custom navigation** - optional shortcuts (library groups, collections, playlists, app pages) as a Home row or a desktop bar under the top menu
 - **Global media filters** - hide content you never want to see, across the whole app
 - **Playback preferences** - quality, subtitles, intro skip, seekbar thumbnails, and more, so each viewing session feels right
 - **Library and profile restrictions** - fine-tune who can access what beyond simple sharing rules

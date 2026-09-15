@@ -5,6 +5,12 @@
 @inject IStringLocalizer<AdminGeneralPanel> L
 @inject IStringLocalizer<SharedResource> S
 
+<PageTitle>@L["PageTitle"]</PageTitle>
+
+<div class="d-flex pa-4">
+    <h5>@L["PageTitle"]</h5>
+</div>
+
 @if (_isLoading)
 {
     <K7ProgressBar Indeterminate="true" />

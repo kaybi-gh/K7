@@ -1,0 +1,94 @@
+.k7-sortable-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    user-select: none;
+}
+
+.k7-sortable-list__row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-height: 2.75rem;
+    padding: var(--space-1) var(--space-3);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+}
+
+.k7-sortable-list__row--dragging {
+    height: 0;
+    min-height: 0;
+    padding: 0;
+    margin: 0;
+    border-width: 0;
+    overflow: hidden;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.k7-sortable-list__row--grabbing {
+    outline: 2px solid var(--color-accent);
+    outline-offset: -2px;
+    background: color-mix(in srgb, var(--color-accent) 10%, var(--color-surface));
+}
+
+.k7-sortable-list__gap {
+    flex-shrink: 0;
+    box-sizing: border-box;
+    border: 2px dashed var(--color-accent);
+    border-radius: var(--radius-md);
+    background: color-mix(in srgb, var(--color-accent) 14%, transparent);
+    pointer-events: none;
+}
+
+.k7-sortable-list__ghost {
+    position: fixed;
+    z-index: var(--z-overlay);
+    margin: 0;
+    pointer-events: none;
+    box-shadow: var(--shadow-lg);
+    opacity: 0.92;
+}
+
+.k7-sortable-list__handle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 1.75rem;
+    height: 1.75rem;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--color-text-muted);
+    cursor: grab;
+    touch-action: none;
+}
+
+.k7-sortable-list__handle:disabled {
+    cursor: default;
+    opacity: 0.45;
+}
+
+.k7-sortable-list--dragging,
+.k7-sortable-list--dragging .k7-sortable-list__handle {
+    cursor: grabbing;
+}
+
+.k7-sortable-list__handle:hover:not(:disabled),
+.k7-sortable-list__handle:focus-visible,
+.k7-sortable-list__handle--grabbing {
+    color: var(--color-text);
+    background: var(--color-surface-hover);
+}
+
+.k7-sortable-list__content {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+}

@@ -25,6 +25,14 @@ else
         {
             <HomeTvHero @ref="_tvHero" Model="_focusedItem" />
             <VerticalCarousel VirtualizeRows="true" InitialActiveIndex="_tvInitialRowIndex">
+                @if (ShowCustomNavRow)
+                {
+                    <div @key="@("custom-nav-row")">
+                        <TvFeedRow Index="0">
+                            <CustomNavFeedRow />
+                        </TvFeedRow>
+                    </div>
+                }
                 @if (!FeedStore.IsLoaded || isLoading)
                 {
                     @for (int i = 0; i < 3; i++)
@@ -46,7 +54,7 @@ else
                     {
                         var row = tvRows[rowIndex];
                         <div @key="row.Config.Id">
-                            <TvFeedRow Index="rowIndex">
+                            <TvFeedRow Index="rowIndex + CustomNavRowOffset">
                                 @RenderCarousel(row.Config, row.Items, _canTrackProgress, _canTrackProgress, row.Config.ContinueWatching)
                             </TvFeedRow>
                         </div>
@@ -56,6 +64,7 @@ else
         }
         else if (!FeedStore.IsLoaded || isLoading)
         {
+            <CustomNavFeedRow />
             @for (int i = 0; i < 3; i++)
             {
                 <Carousel Skeleton="true">
@@ -72,6 +81,7 @@ else
         {
             var hasAnyCarousel = GetVisibleRows().Any();
 
+            <CustomNavFeedRow />
             @foreach (var row in GetVisibleRows())
             {
                 <div @key="row.Config.Id">

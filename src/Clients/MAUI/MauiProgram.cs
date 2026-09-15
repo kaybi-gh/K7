@@ -209,6 +209,7 @@ public static partial class MauiProgram
         builder.Services.AddSingleton<IFeedHubHostService, FeedHubHostService>();
         builder.Services.AddSingleton<IMediaBrowseHubCoordinator, MediaBrowseHubCoordinator>();
         builder.Services.AddSingleton<IExploreGroupStore, ExploreGroupStore>();
+        builder.Services.AddSingleton<ICustomNavStore, CustomNavStore>();
         builder.Services.AddSingleton<ILibraryGroupContextStore, LibraryGroupContextStore>();
         builder.Services.AddSingleton<PlaybackProgressTracker>();
         builder.Services.AddSingleton<AudioPlaybackProgressTracker>();

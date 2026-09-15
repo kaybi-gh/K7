@@ -39,7 +39,8 @@
   <data name="BackgroundTasks" xml:space="preserve"><value>Tâches de fond</value></data>
   <data name="Diagnostics" xml:space="preserve"><value>Diagnostics</value></data>
   <data name="ActiveStreams" xml:space="preserve"><value>Flux actifs</value></data>
-  <data name="HomeLayout" xml:space="preserve"><value>Accueil</value></data>
+  <data name="HomeLayout" xml:space="preserve"><value>Disposition de l'accueil</value></data>
+  <data name="CustomNav" xml:space="preserve"><value>Navigation</value></data>
   <data name="FeatureFlags" xml:space="preserve"><value>Fonctionnalités</value></data>
   <data name="VideoPlayer" xml:space="preserve"><value>Lecteur vidéo</value></data>
   <data name="VideoPlayback" xml:space="preserve"><value>Lecture vidéo</value></data>

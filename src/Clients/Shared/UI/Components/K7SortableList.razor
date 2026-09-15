@@ -1,0 +1,36 @@
+@namespace K7.Clients.Shared.UI.Components
+@typeparam TItem
+@inject IStringLocalizer<K7SortableListStrings> L
+
+<div @ref="_listRef"
+     class="k7-sortable-list @(Disabled ? "k7-sortable-list--disabled" : "") @(_grabKey is not null ? "k7-sortable-list--keyboard-grab" : "")"
+     role="list">
+    @for (var i = 0; i < Items.Count; i++)
+    {
+        var index = i;
+        var item = Items[index];
+        var grabbing = IsGrabbing(item, index);
+        <div @key="GetKey(item, index)"
+             class="k7-sortable-list__row @(grabbing ? "k7-sortable-list__row--grabbing" : "")"
+             role="listitem">
+            <button type="button"
+                    class="k7-sortable-list__handle focusable @(grabbing ? "k7-sortable-list__handle--grabbing" : "")"
+                    disabled="@Disabled"
+                    tabindex="@(Disabled ? -1 : 0)"
+                    data-sn-activatable="@(!Disabled ? true : null)"
+                    data-sn-editing="@(grabbing ? "true" : null)"
+                    aria-pressed="@grabbing"
+                    aria-label="@(grabbing ? L["Grabbing"] : L["Reorder"])"
+                    title="@(grabbing ? L["GrabbingHint"] : L["ReorderHint"])"
+                    @onkeydown="@(e => OnHandleKeyDownAsync(e, index))">
+                <K7Icon Icon="@Phosphor.DotsSixVertical" IconSize="@K7IconSize.Sm" />
+            </button>
+            <div class="k7-sortable-list__content">
+                @if (ChildContent is not null)
+                {
+                    @ChildContent(item)
+                }
+            </div>
+        </div>
+    }
+</div>

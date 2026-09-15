@@ -75,6 +75,10 @@
     --carousel-slide-width: 140px;
 }
 
+.carousel-container:has(.custom-nav-feed-card) {
+    --carousel-slide-width: 240px;
+}
+
 .carousel-container:has(.media-review-card) {
     --carousel-slide-width: 400px;
     align-items: stretch;
@@ -121,6 +125,14 @@
 
     .carousel-container:has(.music-radio-presets__item) {
         --carousel-slide-width: var(--media-card-compact-poster-width);
+    }
+
+    .carousel-container:has(.select-profile-card) {
+        --carousel-slide-width: 140px;
+    }
+
+    .carousel-container:has(.custom-nav-feed-card) {
+        --carousel-slide-width: 240px;
     }
 
     .carousel-container:has(.media-review-card) {
@@ -217,6 +229,19 @@
     border: none;
     box-shadow: none;
     overflow: visible;
+}
+
+.carousel-container:has(.custom-nav-feed-card) .carousel-loop-back__visual {
+    aspect-ratio: auto;
+    height: 80px;
+}
+
+.carousel-container:has(.custom-nav-feed-card) .carousel-loop-back-card .media-card-subtitle {
+    display: none;
+}
+
+.carousel-container:has(.custom-nav-feed-card) .carousel-loop-back-card .media-card-title {
+    margin-top: var(--space-1);
 }
 
 .carousel-container:has(.personrole-item) .carousel-loop-back-card {

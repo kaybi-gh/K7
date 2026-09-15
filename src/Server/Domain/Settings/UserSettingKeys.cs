@@ -5,6 +5,7 @@ public static class UserSettingKeys
     public static readonly SettingKey<string> Language = new("Language");
     public static readonly SettingKey<string> GeneralPreferences = new("GeneralPreferences");
     public static readonly SettingKey<string> HomeLayout = new("HomeLayout");
+    public static readonly SettingKey<string> CustomNavLayout = new("CustomNavLayout");
     public static readonly SettingKey<string> VideoPlayerSettings = new("VideoPlayerSettings");
     public static readonly SettingKey<string> AudioPlayerSettings = new("AudioPlayerSettings");
     public static readonly SettingKey<string> VideoPlaybackPolicy = new("VideoPlaybackPolicy");

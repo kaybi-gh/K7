@@ -103,6 +103,7 @@ builder.Services.AddSingleton<IHomeFeedStore, HomeFeedStore>();
 builder.Services.AddSingleton<IFeedHubHostService, FeedHubHostService>();
 builder.Services.AddSingleton<IMediaBrowseHubCoordinator, MediaBrowseHubCoordinator>();
 builder.Services.AddSingleton<IExploreGroupStore, ExploreGroupStore>();
+builder.Services.AddSingleton<ICustomNavStore, CustomNavStore>();
 builder.Services.AddSingleton<ILibraryGroupContextStore, LibraryGroupContextStore>();
 builder.Services.AddScoped<PlaybackProgressTracker>();
 builder.Services.AddScoped<AudioPlaybackProgressTracker>();
