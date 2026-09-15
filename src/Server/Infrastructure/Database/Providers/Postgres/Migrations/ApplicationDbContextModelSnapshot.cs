@@ -215,14 +215,32 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.Property<bool>("IsPublic")
                         .HasColumnType("boolean");
 
+                    b.Property<DateTimeOffset?>("LastEvaluatedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<DateTimeOffset>("LastModified")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("LastModifiedBy")
                         .HasColumnType("text");
 
+                    b.Property<Guid?>("LibraryGroupId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int?>("Limit")
+                        .HasColumnType("integer");
+
                     b.Property<int?>("MediaType")
                         .HasColumnType("integer");
+
+                    b.Property<int>("OrderBy")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("OrderDescending")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("RuleFilter")
+                        .HasColumnType("jsonb");
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -236,6 +254,8 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("LibraryGroupId");
 
                     b.HasIndex("UserId");
 
@@ -3828,10 +3848,17 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
 
             modelBuilder.Entity("K7.Server.Domain.Entities.Collections.Collection", b =>
                 {
+                    b.HasOne("K7.Server.Domain.Entities.LibraryGroup", "LibraryGroup")
+                        .WithMany()
+                        .HasForeignKey("LibraryGroupId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("K7.Server.Domain.Entities.Users.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade);
+
+                    b.Navigation("LibraryGroup");
 
                     b.Navigation("User");
                 });

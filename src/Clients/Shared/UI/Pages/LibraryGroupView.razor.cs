@@ -17,6 +17,7 @@ using K7.Shared.Dtos.Requests;
 using K7.Shared.Dtos.Rules;
 using K7.Shared.Extensions;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Routing;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.Web.Virtualization;
 using Microsoft.JSInterop;
@@ -128,6 +129,7 @@ public partial class LibraryGroupView : IDisposable
     private readonly HashSet<Guid> _pendingVisualMediaIds = [];
     private readonly SuppressRenderEventHandler _silentFocus = new();
     private string? _initializedId;
+    private string _appliedBrowseQuery = "";
     private bool _disposed;
 
     private Dictionary<string, object> CreateDynamicPlaylistButtonAttributes => new()
@@ -174,6 +176,7 @@ public partial class LibraryGroupView : IDisposable
         ContextStore.Changed += OnContextStoreChanged;
         ContextStore.MediaVisualChanged += OnMediaVisualChanged;
         FeedHub.Changed += OnFeedHubChanged;
+        Navigation.LocationChanged += OnLocationChanged;
         _hubPageActive = IsHubPageActive();
     }
 
@@ -253,6 +256,8 @@ public partial class LibraryGroupView : IDisposable
                 _pendingQuerySync = true;
             }
 
+            RememberAppliedBrowseQuery();
+
             EnsureValidContentSourceSelection();
 
             _catalogRefreshRunner?.Dispose();
@@ -304,12 +309,60 @@ public partial class LibraryGroupView : IDisposable
 
         if (state.Filter is not null)
             _filter = SanitizeFilterForCurrentUser(state.Filter);
+        else
+            _filter = MediaBrowseFilterPresets.Empty;
 
         // Guests cannot use music-intelligence search endpoints; ignore restored searches.
         _intelligentSearch = _isGuest ? null : state.IntelligentSearch;
 
         if (!string.IsNullOrWhiteSpace(state.ContentSource))
             _selectedContentSource = state.ContentSource;
+        else
+            _selectedContentSource = ContentSourceAll;
+    }
+
+    private void RememberAppliedBrowseQuery()
+    {
+        if (!Guid.TryParse(Id, out var groupId))
+        {
+            _appliedBrowseQuery = "";
+            return;
+        }
+
+        _appliedBrowseQuery = LibraryGroupBrowseUrlSync.Fingerprint(groupId, BuildCurrentBrowseUrlState());
+    }
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e) =>
+        InvokeAsync(ApplyBrowseLocationAsync);
+
+    private async Task ApplyBrowseLocationAsync()
+    {
+        if (_disposed || _initializedId != Id)
+            return;
+
+        if (LibraryGroupBrowseUrlSync.ExtractGroupId(Navigation) is not { } groupId
+            || !string.Equals(groupId.ToString(), Id, StringComparison.OrdinalIgnoreCase))
+            return;
+
+        var fingerprint = LibraryGroupBrowseUrlSync.Fingerprint(Navigation);
+        if (string.Equals(fingerprint, _appliedBrowseQuery, StringComparison.OrdinalIgnoreCase))
+            return;
+
+        ApplyBrowseState(LibraryGroupBrowseUrlSync.ReadState(Navigation));
+        if (_intelligentSearch is null)
+            _intelligentSearchResults = [];
+        RememberAppliedBrowseQuery();
+        InvalidateBrowseCaches();
+        _totalCount = 0;
+        _totalCountKnown = false;
+
+        await PersistFiltersAsync();
+        RememberAppliedBrowseQuery();
+
+        if (_intelligentSearch is not null)
+            await OnIntelligentSearchChanged(_intelligentSearch);
+        else
+            await RefreshAllAsync();
     }
 
     private RuleGroupDto SanitizeFilterForCurrentUser(RuleGroupDto filter)
@@ -389,7 +442,45 @@ public partial class LibraryGroupView : IDisposable
 
         var result = await dialog.Result;
         if (result is { Canceled: false, Data: Guid id })
+        {
+            try
+            {
+                await PlaylistService.EvaluateDynamicPlaylistAsync(id);
+            }
+            catch
+            {
+                // Items stay empty until the user re-evaluates
+            }
+
             Navigation.NavigateTo($"/dynamic-playlists/{id}");
+        }
+    }
+
+    private async Task CreateDynamicCollectionFromBrowseAsync()
+    {
+        if (_intelligentSearch is not null)
+            return;
+
+        var (orderBy, orderDescending) = BrowseSortUrlMapping.ToDynamicPlaylistOrder(_selectedSort, _selectedMediaType);
+        var groupId = Guid.TryParse(Id, out var parsed) ? parsed : (Guid?)null;
+        var parameters = new K7DialogParameters<DynamicPlaylistDialog>
+        {
+            { x => x.ForCollection, true },
+            { x => x.InitialLibraryGroupId, groupId },
+            { x => x.InitialMediaType, _selectedMediaType },
+            { x => x.InitialRuleFilter, _filter },
+            { x => x.InitialOrderBy, orderBy },
+            { x => x.InitialOrderDescending, orderDescending }
+        };
+
+        var dialog = await DialogService.ShowAsync<DynamicPlaylistDialog>(
+            L["CreateDynamicCollectionDialogTitle"],
+            parameters,
+            new K7DialogOptions { MaxWidth = K7DialogMaxWidth.Large, FullWidth = true, CloseOnEscapeKey = true });
+
+        var result = await dialog.Result;
+        if (result is { Canceled: false, Data: Guid id })
+            Navigation.NavigateTo($"/collections/{id}");
     }
 
     private ValueTask<ItemsProviderResult<LiteMediaDto>> ProvideMediasAsync(
@@ -1595,6 +1686,7 @@ public partial class LibraryGroupView : IDisposable
         ContextStore.Changed -= OnContextStoreChanged;
         ContextStore.MediaVisualChanged -= OnMediaVisualChanged;
         FeedHub.Changed -= OnFeedHubChanged;
+        Navigation.LocationChanged -= OnLocationChanged;
         _catalogRefreshRunner?.Dispose();
         _mediaVisualRefreshRunner?.Dispose();
         _placeholderResolveRunner?.Dispose();

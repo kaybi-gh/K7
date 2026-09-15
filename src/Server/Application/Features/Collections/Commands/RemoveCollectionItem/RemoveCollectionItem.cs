@@ -21,6 +21,9 @@ public class RemoveCollectionItemCommandHandler(IApplicationDbContext context, I
 
         Guard.Against.NotFound(request.CollectionId, collection);
 
+        if (collection.RuleFilter is not null)
+            throw new ValidationException("Cannot remove items from a dynamic collection.");
+
         var item = await context.CollectionItems
             .FirstOrDefaultAsync(i => i.Id == request.ItemId && i.CollectionId == request.CollectionId, cancellationToken);
 

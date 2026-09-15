@@ -214,6 +214,9 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Property<bool>("IsPublic")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("LastEvaluatedAt")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("LastModified")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -221,8 +224,23 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Property<string>("LastModifiedBy")
                         .HasColumnType("TEXT");
 
+                    b.Property<Guid?>("LibraryGroupId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("Limit")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int?>("MediaType")
                         .HasColumnType("INTEGER");
+
+                    b.Property<int>("OrderBy")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("OrderDescending")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("RuleFilter")
+                        .HasColumnType("jsonb");
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -236,6 +254,8 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                         .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("LibraryGroupId");
 
                     b.HasIndex("UserId");
 
@@ -3878,10 +3898,17 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
 
             modelBuilder.Entity("K7.Server.Domain.Entities.Collections.Collection", b =>
                 {
+                    b.HasOne("K7.Server.Domain.Entities.LibraryGroup", "LibraryGroup")
+                        .WithMany()
+                        .HasForeignKey("LibraryGroupId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("K7.Server.Domain.Entities.Users.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade);
+
+                    b.Navigation("LibraryGroup");
 
                     b.Navigation("User");
                 });

@@ -22,8 +22,10 @@
   <data name="PageTitle" xml:space="preserve"><value>Mes collections</value></data>
   <data name="All" xml:space="preserve"><value>Toutes</value></data>
   <data name="New" xml:space="preserve"><value>Nouvelle collection</value></data>
+  <data name="Collection" xml:space="preserve"><value>Collection</value></data>
+  <data name="DynamicCollection" xml:space="preserve"><value>Collection dynamique</value></data>
   <data name="None" xml:space="preserve"><value>Aucune collection</value></data>
-  <data name="EmptyHint" xml:space="preserve"><value>Créez votre première collection pour regrouper des films, séries ou albums.</value></data>
+  <data name="EmptyHint" xml:space="preserve"><value>Créez une collection manuelle ou dynamique pour regrouper des films, séries ou albums.</value></data>
   <data name="Items" xml:space="preserve"><value>éléments</value></data>
   <data name="ItemsColumn" xml:space="preserve"><value>Éléments</value></data>
   <data name="Public" xml:space="preserve"><value>Public</value></data>

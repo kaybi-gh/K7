@@ -31,4 +31,24 @@
   <data name="Deleted" xml:space="preserve"><value>Collection deleted</value></data>
   <data name="DeleteError" xml:space="preserve"><value>Error deleting collection</value></data>
   <data name="EditDialogTitle" xml:space="preserve"><value>Edit collection</value></data>
+  <data name="DynamicHeader" xml:space="preserve"><value>Dynamic collection</value></data>
+  <data name="Reevaluate" xml:space="preserve"><value>Re-evaluate</value></data>
+  <data name="Evaluating" xml:space="preserve"><value>Evaluating...</value></data>
+  <data name="ReevaluateSuccess" xml:space="preserve"><value>Dynamic collection re-evaluated</value></data>
+  <data name="ReevaluateError" xml:space="preserve"><value>Error while evaluating</value></data>
+  <data name="BrowseInLibrary" xml:space="preserve"><value>Browse in library</value></data>
+  <data name="BrowseInLibraryUnavailable" xml:space="preserve"><value>No library group is available for this media type</value></data>
+  <data name="NoRules" xml:space="preserve"><value>No rules defined</value></data>
+  <data name="MatchAnd" xml:space="preserve"><value> AND </value></data>
+  <data name="MatchOr" xml:space="preserve"><value> OR </value></data>
+  <data name="RuleWithValue" xml:space="preserve"><value>{0} {1} "{2}"</value></data>
+  <data name="LimitSuffix" xml:space="preserve"><value> (max {0})</value></data>
+  <data name="EvaluatedRelative" xml:space="preserve"><value>Evaluated {0}</value></data>
+  <data name="MoreActions" xml:space="preserve"><value>More actions</value></data>
+  <data name="ShowUnavailable" xml:space="preserve"><value>Show unavailable media</value></data>
+  <data name="HideUnavailable" xml:space="preserve"><value>Hide unavailable media</value></data>
+  <data name="RelativeJustNow" xml:space="preserve"><value>just now</value></data>
+  <data name="RelativeMinutes" xml:space="preserve"><value>{0} min ago</value></data>
+  <data name="RelativeHours" xml:space="preserve"><value>{0} h ago</value></data>
+  <data name="RelativeDays" xml:space="preserve"><value>{0} d ago</value></data>
 </root>

@@ -12,6 +12,7 @@ public sealed record LiteCollectionDto
     public VisibilityScope VisibilityScope { get; init; } = VisibilityScope.Nobody;
     public Guid? UserId { get; init; }
     public MediaType? MediaType { get; init; }
+    public bool IsDynamic { get; init; }
     public MetadataPictureDto? CoverPicture { get; init; }
     public IReadOnlyList<MetadataPictureDto> PreviewPictures { get; init; } = [];
     public int ItemCount { get; init; }

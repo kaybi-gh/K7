@@ -14,19 +14,26 @@ public partial class DynamicPlaylistDialog
 {
     [CascadingParameter] private IK7DialogInstance Dialog { get; set; } = default!;
 
+    [Inject] private ICollectionService CollectionService { get; set; } = default!;
+
     [Parameter] public Guid? DynamicPlaylistId { get; set; }
+    [Parameter] public Guid? CollectionId { get; set; }
+    [Parameter] public bool ForCollection { get; set; }
+    [Parameter] public Guid? InitialLibraryGroupId { get; set; }
     [Parameter] public string? InitialTitle { get; set; }
     [Parameter] public string? InitialDescription { get; set; }
+    [Parameter] public VisibilityScope InitialVisibilityScope { get; set; } = VisibilityScope.Nobody;
     [Parameter] public MediaType InitialMediaType { get; set; } = MediaType.MusicTrack;
     [Parameter] public RuleGroupDto? InitialRuleFilter { get; set; }
     [Parameter] public int? InitialLimit { get; set; }
     [Parameter] public DynamicPlaylistOrderBy InitialOrderBy { get; set; } = DynamicPlaylistOrderBy.DateAdded;
     [Parameter] public bool InitialOrderDescending { get; set; } = true;
 
-    private bool _isEdit => DynamicPlaylistId.HasValue;
+    private bool _isEdit => DynamicPlaylistId.HasValue || CollectionId.HasValue;
 
     private string _title = "";
     private string? _description;
+    private VisibilityScope _visibilityScope = VisibilityScope.Nobody;
     private MediaType _mediaType = MediaType.MusicTrack;
     private RuleGroupDto _ruleFilter = new() { MatchCondition = RuleMatchCondition.All, Items = [] };
     private IReadOnlyList<RuleFieldDescriptorDto> _fieldDescriptors = [];
@@ -41,6 +48,7 @@ public partial class DynamicPlaylistDialog
     {
         _title = InitialTitle ?? "";
         _description = InitialDescription;
+        _visibilityScope = InitialVisibilityScope;
         _mediaType = InitialMediaType;
         _limit = InitialLimit;
         _orderBy = InitialOrderBy;
@@ -99,36 +107,10 @@ public partial class DynamicPlaylistDialog
         _isSubmitting = true;
         try
         {
-            if (_isEdit)
-            {
-                await K7ServerService.UpdateDynamicPlaylistAsync(DynamicPlaylistId!.Value, new UpdateDynamicPlaylistRequest
-                {
-                    Title = _title.Trim(),
-                    Description = string.IsNullOrWhiteSpace(_description) ? null : _description.Trim(),
-                    MediaType = _mediaType,
-                    RuleFilter = _ruleFilter,
-                    Limit = _limit,
-                    OrderBy = _orderBy,
-                    OrderDescending = _orderDescending
-                });
-                Snackbar.Add(L["Updated"], K7Severity.Success);
-                Dialog.Close(K7DialogResult.Ok(DynamicPlaylistId!.Value));
-            }
+            if (ForCollection)
+                await SubmitCollectionAsync();
             else
-            {
-                var id = await K7ServerService.CreateDynamicPlaylistAsync(new CreateDynamicPlaylistRequest
-                {
-                    Title = _title.Trim(),
-                    Description = string.IsNullOrWhiteSpace(_description) ? null : _description.Trim(),
-                    MediaType = _mediaType,
-                    RuleFilter = _ruleFilter,
-                    Limit = _limit,
-                    OrderBy = _orderBy,
-                    OrderDescending = _orderDescending
-                });
-                Snackbar.Add(L["Created"], K7Severity.Success);
-                Dialog.Close(K7DialogResult.Ok(id));
-            }
+                await SubmitPlaylistAsync();
         }
         catch
         {
@@ -138,6 +120,77 @@ public partial class DynamicPlaylistDialog
         {
             _isSubmitting = false;
         }
+    }
+
+    private async Task SubmitPlaylistAsync()
+    {
+        if (_isEdit)
+        {
+            await K7ServerService.UpdateDynamicPlaylistAsync(DynamicPlaylistId!.Value, new UpdateDynamicPlaylistRequest
+            {
+                Title = _title.Trim(),
+                Description = string.IsNullOrWhiteSpace(_description) ? null : _description.Trim(),
+                MediaType = _mediaType,
+                RuleFilter = _ruleFilter,
+                Limit = _limit,
+                OrderBy = _orderBy,
+                OrderDescending = _orderDescending
+            });
+            Snackbar.Add(L["Updated"], K7Severity.Success);
+            Dialog.Close(K7DialogResult.Ok(DynamicPlaylistId!.Value));
+            return;
+        }
+
+        var id = await K7ServerService.CreateDynamicPlaylistAsync(new CreateDynamicPlaylistRequest
+        {
+            Title = _title.Trim(),
+            Description = string.IsNullOrWhiteSpace(_description) ? null : _description.Trim(),
+            MediaType = _mediaType,
+            RuleFilter = _ruleFilter,
+            Limit = _limit,
+            OrderBy = _orderBy,
+            OrderDescending = _orderDescending
+        });
+        Snackbar.Add(L["Created"], K7Severity.Success);
+        Dialog.Close(K7DialogResult.Ok(id));
+    }
+
+    private async Task SubmitCollectionAsync()
+    {
+        if (_isEdit)
+        {
+            await CollectionService.UpdateCollectionAsync(CollectionId!.Value, new UpdateCollectionRequest
+            {
+                Id = CollectionId.Value,
+                Title = _title.Trim(),
+                Description = string.IsNullOrWhiteSpace(_description) ? null : _description.Trim(),
+                VisibilityScope = _visibilityScope,
+                MediaType = _mediaType,
+                LibraryGroupId = InitialLibraryGroupId,
+                RuleFilter = _ruleFilter,
+                Limit = _limit,
+                OrderBy = _orderBy,
+                OrderDescending = _orderDescending
+            });
+            Snackbar.Add(L["Updated"], K7Severity.Success);
+            Dialog.Close(K7DialogResult.Ok(CollectionId!.Value));
+            return;
+        }
+
+        var id = await CollectionService.CreateCollectionAsync(new CreateCollectionRequest
+        {
+            Title = _title.Trim(),
+            Description = string.IsNullOrWhiteSpace(_description) ? null : _description.Trim(),
+            VisibilityScope = _visibilityScope,
+            MediaType = _mediaType,
+            LibraryGroupId = InitialLibraryGroupId,
+            RuleFilter = _ruleFilter,
+            Limit = _limit,
+            OrderBy = _orderBy,
+            OrderDescending = _orderDescending
+        });
+        Snackbar.Add(L["Created"], K7Severity.Success);
+        Dialog.Close(K7DialogResult.Ok(id));
     }
 
     private async Task<IReadOnlyList<string>> SearchSuggestionsAsync(

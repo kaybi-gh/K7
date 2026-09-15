@@ -880,6 +880,16 @@ public sealed class MockUserPreferencesService : IUserPreferencesService
     public Task<K7.Shared.Dtos.Home.HomeLayoutDto> GetHomeLayoutAsync(CancellationToken cancellationToken = default) => Task.FromResult(new K7.Shared.Dtos.Home.HomeLayoutDto { Rows = [] });
     public Task UpdateHomeLayoutAsync(K7.Shared.Dtos.Home.HomeLayoutDto layout, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task ResetHomeLayoutAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task<K7.Shared.Dtos.CustomNav.CustomNavLayoutDto> GetCustomNavLayoutAsync(CancellationToken cancellationToken = default) => Task.FromResult(K7.Shared.Dtos.CustomNav.CustomNavLayoutDto.Disabled());
+    public Task UpdateCustomNavLayoutAsync(K7.Shared.Dtos.CustomNav.CustomNavLayoutDto layout, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task ResetCustomNavLayoutAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task<Guid> UploadCustomNavCoverAsync(
+        Guid itemId,
+        Stream? stream = null,
+        string? fileName = null,
+        Guid? sourcePictureId = null,
+        Guid? replacePictureId = null,
+        CancellationToken cancellationToken = default) => Task.FromResult(Guid.NewGuid());
     public Task<K7.Shared.Dtos.GeneralPreferencesDto> GetEffectiveGeneralPreferencesAsync(CancellationToken cancellationToken = default) => Task.FromResult(new K7.Shared.Dtos.GeneralPreferencesDto());
     public Task UpdateUserGeneralPreferencesAsync(K7.Shared.Dtos.GeneralPreferencesDto settings, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task ResetUserGeneralPreferencesAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
@@ -911,6 +921,10 @@ public sealed class MockServerPreferencesService : IServerPreferencesService
     public Task<K7.Shared.Dtos.Home.HomeLayoutDto> GetEffectiveServerHomeLayoutAsync(CancellationToken cancellationToken = default) => Task.FromResult(new K7.Shared.Dtos.Home.HomeLayoutDto { Rows = [] });
     public Task UpdateServerHomeLayoutAsync(K7.Shared.Dtos.Home.HomeLayoutDto layout, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task DeleteServerHomeLayoutAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task<K7.Shared.Dtos.CustomNav.CustomNavLayoutDto?> GetServerCustomNavLayoutAsync(CancellationToken cancellationToken = default) => Task.FromResult<K7.Shared.Dtos.CustomNav.CustomNavLayoutDto?>(null);
+    public Task<K7.Shared.Dtos.CustomNav.CustomNavLayoutDto> GetEffectiveServerCustomNavLayoutAsync(CancellationToken cancellationToken = default) => Task.FromResult(K7.Shared.Dtos.CustomNav.CustomNavLayoutDto.Disabled());
+    public Task UpdateServerCustomNavLayoutAsync(K7.Shared.Dtos.CustomNav.CustomNavLayoutDto layout, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task DeleteServerCustomNavLayoutAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task<K7.Shared.Dtos.ServerFeatureFlagsDto> GetServerFeatureFlagsAsync(CancellationToken cancellationToken = default) => Task.FromResult(new K7.Shared.Dtos.ServerFeatureFlagsDto());
     public Task UpdateServerFeatureFlagsAsync(K7.Shared.Dtos.ServerFeatureFlagsDto flags, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task<K7.Shared.Dtos.MusicIntelligenceStatusDto> GetMusicIntelligenceStatusAsync(CancellationToken cancellationToken = default) => Task.FromResult(new K7.Shared.Dtos.MusicIntelligenceStatusDto());
@@ -935,7 +949,7 @@ public sealed class MockCollectionService : ICollectionService
 {
     public Task<PaginatedListDto<LiteCollectionDto>?> GetCollectionsAsync(int pageNumber = 1, int pageSize = 20, MediaType? mediaType = null, bool? isPublic = null, LibraryItemOrderingOption? orderBy = null, CancellationToken cancellationToken = default) => Task.FromResult<PaginatedListDto<LiteCollectionDto>?>(new PaginatedListDto<LiteCollectionDto>());
     public Task<CollectionDto?> GetCollectionAsync(Guid id, CancellationToken cancellationToken = default) => Task.FromResult<CollectionDto?>(null);
-    public Task<PaginatedListDto<CollectionItemDto>?> GetCollectionItemsAsync(Guid collectionId, int pageNumber = 1, int pageSize = 50, CancellationToken cancellationToken = default) => Task.FromResult<PaginatedListDto<CollectionItemDto>?>(new PaginatedListDto<CollectionItemDto>());
+    public Task<PaginatedListDto<CollectionItemDto>?> GetCollectionItemsAsync(Guid collectionId, int pageNumber = 1, int pageSize = 50, bool includeUnavailable = false, CancellationToken cancellationToken = default) => Task.FromResult<PaginatedListDto<CollectionItemDto>?>(new PaginatedListDto<CollectionItemDto>());
     public Task<Guid> CreateCollectionAsync(CreateCollectionRequest request, CancellationToken cancellationToken = default) => Task.FromResult(Guid.NewGuid());
     public Task UpdateCollectionAsync(Guid id, UpdateCollectionRequest request, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task DeleteCollectionAsync(Guid id, CancellationToken cancellationToken = default) => Task.CompletedTask;
@@ -944,6 +958,7 @@ public sealed class MockCollectionService : ICollectionService
     public Task RemoveCollectionCoverAsync(Guid collectionId, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task<Guid> AddCollectionItemAsync(Guid collectionId, Guid mediaId, CancellationToken cancellationToken = default) => Task.FromResult(Guid.NewGuid());
     public Task RemoveCollectionItemAsync(Guid collectionId, Guid itemId, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task EvaluateCollectionAsync(Guid id, CancellationToken cancellationToken = default) => Task.CompletedTask;
 }
 
 public sealed class MockSearchService : ISearchService

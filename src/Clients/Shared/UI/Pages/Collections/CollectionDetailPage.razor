@@ -1,202 +1,164 @@
 @page "/collections/{Id}"
-
 @using K7.Clients.Shared.Mappings
-
 @using K7.Clients.Shared.Models
-
+@using K7.Clients.Shared.UI.Components.Dialogs
 @using K7.Shared.Dtos.Entities.Collections
-
 @using K7.Shared.Dtos.Entities.Medias
-
 @using K7.Server.Domain.Enums
-
 @inject ICollectionService K7ServerService
-
 @inject IK7ServerService ApiClient
-
 @inject IStringLocalizer<CollectionDetailPage> L
-
 @inject IStringLocalizer<SharedResource> S
-
-
+@inject IStringLocalizer<DynamicPlaylistDialog> FieldL
+@inject IStringLocalizer<K7RuleEditor> OpL
 
 <PageTitle>@(_collection?.Title ?? L["Header"])</PageTitle>
 
-
-
 @if (_loading)
-
 {
-
     <div class="d-flex flex-col pa-16 align-center">
-
         <K7Spinner />
-
     </div>
-
 }
-
 else if (_collection is null)
-
 {
-
     <div class="d-flex flex-col pa-16 align-center">
-
         <K7Icon Icon="@Phosphor.BookmarkSimple" Style="font-size: 64px; opacity: 0.3;" />
-
         <h6 Color="default" Style="opacity: 0.5;">@L["NotFound"]</h6>
-
     </div>
-
 }
-
 else
-
 {
-
     <div class="playlist-detail-page">
-
         <div class="playlist-header">
-
             <div class="playlist-header-cover">
-
                 <K7CoverMosaic CoverPicture="@(_showHeaderPlaceholder ? null : _collection.CoverPicture)"
-
                                 ImageUrls="_headerPreviewUrls"
-
                                 PreferPreviewWhenEmpty="@_showHeaderPlaceholder"
-
                                 PlaceholderIcon="@Phosphor.BookmarkSimple"
-
                                 PictureSize="MetadataPictureSize.Medium"
-
                                 Alt="@_collection.Title" />
-
             </div>
-
-
 
             <div class="playlist-header-info">
-
-                <p class="text-overline">@L["Header"]</p>
-
+                <p class="text-overline">@(_collection.IsDynamic ? L["DynamicHeader"] : L["Header"])</p>
                 <h4>@_collection.Title</h4>
 
-
-
                 @if (!string.IsNullOrEmpty(_collection.Description))
-
                 {
-
                     <p class="text-sm mt-1" Color="secondary">@_collection.Description</p>
-
                 }
 
-
-
                 <p class="text-sm mt-1" Color="secondary">
-
                     @_collection.ItemCount @L["Items"]
-
                     <span class="ml-2">
-
                         <K7Chip Size="xs" Variant="outlined">
-
                             @(_collection.IsPublic ? L["Public"] : L["Private"])
-
                         </K7Chip>
-
                     </span>
-
+                    @if (_collection.IsDynamic && _collection.LastEvaluatedAt.HasValue)
+                    {
+                        <span class="ml-2">@string.Format(L["EvaluatedRelative"], FormatRelativeTime(_collection.LastEvaluatedAt.Value))</span>
+                    }
                 </p>
 
-
-
                 <div class="playlist-header-actions">
-
+                    @if (_collection.IsDynamic)
+                    {
+                        <K7Button Variant="outlined" Color="secondary"
+                                   StartIcon="@Phosphor.ArrowClockwise"
+                                   OnClick="EvaluateAsync" Disabled="_evaluating"
+                                   AriaLabel="@L["Reevaluate"]">
+                            @if (_evaluating)
+                            {
+                                <K7Spinner Size="sm" />
+                                <span class="playlist-action-label">@L["Evaluating"]</span>
+                            }
+                            else
+                            {
+                                <span class="playlist-action-label">@L["Reevaluate"]</span>
+                            }
+                        </K7Button>
+                        @if (_collection.LibraryGroupId.HasValue)
+                        {
+                            <K7Button Variant="outlined" Color="secondary"
+                                       StartIcon="@Phosphor.Funnel"
+                                       OnClick="BrowseInLibraryAsync"
+                                       Disabled="@(_collection.RuleFilter is null || _collection.RuleFilter.Items.Count == 0)"
+                                       AriaLabel="@L["BrowseInLibrary"]">
+                                <span class="playlist-action-label">@L["BrowseInLibrary"]</span>
+                            </K7Button>
+                        }
+                    }
                     <K7IconButton Icon="@Phosphor.Pencil" OnClick="OpenEditDialog" />
-
                     <K7IconButton Icon="@Phosphor.Trash" Color="error" OnClick="ConfirmDelete" />
-
+                    @if (!_collection.IsDynamic)
+                    {
+                        <K7Menu>
+                            <ActivatorContent>
+                                <K7IconButton Icon="@Phosphor.DotsThreeVertical" AriaLabel="@L["MoreActions"]" />
+                            </ActivatorContent>
+                            <ChildContent>
+                                <K7MenuItem Icon="@(_showUnavailable ? "eye-slash" : "eye")"
+                                            OnClick="ToggleShowUnavailableAsync">
+                                    @(_showUnavailable ? L["HideUnavailable"] : L["ShowUnavailable"])
+                                </K7MenuItem>
+                            </ChildContent>
+                        </K7Menu>
+                    }
                 </div>
-
             </div>
-
         </div>
 
-
+        @if (_collection.IsDynamic && !string.IsNullOrEmpty(_rulesDescription))
+        {
+            <div class="surface ma-4 pa-3">
+                <div class="d-flex gap-2">
+                    <K7Icon Name="funnel" IconSize="@K7IconSize.Sm" Color="secondary" />
+                    <p class="text-sm" Color="secondary">@_rulesDescription</p>
+                </div>
+            </div>
+        }
 
         <BrowseView TItem="CollectionBrowseRow"
-
                       Items="_browseRows"
-
                       Loading="_loadingItems"
-
                       PersistenceKey="@($"collection-{Id}")"
-
                       Class="collection-detail-browse"
-
                       DefaultItemWidth="160"
-
                       DefaultSpacing="6"
-
                       GridItemAspectRatio="1.8f"
-
                       ListItemHeight="64"
-
                       @ref="_browseView"
-
                       OnColumnPickerRequested="OnColumnPickerRequested">
-
             <EmptyContent>
                 <K7EmptyState Icon="@Phosphor.BookmarkSimple" Title="@L["Empty"]" />
             </EmptyContent>
 
             <GridTemplate Context="row">
-
                 @{
-
                     var vm = row.Media.ToCardViewModel(ApiClient, n => string.Format(S["SeasonNumber"], n));
-
                 }
-
                 @if (vm is not null)
-
                 {
-
                     <MediaCard Model="vm"
-
                                 Variant="@GetVariant(vm)"
-
                                 Href="@GetItemHref(vm)"
-
                                 FooterVisible="true"
-
                                 OverlayEnabled="true"
-
                                 ProgressEnabled="_canTrackProgress"
-
                                 WatchedStatusEnabled="_canTrackProgress"
-
                                 ExcludeMenuEnabled="_canExclude"
-
                                 WatchStateMenuEnabled="_canSetWatchState"
-
                                 IsAdmin="_isAdmin"
-
                                 OnExcludeForSelf="() => ExcludeForSelf(vm)"
-
                                 OnExcludeForOthers="() => ExcludeForOthers(vm)" />
-
                 }
-
             </GridTemplate>
 
             <TableContent>
                 <K7DataTable TItem="CollectionBrowseRow"
                              ServerData="LoadTableDataAsync"
-                             ActiveSortKey="@_activeSortKey"
-                             ActiveSortDirection="@_activeSortDirection"
                              OnSortChanged="OnTableSortChanged"
                              OnRowClick="NavigateToBrowseRow"
                              RowHeight="56"
@@ -230,7 +192,7 @@ else
                                                               ExcludeMenuEnabled="_canExclude"
                                                               WatchStateMenuEnabled="_canSetWatchState"
                                                               IsAdmin="_isAdmin"
-                                                              OnRemove="() => RemoveItemAsync(row)"
+                                                              OnRemove="GetRemoveCallback(row)"
                                                               RemoveAriaLabel="@S["Remove"]"
                                                               OnExcludeForSelf="() => ExcludeForSelf(vm)"
                                                               OnExcludeForOthers="() => ExcludeForOthers(vm)"
@@ -256,7 +218,7 @@ else
                                                       ExcludeMenuEnabled="_canExclude"
                                                       WatchStateMenuEnabled="_canSetWatchState"
                                                       IsAdmin="_isAdmin"
-                                                      OnRemove="() => RemoveItemAsync(row)"
+                                                      OnRemove="GetRemoveCallback(row)"
                                                       RemoveAriaLabel="@S["Remove"]"
                                                       OnExcludeForSelf="() => ExcludeForSelf(vm)"
                                                       OnExcludeForOthers="() => ExcludeForOthers(vm)"
@@ -265,10 +227,6 @@ else
                     </Actions>
                 </LibraryListItem>
             </ListTemplate>
-
         </BrowseView>
-
     </div>
-
 }
-

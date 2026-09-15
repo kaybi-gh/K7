@@ -25,6 +25,9 @@ public class AddCollectionItemCommandHandler(IApplicationDbContext context, IUse
 
         Guard.Against.NotFound(request.CollectionId, collection);
 
+        if (collection.RuleFilter is not null)
+            throw new ValidationException("Cannot add items to a dynamic collection.");
+
         var media = await context.Medias
             .Where(m => m.Id == request.MediaId)
             .Select(m => new { m.Id, m.Type })

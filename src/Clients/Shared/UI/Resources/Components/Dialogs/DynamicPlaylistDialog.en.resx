@@ -22,6 +22,7 @@
   <data name="NameLabel" xml:space="preserve"><value>Name</value></data>
   <data name="NameRequired" xml:space="preserve"><value>Name is required</value></data>
   <data name="DescriptionOptional" xml:space="preserve"><value>Description (optional)</value></data>
+  <data name="VisibilityScope" xml:space="preserve"><value>Visibility</value></data>
   <data name="MatchLabel" xml:space="preserve"><value>Match</value></data>
   <data name="MatchAll" xml:space="preserve"><value>All</value></data>
   <data name="MatchAny" xml:space="preserve"><value>At least one</value></data>

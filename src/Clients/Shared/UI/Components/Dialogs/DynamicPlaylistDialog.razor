@@ -14,14 +14,32 @@
         <K7TextField @bind-Value="_description" Label="@L["DescriptionOptional"]"
                       Variant="outlined" Lines="2" MaxLength="2000" />
 
+        @if (ForCollection)
+        {
+            <K7VisibilityScopeSelect Label="@L["VisibilityScope"]" @bind-Value="_visibilityScope" Variant="outlined" />
+        }
+
         <hr class="k7-divider" />
 
         <div class="smart-playlist-dialog__media-type">
             <K7Select TValue="MediaType" Value="_mediaType" ValueChanged="OnMediaTypeChanged"
                        Label="@L["MediaType"]" Variant="outlined">
-                <K7SelectItem TValue="MediaType" Value="MediaType.MusicTrack" Text="@S["MediaTypeMusic"]">@S["MediaTypeMusic"]</K7SelectItem>
-                <K7SelectItem TValue="MediaType" Value="MediaType.Movie" Text="@S["MediaTypeMovies"]">@S["MediaTypeMovies"]</K7SelectItem>
-                <K7SelectItem TValue="MediaType" Value="MediaType.SerieEpisode" Text="@S["MediaTypeTVShows"]">@S["MediaTypeTVShows"]</K7SelectItem>
+                @if (ForCollection)
+                {
+                    <K7SelectItem TValue="MediaType" Value="MediaType.Movie" Text="@S["MediaTypeMovies"]">@S["MediaTypeMovies"]</K7SelectItem>
+                    <K7SelectItem TValue="MediaType" Value="MediaType.Serie" Text="@S["MediaTypeSeries"]">@S["MediaTypeSeries"]</K7SelectItem>
+                    <K7SelectItem TValue="MediaType" Value="MediaType.SerieSeason" Text="@S["MediaTypeSerieSeasons"]">@S["MediaTypeSerieSeasons"]</K7SelectItem>
+                    <K7SelectItem TValue="MediaType" Value="MediaType.SerieEpisode" Text="@S["MediaTypeSerieEpisodes"]">@S["MediaTypeSerieEpisodes"]</K7SelectItem>
+                    <K7SelectItem TValue="MediaType" Value="MediaType.MusicAlbum" Text="@S["MediaTypeMusicAlbums"]">@S["MediaTypeMusicAlbums"]</K7SelectItem>
+                    <K7SelectItem TValue="MediaType" Value="MediaType.MusicTrack" Text="@S["MediaTypeMusicTracks"]">@S["MediaTypeMusicTracks"]</K7SelectItem>
+                    <K7SelectItem TValue="MediaType" Value="MediaType.MusicArtist" Text="@S["MediaTypeMusicArtists"]">@S["MediaTypeMusicArtists"]</K7SelectItem>
+                }
+                else
+                {
+                    <K7SelectItem TValue="MediaType" Value="MediaType.MusicTrack" Text="@S["MediaTypeMusic"]">@S["MediaTypeMusic"]</K7SelectItem>
+                    <K7SelectItem TValue="MediaType" Value="MediaType.Movie" Text="@S["MediaTypeMovies"]">@S["MediaTypeMovies"]</K7SelectItem>
+                    <K7SelectItem TValue="MediaType" Value="MediaType.SerieEpisode" Text="@S["MediaTypeTVShows"]">@S["MediaTypeTVShows"]</K7SelectItem>
+                }
             </K7Select>
         </div>
 

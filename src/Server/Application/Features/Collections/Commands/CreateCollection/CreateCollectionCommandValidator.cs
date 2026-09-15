@@ -18,5 +18,26 @@ public class CreateCollectionCommandValidator : AbstractValidator<CreateCollecti
         RuleFor(v => v.MediaType)
             .IsInEnum()
             .When(v => v.MediaType is not null);
+
+        RuleFor(v => v.MediaType)
+            .NotNull()
+            .When(v => v.RuleFilter is not null);
+
+        RuleFor(v => v.OrderBy)
+            .IsInEnum()
+            .When(v => v.RuleFilter is not null);
+
+        RuleFor(v => v.Limit)
+            .GreaterThan(0)
+            .LessThanOrEqualTo(1000)
+            .When(v => v.Limit is not null);
+
+        RuleFor(v => v.LibraryGroupId)
+            .NotEmpty()
+            .When(v => v.LibraryGroupId is not null);
+
+        RuleFor(v => v.RuleFilter)
+            .NotNull()
+            .When(v => v.LibraryGroupId is not null);
     }
 }

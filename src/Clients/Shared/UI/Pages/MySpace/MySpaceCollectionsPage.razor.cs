@@ -311,11 +311,25 @@ public partial class MySpaceCollectionsPage : IAsyncDisposable
     private async Task OpenCreateCollectionDialog()
     {
         var options = new K7DialogOptions { MaxWidth = K7DialogMaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
-        var dialog = await DialogService.ShowAsync<CreateCollectionDialog>("Nouvelle collection", null, options);
+        var dialog = await DialogService.ShowAsync<CreateCollectionDialog>(L["Collection"], null, options);
         var result = await dialog.Result;
 
         if (result is { Canceled: false })
             await LoadCollectionsAsync();
+    }
+
+    private async Task OpenCreateDynamicCollectionDialog()
+    {
+        var parameters = new K7DialogParameters<DynamicPlaylistDialog>
+        {
+            { x => x.ForCollection, true }
+        };
+        var options = new K7DialogOptions { MaxWidth = K7DialogMaxWidth.Large, FullWidth = true, CloseOnEscapeKey = true };
+        var dialog = await DialogService.ShowAsync<DynamicPlaylistDialog>(L["DynamicCollection"], parameters, options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false, Data: Guid id })
+            NavigationManager.NavigateTo($"/collections/{id}");
     }
 
     private string GetCollectionItemCountLabel(LiteCollectionDto collection) =>

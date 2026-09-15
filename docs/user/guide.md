@@ -174,7 +174,7 @@ Paste a movie, series, season, episode, album, or artist URL into Discord, Teleg
 | Area | Notes |
 |---|---|
 | Playlists | Manual lists and **dynamic playlists** (rules that refresh as the library grows). With AudioMuse, you can also build a **smart playlist** from a text prompt - see [Music discovery](#music-discovery-audiomuse). |
-| Collections | Group titles your way |
+| Collections | Manual shelves and **dynamic collections** (same rules engine as dynamic playlists, shown as a browse grid). Create either from My Space -> Collections (New menu) or from a library catalog Sparkle menu. Collections created from a catalog are scoped to that library group (evaluation + Browse in library). Collections created from My Space stay global for that media type and have no Browse in library action. Dynamic collection items are read-only until you change the rules or re-evaluate. |
 | Stats / History / Reviews | Your activity and ratings. Watch stats (and home "Recommended for you") only count plays that met your completion threshold; brief opens do not. History still lists incomplete sessions. |
 | Downloads | Native apps only - see [Offline](#offline-downloads) |
 

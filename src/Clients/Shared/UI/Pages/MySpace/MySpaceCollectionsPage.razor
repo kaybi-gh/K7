@@ -59,9 +59,17 @@
                           OnClick="EnterSelectionMode"
                           Disabled="@(OwnedCount == 0)"
                           AriaLabel="@L["Select"]" />
-            <K7Button Variant="filled" Color="primary" StartIcon="@Phosphor.Plus" OnClick="OpenCreateCollectionDialog" Disabled="@(!_canCreate)" Class="my-space-toolbar-new" AriaLabel="@L["New"]">
-                <span class="my-space-toolbar-new__label">@L["New"]</span>
-            </K7Button>
+            <K7Menu Class="my-space-toolbar-new" Disabled="@(!_canCreate)">
+                <ActivatorContent>
+                    <K7Button Variant="filled" Color="primary" StartIcon="@Phosphor.Plus" Disabled="@(!_canCreate)" AriaLabel="@L["New"]">
+                        <span class="my-space-toolbar-new__label">@L["New"]</span>
+                    </K7Button>
+                </ActivatorContent>
+                <ChildContent>
+                    <K7MenuItem Icon="bookmark-simple" OnClick="OpenCreateCollectionDialog">@L["Collection"]</K7MenuItem>
+                    <K7MenuItem Icon="sparkle" OnClick="OpenCreateDynamicCollectionDialog">@L["DynamicCollection"]</K7MenuItem>
+                </ChildContent>
+            </K7Menu>
         }
     </ToolbarContent>
     <EmptyContent>
@@ -71,6 +79,7 @@
         @{
             var collection = item.Collection;
             var vm = collection.ToCardViewModel(ApiClient, GetCollectionSubtitle(item));
+            var placeholderIcon = collection.IsDynamic ? Phosphor.Sparkle : Phosphor.BookmarkSimple;
             var selected = IsSelected(collection.Id);
         }
         @if (_selectionMode && item.IsOwned)
@@ -88,11 +97,12 @@
                            ContextMenuEnabled="false"
                            HoverOverlayEnabled="true"
                            Selected="selected"
-                           PlaceholderIcon="@Phosphor.BookmarkSimple">
+                           PlaceholderIcon="@placeholderIcon"
+                           TypeBadgeIcon="@(collection.IsDynamic ? Phosphor.Sparkle : null)">
                     <CoverContent>
                         <K7CoverMosaic CoverPicture="collection.CoverPicture"
                                        PreviewPictures="collection.PreviewPictures"
-                                       PlaceholderIcon="@Phosphor.BookmarkSimple"
+                                       PlaceholderIcon="@placeholderIcon"
                                        PictureSize="MetadataPictureSize.Medium"
                                        Alt="@collection.Title"
                                        Class="media-card-mosaic" />
@@ -111,11 +121,12 @@
                        FooterVisible="true"
                        ContextMenuEnabled="false"
                        HoverOverlayEnabled="true"
-                       PlaceholderIcon="@Phosphor.BookmarkSimple">
+                       PlaceholderIcon="@placeholderIcon"
+                       TypeBadgeIcon="@(collection.IsDynamic ? Phosphor.Sparkle : null)">
                 <CoverContent>
                     <K7CoverMosaic CoverPicture="collection.CoverPicture"
                                    PreviewPictures="collection.PreviewPictures"
-                                   PlaceholderIcon="@Phosphor.BookmarkSimple"
+                                   PlaceholderIcon="@placeholderIcon"
                                    PictureSize="MetadataPictureSize.Medium"
                                    Alt="@collection.Title"
                                    Class="media-card-mosaic" />
@@ -156,7 +167,7 @@
                         <LibraryItemCoverThumb CoverPicture="collection.CoverPicture"
                                                 PreviewPictures="collection.PreviewPictures"
                                                 PreferPreviewWhenEmpty="@(collection.ItemCount == 0)"
-                                                PlaceholderIcon="@Phosphor.BookmarkSimple"
+                                                PlaceholderIcon="@(collection.IsDynamic ? Phosphor.Sparkle : Phosphor.BookmarkSimple)"
                                                 Alt="@collection.Title" />
                         <p class="text-sm">@collection.Title</p>
                     </div>
@@ -201,7 +212,7 @@
                     <LibraryItemCoverThumb CoverPicture="collection.CoverPicture"
                                             PreviewPictures="collection.PreviewPictures"
                                             PreferPreviewWhenEmpty="@(collection.ItemCount == 0)"
-                                            PlaceholderIcon="@Phosphor.BookmarkSimple"
+                                            PlaceholderIcon="@(collection.IsDynamic ? Phosphor.Sparkle : Phosphor.BookmarkSimple)"
                                             Alt="@collection.Title" />
                     <div class="library-list-item-info">
                         <p class="library-list-item-title">@collection.Title</p>
@@ -215,7 +226,7 @@
                     <LibraryItemCoverThumb CoverPicture="collection.CoverPicture"
                                             PreviewPictures="collection.PreviewPictures"
                                             PreferPreviewWhenEmpty="@(collection.ItemCount == 0)"
-                                            PlaceholderIcon="@Phosphor.BookmarkSimple"
+                                            PlaceholderIcon="@(collection.IsDynamic ? Phosphor.Sparkle : Phosphor.BookmarkSimple)"
                                             Alt="@collection.Title" />
                     <div class="library-list-item-info">
                         <p class="library-list-item-title">@collection.Title</p>

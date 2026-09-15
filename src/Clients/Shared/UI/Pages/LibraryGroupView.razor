@@ -4,6 +4,7 @@
 @using K7.Server.Domain.Enums
 @using K7.Shared.Dtos.Entities.Medias
 @inject IMediaService k7ServerService
+@inject IPlaylistService PlaylistService
 @inject IK7ServerService apiClient
 @inject IStringLocalizer<LibraryGroup> L
 @inject IStringLocalizer<SharedResource> S
@@ -85,11 +86,17 @@
                     }
                     @if (_showCreateDynamicPlaylist)
                     {
-                        <K7Button Variant="outlined"
-                                  Class="library-toolbar-smart-playlist"
-                                  StartIcon="@Phosphor.Sparkle"
-                                  OnClick="CreateDynamicPlaylistFromBrowseAsync"
-                                  AdditionalAttributes="CreateDynamicPlaylistButtonAttributes" />
+                        <K7Menu>
+                            <ActivatorContent>
+                                <K7IconButton Icon="@Phosphor.Sparkle"
+                                              Class="library-toolbar-smart-playlist"
+                                              AdditionalAttributes="CreateDynamicPlaylistButtonAttributes" />
+                            </ActivatorContent>
+                            <ChildContent>
+                                <K7MenuItem Icon="bookmark-simple" OnClick="CreateDynamicCollectionFromBrowseAsync">@L["CreateDynamicCollection"]</K7MenuItem>
+                                <K7MenuItem Icon="sparkle" OnClick="CreateDynamicPlaylistFromBrowseAsync">@L["CreateDynamicPlaylist"]</K7MenuItem>
+                            </ChildContent>
+                        </K7Menu>
                     }
                 </div>
             }

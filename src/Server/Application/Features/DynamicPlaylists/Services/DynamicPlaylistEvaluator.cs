@@ -4,6 +4,7 @@ using K7.Server.Domain.Entities.Metadatas.Files;
 using K7.Server.Domain.Entities.Playlists;
 using K7.Server.Domain.Entities.Ratings;
 using K7.Server.Domain.Enums;
+using K7.Server.Domain.Models;
 
 namespace K7.Server.Application.Features.DynamicPlaylists.Services;
 
@@ -12,24 +13,41 @@ public static class DynamicPlaylistEvaluator
     public static IQueryable<BaseMedia> ApplyRules(
         IQueryable<BaseMedia> query,
         DynamicPlaylist dynamicPlaylist,
+        Guid userId) =>
+        ApplyRules(
+            query,
+            dynamicPlaylist.MediaType,
+            dynamicPlaylist.RuleFilter,
+            dynamicPlaylist.OrderBy,
+            dynamicPlaylist.OrderDescending,
+            dynamicPlaylist.Limit,
+            userId);
+
+    public static IQueryable<BaseMedia> ApplyRules(
+        IQueryable<BaseMedia> query,
+        MediaType mediaType,
+        RuleGroup ruleFilter,
+        DynamicPlaylistOrderBy orderBy,
+        bool orderDescending,
+        int? limit,
         Guid userId)
     {
-        query = query.Where(m => m.Type == dynamicPlaylist.MediaType);
+        query = query.Where(m => m.Type == mediaType);
+        query = MediaRuleEvaluator.ApplyFilter(query, ruleFilter, userId);
+        query = ApplyOrdering(query, orderBy, orderDescending);
 
-        query = MediaRuleEvaluator.ApplyFilter(query, dynamicPlaylist.RuleFilter, userId);
-
-        query = ApplyOrdering(query, dynamicPlaylist);
-
-        if (dynamicPlaylist.Limit.HasValue)
-            query = query.Take(dynamicPlaylist.Limit.Value);
+        if (limit is > 0)
+            query = query.Take(limit.Value);
 
         return query;
     }
 
-    private static IQueryable<BaseMedia> ApplyOrdering(IQueryable<BaseMedia> query, DynamicPlaylist sp)
+    private static IQueryable<BaseMedia> ApplyOrdering(
+        IQueryable<BaseMedia> query,
+        DynamicPlaylistOrderBy orderBy,
+        bool desc)
     {
-        var desc = sp.OrderDescending;
-        return sp.OrderBy switch
+        return orderBy switch
         {
             DynamicPlaylistOrderBy.Title => desc ? query.OrderByDescending(m => m.SortTitle ?? m.Title) : query.OrderBy(m => m.SortTitle ?? m.Title),
             DynamicPlaylistOrderBy.DateAdded => desc ? query.OrderByDescending(m => m.Created) : query.OrderBy(m => m.Created),

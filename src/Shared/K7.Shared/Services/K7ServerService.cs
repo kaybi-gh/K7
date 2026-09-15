@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos;
+using K7.Shared.Dtos.CustomNav;
 using K7.Shared.Dtos.Devices;
 using K7.Shared.Dtos.Diagnostics;
 using K7.Shared.Dtos.Entities;
@@ -885,10 +886,10 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         return await HttpClient.GetFromJsonAsync<CollectionDto>($"api/collections/{id}", _serializerOptions, cancellationToken);
     }
 
-    public async Task<PaginatedListDto<CollectionItemDto>?> GetCollectionItemsAsync(Guid collectionId, int pageNumber = 1, int pageSize = 50, CancellationToken cancellationToken = default)
+    public async Task<PaginatedListDto<CollectionItemDto>?> GetCollectionItemsAsync(Guid collectionId, int pageNumber = 1, int pageSize = 50, bool includeUnavailable = false, CancellationToken cancellationToken = default)
     {
         return await HttpClient.GetFromJsonAsync<PaginatedListDto<CollectionItemDto>>(
-            $"api/collections/{collectionId}/items?pageNumber={pageNumber}&pageSize={pageSize}", _serializerOptions, cancellationToken);
+            $"api/collections/{collectionId}/items?pageNumber={pageNumber}&pageSize={pageSize}&includeUnavailable={includeUnavailable}", _serializerOptions, cancellationToken);
     }
 
     public async Task<Guid> CreateCollectionAsync(CreateCollectionRequest request, CancellationToken cancellationToken = default)
@@ -900,7 +901,7 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
 
     public async Task UpdateCollectionAsync(Guid id, UpdateCollectionRequest request, CancellationToken cancellationToken = default)
     {
-        var response = await HttpClient.PutAsJsonAsync($"api/collections/{id}", request, _serializerOptions, cancellationToken);
+        var response = await HttpClient.PutAsJsonAsync($"api/collections/{id}", request with { Id = id }, _serializerOptions, cancellationToken);
         response.EnsureSuccessStatusCode();
     }
 
@@ -942,6 +943,12 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
     public async Task RemoveCollectionItemAsync(Guid collectionId, Guid itemId, CancellationToken cancellationToken = default)
     {
         var response = await HttpClient.DeleteAsync($"api/collections/{collectionId}/items/{itemId}", cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task EvaluateCollectionAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PostAsync($"api/collections/{id}/evaluate", null, cancellationToken);
         response.EnsureSuccessStatusCode();
     }
 
@@ -1505,6 +1512,87 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
     public async Task DeleteServerHomeLayoutAsync(CancellationToken cancellationToken = default)
     {
         var response = await HttpClient.DeleteAsync("api/server/preferences/home-layout", cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task<CustomNavLayoutDto> GetCustomNavLayoutAsync(CancellationToken cancellationToken = default)
+    {
+        var result = await HttpClient.GetFromJsonAsync<CustomNavLayoutDto>("api/users/me/preferences/custom-nav", _serializerOptions, cancellationToken);
+        return result ?? CustomNavLayoutDto.Disabled();
+    }
+
+    public async Task UpdateCustomNavLayoutAsync(CustomNavLayoutDto layout, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PutAsJsonAsync("api/users/me/preferences/custom-nav", layout, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task ResetCustomNavLayoutAsync(CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.DeleteAsync("api/users/me/preferences/custom-nav", cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task<Guid> UploadCustomNavCoverAsync(
+        Guid itemId,
+        Stream? stream = null,
+        string? fileName = null,
+        Guid? sourcePictureId = null,
+        Guid? replacePictureId = null,
+        CancellationToken cancellationToken = default)
+    {
+        var query = $"itemId={itemId}";
+        if (sourcePictureId is { } sourceId)
+            query += $"&sourcePictureId={sourceId}";
+        if (replacePictureId is { } replaceId)
+            query += $"&replacePictureId={replaceId}";
+
+        HttpResponseMessage response;
+        if (stream is not null && fileName is not null)
+        {
+            using var content = new MultipartFormDataContent();
+            content.Add(new StreamContent(stream), "file", fileName);
+            response = await HttpClient.PostAsync(
+                $"api/users/me/preferences/custom-nav/covers?{query}",
+                content,
+                cancellationToken);
+        }
+        else
+        {
+            response = await HttpClient.PostAsync(
+                $"api/users/me/preferences/custom-nav/covers?{query}",
+                null,
+                cancellationToken);
+        }
+
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<Guid>(_serializerOptions, cancellationToken);
+    }
+
+    public async Task<CustomNavLayoutDto?> GetServerCustomNavLayoutAsync(CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.GetAsync("api/server/preferences/custom-nav", cancellationToken);
+        if (response.StatusCode == System.Net.HttpStatusCode.NoContent)
+            return null;
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<CustomNavLayoutDto>(_serializerOptions, cancellationToken);
+    }
+
+    public async Task<CustomNavLayoutDto> GetEffectiveServerCustomNavLayoutAsync(CancellationToken cancellationToken = default)
+    {
+        var result = await HttpClient.GetFromJsonAsync<CustomNavLayoutDto>("api/server/preferences/custom-nav/effective", _serializerOptions, cancellationToken);
+        return result ?? CustomNavLayoutDto.Disabled();
+    }
+
+    public async Task UpdateServerCustomNavLayoutAsync(CustomNavLayoutDto layout, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PutAsJsonAsync("api/server/preferences/custom-nav", layout, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task DeleteServerCustomNavLayoutAsync(CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.DeleteAsync("api/server/preferences/custom-nav", cancellationToken);
         response.EnsureSuccessStatusCode();
     }
 

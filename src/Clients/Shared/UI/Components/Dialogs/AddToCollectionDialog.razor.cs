@@ -30,7 +30,7 @@ public partial class AddToCollectionDialog
     {
         _loading = true;
         var result = await K7ServerService.GetCollectionsAsync(1, 100, MediaType);
-        _collections = result?.Items?.ToList() ?? [];
+        _collections = result?.Items?.Where(c => !c.IsDynamic).ToList() ?? [];
         _loading = false;
     }
 

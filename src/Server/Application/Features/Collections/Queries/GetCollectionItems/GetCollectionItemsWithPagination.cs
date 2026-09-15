@@ -1,6 +1,7 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Mappings;
 using K7.Server.Application.Common.Models;
+using K7.Server.Application.Features.Restrictions.Services;
 using K7.Server.Domain.Entities.Collections;
 using K7.Server.Domain.Entities.Medias;
 
@@ -11,12 +12,15 @@ public record GetCollectionItemsWithPaginationQuery : IRequest<PaginatedList<Col
     public required Guid CollectionId { get; init; }
     public required int PageNumber { get; init; } = 1;
     public required int PageSize { get; init; } = PagingDefaults.ItemsPageSize;
+    public bool IncludeUnavailable { get; init; }
 }
 
 public class GetCollectionItemsWithPaginationQueryHandler(IApplicationDbContext context, IUser currentUser)
     : IRequestHandler<GetCollectionItemsWithPaginationQuery, PaginatedList<CollectionItem>>
 {
-    public async Task<PaginatedList<CollectionItem>> Handle(GetCollectionItemsWithPaginationQuery request, CancellationToken cancellationToken)
+    public async Task<PaginatedList<CollectionItem>> Handle(
+        GetCollectionItemsWithPaginationQuery request,
+        CancellationToken cancellationToken)
     {
         var userId = currentUser.Id;
 
@@ -31,6 +35,8 @@ public class GetCollectionItemsWithPaginationQueryHandler(IApplicationDbContext 
                 .ThenInclude(m => m.Pictures)
                     .ThenInclude(p => p.Variants)
             .Include(i => i.Media)
+                .ThenInclude(m => m.IndexedFiles)
+            .Include(i => i.Media)
                 .ThenInclude(m => m.PersonRoles)
                     .ThenInclude(r => r.Person)
             .Include(i => i.Media)
@@ -40,6 +46,44 @@ public class GetCollectionItemsWithPaginationQueryHandler(IApplicationDbContext 
             .OrderBy(i => i.Order)
             .AsSplitQuery()
             .AsNoTracking();
+
+        if (userId is { } currentUserId)
+        {
+            var excludedLibraryIds = context.UserLibraryExclusions
+                .Where(e => e.UserId == currentUserId && (e.IsAdminExcluded || e.IsSelfExcluded))
+                .Select(e => e.LibraryId);
+
+            var excludedMediaIds = context.UserMediaExclusions
+                .Where(e => e.UserId == currentUserId && (e.IsAdminExcluded || e.IsSelfExcluded))
+                .Select(e => e.MediaId);
+
+            query = query.Where(i => !excludedMediaIds.Contains(i.MediaId));
+
+            if (request.IncludeUnavailable)
+            {
+                query = query.Where(i =>
+                    !i.Media.IndexedFiles.Any()
+                    || i.Media.IndexedFiles.Any(f => !excludedLibraryIds.Contains(f.LibraryId)));
+            }
+            else
+            {
+                query = query.Where(i =>
+                    i.Media.IndexedFiles.Any(f => !excludedLibraryIds.Contains(f.LibraryId)));
+            }
+
+            var restrictionProfile = await context.ContentRestrictionProfiles
+                .AsNoTracking()
+                .FirstOrDefaultAsync(p => p.Users.Any(u => u.Id == currentUserId), cancellationToken);
+
+            if (restrictionProfile is not null)
+            {
+                var restrictedMediaIds = ContentRestrictionEvaluator.GetRestricted(
+                    context.Medias.AsNoTracking(), restrictionProfile)
+                    .Select(m => m.Id);
+
+                query = query.Where(i => !restrictedMediaIds.Contains(i.MediaId));
+            }
+        }
 
         return await query.PaginatedListAsync(request.PageNumber, request.PageSize);
     }
