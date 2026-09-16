@@ -1643,6 +1643,33 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         return result ?? [];
     }
 
+    public async Task<MusicHitParadeDto?> GetMusicHitParadeAsync(
+        string period = MusicHitParadePeriods.All,
+        string scope = MusicHitParadeScopes.Personal,
+        int count = 50,
+        DateTime? from = null,
+        DateTime? to = null,
+        int? year = null,
+        int? month = null,
+        string? season = null,
+        CancellationToken cancellationToken = default)
+    {
+        var queryParams = new List<string>
+        {
+            $"period={Uri.EscapeDataString(period)}",
+            $"scope={Uri.EscapeDataString(scope)}",
+            $"count={count}"
+        };
+        if (from is not null) queryParams.Add($"from={from.Value:O}");
+        if (to is not null) queryParams.Add($"to={to.Value:O}");
+        if (year is not null) queryParams.Add($"year={year.Value}");
+        if (month is not null) queryParams.Add($"month={month.Value}");
+        if (season is not null) queryParams.Add($"season={Uri.EscapeDataString(season)}");
+
+        var url = $"api/music/hit-parade?{string.Join("&", queryParams)}";
+        return await HttpClient.GetFromJsonAsync<MusicHitParadeDto>(url, _serializerOptions, cancellationToken);
+    }
+
     public async Task<List<PersonKnownForItemDto>> GetPersonKnownForAsync(Guid personId, CancellationToken cancellationToken = default)
     {
         var result = await HttpClient.GetFromJsonAsync<List<PersonKnownForItemDto>>($"api/persons/{personId}/known-for", _serializerOptions, cancellationToken);

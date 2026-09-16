@@ -10,10 +10,12 @@ public partial class MySpacePage
     [Inject] private IPlaylistService PlaylistService { get; set; } = default!;
     [Inject] private ICollectionService CollectionService { get; set; } = default!;
     [Inject] private IFeatureAccessService FeatureAccess { get; set; } = default!;
+    [Inject] private ILibraryService LibraryService { get; set; } = default!;
 
     private int _playlistCount;
     private int _collectionCount;
     private bool _canRate;
+    private bool _hasMusicLibrary;
 
     private string PlaylistDescription =>
         _playlistCount > 0 ? string.Format(L["PlaylistsCount"], _playlistCount) : L["PlaylistsDesc"];
@@ -28,7 +30,21 @@ public partial class MySpacePage
         _canRate = await FeatureAccess.HasCapabilityAsync(Capability.CanRate);
         await Task.WhenAll(
             LoadPlaylistsCountAsync(),
-            LoadCollectionsCountAsync());
+            LoadCollectionsCountAsync(),
+            LoadHasMusicLibraryAsync());
+    }
+
+    private async Task LoadHasMusicLibraryAsync()
+    {
+        try
+        {
+            var libraries = await LibraryService.GetLibrariesAsync();
+            _hasMusicLibrary = libraries.Any(l => l.MediaType == LibraryMediaType.Music);
+        }
+        catch
+        {
+            _hasMusicLibrary = false;
+        }
     }
 
     private async Task LoadPlaylistsCountAsync()

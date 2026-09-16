@@ -14,6 +14,14 @@ public class CustomNavRoutesTests
     }
 
     [Test]
+    public void TryNormalize_ShouldAcceptHitParade()
+    {
+        CustomNavRoutes.TryNormalize("/my-space/hit-parade", out var normalized).Should().BeTrue();
+        normalized.Should().Be("/my-space/hit-parade");
+        CustomNavRoutes.Find("/my-space/hit-parade")!.LabelKey.Should().Be("RouteHitParade");
+    }
+
+    [Test]
     public void TryNormalize_ShouldRejectExternalUrl()
     {
         CustomNavRoutes.TryNormalize("https://example.com/search", out _).Should().BeFalse();

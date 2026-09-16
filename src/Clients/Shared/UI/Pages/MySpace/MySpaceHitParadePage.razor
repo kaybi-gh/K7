@@ -1,0 +1,139 @@
+@page "/my-space/hit-parade"
+@layout MySpaceLayout
+@using K7.Shared.Dtos
+@inject IStringLocalizer<MySpaceHitParadePage> L
+@inject IStringLocalizer<SharedResource> S
+@implements IDisposable
+
+<PageTitle>@L["PageTitle"]</PageTitle>
+
+<div class="page-scrollable my-space-hit-parade">
+    <div class="d-flex align-center flex-wrap data-page-toolbar hit-parade-toolbar">
+        <h5 class="data-page-toolbar__title">@L["PageTitle"]</h5>
+        <K7ButtonGroup TValue="string" Options="_periodOptions" Value="_period" ValueChanged="OnPeriodChanged" AriaLabel="@L["Period"]" />
+        @if (_period == MusicHitParadePeriods.Custom)
+        {
+            <K7DateRangePicker From="_fromDate" To="_toDate" RangeChanged="OnDateRangeChanged"
+                               MaxDate="_today"
+                               Label="@L["PickDates"]" HintSelectEnd="@L["SelectEndDate"]" />
+        }
+        <K7ButtonGroup TValue="string" Options="_scopeOptions" Value="_scope" ValueChanged="OnScopeChanged" AriaLabel="@L["Scope"]" />
+    </div>
+
+    @if (ShowPeriodNav)
+    {
+        <div class="hit-parade-period-nav">
+            <K7IconButton Icon="@Phosphor.CaretLeft"
+                          Size="sm"
+                          OnClick="GoPreviousAsync"
+                          AriaLabel="@L["PreviousPeriod"]" />
+            <span class="hit-parade-period-label">@PeriodLabel</span>
+            <K7IconButton Icon="@Phosphor.CaretRight"
+                          Size="sm"
+                          Disabled="!CanGoNext"
+                          OnClick="GoNextAsync"
+                          AriaLabel="@L["NextPeriod"]" />
+        </div>
+    }
+
+    @if (_loading)
+    {
+        @if (_isTv)
+        {
+            <Carousel Skeleton="true" Title="@L["PageTitle"]">
+                @for (var i = 0; i < 8; i++)
+                {
+                    <CarouselItem>
+                        <MediaCard Skeleton="true" Variant="MediaCardVariant.Cover" FooterVisible="true" />
+                    </CarouselItem>
+                }
+            </Carousel>
+        }
+        else
+        {
+            <div class="d-flex justify-center pa-16">
+                <K7Spinner />
+            </div>
+        }
+    }
+    else if (_tracks.Count == 0)
+    {
+        <div class="d-flex flex-col align-center pa-16 hit-parade-empty">
+            <K7Icon Icon="@Phosphor.Trophy" />
+            <span class="text-sm">@L["EmptyTitle"]</span>
+            <span class="text-caption">@L["EmptySubtitle"]</span>
+        </div>
+    }
+    else if (_isTv)
+    {
+        <Carousel Title="@PeriodLabel" ContentKey="@string.Join(',', _tracks.Select(t => t.Id))">
+            @foreach (var track in _tracks)
+            {
+                <CarouselItem @key="track.Id" ItemId="@GetCardElementId(track.Id)">
+                    <MediaCard Model="@ToCardModel(track)"
+                               ElementId="@GetCardElementId(track.Id)"
+                               Variant="MediaCardVariant.Cover"
+                               OverlayEnabled="true"
+                               FooterVisible="true"
+                               ImageLoading="eager"
+                               OnActivated="() => PlayTrackAsync(track)" />
+                </CarouselItem>
+            }
+        </Carousel>
+    }
+    else
+    {
+        <section class="hit-parade-table">
+            <K7Table Items="_tracks"
+                     TItem="TrackRow"
+                     OnRowClick="OnTrackClick"
+                     RowClass="cursor-pointer">
+                <HeaderContent>
+                    <th class="hit-parade-col-rank">#</th>
+                    <th>@S["Title"]</th>
+                    <th>@S["Artist"]</th>
+                    <th>@S["Album"]</th>
+                    <th class="hit-parade-col-duration"><K7Icon Icon="@Phosphor.Clock" IconSize="@K7IconSize.Sm" /></th>
+                    <th class="hit-parade-col-plays">@L["Plays"]</th>
+                </HeaderContent>
+                <RowTemplate>
+                    <td>
+                        <span class="text-sm" Color="secondary">@context.Rank</span>
+                    </td>
+                    <td>
+                        <div class="d-flex align-center hit-parade-title">
+                            @if (context.IsPlaying)
+                            {
+                                <K7Icon Icon="@Phosphor.Equalizer" IconSize="@K7IconSize.Sm" Color="primary" />
+                            }
+                            <span class="@(context.IsPlaying ? "hit-parade-title--playing" : null)">@context.Title</span>
+                        </div>
+                    </td>
+                    <td>
+                        @if (context.ArtistId.HasValue)
+                        {
+                            <a href="@($"/music/artists/{context.ArtistId}")" class="hit-parade-link" @onclick:stopPropagation="true">
+                                <span class="text-sm" Color="secondary">@context.ArtistName</span>
+                            </a>
+                        }
+                        else
+                        {
+                            <span class="text-sm" Color="secondary">@context.ArtistName</span>
+                        }
+                    </td>
+                    <td>
+                        <a href="@($"/music/albums/{context.AlbumId}")" class="hit-parade-link" @onclick:stopPropagation="true">
+                            <span class="text-sm" Color="secondary">@context.AlbumTitle</span>
+                        </a>
+                    </td>
+                    <td>
+                        <span class="text-sm" Color="secondary">@FormatTime(context.Duration)</span>
+                    </td>
+                    <td>
+                        <K7Chip Size="sm" Color="primary" Variant="outlined">@context.PlayCount</K7Chip>
+                    </td>
+                </RowTemplate>
+            </K7Table>
+        </section>
+    }
+</div>

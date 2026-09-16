@@ -582,6 +582,16 @@ public sealed class MockMediaService : IMediaService
     public Task<IReadOnlyList<LiteMusicTrackDto>> GetArtistTopTracksAsync(Guid artistId, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<LiteMusicTrackDto>>([]);
     public Task<IReadOnlyList<LiteMusicArtistDto>> GetSimilarMusicArtistsAsync(Guid artistId, int count = 12, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<LiteMusicArtistDto>>([]);
     public Task<IReadOnlyList<PlayedMusicTrackDto>> GetTopMusicTracksAsync(Guid[]? libraryIds = null, int count = 20, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<PlayedMusicTrackDto>>([]);
+    public Task<MusicHitParadeDto?> GetMusicHitParadeAsync(
+        string period = MusicHitParadePeriods.All,
+        string scope = MusicHitParadeScopes.Personal,
+        int count = 50,
+        DateTime? from = null,
+        DateTime? to = null,
+        int? year = null,
+        int? month = null,
+        string? season = null,
+        CancellationToken cancellationToken = default) => Task.FromResult<MusicHitParadeDto?>(null);
     public Task<List<K7.Shared.Dtos.Entities.Persons.PersonKnownForItemDto>> GetPersonKnownForAsync(Guid personId, CancellationToken cancellationToken = default) => Task.FromResult(new List<K7.Shared.Dtos.Entities.Persons.PersonKnownForItemDto>());
     public Task<SetMediaWatchStateResultDto?> SetMediaWatchStateAsync(Guid mediaId, bool watched, WatchStateScope scope = WatchStateScope.Item, CancellationToken cancellationToken = default) =>
         Task.FromResult<SetMediaWatchStateResultDto?>(new SetMediaWatchStateResultDto { AffectedMediaIds = [mediaId] });

@@ -24,7 +24,7 @@
         <div class="k7-date-picker-header">
             <K7IconButton Icon="@Phosphor.CaretLeft" OnClick="PreviousMonth" AriaLabel="Previous month" />
             <span class="k7-date-picker-month-label">@_viewDate.ToString("MMMM yyyy")</span>
-            <K7IconButton Icon="@Phosphor.CaretRight" OnClick="NextMonth" AriaLabel="Next month" />
+            <K7IconButton Icon="@Phosphor.CaretRight" OnClick="NextMonth" Disabled="!CanGoNextMonth" AriaLabel="Next month" />
         </div>
         <div class="k7-date-picker-weekdays">
             @foreach (var day in _weekDays)
@@ -42,8 +42,10 @@
                 var isRangeStart = IsRangeStart(d);
                 var isRangeEnd = IsRangeEnd(d);
                 var isToday = d == DateOnly.FromDateTime(DateTime.Today);
+                var isDisabled = IsDisabled(d);
                 <button type="button"
-                        class="k7-date-picker-day focusable @(!isCurrentMonth ? "k7-date-picker-day--outside" : "") @(isSelected ? "k7-date-picker-day--selected" : "") @(isInRange ? "k7-date-picker-day--in-range" : "") @(isRangeStart ? "k7-date-picker-day--range-start" : "") @(isRangeEnd ? "k7-date-picker-day--range-end" : "") @(isToday ? "k7-date-picker-day--today" : "")"
+                        class="k7-date-picker-day focusable @(!isCurrentMonth ? "k7-date-picker-day--outside" : "") @(isSelected ? "k7-date-picker-day--selected" : "") @(isInRange ? "k7-date-picker-day--in-range" : "") @(isRangeStart ? "k7-date-picker-day--range-start" : "") @(isRangeEnd ? "k7-date-picker-day--range-end" : "") @(isToday ? "k7-date-picker-day--today" : "") @(isDisabled ? "k7-date-picker-day--disabled" : "")"
+                        disabled="@isDisabled"
                         @onclick="() => OnDayClick(d)">
                     @d.Day
                 </button>

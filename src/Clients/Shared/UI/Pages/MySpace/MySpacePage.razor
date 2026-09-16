@@ -30,6 +30,17 @@
                         Class="k7-category-card--lg"
                         OnClick="@(() => NavigationManager.NavigateTo("/my-space/stats"))" />
 
+        @if (_hasMusicLibrary)
+        {
+            <K7CategoryCard Title="@L["HitParade"]"
+                            Description="@L["HitParadeDesc"]"
+                            Icon="trophy"
+                            GradientStart="rgba(90,30,70,0.85)"
+                            IconColor="rgba(160,50,110,0.6)"
+                            Class="k7-category-card--lg"
+                            OnClick="@(() => NavigationManager.NavigateTo("/my-space/hit-parade"))" />
+        }
+
         <K7CategoryCard Title="@L["History"]"
                         Description="@HistoryDescription"
                         Icon="clock-counter-clockwise"

@@ -26,6 +26,8 @@
   <data name="CollectionsDesc" xml:space="preserve"><value>Vos listes de films, séries et albums</value></data>
   <data name="Stats" xml:space="preserve"><value>Mes statistiques</value></data>
   <data name="StatsDesc" xml:space="preserve"><value>Votre activité de visionnage</value></data>
+  <data name="HitParade" xml:space="preserve"><value>Hit-parade musical</value></data>
+  <data name="HitParadeDesc" xml:space="preserve"><value>Vos titres les plus écoutés par période</value></data>
   <data name="History" xml:space="preserve"><value>Mon historique</value></data>
   <data name="HistoryDesc" xml:space="preserve"><value>Vos lectures récentes</value></data>
   <data name="Downloads" xml:space="preserve"><value>Mes downloads</value></data>

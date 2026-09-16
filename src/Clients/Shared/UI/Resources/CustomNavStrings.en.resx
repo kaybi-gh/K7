@@ -26,6 +26,7 @@
   <data name="RoutePlaylists" xml:space="preserve"><value>Playlists</value></data>
   <data name="RouteCollections" xml:space="preserve"><value>Collections</value></data>
   <data name="RouteStats" xml:space="preserve"><value>Stats</value></data>
+  <data name="RouteHitParade" xml:space="preserve"><value>Music hit parade</value></data>
   <data name="RouteHistory" xml:space="preserve"><value>History</value></data>
   <data name="RouteReviews" xml:space="preserve"><value>Reviews</value></data>
   <data name="RouteDownloads" xml:space="preserve"><value>Downloads</value></data>

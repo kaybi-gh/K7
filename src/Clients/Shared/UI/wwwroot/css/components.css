@@ -1584,6 +1584,11 @@ hr.k7-menu-divider { border: none; border-top: 1px solid var(--color-border); ma
 .k7-date-picker-day--today {
   border: 1px solid var(--color-primary);
 }
+.k7-date-picker-day--disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  pointer-events: none;
+}
 .k7-date-picker-day--selected {
   background: var(--color-primary) !important;
   color: var(--color-on-primary);

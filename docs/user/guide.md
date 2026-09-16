@@ -178,6 +178,7 @@ Optional **custom navigation** (Settings -> Navigation) can pin those groups, a 
 |---|---|
 | Playlists | Manual lists and **dynamic playlists** (rules that refresh as the library grows). With AudioMuse, you can also build a **smart playlist** from a text prompt - see [Music discovery](#music-discovery-audiomuse). |
 | Collections | Manual shelves and **dynamic collections** (same rules engine as dynamic playlists, shown as a browse grid). Create either from My Space -> Collections (New menu) or from a library catalog Sparkle menu. Collections created from a catalog are scoped to that library group (evaluation + Browse in library). Collections created from My Space stay global for that media type and have no Browse in library action. Dynamic collection items are read-only until you change the rules or re-evaluate. |
+| Music hit parade | Shown when you can access at least one music library. Your top music tracks from libraries you can see. Switch Total, Years, Seasons, Months, or a custom date range. Prev/next steps through any year, season, or month. **Me** is your listening (or the active shared profile). **Server** ranks completed listens on this K7 instance for titles you can access. Only plays that met your completion threshold count. |
 | Stats / History / Reviews | Your activity and ratings. Watch stats (and home "Recommended for you") only count plays that met your completion threshold; brief opens do not. History still lists incomplete sessions. |
 | Downloads | Native apps only - see [Offline](#offline-downloads) |
 

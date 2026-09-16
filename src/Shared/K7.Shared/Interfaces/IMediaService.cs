@@ -48,6 +48,16 @@ public interface IMediaService
     Task<IReadOnlyList<LiteMusicTrackDto>> GetArtistTopTracksAsync(Guid artistId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<LiteMusicArtistDto>> GetSimilarMusicArtistsAsync(Guid artistId, int count = 12, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<PlayedMusicTrackDto>> GetTopMusicTracksAsync(Guid[]? libraryIds = null, int count = 20, CancellationToken cancellationToken = default);
+    Task<MusicHitParadeDto?> GetMusicHitParadeAsync(
+        string period = MusicHitParadePeriods.All,
+        string scope = MusicHitParadeScopes.Personal,
+        int count = 50,
+        DateTime? from = null,
+        DateTime? to = null,
+        int? year = null,
+        int? month = null,
+        string? season = null,
+        CancellationToken cancellationToken = default);
     Task<List<PersonKnownForItemDto>> GetPersonKnownForAsync(Guid personId, CancellationToken cancellationToken = default);
     Task<SetMediaWatchStateResultDto?> SetMediaWatchStateAsync(Guid mediaId, bool watched, WatchStateScope scope = WatchStateScope.Item, CancellationToken cancellationToken = default);
     Task DismissFromContinueWatchingAsync(Guid mediaId, CancellationToken cancellationToken = default);

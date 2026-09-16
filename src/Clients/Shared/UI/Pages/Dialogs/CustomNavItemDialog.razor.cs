@@ -56,10 +56,16 @@ public partial class CustomNavItemDialog
     private (string GradientStart, string GradientEnd, string IconColor) _previewColors =
         LibraryGroupCardColors.ToRgba("#283040");
 
+    private bool HasMusicLibrary =>
+        Groups.Any(g => g.MediaType == LibraryMediaType.Music);
+
     private IEnumerable<CustomNavAppRoute> VisibleAppRoutes =>
         CustomNavRoutes.All.Where(r =>
             !r.AdminOnly
             && (CustomNavRoutes.IsAvailableForClient(r, _isNativeClient)
+                || string.Equals(r.Path, _route, StringComparison.OrdinalIgnoreCase))
+            && (r.Path != "/my-space/hit-parade"
+                || HasMusicLibrary
                 || string.Equals(r.Path, _route, StringComparison.OrdinalIgnoreCase)));
 
     private IEnumerable<CustomNavAppRoute> VisibleAdminRoutes =>

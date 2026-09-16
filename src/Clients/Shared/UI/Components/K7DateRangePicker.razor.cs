@@ -18,6 +18,7 @@ public partial class K7DateRangePicker : IAsyncDisposable
     [Parameter] public string HintSelectEnd { get; set; } = "Select end date";
     [Parameter] public string Class { get; set; } = "";
     [Parameter] public string Style { get; set; } = "";
+    [Parameter] public DateOnly? MaxDate { get; set; }
     [Parameter] public Func<DateOnly?, DateOnly?, string>? FormatLabel { get; set; }
 
     private bool _open;
@@ -47,6 +48,10 @@ public partial class K7DateRangePicker : IAsyncDisposable
         }
     }
 
+    private bool CanGoNextMonth =>
+        MaxDate is null || new DateOnly(_viewDate.Year, _viewDate.Month, 1)
+            < new DateOnly(MaxDate.Value.Year, MaxDate.Value.Month, 1);
+
     protected override void OnParametersSet()
     {
         if (From is not null && _viewDate == DateOnly.FromDateTime(DateTime.Today) && !_open)
@@ -66,6 +71,7 @@ public partial class K7DateRangePicker : IAsyncDisposable
             _calendarDays.Add(start.AddDays(i));
     }
 
+    private bool IsDisabled(DateOnly d) => MaxDate is not null && d > MaxDate.Value;
     private bool IsSelected(DateOnly d) => d == From || d == To;
     private bool IsRangeStart(DateOnly d) => d == From && To is not null;
     private bool IsRangeEnd(DateOnly d) => d == To && From is not null;
@@ -78,6 +84,9 @@ public partial class K7DateRangePicker : IAsyncDisposable
 
     private async Task OnDayClick(DateOnly day)
     {
+        if (IsDisabled(day))
+            return;
+
         if (_pendingStart is null || _pendingEnd is not null)
         {
             _pendingStart = day;
@@ -108,6 +117,9 @@ public partial class K7DateRangePicker : IAsyncDisposable
 
     private void NextMonth()
     {
+        if (!CanGoNextMonth)
+            return;
+
         _viewDate = _viewDate.AddMonths(1);
         BuildCalendar();
     }

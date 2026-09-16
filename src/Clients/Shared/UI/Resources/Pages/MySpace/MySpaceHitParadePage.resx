@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="PageTitle" xml:space="preserve"><value>Hit-parade musical</value></data>
+  <data name="Period" xml:space="preserve"><value>Période</value></data>
+  <data name="PeriodAll" xml:space="preserve"><value>Total</value></data>
+  <data name="PeriodYear" xml:space="preserve"><value>Années</value></data>
+  <data name="PeriodSeason" xml:space="preserve"><value>Saisons</value></data>
+  <data name="PeriodMonth" xml:space="preserve"><value>Mois</value></data>
+  <data name="PeriodCustom" xml:space="preserve"><value>Perso.</value></data>
+  <data name="PickDates" xml:space="preserve"><value>Choisir les dates</value></data>
+  <data name="SelectEndDate" xml:space="preserve"><value>Choisir la date de fin</value></data>
+  <data name="Scope" xml:space="preserve"><value>Portée</value></data>
+  <data name="ScopePersonal" xml:space="preserve"><value>Moi</value></data>
+  <data name="ScopeServer" xml:space="preserve"><value>Serveur</value></data>
+  <data name="PreviousPeriod" xml:space="preserve"><value>Période précédente</value></data>
+  <data name="NextPeriod" xml:space="preserve"><value>Période suivante</value></data>
+  <data name="SeasonWinter" xml:space="preserve"><value>Hiver</value></data>
+  <data name="SeasonSpring" xml:space="preserve"><value>Printemps</value></data>
+  <data name="SeasonSummer" xml:space="preserve"><value>Été</value></data>
+  <data name="SeasonAutumn" xml:space="preserve"><value>Automne</value></data>
+  <data name="Plays" xml:space="preserve"><value>Lectures</value></data>
+  <data name="EmptyTitle" xml:space="preserve"><value>Aucune écoute</value></data>
+  <data name="EmptySubtitle" xml:space="preserve"><value>Les titres comptés sont ceux qui ont atteint le seuil de complétion.</value></data>
+</root>

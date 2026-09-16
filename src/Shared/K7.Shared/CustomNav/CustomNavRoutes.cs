@@ -12,6 +12,7 @@ public static class CustomNavRoutes
         new("/my-space/playlists", "queue", "RoutePlaylists", CardColor: "#501450"),
         new("/my-space/collections", "bookmark-simple", "RouteCollections", CardColor: "#143C50"),
         new("/my-space/stats", "chart-bar", "RouteStats", CardColor: "#145028"),
+        new("/my-space/hit-parade", "trophy", "RouteHitParade", CardColor: "#5A1E46"),
         new("/my-space/history", "clock-counter-clockwise", "RouteHistory", CardColor: "#503214"),
         new("/my-space/reviews", "chat-circle-text", "RouteReviews", CardColor: "#503C14"),
         new("/my-space/downloads", "download-simple", "RouteDownloads", CardColor: "#141450", NativeOnly: true),
