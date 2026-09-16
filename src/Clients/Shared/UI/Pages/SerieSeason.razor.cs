@@ -499,7 +499,9 @@ public partial class SerieSeason : IAsyncDisposable
                     coverUrl: coverUrl,
                     startPosition: startPosition,
                     chapters: videoMetadata.Chapters,
-                    durationSeconds: videoMetadata.Duration.TotalSeconds);
+                    durationSeconds: videoMetadata.Duration.TotalSeconds,
+                    libraryId: indexedFile.LibraryId,
+                    filePath: indexedFile.Path);
             }
             catch (Exception ex) when (PlaybackErrorHelper.IsMediaNotReady(ex))
             {

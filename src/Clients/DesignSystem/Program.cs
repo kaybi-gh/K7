@@ -1,5 +1,6 @@
 using K7.Clients.DesignSystem.Mocks;
 using K7.Clients.DesignSystem.Services;
+using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Services;
 using K7.Shared.Interfaces;
@@ -47,6 +48,7 @@ builder.Services.AddSingleton<IClientErrorReporter, MockClientErrorReporter>();
 builder.Services.AddSingleton<ICustomAuthenticationStateProvider, MockCustomAuthStateProvider>();
 builder.Services.AddSingleton<WebViewJsBridge>();
 builder.Services.AddSingleton<IDeviceService, MockDeviceService>();
+builder.Services.AddSingleton<ILocalPathPicker, NullLocalPathPicker>();
 builder.Services.AddScoped<IExternalLinkService, JsExternalLinkService>();
 builder.Services.AddSingleton<IAppExitService, MockAppExitService>();
 builder.Services.AddSingleton<IDeviceStorageService, MockDeviceStorageService>();

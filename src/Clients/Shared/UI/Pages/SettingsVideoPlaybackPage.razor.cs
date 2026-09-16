@@ -1,6 +1,7 @@
 using K7.Shared;
 using K7.Shared.Dtos;
 using K7.Shared.Dtos.Entities;
+using K7.Shared.Helpers;
 using K7.Shared.Interfaces;
 using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
@@ -28,7 +29,8 @@ public partial class SettingsVideoPlaybackPage
         string MpcExePath,
         string MpcWebHost,
         string MpcWebPortText,
-        string MpcExtraArgs);
+        string MpcExtraArgs,
+        string MpcLibraryPathsJson);
 
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
     [Inject] private IStringLocalizer<SharedResource> S { get; set; } = default!;
@@ -39,6 +41,7 @@ public partial class SettingsVideoPlaybackPage
     [Inject] private IJSRuntime JSRuntime { get; set; } = default!;
     [Inject] private IDeviceService DeviceService { get; set; } = default!;
     [Inject] private IDeviceStorageService DeviceStorage { get; set; } = default!;
+    [Inject] private ILocalPathPicker LocalPathPicker { get; set; } = default!;
 
     private VideoPlayerSettingsDto? _settings;
     private VideoPlaybackPolicySettingsDto? _videoPolicy;
@@ -60,6 +63,7 @@ public partial class SettingsVideoPlaybackPage
     private string _mpcWebHost = WindowsMpcPlaybackSettings.DefaultWebHost;
     private string _mpcWebPortText = WindowsMpcPlaybackSettings.DefaultWebPort.ToString();
     private string _mpcExtraArgs = WindowsMpcPlaybackSettings.DefaultExtraArgs;
+    private Dictionary<Guid, string> _mpcLibraryLocalRoots = new();
     private bool _loading = true;
     private bool _saving;
     private bool _hasUserOverride;
@@ -122,7 +126,8 @@ public partial class SettingsVideoPlaybackPage
             _mpcExePath,
             _mpcWebHost,
             _mpcWebPortText,
-            _mpcExtraArgs);
+            _mpcExtraArgs,
+            LibraryPathMirror.Serialize(_mpcLibraryLocalRoots));
 
     private async Task LoadDeviceVideoExperienceAsync()
     {
@@ -194,12 +199,7 @@ public partial class SettingsVideoPlaybackPage
             _exoBuffer = ExoVideoBufferSize.Auto;
             _hdmiAfr = _hdmiAfrDefault;
             _dvDecode = _dvDecodeDefault;
-            ApplyMpcOptions(new WindowsMpcPlaybackOptions(
-                false,
-                "",
-                WindowsMpcPlaybackSettings.DefaultWebHost,
-                WindowsMpcPlaybackSettings.DefaultWebPort,
-                WindowsMpcPlaybackSettings.DefaultExtraArgs));
+            ApplyMpcOptions(WindowsMpcPlaybackSettings.Empty());
         }
     }
 
@@ -247,6 +247,7 @@ public partial class SettingsVideoPlaybackPage
         _mpcWebHost = state.MpcWebHost;
         _mpcWebPortText = state.MpcWebPortText;
         _mpcExtraArgs = state.MpcExtraArgs;
+        ApplyLibraryPathMap(LibraryPathMirror.Deserialize(state.MpcLibraryPathsJson));
     }
 
     private void OnVideoPolicyChanged(VideoPlaybackPolicySettingsDto value)
@@ -396,12 +397,7 @@ public partial class SettingsVideoPlaybackPage
             _exoBuffer = ExoVideoBufferSize.Auto;
             _hdmiAfr = _hdmiAfrDefault;
             _dvDecode = _dvDecodeDefault;
-            ApplyMpcOptions(new WindowsMpcPlaybackOptions(
-                false,
-                "",
-                WindowsMpcPlaybackSettings.DefaultWebHost,
-                WindowsMpcPlaybackSettings.DefaultWebPort,
-                WindowsMpcPlaybackSettings.DefaultExtraArgs));
+            ApplyMpcOptions(WindowsMpcPlaybackSettings.Empty());
             PersistDeviceVideoExperience();
             await ApplyLocalVideoPlayerSettingsAsync(_settings);
             CaptureFormState();
@@ -441,7 +437,42 @@ public partial class SettingsVideoPlaybackPage
             port,
             string.IsNullOrWhiteSpace(_mpcExtraArgs)
                 ? WindowsMpcPlaybackSettings.DefaultExtraArgs
-                : _mpcExtraArgs.Trim());
+                : _mpcExtraArgs.Trim(),
+            LibraryPathMirror.Serialize(_mpcLibraryLocalRoots));
+    }
+
+    private IEnumerable<LibraryDto> MpcMappableLibraries =>
+        _libraries.Where(library =>
+            library.PeerServerId is null
+            && library.MediaType is LibraryMediaType.Movie or LibraryMediaType.Serie);
+
+    private string LibraryLocalRoot(Guid libraryId) =>
+        _mpcLibraryLocalRoots.GetValueOrDefault(libraryId) ?? "";
+
+    private void SetLibraryLocalRoot(Guid libraryId, string? value)
+    {
+        _mpcLibraryLocalRoots[libraryId] = value ?? "";
+        StateHasChanged();
+    }
+
+    private async Task BrowseLibraryFolderAsync(Guid libraryId)
+    {
+        if (!LocalPathPicker.CanPick)
+            return;
+
+        var picked = await LocalPathPicker.PickFolderAsync(LibraryLocalRoot(libraryId));
+        if (!string.IsNullOrWhiteSpace(picked))
+            SetLibraryLocalRoot(libraryId, picked);
+    }
+
+    private async Task BrowseMpcExeAsync()
+    {
+        if (!LocalPathPicker.CanPick)
+            return;
+
+        var picked = await LocalPathPicker.PickFileAsync([".exe"], _mpcExePath);
+        if (!string.IsNullOrWhiteSpace(picked))
+            _mpcExePath = picked;
     }
 
     private void ApplyMpcOptions(WindowsMpcPlaybackOptions options)
@@ -453,5 +484,13 @@ public partial class SettingsVideoPlaybackPage
         _mpcWebHost = options.WebHost;
         _mpcWebPortText = options.WebPort.ToString();
         _mpcExtraArgs = options.ExtraArgs;
+        ApplyLibraryPathMap(LibraryPathMirror.Deserialize(options.LibraryLocalRootsJson));
+    }
+
+    private void ApplyLibraryPathMap(Dictionary<Guid, string> stored)
+    {
+        _mpcLibraryLocalRoots = MpcMappableLibraries.ToDictionary(
+            library => library.Id,
+            library => stored.GetValueOrDefault(library.Id) ?? "");
     }
 }

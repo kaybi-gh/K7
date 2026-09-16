@@ -471,7 +471,9 @@ public sealed partial class NativeVideoPlayerOverlay
             nextEpisodeId,
             VideoPlayerTitleHelper.FormatEpisode(episodeDto),
             chapters: videoMetadata.Chapters,
-            durationSeconds: videoMetadata.Duration.TotalSeconds);
+            durationSeconds: videoMetadata.Duration.TotalSeconds,
+            libraryId: indexedFile.LibraryId,
+            filePath: indexedFile.Path);
     }
 
     /// <summary>Internal reset (playback resumed elsewhere) - hides the overlay without closing

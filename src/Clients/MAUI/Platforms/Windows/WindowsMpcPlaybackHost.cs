@@ -5,6 +5,8 @@ using K7.Clients.Shared.Models;
 using K7.Clients.Shared.UI;
 using K7.Server.Domain.Enums;
 using K7.Shared;
+using K7.Shared.Dtos;
+using K7.Shared.Helpers;
 using K7.Shared.Interfaces;
 using K7.Shared.QueryBuilders;
 using Microsoft.Extensions.Localization;
@@ -15,6 +17,7 @@ public sealed class WindowsMpcPlaybackHost(
     IStreamUriService streamUriService,
     IStreamingService streamingService,
     IK7ServerService k7ServerService,
+    ILibraryService libraryService,
     IDeviceStorageService deviceStorage,
     IK7Snackbar snackbar,
     IStringLocalizer<SharedResource> localizer) : IWindowsMpcPlaybackHost, IDisposable
@@ -61,24 +64,31 @@ public sealed class WindowsMpcPlaybackHost(
             request.SubtitleTrackIndex,
             cancellationToken);
 
-        var token = await streamingService.GenerateEphemeralTokenAsync(session.Id, cancellationToken);
-        if (string.IsNullOrWhiteSpace(token))
+        var mediaPath = await ResolveLocalMediaPathAsync(request, session, options, cancellationToken);
+        Guid? tokenSessionId = null;
+        if (string.IsNullOrWhiteSpace(mediaPath))
         {
-            snackbar.Add(localizer["MpcExternalPlayerLaunchFailed"], K7Severity.Error);
-            return false;
+            var token = await streamingService.GenerateEphemeralTokenAsync(session.Id, cancellationToken);
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                snackbar.Add(localizer["MpcExternalPlayerLaunchFailed"], K7Severity.Error);
+                return false;
+            }
+
+            var relative = GetIndexedFileDirectStreamQueryUriBuilder.Build(request.IndexedFileId);
+            var absolute = k7ServerService.GetAbsoluteUri(relative);
+            if (absolute is null)
+            {
+                snackbar.Add(localizer["MpcExternalPlayerLaunchFailed"], K7Severity.Error);
+                return false;
+            }
+
+            mediaPath = AppendEphemeralToken(absolute.ToString(), token);
+            tokenSessionId = session.Id;
         }
 
-        var relative = GetIndexedFileDirectStreamQueryUriBuilder.Build(request.IndexedFileId);
-        var absolute = k7ServerService.GetAbsoluteUri(relative);
-        if (absolute is null)
-        {
-            snackbar.Add(localizer["MpcExternalPlayerLaunchFailed"], K7Severity.Error);
-            return false;
-        }
-
-        var streamUrl = AppendEphemeralToken(absolute.ToString(), token);
         var startMs = MpcCommandLine.ToStartMilliseconds(request.StartPositionSeconds);
-        var arguments = MpcCommandLine.Build(streamUrl, options.ExtraArgs, startMs, options.WebPort);
+        var arguments = MpcCommandLine.Build(mediaPath, options.ExtraArgs, startMs, options.WebPort);
 
         Process? process;
         try
@@ -105,7 +115,7 @@ public sealed class WindowsMpcPlaybackHost(
         lock (_gate)
         {
             _process = process;
-            _streamSessionId = session.Id;
+            _streamSessionId = tokenSessionId;
             _webUiWarned = false;
             _monitorCts = new CancellationTokenSource();
         }
@@ -115,7 +125,7 @@ public sealed class WindowsMpcPlaybackHost(
             MediaId = request.MediaId,
             StreamSessionId = session.Id,
             IndexedFileId = request.IndexedFileId,
-            Url = streamUrl,
+            Url = mediaPath,
             MimeType = "application/octet-stream",
             Title = request.Title,
             CoverUrl = request.CoverUrl,
@@ -280,6 +290,40 @@ public sealed class WindowsMpcPlaybackHost(
 
         if (string.Equals(options.WebHost, "localhost", StringComparison.OrdinalIgnoreCase))
             return await _web.GetVariablesAsync("127.0.0.1", options.WebPort, cancellationToken);
+
+        return null;
+    }
+
+    private async Task<string?> ResolveLocalMediaPathAsync(
+        WindowsMpcPlayRequest request,
+        StreamingSessionDto session,
+        WindowsMpcPlaybackOptions options,
+        CancellationToken cancellationToken)
+    {
+        if (LocalPlaybackUrl.TryGetLocalFilesystemPath(session.Source?.Uri.OriginalString, out var offlinePath)
+            && File.Exists(offlinePath))
+            return offlinePath;
+
+        if (request.LibraryId is not Guid libraryId
+            || string.IsNullOrWhiteSpace(request.FilePath)
+            || !WindowsMpcPlaybackSettings.LibraryLocalRoots(options).TryGetValue(libraryId, out var localRoot))
+            return null;
+
+        string? relative;
+        try
+        {
+            var libraries = await libraryService.GetLibrariesAsync(cancellationToken);
+            var root = libraries.FirstOrDefault(l => l.Id == libraryId)?.RootPath;
+            relative = LibraryPathMirror.TryGetRelativePath(request.FilePath, root);
+        }
+        catch
+        {
+            return null;
+        }
+
+        var mapped = LibraryPathMirror.TryCombine(localRoot, relative);
+        if (!string.IsNullOrWhiteSpace(mapped) && File.Exists(mapped))
+            return mapped;
 
         return null;
     }

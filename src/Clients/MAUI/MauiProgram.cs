@@ -12,6 +12,7 @@ using K7.Shared.Services;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.WebView.Maui;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Hosting.Internal;
 using Microsoft.Extensions.Logging;
@@ -120,6 +121,7 @@ public static partial class MauiProgram
 
         builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
         builder.Services.ConfigurePlatformServices();
+        builder.Services.TryAddSingleton<ILocalPathPicker, NullLocalPathPicker>();
 
         builder.Services.AddSingleton<SidebarService>();
         builder.Services.AddSingleton<BackButtonService>();

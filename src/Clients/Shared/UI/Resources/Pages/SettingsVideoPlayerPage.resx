@@ -79,10 +79,16 @@
   <data name="MpcExternalPlayer" xml:space="preserve"><value>Lecteur externe MPC-HC / MPC-BE</value></data>
   <data name="MpcExternalPlayerHint" xml:space="preserve"><value>Lance MPC pour la video (madVR, kaz, bitstream HDMI). Installez MPC. K7 demarre l'interface web via /webport. Fermez MPC s'il tourne deja. K7 garde la bibliotheque, les profils et la reprise.</value></data>
   <data name="MpcExePath" xml:space="preserve"><value>Chemin de mpc-hc64.exe / mpc-be64.exe</value></data>
-  <data name="MpcExePathHint" xml:space="preserve"><value>Laissez vide pour detecter Program Files. La config kaz reste dans MPC, pas dans K7.</value></data>
+  <data name="MpcExePathHint" xml:space="preserve"><value>Laissez vide pour detecter Program Files. Cliquez l'icone pour choisir mpc-hc64.exe / mpc-be64.exe. La config kaz reste dans MPC, pas dans K7.</value></data>
+  <data name="MpcExePathPlaceholder" xml:space="preserve"><value>Ex: C:\Program Files\MPC-HC\mpc-hc64.exe</value></data>
   <data name="MpcWebHost" xml:space="preserve"><value>Hote interface web MPC</value></data>
   <data name="MpcWebPort" xml:space="preserve"><value>Port interface web MPC</value></data>
   <data name="MpcWebHint" xml:space="preserve"><value>Defaut 127.0.0.1:13579. K7 passe /webport a MPC pour allumer l'interface et lire la position. Sans reponse, la reprise K7 vers MPC marche encore (/start).</value></data>
   <data name="MpcExtraArgs" xml:space="preserve"><value>Arguments MPC</value></data>
   <data name="MpcExtraArgsHint" xml:space="preserve"><value>Defaut /fullscreen /close. K7 ajoute /webport et /start (millisecondes) pour la reprise.</value></data>
+  <data name="MpcLibraryPaths" xml:space="preserve"><value>Chemins locaux des bibliotheques</value></data>
+  <data name="MpcLibraryPathsFallback" xml:space="preserve"><value>Indiquez le dossier Windows (ou le partage SMB) qui correspond a la racine de chaque bibliotheque K7. MPC ouvre alors le fichier réel (titre, duree, madVR, bitstream). Sans mapping, ou si le fichier n'existe pas en local, K7 retombe sur le flux HTTP direct-stream: barre incomplete, nom « direct-stream », et echecs possibles sur les gros remux HDR / TrueHD. La reprise K7 reste suivie via l'interface web de MPC dans les deux cas.</value></data>
+  <data name="MpcLibraryServerRoot" xml:space="preserve"><value>Racine serveur</value></data>
+  <data name="MpcLibraryWindowsRoot" xml:space="preserve"><value>Dossier Windows</value></data>
+  <data name="MpcLibraryWindowsPlaceholder" xml:space="preserve"><value>Ex: K:\movies, \\NAS\movies</value></data>
 </root>

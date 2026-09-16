@@ -270,7 +270,9 @@ public partial class NextEpisodeOverlay : IDisposable
             nextEpisodeId,
             VideoPlayerTitleHelper.FormatEpisode(episodeDto),
             chapters: videoMetadata.Chapters,
-            durationSeconds: videoMetadata.Duration.TotalSeconds);
+            durationSeconds: videoMetadata.Duration.TotalSeconds,
+            libraryId: indexedFile.LibraryId,
+            filePath: indexedFile.Path);
 
         StateHasChanged();
     }

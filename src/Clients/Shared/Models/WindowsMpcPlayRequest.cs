@@ -3,6 +3,8 @@ namespace K7.Clients.Shared.Models;
 public sealed record WindowsMpcPlayRequest
 {
     public required Guid IndexedFileId { get; init; }
+    public Guid? LibraryId { get; init; }
+    public string? FilePath { get; init; }
     public Guid? MediaId { get; init; }
     public string? Title { get; init; }
     public string? CoverUrl { get; init; }

@@ -79,10 +79,16 @@
   <data name="MpcExternalPlayer" xml:space="preserve"><value>External player (MPC-HC / MPC-BE)</value></data>
   <data name="MpcExternalPlayerHint" xml:space="preserve"><value>Launch MPC for video (madVR, kaz, HDMI bitstream). Install MPC. K7 starts the web interface with /webport. Close MPC if it is already running. K7 keeps the library, profiles, and resume.</value></data>
   <data name="MpcExePath" xml:space="preserve"><value>Path to mpc-hc64.exe / mpc-be64.exe</value></data>
-  <data name="MpcExePathHint" xml:space="preserve"><value>Leave empty to detect Program Files. kaz settings stay in MPC, not in K7.</value></data>
+  <data name="MpcExePathHint" xml:space="preserve"><value>Leave empty to detect Program Files. Use the icon to pick mpc-hc64.exe / mpc-be64.exe. kaz settings stay in MPC, not in K7.</value></data>
+  <data name="MpcExePathPlaceholder" xml:space="preserve"><value>e.g. C:\Program Files\MPC-HC\mpc-hc64.exe</value></data>
   <data name="MpcWebHost" xml:space="preserve"><value>MPC web host</value></data>
   <data name="MpcWebPort" xml:space="preserve"><value>MPC web port</value></data>
   <data name="MpcWebHint" xml:space="preserve"><value>Default 127.0.0.1:13579. K7 passes /webport so MPC starts the web UI and K7 can read position. Without a reply, resume from K7 into MPC still works (/start).</value></data>
   <data name="MpcExtraArgs" xml:space="preserve"><value>MPC arguments</value></data>
   <data name="MpcExtraArgsHint" xml:space="preserve"><value>Default /fullscreen /close. K7 adds /webport and /start (milliseconds) for Resume.</value></data>
+  <data name="MpcLibraryPaths" xml:space="preserve"><value>Local library paths</value></data>
+  <data name="MpcLibraryPathsFallback" xml:space="preserve"><value>Set the Windows folder (or SMB share) that matches each K7 library root. MPC then opens the real file (title, duration, madVR, bitstream). With no mapping, or if the file is missing locally, K7 falls back to HTTP direct-stream: incomplete seek bar, title « direct-stream », and possible failures on large HDR / TrueHD remuxes. K7 resume still follows MPC's web interface in both cases.</value></data>
+  <data name="MpcLibraryServerRoot" xml:space="preserve"><value>Server root</value></data>
+  <data name="MpcLibraryWindowsRoot" xml:space="preserve"><value>Windows folder</value></data>
+  <data name="MpcLibraryWindowsPlaceholder" xml:space="preserve"><value>e.g. K:\movies, \\NAS\movies</value></data>
 </root>

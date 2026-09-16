@@ -85,6 +85,10 @@ public static class PreferenceKeys
     public static readonly PreferenceKey<string> VIDEO_MPC_WEB_HOST = new("VideoMpcWebHost");
     public static readonly PreferenceKey<int> VIDEO_MPC_WEB_PORT = new("VideoMpcWebPort");
     public static readonly PreferenceKey<string> VIDEO_MPC_EXTRA_ARGS = new("VideoMpcExtraArgs");
+    /// <summary>
+    /// Windows MPC: JSON map of library id to the local folder that mirrors that library root.
+    /// </summary>
+    public static readonly PreferenceKey<string> VIDEO_MPC_LIBRARY_PATHS = new("VideoMpcLibraryPaths");
 
     // Player UX
     public static readonly PreferenceKey<bool> SHOW_FULLSCREEN_ON_PLAY = new("ShowFullscreenOnPlay");

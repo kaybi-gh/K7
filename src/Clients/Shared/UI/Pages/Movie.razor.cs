@@ -300,7 +300,7 @@ public partial class Movie : IAsyncDisposable
 
         try
         {
-            await PlayerService.PlayIndexedFileAsync(indexedFileId, audioTracks ?? [], subtitleTracks, audioTrackIndex, subtitleTrackIndex, videoResolution, thumbnailsUrl, _movie.Id, VideoPlayerTitleHelper.FormatMovie(_movie), coverUrl, startPosition, videoMetadata.Chapters, videoMetadata.Duration.TotalSeconds);
+            await PlayerService.PlayIndexedFileAsync(indexedFileId, audioTracks ?? [], subtitleTracks, audioTrackIndex, subtitleTrackIndex, videoResolution, thumbnailsUrl, _movie.Id, VideoPlayerTitleHelper.FormatMovie(_movie), coverUrl, startPosition, videoMetadata.Chapters, videoMetadata.Duration.TotalSeconds, _selectedFile.LibraryId, _selectedFile.Path);
         }
         catch (Exception ex) when (PlaybackErrorHelper.IsMediaNotReady(ex))
         {

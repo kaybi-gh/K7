@@ -20,6 +20,7 @@ public class WindowsMpcPlaybackSettingsTests
         options.WebHost.Should().Be(WindowsMpcPlaybackSettings.DefaultWebHost);
         options.WebPort.Should().Be(WindowsMpcPlaybackSettings.DefaultWebPort);
         options.ExtraArgs.Should().Be(WindowsMpcPlaybackSettings.DefaultExtraArgs);
+        options.LibraryLocalRootsJson.Should().BeEmpty();
         WindowsMpcPlaybackSettings.IsDefault(options).Should().BeTrue();
     }
 
@@ -32,7 +33,8 @@ public class WindowsMpcPlaybackSettingsTests
             @"C:\Program Files\MPC-HC\mpc-hc64.exe",
             "127.0.0.1",
             13580,
-            "/fullscreen");
+            "/fullscreen",
+            "");
 
         WindowsMpcPlaybackSettings.Save(storage, written);
 
@@ -45,7 +47,7 @@ public class WindowsMpcPlaybackSettingsTests
     {
         var storage = new MemoryDeviceStorage();
         WindowsMpcPlaybackSettings.Save(storage, new WindowsMpcPlaybackOptions(
-            true, @"D:\mpc.exe", "192.168.1.2", 80, "/play"));
+            true, @"D:\mpc.exe", "192.168.1.2", 80, "/play", @"{""11111111-1111-1111-1111-111111111111"":""K:\\movies""}"));
 
         WindowsMpcPlaybackSettings.Reset(storage);
 

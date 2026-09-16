@@ -221,7 +221,7 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
     private DateTime _lastRemuxRetryUtc = DateTime.MinValue;
     private readonly SemaphoreSlim _playbackStartRecoveryLock = new(1, 1);
 
-    public async Task PlayIndexedFileAsync(Guid indexedFileId, IEnumerable<AudioFileTrackDto> audioTracks, IEnumerable<SubtitleFileTrackDto>? subtitleTracks = null, int? audioTrackIndex = null, int? subtitleTrackIndex = null, VideoResolutionIdentifier? videoResolution = null, string? thumbnailsUrl = null, Guid? mediaId = null, string? title = null, string? coverUrl = null, double? startPosition = null, IReadOnlyList<ChapterMarkerDto>? chapters = null, double? durationSeconds = null, CancellationToken cancellationToken = default)
+    public async Task PlayIndexedFileAsync(Guid indexedFileId, IEnumerable<AudioFileTrackDto> audioTracks, IEnumerable<SubtitleFileTrackDto>? subtitleTracks = null, int? audioTrackIndex = null, int? subtitleTrackIndex = null, VideoResolutionIdentifier? videoResolution = null, string? thumbnailsUrl = null, Guid? mediaId = null, string? title = null, string? coverUrl = null, double? startPosition = null, IReadOnlyList<ChapterMarkerDto>? chapters = null, double? durationSeconds = null, Guid? libraryId = null, string? filePath = null, CancellationToken cancellationToken = default)
     {
         var generation = Interlocked.Increment(ref _playGeneration);
         _playCts?.Cancel();

@@ -258,13 +258,13 @@ Settings -> Video playback -> Advanced (this device) can send Play to **MPC-HC o
 Flow:
 
 1. `PlayerService.PlayIndexedFileAsync` intercepts when the device preset is on, and SyncPlay / remote control / Chromecast are not active.
-2. A stream session is created, then an ephemeral token (same as Chromecast, 8h).
-3. MPC is launched with the **original file** URL (`/api/indexed-files/{id}/direct-stream?ephemeral_token=...`), extra args (default `/fullscreen /close`), `/webport {port}` (starts the web UI for this process even if it is off in MPC options), and `/start {ms}` from the K7 bookmark.
-4. K7 does not show the in-app overlay. If `/start` is ignored on HTTP, the host seeks once via `command.html` after the web UI answers.
-5. K7 polls `variables.html` every 5s (localhost, default `127.0.0.1:13579`) and pumps `IPlayerService.ApplyExternalClock` so `PlaybackProgressTracker` keeps continue-watching. The token is revoked when MPC exits.
+2. A stream session is created (progress reports still use it).
+3. If Settings has a local folder for that library, the Windows client maps `IndexedFile.Path` against `Library.RootPath` and launches MPC with that filesystem path when the file exists. No extra session fields. No ephemeral token. Otherwise K7 falls back to `/api/indexed-files/{id}/direct-stream?ephemeral_token=...`. Extra args default `/fullscreen /close`, plus `/webport {port}` and `/start {ms}` from the K7 bookmark.
+4. K7 does not show the in-app overlay. If `/start` is ignored, the host seeks once via `command.html` after the web UI answers.
+5. K7 polls `variables.html` every 5s (localhost, default `127.0.0.1:13579`) and pumps `IPlayerService.ApplyExternalClock` so `PlaybackProgressTracker` keeps continue-watching. An HTTP token is revoked when MPC exits. Local-file play still reports through the same session.
 6. `/webport` is applied at MPC process start only. An already-running instance without the web UI will not pick it up. If the web UI stays down, playback still starts. K7 cannot save a new position. Resume **into** MPC still uses the last K7 bookmark.
 
-Launch failure shows a snackbar. There is no silent fallback to HLS / LibVLC for that Play. Local disk paths are not used (HTTP Direct Play is enough for bitstream).
+Launch failure shows a snackbar. There is no silent fallback to HLS / LibVLC for that Play. HTTP Direct Play is the fallback when the library path is not mapped.
 
 `PlaybackOptionsDialog` lists movie releases by resolution, audio languages, codec, size, and
 Local vs Federated when several files exist (not the media title). Play without the dialog

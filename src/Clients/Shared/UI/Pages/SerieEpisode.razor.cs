@@ -313,7 +313,9 @@ public partial class SerieEpisode : IAsyncDisposable
             coverUrl: _stillUrl,
             startPosition: startPosition,
             chapters: videoMetadata.Chapters,
-            durationSeconds: videoMetadata.Duration.TotalSeconds);
+            durationSeconds: videoMetadata.Duration.TotalSeconds,
+            libraryId: _indexedFile.LibraryId,
+            filePath: _indexedFile.Path);
     }
 
     private bool CanResumePlayback =>

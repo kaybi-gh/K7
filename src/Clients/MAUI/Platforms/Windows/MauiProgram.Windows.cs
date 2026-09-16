@@ -13,5 +13,6 @@ public static partial class MauiProgram
         services.AddSingleton<IDeviceIdService, DeviceIdService>();
         services.AddSingleton<ICastService, NullCastService>();
         services.AddSingleton<IWindowsMpcPlaybackHost, WindowsMpcPlaybackHost>();
+        services.AddSingleton<ILocalPathPicker, WindowsLocalPathPicker>();
     }
 }

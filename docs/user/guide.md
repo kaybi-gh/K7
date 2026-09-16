@@ -92,9 +92,12 @@ On the Windows app, **Settings -> Video playback -> Advanced** can launch **MPC-
 
 1. Install MPC-HC (clsid2) or MPC-BE and apply your kaz (or equivalent) settings **inside MPC**.
 2. In K7, turn on the MPC switch, confirm the exe path if detection missed it, and save.
-3. Close any already-open MPC window so K7 can start a fresh process.
+3. Map each K7 library root to the Windows folder or SMB share that holds the same files (Settings -> Video playback -> Advanced). Example: server `/data/movies` -> `K:\movies` or `\\NAS\movies`.
+4. Close any already-open MPC window so K7 can start a fresh process.
 
-Play then opens the original file in MPC. K7 passes `/webport` (default 13579) so the web interface starts for that session even if you never enabled it in MPC options, and `/start` uses your K7 resume point. Continue-watching is saved while that interface answers. If MPC was already running without it, close MPC and play again from K7.
+Play then opens that **local file** in MPC when the mapping exists and the file is on disk. Title, duration, and seek thumbnails then match a normal MPC/SMB open. K7 still creates a playback session and follows position through the MPC web interface (`/webport`, default 13579), so continue-watching is kept.
+
+If a library has no mapping, or the mapped file is missing, K7 falls back to HTTP `direct-stream`. That path shows the title `direct-stream`, often a short or incomplete seek bar, and can fail on large HDR / TrueHD remuxes. Resume into MPC still uses `/start` from the last K7 bookmark.
 
 SyncPlay, remote control, and Chromecast on that device keep the built-in player. Next episode, intro skip, and in-app track picking do not run while MPC is playing (pick tracks in MPC). Other devices in the family keep the built-in player.
 

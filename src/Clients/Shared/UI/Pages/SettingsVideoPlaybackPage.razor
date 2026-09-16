@@ -207,8 +207,12 @@ else
                     {
                         <K7TextField Label="@L["MpcExePath"]"
                                      TValue="string"
-                                     @bind-Value="_mpcExePath" />
-                        <span class="text-caption video-playback-hint">@L["MpcExePathHint"]</span>
+                                     @bind-Value="_mpcExePath"
+                                     Variant="outlined"
+                                     Placeholder="@L["MpcExePathPlaceholder"]"
+                                     HelperText="@L["MpcExePathHint"]"
+                                     AdornmentIcon="@Phosphor.File"
+                                     OnAdornmentClick="BrowseMpcExeAsync" />
 
                         <K7TextField Label="@L["MpcWebHost"]"
                                      TValue="string"
@@ -223,6 +227,35 @@ else
                                      TValue="string"
                                      @bind-Value="_mpcExtraArgs" />
                         <span class="text-caption video-playback-hint">@L["MpcExtraArgsHint"]</span>
+
+                        <h6 class="mt-2">@L["MpcLibraryPaths"]</h6>
+                        <K7Alert Severity="K7Severity.Info" Variant="outlined" NoIcon="true">
+                            @L["MpcLibraryPathsFallback"]
+                        </K7Alert>
+                        <div class="mpc-library-map">
+                            <div class="mpc-library-map__header">
+                                <span>@L["MpcLibraryServerRoot"]</span>
+                                <span>@L["MpcLibraryWindowsRoot"]</span>
+                            </div>
+                            @foreach (var library in MpcMappableLibraries)
+                            {
+                                <div class="mpc-library-map__row">
+                                    <div class="mpc-library-map__server">
+                                        <span class="mpc-library-map__title">@library.Title</span>
+                                        <code class="mpc-library-map__path">@(string.IsNullOrWhiteSpace(library.RootPath) ? "—" : library.RootPath)</code>
+                                    </div>
+                                    <div class="mpc-library-map__local">
+                                        <K7TextField TValue="string"
+                                                     Variant="outlined"
+                                                     Placeholder="@L["MpcLibraryWindowsPlaceholder"]"
+                                                     AdornmentIcon="@Phosphor.FolderOpen"
+                                                     OnAdornmentClick="@(() => BrowseLibraryFolderAsync(library.Id))"
+                                                     Value="@LibraryLocalRoot(library.Id)"
+                                                     ValueChanged="@(value => SetLibraryLocalRoot(library.Id, value))" />
+                                    </div>
+                                </div>
+                            }
+                        </div>
                     }
                 }
 

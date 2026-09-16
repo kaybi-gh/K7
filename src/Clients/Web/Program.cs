@@ -1,5 +1,6 @@
 using System.Globalization;
 using Blazored.LocalStorage;
+using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Services;
 using K7.Clients.Shared.Services.K7Server;
@@ -72,6 +73,7 @@ builder.Services.AddSingleton<BackButtonService>();
 builder.Services.AddSingleton<ThemeService>();
 builder.Services.AddSingleton<WebViewJsBridge>();
 builder.Services.AddSingleton<IDeviceService, DeviceService>();
+builder.Services.AddSingleton<ILocalPathPicker, NullLocalPathPicker>();
 builder.Services.AddScoped<IExternalLinkService, JsExternalLinkService>();
 builder.Services.AddSingleton<IAppExitService, AppExitService>();
 builder.Services.AddSingleton<IBrightnessService, BrightnessService>();

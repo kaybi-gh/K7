@@ -1,5 +1,6 @@
 using K7.Clients.Shared.Interfaces;
 using K7.Shared;
+using K7.Shared.Helpers;
 
 namespace K7.Clients.Shared.Helpers;
 
@@ -8,7 +9,8 @@ public sealed record WindowsMpcPlaybackOptions(
     string ExePath,
     string WebHost,
     int WebPort,
-    string ExtraArgs);
+    string ExtraArgs,
+    string LibraryLocalRootsJson);
 
 public static class WindowsMpcPlaybackSettings
 {
@@ -30,15 +32,15 @@ public static class WindowsMpcPlaybackSettings
             port = DefaultWebPort;
 
         var extra = storage.Get(PreferenceKeys.VIDEO_MPC_EXTRA_ARGS, DefaultExtraArgs);
-        if (extra is null)
-            extra = DefaultExtraArgs;
+        extra ??= DefaultExtraArgs;
 
         return new WindowsMpcPlaybackOptions(
             Enabled: storage.Get(PreferenceKeys.VIDEO_MPC_ENABLED, false),
             ExePath: storage.Get(PreferenceKeys.VIDEO_MPC_EXE_PATH, "") ?? "",
             WebHost: host.Trim(),
             WebPort: port,
-            ExtraArgs: extra);
+            ExtraArgs: extra,
+            LibraryLocalRootsJson: storage.Get(PreferenceKeys.VIDEO_MPC_LIBRARY_PATHS, "") ?? "");
     }
 
     public static void Save(IDeviceStorageService storage, WindowsMpcPlaybackOptions options)
@@ -52,22 +54,31 @@ public static class WindowsMpcPlaybackSettings
             ? options.WebPort
             : DefaultWebPort);
         storage.Set(PreferenceKeys.VIDEO_MPC_EXTRA_ARGS, options.ExtraArgs);
+        storage.Set(PreferenceKeys.VIDEO_MPC_LIBRARY_PATHS, options.LibraryLocalRootsJson ?? "");
     }
 
     public static void Reset(IDeviceStorageService storage)
     {
-        Save(storage, new WindowsMpcPlaybackOptions(
+        Save(storage, Empty());
+    }
+
+    public static WindowsMpcPlaybackOptions Empty() =>
+        new(
             Enabled: false,
             ExePath: "",
             WebHost: DefaultWebHost,
             WebPort: DefaultWebPort,
-            ExtraArgs: DefaultExtraArgs));
-    }
+            ExtraArgs: DefaultExtraArgs,
+            LibraryLocalRootsJson: "");
 
     public static bool IsDefault(WindowsMpcPlaybackOptions options) =>
         !options.Enabled
         && string.IsNullOrWhiteSpace(options.ExePath)
         && string.Equals(options.WebHost, DefaultWebHost, StringComparison.OrdinalIgnoreCase)
         && options.WebPort == DefaultWebPort
-        && options.ExtraArgs == DefaultExtraArgs;
+        && options.ExtraArgs == DefaultExtraArgs
+        && LibraryPathMirror.Deserialize(options.LibraryLocalRootsJson).Count == 0;
+
+    public static IReadOnlyDictionary<Guid, string> LibraryLocalRoots(WindowsMpcPlaybackOptions options) =>
+        LibraryPathMirror.Deserialize(options.LibraryLocalRootsJson);
 }

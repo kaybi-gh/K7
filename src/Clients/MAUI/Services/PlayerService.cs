@@ -290,7 +290,7 @@ internal class PlayerService(
         PlaybackState = state;
     }
 
-    public async Task PlayIndexedFileAsync(Guid indexedFileId, IEnumerable<AudioFileTrackDto> audioTracks, IEnumerable<SubtitleFileTrackDto>? subtitleTracks = null, int? audioTrackIndex = null, int? subtitleTrackIndex = null, VideoResolutionIdentifier? videoResolution = null, string? thumbnailsUrl = null, Guid? mediaId = null, string? title = null, string? coverUrl = null, double? startPosition = null, IReadOnlyList<ChapterMarkerDto>? chapters = null, double? durationSeconds = null, CancellationToken cancellationToken = default)
+    public async Task PlayIndexedFileAsync(Guid indexedFileId, IEnumerable<AudioFileTrackDto> audioTracks, IEnumerable<SubtitleFileTrackDto>? subtitleTracks = null, int? audioTrackIndex = null, int? subtitleTrackIndex = null, VideoResolutionIdentifier? videoResolution = null, string? thumbnailsUrl = null, Guid? mediaId = null, string? title = null, string? coverUrl = null, double? startPosition = null, IReadOnlyList<ChapterMarkerDto>? chapters = null, double? durationSeconds = null, Guid? libraryId = null, string? filePath = null, CancellationToken cancellationToken = default)
     {
         if (mpcPlaybackHost is not null)
             await mpcPlaybackHost.StopAsync(cancellationToken);
@@ -315,6 +315,8 @@ internal class PlayerService(
         {
             await TryPlayInMpcAsync(
                 indexedFileId,
+                libraryId,
+                filePath,
                 mediaId,
                 title,
                 coverUrl,
@@ -849,6 +851,8 @@ internal class PlayerService(
 
     private async Task<bool> TryPlayInMpcAsync(
         Guid indexedFileId,
+        Guid? libraryId,
+        string? filePath,
         Guid? mediaId,
         string? title,
         string? coverUrl,
@@ -865,6 +869,8 @@ internal class PlayerService(
             new WindowsMpcPlayRequest
             {
                 IndexedFileId = indexedFileId,
+                LibraryId = libraryId,
+                FilePath = filePath,
                 MediaId = mediaId,
                 Title = title,
                 CoverUrl = coverUrl,

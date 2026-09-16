@@ -42,6 +42,7 @@ public class PreferenceKeyCatalogTests
         keys.Should().Contain(PreferenceKeys.VIDEO_MPC_WEB_HOST.Name);
         keys.Should().Contain(PreferenceKeys.VIDEO_MPC_WEB_PORT.Name);
         keys.Should().Contain(PreferenceKeys.VIDEO_MPC_EXTRA_ARGS.Name);
+        keys.Should().Contain(PreferenceKeys.VIDEO_MPC_LIBRARY_PATHS.Name);
         keys.Should().NotContain("VideoExoAudio");
     }
 
