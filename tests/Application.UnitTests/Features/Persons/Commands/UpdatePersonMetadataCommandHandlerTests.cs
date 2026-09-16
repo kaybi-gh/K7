@@ -72,4 +72,21 @@ public class UpdatePersonMetadataCommandHandlerTests
         saved.Should().ContainSingle(e => e.ProviderName == "imdb" && e.Value == "nm9999999");
         saved.Should().NotContain(e => e.Value == "nm1111111");
     }
+
+    [Test]
+    public async Task Handle_ShouldKeepNewName_WhenNameIsLockedInSameSave()
+    {
+        await _handler.Handle(new UpdatePersonMetadataCommand
+        {
+            Id = _personId,
+            LockedFields = [nameof(Person.Name)],
+            Name = "Edited Actor"
+        }, CancellationToken.None);
+
+        _context.ChangeTracker.Clear();
+        var saved = await _context.Persons.SingleAsync(p => p.Id == _personId);
+
+        saved.Name.Should().Be("Edited Actor");
+        saved.LockedFields.Should().Equal(nameof(Person.Name));
+    }
 }

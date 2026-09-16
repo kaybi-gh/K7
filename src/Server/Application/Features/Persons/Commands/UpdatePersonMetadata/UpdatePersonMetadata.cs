@@ -40,8 +40,6 @@ public class UpdatePersonMetadataCommandHandler : IRequestHandler<UpdatePersonMe
 
         Guard.Against.NotFound(request.Id, person);
 
-        person.LockedFields = request.LockedFields;
-
         if (request.Name is not null)
             person.Name = request.Name;
         if (request.Gender is not null)
@@ -61,6 +59,9 @@ public class UpdatePersonMetadataCommandHandler : IRequestHandler<UpdatePersonMe
             foreach (var dto in request.ExternalIds)
                 person.ExternalIds.Add(new ExternalId { ProviderName = dto.ProviderName, Value = dto.Value, PersonId = person.Id });
         }
+
+        // Apply locks last so a same-save edit + lock keeps the new value.
+        person.LockedFields = request.LockedFields;
 
         await _context.SaveChangesAsync(cancellationToken);
     }

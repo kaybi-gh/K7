@@ -64,8 +64,6 @@ public class UpdateMediaMetadataCommandHandler(
 
         Guard.Against.NotFound(request.Id, media);
 
-        media.LockedFields = request.LockedFields;
-
         // BaseMedia fields
         if (request.Title is not null)
             media.Title = request.Title;
@@ -130,6 +128,10 @@ public class UpdateMediaMetadataCommandHandler(
             media,
             MetadataTagBuilder.FromManualUpdate(media, request.Genres, request.ContentRating, request.Network),
             cancellationToken);
+
+        // Apply locks last so a same-save edit + lock keeps the new value.
+        media.LockedFields = request.LockedFields;
+
         await context.SaveChangesAsync(cancellationToken);
     }
 

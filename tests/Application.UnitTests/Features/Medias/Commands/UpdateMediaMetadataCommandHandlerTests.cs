@@ -2,6 +2,7 @@ using K7.Server.Application.Features.Medias.Commands.UpdateMediaMetadata;
 using K7.Server.Application.Features.Medias.Services;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Medias;
+using K7.Server.Domain.Enums;
 using K7.Server.Infrastructure.Database.Context.Data;
 using K7.Shared.Dtos.Entities;
 using Microsoft.Data.Sqlite;
@@ -132,5 +133,67 @@ public class UpdateMediaMetadataCommandHandlerTests
             .SingleAsync(e => e.Id == _episodeId);
 
         episode.AirDate.Should().Be(airDate);
+    }
+
+    [Test]
+    public async Task Handle_ShouldKeepNewTitle_WhenTitleIsLockedInSameSave()
+    {
+        await _handler.Handle(new UpdateMediaMetadataCommand
+        {
+            Id = _episodeId,
+            LockedFields = [nameof(SerieEpisode.Title)],
+            Title = "Edited Pilot"
+        }, CancellationToken.None);
+
+        _context.ChangeTracker.Clear();
+        var episode = await _context.Medias.OfType<SerieEpisode>()
+            .SingleAsync(e => e.Id == _episodeId);
+
+        episode.Title.Should().Be("Edited Pilot");
+        episode.LockedFields.Should().Equal(nameof(SerieEpisode.Title));
+    }
+
+    [Test]
+    public async Task Handle_ShouldPassGenresToTagSync_WhenGenresAreLockedInSameSave()
+    {
+        await _handler.Handle(new UpdateMediaMetadataCommand
+        {
+            Id = _episodeId,
+            LockedFields = ["Genres"],
+            Genres = ["Action"]
+        }, CancellationToken.None);
+
+        await _tagSync.Received(1).ApplyTagsAsync(
+            Arg.Is<BaseMedia>(m => m.Id == _episodeId),
+            Arg.Is<IReadOnlyList<MetadataTagDesired>>(desired =>
+                desired.Any(tag => tag.Kind == MetadataTagKind.Genre && tag.DisplayName == "Action")),
+            Arg.Any<CancellationToken>());
+
+        _context.ChangeTracker.Clear();
+        var episode = await _context.Medias.OfType<SerieEpisode>()
+            .SingleAsync(e => e.Id == _episodeId);
+        episode.LockedFields.Should().Equal("Genres");
+    }
+
+    [Test]
+    public async Task Handle_ShouldSkipLockedGenres_WhenFieldWasAlreadyLocked()
+    {
+        var episode = await _context.Medias.OfType<SerieEpisode>()
+            .SingleAsync(e => e.Id == _episodeId);
+        episode.LockField("Genres");
+        await _context.SaveChangesAsync();
+
+        await _handler.Handle(new UpdateMediaMetadataCommand
+        {
+            Id = _episodeId,
+            LockedFields = ["Genres"],
+            Genres = ["Action"]
+        }, CancellationToken.None);
+
+        await _tagSync.Received(1).ApplyTagsAsync(
+            Arg.Is<BaseMedia>(m => m.Id == _episodeId),
+            Arg.Is<IReadOnlyList<MetadataTagDesired>>(desired =>
+                desired.All(tag => tag.Kind != MetadataTagKind.Genre)),
+            Arg.Any<CancellationToken>());
     }
 }
