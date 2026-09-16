@@ -131,8 +131,6 @@ Supported interface languages: `src/Shared/K7.Shared/SupportedLanguages.cs` (`fr
 
 **Adding a language:** extend `SupportedLanguages` and request localization registration; add `*.xx.resx` siblings.
 
-Accent / mojibake helpers may live under `scripts/` when present; otherwise edit `.resx` in the IDE.
-
 ## API (OpenAPI)
 
 K7 generates an **OpenAPI 3.1** document for the server HTTP API.

@@ -31,6 +31,7 @@
   </Folder>
   <Folder Name="/Source/Server/Infrastructure/">
     <Project Path="src/Server/Infrastructure/Configuration/K7.Server.Infrastructure.Configuration.csproj" />
+    <Project Path="src/Server/Infrastructure/ExternalServices/K7.Server.Infrastructure.ExternalServices.csproj" />
     <Project Path="src/Server/Infrastructure/FileSystem/K7.Server.Infrastructure.FileSystem.csproj" />
     <Project Path="src/Server/Infrastructure/MediaProcessing/K7.Server.Infrastructure.MediaProcessing.csproj" Id="87216e44-671d-469e-a23c-df31108b1139" />
   </Folder>
@@ -47,13 +48,6 @@
   <Folder Name="/Source/Shared/Aspire/">
     <Project Path="src/Shared/Aspire/AppHost/K7.Shared.Aspire.AppHost.csproj" />
     <Project Path="src/Shared/Aspire/ServiceDefaults/K7.Shared.Aspire.ServiceDefaults.csproj" />
-  </Folder>
-  <Folder Name="/src/" />
-  <Folder Name="/src/Server/" />
-  <Folder Name="/src/Server/Application/" />
-  <Folder Name="/src/Server/Infrastructure/" />
-  <Folder Name="/src/Server/Infrastructure/ExternalServices/">
-    <Project Path="src/Server/Infrastructure/ExternalServices/K7.Server.Infrastructure.ExternalServices.csproj" />
   </Folder>
   <Folder Name="/Tools/">
     <Project Path="tools/K7.Import/K7.Import.csproj" />
