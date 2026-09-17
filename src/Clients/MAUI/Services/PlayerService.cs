@@ -330,10 +330,15 @@ internal class PlayerService(
 
         Source = new PlayerSource();
 
+        await Task.Yield();
         await ShowAsync();
 
         var session = await streamUriService.GetOrCreateSessionAsync(
-            indexedFileId, audioTrackIndex, subtitleTrackIndex, cancellationToken);
+            indexedFileId,
+            audioTrackIndex,
+            subtitleTrackIndex,
+            startPosition,
+            cancellationToken);
 
         if (session.Source is null)
         {
@@ -406,6 +411,7 @@ internal class PlayerService(
 
         Source = new PlayerSource();
 
+        await Task.Yield();
         await ShowAsync();
 
         var session = await streamUriService.GetOrCreateRemoteSessionAsync(

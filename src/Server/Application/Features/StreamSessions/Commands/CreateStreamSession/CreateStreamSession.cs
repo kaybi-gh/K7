@@ -18,6 +18,7 @@ public record CreateStreamSessionCommand : IRequest<StreamingSessionDto>
     public int? AudioTrackIndex { get; init; }
     public int? SubtitleTrackIndex { get; init; }
     public bool AudioPassthrough { get; init; } = true;
+    public double? StartSeconds { get; init; }
 };
 
 public class CreateStreamSessionCommandHandler(

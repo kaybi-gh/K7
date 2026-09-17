@@ -29,6 +29,7 @@ public class AudioPlayerServiceSkipPrebufferTests
                 Arg.Any<Guid>(),
                 Arg.Any<int?>(),
                 Arg.Any<int?>(),
+                Arg.Any<double?>(),
                 Arg.Any<CancellationToken>())
             .Returns(ci => CreateSession(ci.ArgAt<Guid>(0)));
 
@@ -62,6 +63,7 @@ public class AudioPlayerServiceSkipPrebufferTests
             Arg.Any<Guid>(),
             Arg.Any<int?>(),
             Arg.Any<int?>(),
+            Arg.Any<double?>(),
             Arg.Any<CancellationToken>());
     }
 
@@ -75,18 +77,21 @@ public class AudioPlayerServiceSkipPrebufferTests
                 firstFile,
                 Arg.Any<int?>(),
                 Arg.Any<int?>(),
+                Arg.Any<double?>(),
                 Arg.Any<CancellationToken>())
             .Returns(_ => CreateSession(firstFile));
         _streamUri.GetOrCreateSessionAsync(
                 tracks[1].IndexedFileId,
                 Arg.Any<int?>(),
                 Arg.Any<int?>(),
+                Arg.Any<double?>(),
                 Arg.Any<CancellationToken>())
             .Returns(_ => tcs.Task);
         _streamUri.GetOrCreateSessionAsync(
                 tracks[2].IndexedFileId,
                 Arg.Any<int?>(),
                 Arg.Any<int?>(),
+                Arg.Any<double?>(),
                 Arg.Any<CancellationToken>())
             .Returns(_ => CreateSession(tracks[2].IndexedFileId));
 

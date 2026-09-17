@@ -8,6 +8,7 @@ public interface IStreamUriService
         Guid indexedFileId,
         int? audioTrackIndex = null,
         int? subtitleTrackIndex = null,
+        double? startSeconds = null,
         CancellationToken cancellationToken = default);
 
     Task<StreamingSessionDto?> GetOrCreateRemoteSessionAsync(

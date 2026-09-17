@@ -4,6 +4,7 @@ using K7.Server.Application.Features.Medias.Commands.UpdatePlaybackProgress;
 using K7.Server.Application.Features.Scrobbling.Services;
 using K7.Server.Application.Services;
 using K7.Server.Domain.Constants;
+using K7.Server.Domain.Interfaces;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Users;
 using K7.Server.Domain.Enums;
@@ -112,6 +113,7 @@ public class UpdatePlaybackProgressCommandHandlerTests
             syncPlay,
             Substitute.For<IFfmpegCapabilitiesService>(),
             CreateDisabledScrobbleDispatcher(),
+            Substitute.For<ITranscodeJobManager>(),
             Substitute.For<ILogger<UpdatePlaybackProgressCommandHandler>>());
     }
 
@@ -456,6 +458,7 @@ public class UpdatePlaybackProgressCommandHandlerTests
             Substitute.For<ISyncPlayPlaybackContextResolver>(),
             Substitute.For<IFfmpegCapabilitiesService>(),
             CreateDisabledScrobbleDispatcher(),
+            Substitute.For<ITranscodeJobManager>(),
             Substitute.For<ILogger<UpdatePlaybackProgressCommandHandler>>());
 
         var sessionId = Guid.NewGuid();

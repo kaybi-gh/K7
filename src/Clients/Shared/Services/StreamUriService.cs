@@ -33,6 +33,7 @@ public class StreamUriService : IStreamUriService
         Guid indexedFileId,
         int? audioTrackIndex = null,
         int? subtitleTrackIndex = null,
+        double? startSeconds = null,
         CancellationToken cancellationToken = default)
     {
         // Check offline store first (explicit downloads)
@@ -70,7 +71,8 @@ public class StreamUriService : IStreamUriService
                 AudioTrackIndex = audioTrackIndex,
                 SubtitleTrackIndex = subtitleTrackIndex,
                 MaxAudioBitrate = maxBitrate > 0 ? maxBitrate : null,
-                AudioPassthrough = audioPassthrough
+                AudioPassthrough = audioPassthrough,
+                StartSeconds = startSeconds is > 1 ? startSeconds : null
             };
 
             var session = await _streamingService.CreateStreamSessionAsync(request, cancellationToken)

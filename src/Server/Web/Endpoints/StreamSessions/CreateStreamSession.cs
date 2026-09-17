@@ -31,7 +31,8 @@ public class CreateStreamSession : IEndpoint
                 StreamSessionId = session.Id,
                 AudioTrackIndex = command.AudioTrackIndex,
                 SubtitleTrackIndex = command.SubtitleTrackIndex,
-                AllowAudioPassthrough = command.AudioPassthrough
+                AllowAudioPassthrough = command.AudioPassthrough,
+                StartSeconds = command.StartSeconds
             };
 
             var streamUri = await sender.Send(query, cancellationToken);

@@ -11,6 +11,7 @@ using K7.Server.Domain.Entities.Metadatas.Files;
 using K7.Server.Domain.Entities.Users;
 using K7.Server.Domain.Enums;
 using K7.Server.Domain.Events;
+using K7.Server.Domain.Interfaces;
 using K7.Shared.Dtos;
 using K7.Shared.Enums;
 using MediatR;
@@ -49,8 +50,10 @@ public class UpdatePlaybackProgressCommandHandler(
     ISyncPlayPlaybackContextResolver syncPlayPlaybackContextResolver,
     IFfmpegCapabilitiesService ffmpegCapabilitiesService,
     ScrobbleDispatcher scrobbleDispatcher,
+    ITranscodeJobManager transcodeJobManager,
     ILogger<UpdatePlaybackProgressCommandHandler> logger) : IRequestHandler<UpdatePlaybackProgressCommand>
 {
+    private readonly ITranscodeJobManager _transcodeJobManager = transcodeJobManager;
     private readonly IApplicationDbContext _context = context;
     private readonly IUser _currentUser = currentUserService;
     private readonly IPlaybackProgressNotifier _progressNotifier = progressNotifier;
@@ -470,6 +473,21 @@ public class UpdatePlaybackProgressCommandHandler(
         else
         {
             _activeStreamTracker.Remove(request.SessionId);
+        }
+
+        // Player closed (Idle) or media finished (Ended): stop ffmpeg for jobs this session
+        // was the last consumer of. Otherwise the AAC window / remux head ran on to its
+        // target and the next launch paid its stop on the first segment request.
+        if (request.State is PlaybackState.Idle or PlaybackState.Ended)
+        {
+            try
+            {
+                await _transcodeJobManager.ReleaseSessionAsync(request.SessionId, cancellationToken);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                _logger.LogWarning(ex, "Failed to release transcode jobs for session {SessionId}", request.SessionId);
+            }
         }
 
         _cacheInvalidator.InvalidateAll();

@@ -106,13 +106,23 @@ public sealed class StreamPlaybackService(
         streamDecision = await StreamDecisionEnrichment.EnrichEncodersAsync(
             streamDecision, ffmpegCapabilitiesService, cancellationToken);
         activeStreamTracker.UpdateStreamDecision(query.StreamSessionId, streamDecision);
-        await TryPrefetchHlsStartupAsync(
-            indexedFile,
-            videoFileMetadata,
-            query.StreamSessionId,
-            streamUri,
-            streamDecision,
-            cancellationToken);
+        // Never await the prefetch on the session create path: it may stop and restart an
+        // AAC window (seconds) or wait for a transcode slot, and the client cannot even
+        // request the manifest until this call returns.
+        // The DbContext is request-scoped: read the keyframe rows here, not in the task.
+        var prefetchSegments = streamDecision.Mode == PlaybackMode.Direct
+            ? Array.Empty<HlsSegment>()
+            : await HlsSegmentHelper.LoadSegmentsAsync(context, indexedFile.Id, cancellationToken);
+        _ = Task.Run(
+            () => TryPrefetchHlsStartupAsync(
+                indexedFile,
+                videoFileMetadata,
+                prefetchSegments,
+                query.StreamSessionId,
+                streamUri,
+                streamDecision,
+                query.StartSeconds),
+            CancellationToken.None);
         return streamUri with { StreamDecision = streamDecision };
     }
 
@@ -245,7 +255,8 @@ public sealed class StreamPlaybackService(
 
         var job = await transcodeJobManager.GetOrStartJobAsync(
             query.Id, entity.Path, quality: "original", videoCodec: null, audioCodec: query.TranscodingAudioCodec,
-            audioTrackIndex: query.AudioTrackIndex, isAudioOnly: true, query.StreamSessionId, cancellationToken);
+            audioTrackIndex: query.AudioTrackIndex, isAudioOnly: true, query.StreamSessionId, cancellationToken,
+            audioChannels: query.TranscodingAudioChannels);
         transcodeJobManager.PingJob(job.JobId, query.StreamSessionId);
 
         var segmentPath = Path.Combine(job.OutputDirectory, query.SegmentNumber == -1 ? "init.m4s" : $"{query.SegmentNumber}.m4s");
@@ -561,10 +572,11 @@ public sealed class StreamPlaybackService(
     private async Task TryPrefetchHlsStartupAsync(
         IndexedFile indexedFile,
         VideoFileMetadata videoFileMetadata,
+        IReadOnlyList<HlsSegment> hlsSegments,
         Guid streamSessionId,
         IndexedFileStreamUri streamUri,
         StreamDecisionDto streamDecision,
-        CancellationToken cancellationToken)
+        double? startSeconds)
     {
         if (streamDecision.Mode == PlaybackMode.Direct)
             return;
@@ -577,8 +589,6 @@ public sealed class StreamPlaybackService(
 
         try
         {
-            var hlsSegments = await HlsSegmentHelper.LoadSegmentsAsync(
-                context, indexedFile.Id, cancellationToken);
             var totalDurationMs = hlsSegments.Count > 0
                 ? hlsSegments.Sum(s => s.Duration)
                 : (long)videoFileMetadata.Duration.TotalMilliseconds;
@@ -597,6 +607,13 @@ public sealed class StreamPlaybackService(
                 : null;
             var prefetchQuality = DisplayEncodeCap.ResolveJobQuality("original", streamDecision);
 
+            // Resume: start ffmpeg at the landing segment, then init. Starting at 0 made
+            // the AAC encode window run from the beginning while Video.js asked for
+            // segment ~1055; the audio playlist stalled for tens of seconds.
+            var prefetchStartIndex = HlsSegmentHelper.ResolvePrefetchStartSegmentIndex(
+                allSegments,
+                startSeconds);
+
             var videoJob = await transcodeJobManager.GetOrStartJobAsync(
                 indexedFile.Id,
                 indexedFile.Path,
@@ -610,7 +627,12 @@ public sealed class StreamPlaybackService(
                 burnIn);
             transcodeJobManager.PingJob(videoJob.JobId, streamSessionId);
             await transcodeJobManager.EnsureSegmentWillBeGeneratedAsync(
-                videoJob.JobId, -1, allSegments, CancellationToken.None);
+                videoJob.JobId, prefetchStartIndex, allSegments, CancellationToken.None);
+            if (prefetchStartIndex >= 0)
+            {
+                await transcodeJobManager.EnsureSegmentWillBeGeneratedAsync(
+                    videoJob.JobId, -1, allSegments, CancellationToken.None);
+            }
 
             var audioTrackIndex = streamDecision.SelectedAudioTrackIndex ?? 0;
             var audioNeedsTranscode = streamDecision.Reason.HasFlag(TranscodeReason.AudioCodecNotSupported)
@@ -630,10 +652,16 @@ public sealed class StreamPlaybackService(
                 audioTrackIndex,
                 isAudioOnly: true,
                 streamSessionId,
-                CancellationToken.None);
+                CancellationToken.None,
+                audioChannels: audioNeedsTranscode ? streamDecision.StreamAudioChannels : null);
             transcodeJobManager.PingJob(audioJob.JobId, streamSessionId);
             await transcodeJobManager.EnsureSegmentWillBeGeneratedAsync(
-                audioJob.JobId, -1, allSegments, CancellationToken.None);
+                audioJob.JobId, prefetchStartIndex, allSegments, CancellationToken.None);
+            if (prefetchStartIndex >= 0)
+            {
+                await transcodeJobManager.EnsureSegmentWillBeGeneratedAsync(
+                    audioJob.JobId, -1, allSegments, CancellationToken.None);
+            }
 
             logger.LogInformation(
                 "Prefetched HLS ffmpeg for {IndexedFileId} session {SessionId} (videoCodec={VideoCodec}, audioCodec={AudioCodec})",

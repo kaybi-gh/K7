@@ -251,10 +251,18 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
 
         try
         {
+            await Task.Yield();
+            if (generation != _playGeneration)
+                return;
+
             await ShowAsync();
 
             var session = await streamUriService.GetOrCreateSessionAsync(
-                indexedFileId, audioTrackIndex, subtitleTrackIndex, playToken);
+                indexedFileId,
+                audioTrackIndex,
+                subtitleTrackIndex,
+                startPosition,
+                playToken);
 
             if (generation != _playGeneration)
                 return;
@@ -348,6 +356,10 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
 
         try
         {
+            await Task.Yield();
+            if (generation != _playGeneration)
+                return;
+
             await ShowAsync();
 
             var session = await streamUriService.GetOrCreateRemoteSessionAsync(

@@ -141,6 +141,7 @@ public sealed class MockStreamUriService : IStreamUriService
         Guid indexedFileId,
         int? audioTrackIndex = null,
         int? subtitleTrackIndex = null,
+        double? startSeconds = null,
         CancellationToken cancellationToken = default)
         => Task.FromResult(new StreamingSessionDto { Id = Guid.NewGuid(), IndexedFileId = indexedFileId, PlaybackSettings = new PlaybackSettingsDto() });
 

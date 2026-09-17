@@ -8,4 +8,5 @@ public sealed record CreateStreamSessionRequest
     public int? SubtitleTrackIndex { get; init; }
     public int? MaxAudioBitrate { get; init; }
     public bool AudioPassthrough { get; init; } = true;
+    public double? StartSeconds { get; init; }
 }

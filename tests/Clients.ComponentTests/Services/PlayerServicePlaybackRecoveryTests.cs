@@ -86,6 +86,7 @@ public class PlayerServicePlaybackRecoveryTests
                 fileId,
                 Arg.Any<int?>(),
                 Arg.Any<int?>(),
+                Arg.Any<double?>(),
                 Arg.Any<CancellationToken>())
             .Returns(new StreamingSessionDto
             {

@@ -382,13 +382,25 @@ not past mid-GOP. Do not micro-rebase **audio copy** onto `#EXTINF`.
   first one lands: both are cold starts, not wipes (`TranscodeWipedOutputPolicy`,
   `HasObservedReadyOutput`). Treating them as wipes killed the live head on the next
   request and the browser waited forever on `init.m4s`
+- resume passes `StartSeconds` on session create; prefetch `EnsureSegment`s the landing
+  index first, then `init.m4s`. Starting the AAC encode at 0 while Video.js asked for
+  segment ~1055 stalled the audio playlist for tens of seconds. The prefetch is never
+  awaited by the session create (it may stop/restart an AAC window or wait for a slot);
+  the keyframe rows are read on the request DbContext before the task starts
 - a job never counts itself in `WaitForTranscodeSlotAsync`: a remux job spawning a second
   head while its first head runs to EOF waited on itself, and `/api/stream-sessions` hung
+- player closed (`Idle`) or media finished (`Ended`) in `UpdatePlaybackProgress` calls
+  `ReleaseSessionAsync`: the session is detached from its jobs and ffmpeg is stopped on
+  jobs left without any session (cache kept). SyncPlay / co-watching viewers each have
+  their own stream session on the shared job, so the last one leaving stops it. Without
+  this, a relaunch paid the stop of the still-running AAC window (~10s) on its first request
 - after ffmpeg exits, `FinalizeClosedDeliverSegments` skips indices with no file. The
   finalize retry (50 x 20ms, for a file still flushing) cost ~1s per missing index over the
   whole window of an early-stopped head or AAC window (minutes), so stop / release /
   restart appeared to hang on "ffmpeg did not exit". Stops and slot waits are bounded
   (10s / 15s) with a warning as a safety net
+- `MaxConcurrentTranscodes` 0 means unlimited (admin hint); the save command must not clamp
+  it to 1, which serialized every ffmpeg on the server
 - `MinDistanceSecondsToLiveHead` ignores heads whose `From` is after the request: a head
   never writes behind its start, so restart-from-0 while a resume head runs must spawn
 

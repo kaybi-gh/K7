@@ -20,7 +20,8 @@ public class UpdateTranscodeSettingsCommandHandler(IServerSettingsService server
     {
         var settings = request.Settings with
         {
-            MaxConcurrentTranscodes = Math.Clamp(request.Settings.MaxConcurrentTranscodes, 1, 16),
+            // 0 = unlimited (admin hint). Clamping to 1 silently serialized every ffmpeg.
+            MaxConcurrentTranscodes = Math.Clamp(request.Settings.MaxConcurrentTranscodes, 0, 16),
             EncoderThrottleBufferSegments = Math.Clamp(request.Settings.EncoderThrottleBufferSegments, 1, 30),
             TranscodeTempQuotaMb = Math.Max(0, request.Settings.TranscodeTempQuotaMb)
         };
