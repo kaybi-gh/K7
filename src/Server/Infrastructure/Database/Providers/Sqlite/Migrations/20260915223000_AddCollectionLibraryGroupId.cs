@@ -24,23 +24,11 @@ public partial class AddCollectionLibraryGroupId : Migration
             name: "IX_Collections_LibraryGroupId",
             table: "Collections",
             column: "LibraryGroupId");
-
-        migrationBuilder.AddForeignKey(
-            name: "FK_Collections_LibraryGroups_LibraryGroupId",
-            table: "Collections",
-            column: "LibraryGroupId",
-            principalTable: "LibraryGroups",
-            principalColumn: "Id",
-            onDelete: ReferentialAction.SetNull);
     }
 
     /// <inheritdoc />
     protected override void Down(MigrationBuilder migrationBuilder)
     {
-        migrationBuilder.DropForeignKey(
-            name: "FK_Collections_LibraryGroups_LibraryGroupId",
-            table: "Collections");
-
         migrationBuilder.DropIndex(
             name: "IX_Collections_LibraryGroupId",
             table: "Collections");
