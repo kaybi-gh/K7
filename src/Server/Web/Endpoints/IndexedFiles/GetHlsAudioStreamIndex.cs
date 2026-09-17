@@ -17,14 +17,16 @@ public class GetHlsAudioStreamIndex : IEndpoint
             [FromRoute] int audioTrackIndex,
             [FromQuery] Guid streamSessionId,
             [FromQuery] string? TranscodingAudioCodec,
-            [FromQuery] double? startSeconds) =>
+            [FromQuery] double? startSeconds,
+            [FromQuery] int? TranscodingAudioChannels) =>
         {
             return (await sender.Send(new GetHlsAudioStreamIndexQuery(
                 id,
                 audioTrackIndex,
                 streamSessionId,
                 TranscodingAudioCodec,
-                startSeconds is > 0 ? startSeconds : null))).ToIResult();
+                startSeconds is > 0 ? startSeconds : null,
+                TranscodingAudioChannels is > 0 ? TranscodingAudioChannels : null))).ToIResult();
         })
         .RequireAuthorization(Policies.StreamAccess)
         .WithName(type.Name)

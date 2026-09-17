@@ -168,6 +168,32 @@ window.getSupportedVideoProfilesAsync = async function () {
     return tokens;
 };
 
+// Channels the audio output can render. Stereo laptop
+// speakers report 2, an HDMI receiver 6 or 8. The server caps AAC encode to this so a
+// 5.1 source is not delivered as 6-channel AAC to a browser that only mixes stereo.
+// 0 = unknown (no cap).
+window.getAudioOutputChannelsAsync = async function () {
+    const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextCtor)
+        return 0;
+
+    let context = null;
+    try {
+        context = new AudioContextCtor();
+        const channels = context.destination && context.destination.maxChannelCount;
+        return typeof channels === 'number' && channels > 0 ? channels : 0;
+    } catch (e) {
+        return 0;
+    } finally {
+        if (context && typeof context.close === 'function') {
+            try {
+                context.close();
+            } catch (e2) {
+            }
+        }
+    }
+};
+
 window.getHdrSupport = async function () {
     if (!("mediaCapabilities" in navigator)) {
         return false;

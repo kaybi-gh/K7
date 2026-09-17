@@ -34,6 +34,11 @@ public record GetStreamUriQuery : IRequest<IndexedFileStreamUri>
     /// When false, AC3/EAC3/DTS/TrueHD are not Direct Played.
     /// </summary>
     public bool AllowAudioPassthrough { get; set; } = true;
+
+    /// <summary>
+    /// Resume offset in seconds. HLS prefetch starts ffmpeg at this landing, not at segment 0.
+    /// </summary>
+    public double? StartSeconds { get; set; }
 };
 
 public class GetStreamUriQueryHandler(
@@ -233,6 +238,15 @@ public class GetStreamUriQueryHandler(
             ? audioTrackTranscodings![selectedAudioTrack.Index]
             : selectedAudioTrack.Codec;
 
+        // Device output cap (Web: AudioContext maxChannelCount). A 5.1 AC3 encoded to AAC
+        // for a stereo browser is delivered as 2ch, not 6ch (Firefox MSE multichannel AAC
+        // is unreliable and the master must advertise what is delivered).
+        var deviceMaxAudioChannels = AudioOutputChannelTokens.TryReadMaxChannels(
+            device.PlaybackCapabilities.SupportedMediaFormatIds);
+        int? streamAudioChannels = selectedAudioNeedsTranscode
+            ? HlsAudioChannelPolicy.Resolve(selectedAudioTrack.Channels, deviceMaxAudioChannels)
+            : null;
+
         var reason = BuildVideoTranscodeReason(
             requiresVideoTranscoding,
             forcedByMissingSegments,
@@ -254,6 +268,7 @@ public class GetStreamUriQueryHandler(
             AudioTrackLanguage = selectedAudioTrack.Language,
             AudioTrackTitle = selectedAudioTrack.Name,
             AudioChannelLayout = selectedAudioTrack.ChannelLayout,
+            StreamAudioChannels = streamAudioChannels,
             SubtitleTrackLanguage = selectedSubtitle?.Language,
             SubtitleTrackTitle = selectedSubtitle?.Name,
             SubtitleCodec = selectedSubtitle?.Codec,
@@ -287,6 +302,7 @@ public class GetStreamUriQueryHandler(
                 DefaultSubtitleTrackIndex = defaultTextSubtitleTrackIndex,
                 SubtitleBurnInStreamIndex = subtitleBurnInStreamIndex,
                 Quality = displayEncodeQuality?.Name,
+                MaxAudioChannels = deviceMaxAudioChannels,
                 // Video.js (Web + Windows HLS) needs video-only CODECS on STREAM-INF.
                 VideoCodecsOnly = usesVideoJsHls
             }), UriKind.Relative),
@@ -459,6 +475,9 @@ public class GetStreamUriQueryHandler(
         var fallbackFormat = GetDeviceBestSupportedAudioMediaFormat(
             [.. device.PlaybackCapabilities.SupportedMediaFormats.Where(x => x.Type == MediaFormatType.Audio)]);
 
+        var audioFileDeviceMaxChannels = AudioOutputChannelTokens.TryReadMaxChannels(
+            device.PlaybackCapabilities.SupportedMediaFormatIds);
+
         var transcodeDecision = new StreamDecisionDto
         {
             Mode = PlaybackMode.Transcode,
@@ -468,7 +487,8 @@ public class GetStreamUriQueryHandler(
             SelectedAudioTrackIndex = audioTrack.Index,
             AudioTrackLanguage = audioTrack.Language,
             AudioTrackTitle = audioTrack.Name,
-            AudioChannelLayout = audioTrack.ChannelLayout
+            AudioChannelLayout = audioTrack.ChannelLayout,
+            StreamAudioChannels = HlsAudioChannelPolicy.Resolve(audioTrack.Channels, audioFileDeviceMaxChannels)
         };
 
         return (new IndexedFileStreamUri
@@ -477,7 +497,8 @@ public class GetStreamUriQueryHandler(
             {
                 Id = indexedFile.Id,
                 StreamSessionId = request.StreamSessionId,
-                AudioTrackTranscodings = new Dictionary<int, string> { [audioTrack.Index] = fallbackFormat.Codec }
+                AudioTrackTranscodings = new Dictionary<int, string> { [audioTrack.Index] = fallbackFormat.Codec },
+                MaxAudioChannels = audioFileDeviceMaxChannels
             }), UriKind.Relative),
             MimeType = "application/vnd.apple.mpegurl"
         }, transcodeDecision);

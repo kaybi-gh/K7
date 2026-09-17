@@ -15,6 +15,7 @@ public class GetHlsAudioStreamSegment : IEndpoint
                     [FromRoute] string segmentNumber,
                     [FromQuery] Guid streamSessionId,
                     [FromQuery] string? TranscodingAudioCodec,
+                    [FromQuery] int? TranscodingAudioChannels,
                     [FromServices] ISender sender,
                     CancellationToken cancellationToken) =>
                 {
@@ -24,7 +25,8 @@ public class GetHlsAudioStreamSegment : IEndpoint
                         audioTrackIndex,
                         segmentIndex,
                         streamSessionId,
-                        TranscodingAudioCodec), cancellationToken)).ToIResult();
+                        TranscodingAudioCodec,
+                        TranscodingAudioChannels is > 0 ? TranscodingAudioChannels : null), cancellationToken)).ToIResult();
                 })
             .RequireAuthorization(Policies.StreamAccess)
             .WithName(nameof(GetHlsAudioStreamSegment))

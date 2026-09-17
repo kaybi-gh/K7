@@ -799,6 +799,52 @@ public class GetStreamUriDecisionTests
         decision.Mode.Should().Be(PlaybackMode.Direct);
     }
 
+    [Test]
+    public void GetVideoFileStreamUri_ShouldCapAacChannelsToDeviceOutput_WhenWebBrowserIsStereo()
+    {
+        // Firefox: no AC3, stereo output -> AC3 5.1 encodes to 2ch AAC and the master
+        // must carry the cap so CHANNELS advertises what is delivered.
+        var device = CreateDevice(
+            ["audio-mp4-aac", "video-mp4-aac-h264", AudioOutputChannelTokens.MaxChannels(2)],
+            ClientType.Web,
+            OperatingSystem.Windows);
+        var (indexedFile, metadata) = CreateVideoFile("matroska", "h264", "ac3");
+        metadata.AudioTracks.First().Channels = 6;
+        var request = new GetStreamUriQuery
+        {
+            Id = indexedFile.Id,
+            StreamSessionId = Guid.NewGuid(),
+            AudioTrackIndex = 0
+        };
+
+        var (uri, decision) = GetStreamUriQueryHandler.GetVideoFileStreamUri(
+            device, indexedFile, metadata, request, hlsSegmentsAvailable: true, subtitleTrackIndex: null);
+
+        decision.StreamAudioCodec.Should().Be("aac");
+        decision.StreamAudioChannels.Should().Be(2);
+        uri.Uri.ToString().Should().Contain("MaxAudioChannels=2");
+    }
+
+    [Test]
+    public void GetVideoFileStreamUri_ShouldKeepSourceAacChannels_WhenDeviceHasNoOutputToken()
+    {
+        var device = CreateDevice(["audio-mp4-aac", "video-mp4-aac-h264"], ClientType.Web, OperatingSystem.Windows);
+        var (indexedFile, metadata) = CreateVideoFile("matroska", "h264", "ac3");
+        metadata.AudioTracks.First().Channels = 6;
+        var request = new GetStreamUriQuery
+        {
+            Id = indexedFile.Id,
+            StreamSessionId = Guid.NewGuid(),
+            AudioTrackIndex = 0
+        };
+
+        var (uri, decision) = GetStreamUriQueryHandler.GetVideoFileStreamUri(
+            device, indexedFile, metadata, request, hlsSegmentsAvailable: true, subtitleTrackIndex: null);
+
+        decision.StreamAudioChannels.Should().Be(6);
+        uri.Uri.ToString().Should().NotContain("MaxAudioChannels");
+    }
+
     private static Device CreateDevice(
         IEnumerable<string> formatIds,
         ClientType clientType = ClientType.Native,

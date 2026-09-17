@@ -48,7 +48,8 @@ public interface IMediaTranscoder
         int endSegmentIndex,
         CancellationToken cancellationToken,
         int audioTrackIndex,
-        string? audioCodec = null);
+        string? audioCodec = null,
+        int? audioChannels = null);
 
     /// <summary>
     /// Extracts a subtitle track from the input file and converts it to WebVTT format.

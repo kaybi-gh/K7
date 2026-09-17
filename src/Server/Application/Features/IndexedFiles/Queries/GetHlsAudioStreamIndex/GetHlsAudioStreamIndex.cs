@@ -1,3 +1,4 @@
+using System.Globalization;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Models;
 using K7.Server.Application.Features.IndexedFiles.Queries.GetHlsAudioStreamSegment;
@@ -27,7 +28,8 @@ public record GetHlsAudioStreamIndexQuery(
     int AudioTrackIndex,
     Guid StreamSessionId,
     string? TranscodingAudioCodec = null,
-    double? StartSeconds = null) : IRequest<HttpContentResult>;
+    double? StartSeconds = null,
+    int? TranscodingAudioChannels = null) : IRequest<HttpContentResult>;
 
 public class GetHlsAudioStreamIndexQueryHandler : IRequestHandler<GetHlsAudioStreamIndexQuery, HttpContentResult>
 {
@@ -70,7 +72,10 @@ public class GetHlsAudioStreamIndexQueryHandler : IRequestHandler<GetHlsAudioStr
 
         var queryString = HlsMediaPlaylistBuilder.BuildQueryString(
             query.StreamSessionId,
-            ("TranscodingAudioCodec", query.TranscodingAudioCodec));
+            ("TranscodingAudioCodec", query.TranscodingAudioCodec),
+            ("TranscodingAudioChannels", query.TranscodingAudioChannels is > 0
+                ? query.TranscodingAudioChannels.Value.ToString(CultureInfo.InvariantCulture)
+                : null));
 
         var indexPlaylist = HlsMediaPlaylistBuilder.Build(
             segmentDurations,

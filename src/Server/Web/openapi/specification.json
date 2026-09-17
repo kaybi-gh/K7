@@ -6488,6 +6488,18 @@
               ],
               "format": "double"
             }
+          },
+          {
+            "name": "TranscodingAudioChannels",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
           }
         ],
         "responses": {
@@ -6551,6 +6563,18 @@
               ],
               "format": "double"
             }
+          },
+          {
+            "name": "TranscodingAudioChannels",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
           }
         ],
         "responses": {
@@ -6612,6 +6636,18 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "TranscodingAudioChannels",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
           }
         ],
         "responses": {
@@ -6670,6 +6706,18 @@
             "in": "query",
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "name": "TranscodingAudioChannels",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
             }
           }
         ],
@@ -6772,6 +6820,18 @@
                 "string"
               ],
               "format": "double"
+            }
+          },
+          {
+            "name": "maxAudioChannels",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
             }
           },
           {
@@ -6880,6 +6940,18 @@
                 "string"
               ],
               "format": "double"
+            }
+          },
+          {
+            "name": "maxAudioChannels",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
             }
           },
           {
@@ -13263,6 +13335,15 @@
           },
           "audioPassthrough": {
             "type": "boolean"
+          },
+          "startSeconds": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
           }
         }
       },
@@ -21275,6 +21356,15 @@
               "null",
               "string"
             ]
+          },
+          "streamAudioChannels": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
           },
           "subtitleTrackLanguage": {
             "type": [

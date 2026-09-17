@@ -28,7 +28,8 @@ public record GetHlsAudioStreamSegmentQuery(
     int AudioTrackIndex,
     int SegmentNumber,
     Guid StreamSessionId,
-    string? TranscodingAudioCodec = null) : IRequest<HttpContentResult>;
+    string? TranscodingAudioCodec = null,
+    int? TranscodingAudioChannels = null) : IRequest<HttpContentResult>;
 
 public class GetHlsAudioStreamSegmentQueryHandler(
     IStreamPlaybackService streamPlaybackService)

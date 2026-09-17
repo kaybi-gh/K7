@@ -223,6 +223,42 @@ public class GetHlsStreamManifestQueryHandlerTests
     }
 
     [Test]
+    public async Task Handle_ShouldAdvertiseDeliveredChannels_WhenAacEncodeIsCappedByDevice()
+    {
+        var entity = await _context.IndexedFiles
+            .Include(x => x.FileMetadata)
+            .FirstAsync(x => x.Id == _indexedFileId);
+        var video = (VideoFileMetadata)entity.FileMetadata!;
+        await _context.Entry(video).Collection(v => v.AudioTracks).LoadAsync();
+        video.AudioTracks.Clear();
+        video.AudioTracks.Add(new AudioFileTrack
+        {
+            Index = 1,
+            Codec = "ac3",
+            Channels = 6,
+            IsDefault = true,
+            Language = "fra",
+            Name = "FR 5.1"
+        });
+        await _context.SaveChangesAsync();
+
+        var result = await _handler.Handle(new GetHlsStreamManifestQuery
+        {
+            Id = _indexedFileId,
+            StreamSessionId = Guid.NewGuid(),
+            VideoCodecsOnly = true,
+            AudioTrackTranscodings = new Dictionary<int, string> { [1] = "aac" },
+            MaxAudioChannels = 2
+        }, CancellationToken.None);
+
+        var playlist = ((TextHttpContentResult)result).Content;
+        playlist.Should().Contain("CHANNELS=\"2\"");
+        playlist.Should().NotContain("CHANNELS=\"6\"");
+        playlist.Should().Contain("TranscodingAudioCodec=aac");
+        playlist.Should().Contain("TranscodingAudioChannels=2");
+    }
+
+    [Test]
     public async Task Handle_ShouldForceAacAudioUris_WhenAudioTrackTranscodingsRequestAacForEac3()
     {
         var entity = await _context.IndexedFiles

@@ -52,6 +52,7 @@ public class GetFederationStreamContent : IEndpoint
                     StartSeconds = double.TryParse(query["startSeconds"].FirstOrDefault(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var manifestStart) && manifestStart > 0
                         ? manifestStart
                         : null,
+                    MaxAudioChannels = int.TryParse(query["MaxAudioChannels"], out var mac) && mac > 0 ? mac : null,
                     VideoCodecsOnly = bool.TryParse(query["VideoCodecsOnly"].FirstOrDefault(), out var vco) && vco
                 };
                 return (await sender.Send(manifestQuery, cancellationToken)).ToIResult();
@@ -101,7 +102,8 @@ public class GetFederationStreamContent : IEndpoint
                     : null;
                 var audioIndexQuery = new GetHlsAudioStreamIndexQuery(
                     indexedFileId, trackIndex, audioStreamSessId, query["TranscodingAudioCodec"].FirstOrDefault(),
-                    audioStart);
+                    audioStart,
+                    int.TryParse(query["TranscodingAudioChannels"], out var aiCh) && aiCh > 0 ? aiCh : null);
                 return (await sender.Send(audioIndexQuery, cancellationToken)).ToIResult();
             }
 
@@ -115,7 +117,8 @@ public class GetFederationStreamContent : IEndpoint
 
                 var audioSegStreamSessId = Guid.TryParse(query["streamSessionId"], out var aSegSsId) ? aSegSsId : sessionId;
                 var audioSegmentQuery = new GetHlsAudioStreamSegmentQuery(
-                    indexedFileId, trackIndex, segmentIndex, audioSegStreamSessId, query["TranscodingAudioCodec"].FirstOrDefault());
+                    indexedFileId, trackIndex, segmentIndex, audioSegStreamSessId, query["TranscodingAudioCodec"].FirstOrDefault(),
+                    int.TryParse(query["TranscodingAudioChannels"], out var asCh) && asCh > 0 ? asCh : null);
                 return (await sender.Send(audioSegmentQuery, cancellationToken)).ToIResult();
             }
 

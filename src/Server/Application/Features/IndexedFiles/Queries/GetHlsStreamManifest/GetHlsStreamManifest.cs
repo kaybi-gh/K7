@@ -35,6 +35,7 @@ public static class GetHlsStreamManifestQueryUriBuilder
             { nameof(query.Quality), query.Quality },
             { nameof(query.AudioTrackTranscodings), SerializeAudioTrackTranscodings(query.AudioTrackTranscodings) },
             { nameof(query.StartSeconds), query.StartSeconds?.ToString(System.Globalization.CultureInfo.InvariantCulture) },
+            { nameof(query.MaxAudioChannels), query.MaxAudioChannels is > 0 ? query.MaxAudioChannels.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) : null },
             { nameof(query.VideoCodecsOnly), query.VideoCodecsOnly ? "true" : null }
         };
 
@@ -91,6 +92,11 @@ public record GetHlsStreamManifestQuery : IRequest<HttpContentResult>
     /// Optional resume offset (seconds). Propagated to media playlists as #EXT-X-START.
     /// </summary>
     public double? StartSeconds { get; set; }
+    /// <summary>
+    /// Channels the device output can render (AudioOutputChannelTokens). Encoded audio
+    /// tracks are capped to it (HlsAudioChannelPolicy); CHANNELS advertises the delivered count.
+    /// </summary>
+    public int? MaxAudioChannels { get; set; }
     /// <summary>
     /// When true, STREAM-INF CODECS lists video only (Video.js MSE isTypeSupported).
     /// Native LibVLC needs video+audio in CODECS.
@@ -266,7 +272,12 @@ public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamMani
         };
 
         if (needsTranscoding)
+        {
             trackAudioParams.Add($"TranscodingAudioCodec={transcodingCodec}");
+            var channels = HlsAudioChannelPolicy.Resolve(audioTrack?.Channels ?? 0, query.MaxAudioChannels);
+            trackAudioParams.Add(
+                $"TranscodingAudioChannels={channels.ToString(System.Globalization.CultureInfo.InvariantCulture)}");
+        }
 
         AppendStartSeconds(trackAudioParams, query.StartSeconds);
 
@@ -376,7 +387,15 @@ public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamMani
                 };
 
             if (audioTrackTranscodings.TryGetValue(track.Index, out var transcodingCodec))
+            {
                 trackAudioParams.Add($"TranscodingAudioCodec={transcodingCodec}");
+
+                // Announce what the encode delivers (device output cap, HLS 1/2/6/8), not
+                // the source layout, and make the audio job produce exactly that.
+                channels = HlsAudioChannelPolicy.Resolve(track.Channels, query.MaxAudioChannels);
+                trackAudioParams.Add(
+                    $"TranscodingAudioChannels={channels.ToString(System.Globalization.CultureInfo.InvariantCulture)}");
+            }
 
             AppendStartSeconds(trackAudioParams, query.StartSeconds);
 

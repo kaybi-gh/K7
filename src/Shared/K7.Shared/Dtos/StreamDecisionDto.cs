@@ -18,6 +18,10 @@ public sealed record StreamDecisionDto
     public string? AudioTrackLanguage { get; init; }
     public string? AudioTrackTitle { get; init; }
     public string? AudioChannelLayout { get; init; }
+    /// <summary>
+    /// Channels delivered by an HLS audio encode (device output cap applied). Null on copy.
+    /// </summary>
+    public int? StreamAudioChannels { get; init; }
     public string? SubtitleTrackLanguage { get; init; }
     public string? SubtitleTrackTitle { get; init; }
     public string? SubtitleCodec { get; init; }

@@ -53,6 +53,12 @@ public static class FfmpegAudioEncoderResolver
         };
     }
 
+    /// <summary>
+    /// Channels the AAC encoder accepts: libfdk_aac 6, others 8.
+    /// </summary>
+    public static int GetEncoderMaxChannels(string encoderName) =>
+        string.Equals(encoderName, "libfdk_aac", StringComparison.OrdinalIgnoreCase) ? 6 : 8;
+
     public static string ResolveAacEncoder(IReadOnlyList<string>? availableEncoders)
     {
         if (HasEncoder(availableEncoders, "aac_at"))

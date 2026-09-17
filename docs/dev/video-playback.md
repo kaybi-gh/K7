@@ -171,7 +171,20 @@ Android TV plays `matroska` + HEVC + EAC3 via ExoPlayer track selection. Setting
 playback on a native device can turn **audio passthrough** off. That stays on the device
 (`VideoAudioPassthrough`) and is sent on the stream session (`AudioPassthrough=false`).
 GetStreamUri then treats AC3/EAC3/DTS/TrueHD as not Direct Playable for that play
-(remux/transcode to AAC) without rewriting the device capability list. Windows MAUI uses LibVLC
+(remux/transcode to AAC) without rewriting the device capability list.
+
+HLS AAC encode channel count: the Web client stores `achannels:N`
+(`AudioContext.destination.maxChannelCount`) next to its format ids
+(`AudioOutputChannelTokens`). `GetStreamUri` resolves `HlsAudioChannelPolicy` = min(source,
+device output, encoder) restricted to 1/2/6/8, puts it on `StreamDecisionDto.StreamAudioChannels`
+and passes `MaxAudioChannels` to the master. The master advertises `CHANNELS` as the delivered
+count and adds `TranscodingAudioChannels=N` to the audio URIs, which the audio job (`-ac N`,
+distinct `audio-aacNch-aX` cache dir) honours. A stereo browser gets 2ch AAC from an AC3 5.1
+source; a 5.1 output keeps 6. No token (natives, old clients) keeps the source layout.
+A stereo downmix of a surround source adds an explicit `pan=stereo|...` matrix
+(`FfmpegStereoDownmix`, keyed by the ffprobe channel layout: voices forward, LFE kept)
+next to `-ac 2`. libswresample's default mix buries dialogue and drops LFE. Unknown layouts
+or a failed probe keep plain `-ac 2`. Windows MAUI uses LibVLC
 for the same formats. Android text cues use
 ExoPlayer `SubtitleView` (`CaptionStyleCompat`). Windows Direct text cues use a sibling XAML
 WebVTT layer on `RootGrid`. A non-Original quality step still promotes the session to HLS.

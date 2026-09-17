@@ -439,6 +439,43 @@ public class MediaTranscoder : IMediaTranscoder
         }
     }
 
+    /// <summary>
+    /// Probe the source audio layout and pick an explicit stereo pan matrix. Any probe
+    /// failure or unknown layout returns null so the caller keeps plain <c>-ac 2</c>.
+    /// </summary>
+    private async Task<string?> TryResolveStereoDownmixFilterAsync(
+        string inputFilePath,
+        int audioTrackIndex,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var analysis = await FFProbe.AnalyseAsync(inputFilePath, cancellationToken: cancellationToken)
+                .ConfigureAwait(false);
+            var stream = analysis.AudioStreams.FirstOrDefault(s => s.Index == audioTrackIndex)
+                ?? analysis.PrimaryAudioStream;
+            if (stream is null)
+                return null;
+
+            var filter = FfmpegStereoDownmix.TryBuildPanFilter(stream.ChannelLayout, stream.Channels, outputChannels: 2);
+            if (filter is null)
+            {
+                _logger.LogDebug(
+                    "No stereo pan matrix for layout {Layout} ({Channels}ch) on {Input}; using -ac 2",
+                    stream.ChannelLayout,
+                    stream.Channels,
+                    inputFilePath);
+            }
+
+            return filter;
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _logger.LogDebug(ex, "Audio layout probe failed for {Input}; using -ac 2", inputFilePath);
+            return null;
+        }
+    }
+
     private static async Task<(int VideoWidth, int VideoHeight, int SubtitleWidth, int SubtitleHeight)> GetBurnInStreamDimensionsAsync(
         string inputFilePath,
         int subtitleStreamIndex,
@@ -529,7 +566,8 @@ public class MediaTranscoder : IMediaTranscoder
         int endSegmentIndex,
         CancellationToken cancellationToken,
         int audioTrackIndex,
-        string? audioCodec = null)
+        string? audioCodec = null,
+        int? audioChannels = null)
     {
         _ = ValidateAndComputeTimeRange(allSegments, startSegmentIndex, endSegmentIndex);
         outputDirectory = FfmpegStreamingArgs.NormalizeOutputDirectory(outputDirectory);
@@ -548,14 +586,27 @@ public class MediaTranscoder : IMediaTranscoder
         {
             var capabilities = await _ffmpegCapabilitiesService.GetCapabilitiesAsync(cancellationToken);
             var encoder = FfmpegAudioEncoderResolver.ResolveAacEncoder(capabilities.VideoEncoders);
-            // Keep the source channel layout (no -ac). A server-side downmix to stereo can
-            // mute some 5.1 layouts and, more importantly, contradicts the master manifest,
-            // which advertises the source CHANNELS. Announce N, deliver N, and let ExoPlayer
-            // (or any client) downmix to the device output.
-            aacEncodeArgs = FfmpegAudioEncoderResolver.BuildAacEncodeArguments(
+            // Channel count comes from HlsAudioChannelPolicy (source, device output cap,
+            // HLS 1/2/6/8 layouts) and is what the master advertises as CHANNELS. Without a
+            // resolved count keep the source layout (legacy clients). libfdk_aac stops at 6.
+            var outputChannels = audioChannels is > 0
+                ? Math.Min(audioChannels.Value, FfmpegAudioEncoderResolver.GetEncoderMaxChannels(encoder))
+                : (int?)null;
+            var encodeArgs = FfmpegAudioEncoderResolver.BuildAacEncodeArguments(
                 encoder,
-                forceChannels: null,
-                sampleRateHz: FfmpegAudioEncoderResolver.DefaultSampleRateHz);
+                forceChannels: outputChannels,
+                sampleRateHz: FfmpegAudioEncoderResolver.DefaultSampleRateHz).ToList();
+
+            // Stereo downmix of a surround source: explicit pan matrix (voices forward,
+            // LFE kept) instead of the libswresample default that buries dialogue.
+            if (outputChannels == 2)
+            {
+                var panFilter = await TryResolveStereoDownmixFilterAsync(inputFilePath, audioTrackIndex, cancellationToken);
+                if (panFilter is not null)
+                    encodeArgs.Add(FfmpegStereoDownmix.ToFilterArgument(panFilter));
+            }
+
+            aacEncodeArgs = encodeArgs;
             aacEncoderDelay = TimeSpan.FromSeconds(
                 FfmpegAudioEncoderResolver.GetAacEncoderDelaySeconds(
                     encoder,
@@ -747,6 +798,14 @@ public class MediaTranscoder : IMediaTranscoder
         for (var i = deliverStartIndex; i < last; i++)
         {
             var path = Path.Combine(outputDirectory, $"{i}.m4s");
+            // ffmpeg has exited: a file that is not there now never will be. The finalize
+            // retry loop (50 x 20ms) is for a file still being flushed, not for absent ones.
+            // Without this check an early-stopped remux head or AAC window spent ~1s per
+            // missing index over its whole range (minutes) before its task completed, so
+            // every stop / release / restart looked like "ffmpeg did not exit".
+            if (!File.Exists(path))
+                continue;
+
             Fmp4TfdtRebase.TryFinalizeClosedSegment(
                 path,
                 initPath,

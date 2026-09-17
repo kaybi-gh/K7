@@ -23,6 +23,7 @@ public class GetHlsStreamManifest : IEndpoint
                 [FromQuery] string? quality,
                 [FromQuery] string? audioTrackTranscodings,
                 [FromQuery] double? startSeconds,
+                [FromQuery] int? maxAudioChannels,
                 [FromQuery] bool videoCodecsOnly = false) =>
         {
             return (await sender.Send(new GetHlsStreamManifestQuery()
@@ -36,6 +37,7 @@ public class GetHlsStreamManifest : IEndpoint
                 Quality = quality,
                 AudioTrackTranscodings = GetHlsStreamManifestQueryUriBuilder.DeserializeAudioTrackTranscodings(audioTrackTranscodings),
                 StartSeconds = startSeconds is > 0 ? startSeconds : null,
+                MaxAudioChannels = maxAudioChannels is > 0 ? maxAudioChannels : null,
                 VideoCodecsOnly = videoCodecsOnly
             })).ToIResult();
         })

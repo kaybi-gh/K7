@@ -1,5 +1,6 @@
 using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
+using K7.Server.Domain.Common;
 using K7.Server.Domain.Enums;
 using K7.Shared;
 using K7.Shared.Dtos.Devices;
@@ -28,6 +29,7 @@ public class DeviceService(IJSRuntime jsRuntime, IMediaService mediaService, IDe
         var displayResolutionWidth = await jsRuntime.InvokeAsync<int>("getDisplayResolutionWidth");
         var supportedMediaFormats = await GetSupportedMediaFormatsAsync();
         var videoProfileTokens = await GetSupportedVideoProfilesAsync();
+        var audioOutputTokens = await GetAudioOutputChannelTokensAsync();
         var webDeviceDetails = await GetWebDeviceDetailsAsync(parsedUserAgent);
         var deviceType = CacheDeviceType(ResolveDeviceType(parsedUserAgent.PlatformType, webDeviceDetails.RawUserAgent));
         var browser = MapBrowser(parsedUserAgent.BrowserName);
@@ -53,6 +55,7 @@ public class DeviceService(IJSRuntime jsRuntime, IMediaService mediaService, IDe
             {
                 SupportedMediaFormatIds = supportedMediaFormats.Select(x => x.Id)
                     .Concat(videoProfileTokens)
+                    .Concat(audioOutputTokens)
                     .ToList(),
                 SupportedSubtitlesCodecs = ["webvtt"],
                 SupportsHDR = await GetHdrSupportAsync()
@@ -156,6 +159,22 @@ public class DeviceService(IJSRuntime jsRuntime, IMediaService mediaService, IDe
         {
             var tokens = await jsRuntime.InvokeAsync<string[]>("getSupportedVideoProfilesAsync");
             return tokens ?? [];
+        }
+        catch (JSException)
+        {
+            return [];
+        }
+    }
+
+    // achannels:N next to catalog ids (see AudioOutputChannelTokens). The server caps
+    // HLS AAC encode to what this output can render instead of shipping 6ch AAC to a
+    // stereo browser.
+    private async Task<IReadOnlyList<string>> GetAudioOutputChannelTokensAsync()
+    {
+        try
+        {
+            var channels = await jsRuntime.InvokeAsync<int>("getAudioOutputChannelsAsync");
+            return channels > 0 ? [AudioOutputChannelTokens.MaxChannels(channels)] : [];
         }
         catch (JSException)
         {
