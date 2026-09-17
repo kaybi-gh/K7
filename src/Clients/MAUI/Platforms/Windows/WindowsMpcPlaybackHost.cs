@@ -62,6 +62,7 @@ public sealed class WindowsMpcPlaybackHost(
             request.IndexedFileId,
             request.AudioTrackIndex,
             request.SubtitleTrackIndex,
+            request.StartPositionSeconds,
             cancellationToken);
 
         var mediaPath = await ResolveLocalMediaPathAsync(request, session, options, cancellationToken);
