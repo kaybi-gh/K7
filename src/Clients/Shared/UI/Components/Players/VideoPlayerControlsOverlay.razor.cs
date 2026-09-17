@@ -54,6 +54,7 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
     private DotNetObjectReference<VideoPlayerControlsOverlay>? _dotNetRef;
     private static readonly TimeSpan _overlayTimeoutDesktop = TimeSpan.FromSeconds(3);
     private static readonly TimeSpan _overlayTimeoutTv = TimeSpan.FromSeconds(5);
+    private static readonly TimeSpan PlayerOpenClickThroughWindow = TimeSpan.FromMilliseconds(700);
     private CancellationTokenSource? _volumePopoverHideDelayCts;
 
     // Touch gesture state
@@ -128,6 +129,8 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
 
     protected override async Task OnInitializedAsync()
     {
+        // Opening click/Enter can land on Close once this overlay mounts mid-event.
+        _suppressPlayerCloseUntil = DateTime.UtcNow.Add(PlayerOpenClickThroughWindow);
         _deviceType = await DeviceService.GetDeviceTypeAsync();
         try
         {
@@ -700,6 +703,14 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
                     return;
                 }
 
+                // Keep chrome while HLS is still joining. Auto-hide leaves only the
+                // spinner, then Escape closes the player instead of Play().
+                if (PlayerService.PlaybackState is PlaybackState.Buffering)
+                {
+                    ResetOverlayTimeout();
+                    return;
+                }
+
                 // Use HideOverlay so seekbar edit mode is cancelled (do not leave
                 // data-sn-editing + orphan JS thumbnails while controls are hidden).
                 HideOverlay();
@@ -749,6 +760,9 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
 
     private void OnCloseButtonClick()
     {
+        if (DateTime.UtcNow < _suppressPlayerCloseUntil)
+            return;
+
         HideOverlay();
         PlayerService.Stop();
         PlayerService.HideAsync();
@@ -881,6 +895,9 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
 
     private void OnOverlayTap()
     {
+        // No implicit Play() here: a play() while VHS is still joining restarts the
+        // seek. The chrome stays visible while Buffering so the Play button is reachable
+        // when Firefox blocked autoplay (the click gesture is lost during GetStreamUri).
         if (_showOverlay && !_isMouseOverControlsBar && !_isMenuOpen)
         {
             _showOverlay = false;

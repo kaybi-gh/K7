@@ -24,7 +24,6 @@ public partial class VideoPlayer : IAsyncDisposable
     private CancellationTokenSource? _durationWaitCts;
     private bool _webControlsWired;
     private bool _webPipelineActive;
-    private bool _mediaCanPlay;
     // HLS index.m3u8 exposes duration before segment 0 exists; wait for real media progress.
     // Applies to Web Video.js only. Native LibVLC / MediaElement has no idle watchdog.
     private static readonly TimeSpan DurationReadyTimeout = TimeSpan.FromSeconds(45);
@@ -88,7 +87,12 @@ public partial class VideoPlayer : IAsyncDisposable
                             // Video.js VHS disables EXT-X-MEDIA subs on the first segment
                             // error (503 while VTT extracts). Use full sidecar VTT instead.
                             null);
-                        await ApplyVideoJsSidecarSubtitleAsync(subtitleSlug);
+                        // The playlist EXT-X-START now owns this seek; a later Play() must
+                        // not treat it as still pending.
+                        if (PlayerService.Source is not null)
+                            PlayerService.Source.PendingSeekTime = null;
+                        // Sidecar fetch retries 503 for seconds; do not gate A/V start on it.
+                        ApplyVideoJsSidecarSubtitleAsync(subtitleSlug).FireAndForget();
                     }
                     else if (_sourceApplyPending || !string.IsNullOrEmpty(SourceUri))
                     {
@@ -203,9 +207,26 @@ public partial class VideoPlayer : IAsyncDisposable
     {
         if (!PlayerService.IsVisible)
             HideWebVideoSurface();
+        else
+            ShowWebVideoSurface();
 
         StateHasChanged();
         SyncNativePlayerShellCss();
+    }
+
+    private void ShowWebVideoSurface()
+    {
+        if (!UsesWebVideoPlayer())
+            return;
+
+        try
+        {
+            if (!string.IsNullOrEmpty(_lastPlayerId))
+                _ = JSRuntime.InvokeVoidAsync("showVideoJs", _lastPlayerId);
+        }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException or ObjectDisposedException)
+        {
+        }
     }
 
     private void HideWebVideoSurface()
@@ -371,7 +392,6 @@ public partial class VideoPlayer : IAsyncDisposable
         _playPending = false;
         _sourceApplyPending = false;
         _lastPlayerId = null;
-        _mediaCanPlay = false;
     }
 
     private async Task HandleWebPipelineTransitionAsync()
@@ -481,8 +501,10 @@ public partial class VideoPlayer : IAsyncDisposable
                 source.MimeType ?? SourceMimeType,
                 seekTime,
                 null);
+            if (PlayerService.Source is not null)
+                PlayerService.Source.PendingSeekTime = null;
             await ApplyWebPlayerVolumeAsync();
-            await ApplyVideoJsSidecarSubtitleAsync(subtitleSlug);
+            ApplyVideoJsSidecarSubtitleAsync(subtitleSlug).FireAndForget();
             return;
         }
 
@@ -494,7 +516,7 @@ public partial class VideoPlayer : IAsyncDisposable
             source.MimeType ?? SourceMimeType,
             null);
         await ApplyWebPlayerVolumeAsync();
-        await ApplyVideoJsSidecarSubtitleAsync(slug);
+        ApplyVideoJsSidecarSubtitleAsync(slug).FireAndForget();
     }
 
     private async Task ApplyWebPlayerVolumeAsync()
@@ -543,14 +565,14 @@ public partial class VideoPlayer : IAsyncDisposable
     private bool IsPlaybackReady()
     {
         // Duration alone is NOT ready: HLS playlists report duration as soon as index.m3u8
-        // loads, which is often several seconds before burn-in produces segment 0.
-        if (IsFinitePositive(PlayerService.CurrentTime)
-            || IsFinitePositive(PlayerService.BufferedTime)
-            || PlayerService.PlaybackState is PlaybackState.Playing)
+        // loads. CurrentTime alone is NOT ready either: a resume sets currentTime to the
+        // landing before any frame exists, which used to end the startup watchdog while
+        // the player was still stuck in seeking (infinite spinner, no recovery).
+        if (PlayerService.PlaybackState is PlaybackState.Playing)
             return true;
 
-        // canplay without buffered media is common during HLS startup; require buffer too.
-        if (_mediaCanPlay && IsFinitePositive(PlayerService.BufferedTime))
+        // canplay without buffered media is common during HLS startup; require buffer.
+        if (IsFinitePositive(PlayerService.BufferedTime))
             return true;
 
         // Windows MAUI Video.js can enter Buffering on play before HLS is playable.
@@ -560,7 +582,6 @@ public partial class VideoPlayer : IAsyncDisposable
 
     private bool HasPlaybackStartProgress(double lastBuffered) =>
         IsFinitePositive(PlayerService.BufferedTime) && PlayerService.BufferedTime > lastBuffered
-        || IsFinitePositive(PlayerService.CurrentTime)
         || PlayerService.PlaybackState is PlaybackState.Playing;
 
     private void ScheduleDurationReadyCheck()
@@ -568,7 +589,6 @@ public partial class VideoPlayer : IAsyncDisposable
         _durationWaitCts?.Cancel();
         _durationWaitCts?.Dispose();
         _durationWaitCts = new CancellationTokenSource();
-        _mediaCanPlay = false;
         _ = WaitForDurationReadyAsync(_durationWaitCts.Token);
     }
 
@@ -616,8 +636,10 @@ public partial class VideoPlayer : IAsyncDisposable
                                 PlayerService.CurrentTime = currentTime;
 
                             // Buffer without Playing often means autoplay was blocked; nudge play().
+                            // Not while Paused: the user (or overlay tap) owns that state.
                             if (IsFinitePositive(PlayerService.BufferedTime)
-                                && PlayerService.PlaybackState is not PlaybackState.Playing)
+                                && PlayerService.PlaybackState is not PlaybackState.Playing
+                                && PlayerService.PlaybackState is not PlaybackState.Paused)
                             {
                                 await JSRuntime.InvokeVoidAsync("play", _player.Id);
                             }
@@ -764,6 +786,20 @@ public partial class VideoPlayer : IAsyncDisposable
 
     public async Task PlayAsync()
     {
+        // Resume with PendingSeekTime: changeSourceAndSeek owns the first play() after
+        // src(). A play() racing ahead of src() leaves VHS seeking at readyState 1.
+        if (PlayerService.Source?.PendingSeekTime is > 0
+            && !string.IsNullOrEmpty(PlayerService.Source?.Url))
+        {
+            if (!_isInitialized)
+            {
+                _playPending = true;
+                await InvokeAsync(StateHasChanged);
+            }
+
+            return;
+        }
+
         if (_isInitialized && !string.IsNullOrEmpty(_player.Id))
         {
             await JSRuntime.InvokeVoidAsync("play", _player.Id);
@@ -913,12 +949,10 @@ public partial class VideoPlayer : IAsyncDisposable
 
             // The media has a readyState of HAVE_FUTURE_DATA or greater.
             case "canplay":
-                _mediaCanPlay = true;
                 break;
 
             // The media has a readyState of HAVE_ENOUGH_DATA or greater. This means that the entire media file can be played without buffering.
             case "canplaythrough":
-                _mediaCanPlay = true;
                 break;
         }
     }

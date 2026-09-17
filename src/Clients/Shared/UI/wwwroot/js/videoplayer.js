@@ -311,6 +311,7 @@ window.initVideoJs = function (id, videoPlayer, videoContainer, options, dotNetR
     ensurePlatformStreamBridge();
     // If a player already exists for this id, dispose it first to avoid duplicate streams/listeners
     if (players[id]) {
+        k7InvalidateSidecar(players[id]);
         try {
             players[id].dispose();
         } catch (e) {
@@ -324,6 +325,12 @@ window.initVideoJs = function (id, videoPlayer, videoContainer, options, dotNetR
         // Keep K7 CSS (absolute px from SubtitleStyleHelper) in control - native ::cue
         // sizes as a fraction of the video height and ignores most of our stylesheet.
         textTrackSettings: false,
+        // VHS (PlaylistController loadedmetadata) starts the main segment loader at t=0
+        // for VOD whenever preload is not 'none', BEFORE setupFirstPlay seeks to
+        // #EXT-X-START. On a resume that requested audio/video segment 0 (30s server
+        // wait on a segment the remux head at the landing never produces) before the
+        // real landing. With 'none' VHS loads the master on play(), then seeks, then loads.
+        preload: 'none',
         html5: {
             ...(options?.html5 ?? {}),
             nativeTextTracks: false,
@@ -444,6 +451,7 @@ window.initVideoJs = function (id, videoPlayer, videoContainer, options, dotNetR
 
     players[id] = player;
     k7AttachSubtitleStyleHooks(player);
+    window.showVideoJs(id);
     return player;
 }
 
@@ -492,6 +500,44 @@ window.blankK7VideoSurfaces = function () {
     });
 };
 
+// Lightweight diagnostics sink shared with Blazor (k7PlayerLog). Off unless
+// window.K7_PLAYER_DEBUG = true in the console.
+window.k7PlayerLog = function (event, detail) {
+    if (window.K7_PLAYER_DEBUG !== true)
+        return;
+    if (detail === undefined)
+        console.log('[K7:player]', event);
+    else
+        console.log('[K7:player]', event, detail);
+};
+
+function k7ShowVideoNode(node) {
+    if (!node || !node.style)
+        return;
+
+    node.style.display = '';
+    node.style.visibility = '';
+    node.style.opacity = '';
+    node.style.background = '';
+}
+
+// Undo hideVideoJs on the same player (re-init / new source / play). hideVideoJs used
+// to hide every .video-container on the page and nothing ever showed them again.
+window.showVideoJs = function (id) {
+    var player = players[id];
+    try {
+        if (player && player.el()) {
+            k7ShowVideoNode(player.el());
+            var container = player.el().closest && player.el().closest('.video-container');
+            k7ShowVideoNode(container);
+        }
+    } catch (e) {
+    }
+};
+
+// Hide only this player. Never call blankK7VideoSurfaces here: it dispose()s every
+// Video.js instance, including the one a resume is about to use. Real teardown is
+// disposeVideoJs once IsVisible is false.
 window.hideVideoJs = function (id) {
     var player = players[id];
     var hideNode = function (node) {
@@ -507,16 +553,18 @@ window.hideVideoJs = function (id) {
             try { player.error(null); } catch (e) { }
             try { player.pause(); } catch (e2) { }
             hideNode(player.el());
+            var container = player.el() && player.el().closest && player.el().closest('.video-container');
+            hideNode(container);
         }
     } catch (e3) {
     }
-    window.blankK7VideoSurfaces();
-    document.querySelectorAll('.video-container, .video-js, .vjs-error-display, .vjs-modal-dialog, .vjs-poster').forEach(hideNode);
 };
 
 window.disposeVideoJs = function (id) {
     const player = players[id];
     if (player) {
+        // An in-flight sidecar VTT fetch must not land on a disposed player.
+        k7InvalidateSidecar(player);
         try {
             // Clear the default "media could not be loaded" poster before dispose.
             // A late error after close otherwise stays painted on the WebView.
@@ -542,6 +590,7 @@ window.disposeVideoJs = function (id) {
 window.play = function (id) {
     const player = players[id];
     if (player) {
+        window.showVideoJs(id);
         player.ready(function () {
             var promise = player.play();
             if (promise !== undefined) {
@@ -566,6 +615,7 @@ window.changeSource = function (id, src, type, subtitleSlug) {
     const player = players[id];
     if (player) {
         const normalizedType = normalizeHlsMimeType(type);
+        window.showVideoJs(id);
         player.src({ src: src, type: normalizedType });
         player.ready(function () {
             var promise = player.play();
@@ -589,11 +639,23 @@ window.changeSourceAndSeek = function (id, src, type, seekTime, subtitleSlug) {
 
     const normalizedType = normalizeHlsMimeType(type);
 
+    // The server emits #EXT-X-START:TIME-OFFSET=<resume> on the media playlists when the
+    // URL carries startSeconds. Video.js VHS honours it itself: setupFirstPlay() calls
+    // setCurrentTime(TIME-OFFSET) on the first play() and only then starts loading
+    // segments. Seeking here as well produced two or three back-to-back seeks on the
+    // same MSE (ours, then VHS, then a correction), and Firefox never completed the
+    // last one (seeking stuck with readyState HAVE_METADATA while data was buffered).
+    // Own seek only when the playlist cannot anchor the position (no startSeconds).
+    const playlistAnchorsStart = /[?&]startSeconds=/.test(src);
+    window.showVideoJs(id);
+
     let seekApplied = false;
     const applySeekAndPlay = function () {
         if (seekApplied) return;
         seekApplied = true;
-        player.currentTime(seekTime);
+        if (!playlistAnchorsStart && Math.abs(player.currentTime() - seekTime) > 0.5)
+            player.currentTime(seekTime);
+
         var promise = player.play();
         if (promise !== undefined) {
             promise.catch(function (error) {
@@ -604,19 +666,27 @@ window.changeSourceAndSeek = function (id, src, type, seekTime, subtitleSlug) {
             window.switchSubtitleTrackWhenReady(id, subtitleSlug);
     };
 
-    // Seek as soon as duration/playlist metadata is known - before VHS buffers segment 0.
-    // #EXT-X-START on the playlist also anchors the initial position when supported.
     player.one('loadedmetadata', applySeekAndPlay);
+    // Safety net for techs that ignore #EXT-X-START: correct once real media arrived,
+    // never while a seek is still in flight (a second seek aborts the VHS fetch).
     player.one('loadeddata', function () {
-        if (Math.abs(player.currentTime() - seekTime) > 1) {
-            player.currentTime(seekTime);
-        }
-        if (!seekApplied) {
+        if (!seekApplied)
             applySeekAndPlay();
-        }
+
+        if (!player.seeking() && Math.abs(player.currentTime() - seekTime) > 1.5)
+            player.currentTime(seekTime);
     });
-    player.pause();
     player.src({ src: src, type: normalizedType });
+
+    // preload 'none': VHS loads the master only on play(). Kick it once so
+    // loadedmetadata (and setupFirstPlay's seek to #EXT-X-START) can happen. A
+    // rejected promise (autoplay policy) leaves the player paused: the overlay Play
+    // button then runs the same first-play path.
+    var kick = player.play();
+    if (kick !== undefined) {
+        kick.catch(function () {
+        });
+    }
 }
 
 window.switchAudioTrack = function (id, trackName) {
@@ -725,6 +795,20 @@ window.reapplyActiveSubtitleTrack = function (id) {
     const player = players[id];
     if (!player)
         return;
+
+    // Sidecar VTT (Web / Windows Video.js): re-inject cues without restarting the loader.
+    const pending = player._k7PendingSidecar;
+    if (pending && pending.vttUrl && pending.slug) {
+        if (!k7SidecarPlayerIsLive(player, id))
+            return;
+        k7FetchAndInjectSidecarVtt(
+            player,
+            id,
+            pending.vttUrl,
+            pending.slug,
+            player._k7SidecarLoadToken).catch(function () {});
+        return;
+    }
 
     const slug = player._k7ActiveSubtitleSlug;
     if (!slug)
@@ -907,6 +991,41 @@ function k7NormalizeWebVttText(text) {
     return null;
 }
 
+function k7InvalidateSidecar(player) {
+    if (!player)
+        return;
+    player._k7SidecarLoadToken = (player._k7SidecarLoadToken || 0) + 1;
+    player._k7PendingSidecar = null;
+}
+
+function k7SidecarPlayerIsLive(player, id) {
+    if (!player || players[id] !== player)
+        return false;
+    try {
+        if (typeof player.isDisposed === 'function' && player.isDisposed())
+            return false;
+        if (!player.el())
+            return false;
+        if (typeof player.tech === 'function'
+            && !player.tech({ IWillNotUseThisInPlugins: true }))
+            return false;
+    } catch (e) {
+        return false;
+    }
+    return true;
+}
+
+async function k7WaitForSidecarHost(player, id, loadToken) {
+    for (let i = 0; i < 50; i++) {
+        if (player._k7SidecarLoadToken !== loadToken)
+            return false;
+        if (k7SidecarPlayerIsLive(player, id) && player.readyState() >= 1)
+            return true;
+        await new Promise(function (resolve) { setTimeout(resolve, 50); });
+    }
+    return k7SidecarPlayerIsLive(player, id) && player.readyState() >= 1;
+}
+
 function k7EnsureSidecarSourceHook(player, id) {
     if (!player || player._k7SidecarSourceHooked)
         return;
@@ -914,11 +1033,20 @@ function k7EnsureSidecarSourceHook(player, id) {
     player._k7SidecarSourceHooked = true;
     // Quality / encode swaps call player.src(). Video.js drops auto remote text tracks
     // on source change - re-apply pending sidecar after the new master is ready.
+    // Do not call loadSidecarSubtitleTrack here: that bumps the load token and
+    // addRemoteTextTrack during loadTech_ throws (Invalid target for one).
     player.on('loadedmetadata', function () {
         const pending = player._k7PendingSidecar;
         if (!pending || !pending.slug || !pending.vttUrl)
             return;
-        window.loadSidecarSubtitleTrack(id, pending.vttUrl, pending.slug);
+        if (!k7SidecarPlayerIsLive(player, id))
+            return;
+        k7FetchAndInjectSidecarVtt(
+            player,
+            id,
+            pending.vttUrl,
+            pending.slug,
+            player._k7SidecarLoadToken).catch(function () {});
     });
 }
 
@@ -967,6 +1095,12 @@ window.loadSidecarSubtitleTrack = async function (id, vttUrl, slug) {
     if (!intendedSlug || !vttUrl)
         return true;
 
+    // Return before 503 retries so Blazor InvokeVoidAsync does not gate A/V play.
+    k7FetchAndInjectSidecarVtt(player, id, vttUrl, intendedSlug, loadToken).catch(function () {});
+    return true;
+};
+
+async function k7FetchAndInjectSidecarVtt(player, id, vttUrl, intendedSlug, loadToken) {
     const fetchVttText = async function () {
         if (player._k7SidecarVttCache
             && player._k7SidecarVttCache.url === vttUrl
@@ -996,6 +1130,9 @@ window.loadSidecarSubtitleTrack = async function (id, vttUrl, slug) {
                 if (status >= 200 && status < 300)
                     body = await response.text();
             }
+
+            if (player._k7SidecarLoadToken !== loadToken)
+                return null;
 
             if (status === 503 && attempt < maxAttempts) {
                 const exponent = Math.min(attempt - 1, 4);
@@ -1053,6 +1190,9 @@ window.loadSidecarSubtitleTrack = async function (id, vttUrl, slug) {
             console.warn('loadSidecarSubtitleTrack: zero cues for', vttUrl);
             return false;
         }
+
+        if (!await k7WaitForSidecarHost(player, id, loadToken))
+            return false;
 
         // No src: avoid Video.js TextTrack XHR (blob fails with credentials, https can 503 once).
         // manualCleanup true: quality/encode src swaps must not auto-drop the sidecar before

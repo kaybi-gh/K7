@@ -315,7 +315,11 @@ buffered ranges split at every such segment, Firefox seek never completing on re
 Web resume: media playlists carry `#EXT-X-START:TIME-OFFSET=<raw resume>` and VHS seeks
 there itself on first `play()` (`setupFirstPlay`). Do not snap it to the segment boundary
 and do not seek again from JS when the URL has `startSeconds`: three seeks in a row on
-Firefox MSE left the player in `seeking` forever.
+Firefox MSE left the player in `seeking` forever. Video.js runs with `preload: 'none'`:
+with any other value VHS starts the main segment loader at t=0 on `loadedmetadata`,
+before `setupFirstPlay` seeks, so a resume first requested segment 0 (30s server wait on
+the paired video segment the landing head never writes). `changeSourceAndSeek` calls
+`play()` once right after `src()` so the master loads.
 A seek/resume that lands
 on a ready segment is served as-is. If a live head already covers the request (or the
 nearest tip is within ~60s), wait on that head. Otherwise spawn a new head at the
@@ -403,6 +407,13 @@ not past mid-GOP. Do not micro-rebase **audio copy** onto `#EXTINF`.
   it to 1, which serialized every ffmpeg on the server
 - `MinDistanceSecondsToLiveHead` ignores heads whose `From` is after the request: a head
   never writes behind its start, so restart-from-0 while a resume head runs must spawn
+- Web `hideVideoJs` hides only its player (never `blankK7VideoSurfaces`, which dispose()s
+  every instance); `showVideoJs` undoes it on init / new source / play. Sidecar VTT is not
+  awaited from Blazor and is injected only while the player tech is live (dispose bumps
+  the token). Chrome stays visible while Buffering so the Play button is reachable when
+  Firefox blocked autoplay (GetStreamUri + HLS load drop the click gesture). No implicit
+  `Play()` on overlay tap: a play() while VHS is still joining restarts the seek. Natives
+  blank surfaces themselves (`blankK7VideoSurfaces` from BlazorPage), not via `hideVideoJs`
 
 - encode keeps `EncoderThrottleBufferSegments` (`requested + BufferSize` windows)
 - encode seek no longer purges ready `.m4s`. Far-forward and seek-back both re-anchor the
