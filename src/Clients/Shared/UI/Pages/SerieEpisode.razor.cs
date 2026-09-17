@@ -68,10 +68,26 @@ public partial class SerieEpisode : IAsyncDisposable
         if (_episode is null)
             return;
 
-        // Ignore self-echo while this client is reporting progress (avoids a brief "watched"
-        // flash when the player emits a bogus short duration on start).
+        // Self-echo while this client plays: no refetch (a bogus short duration on start
+        // briefly flashed "watched"), but keep the "Resume at" label live from the player.
         if (PlaybackProgressTracker.CurrentMediaId == mediaId)
+        {
+            if (mediaId == _episode.Id && PlayerService.CurrentTime > 0)
+            {
+                var state = _episode.UserState ?? new UserMediaStateDto();
+                _episode = _episode with
+                {
+                    UserState = state with
+                    {
+                        LastPlaybackPosition = PlayerService.CurrentTime,
+                        ProgressPercentage = progressPercentage
+                    }
+                };
+                InvokeAsync(StateHasChanged);
+            }
+
             return;
+        }
 
         if (mediaId == _episode.Id)
         {

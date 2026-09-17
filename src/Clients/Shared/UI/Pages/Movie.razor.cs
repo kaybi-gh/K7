@@ -88,12 +88,30 @@ public partial class Movie : IAsyncDisposable
         if (_movie is null || mediaId != _movie.Id)
             return;
 
-        // Ignore self-echo while this client is reporting progress (avoids a brief "watched"
-        // flash when the player emits a bogus short duration on start).
+        // Self-echo while this client plays: do not refetch (a bogus short duration on start
+        // briefly flashed "watched"), but keep the "Resume at" label live from the player
+        // position, like the home feed does with its progress bars.
         if (PlaybackProgressTracker.CurrentMediaId == mediaId)
+        {
+            ApplyLivePlaybackPosition(progressPercentage);
             return;
+        }
 
         _progressRefreshRunner?.Schedule();
+    }
+
+    private void ApplyLivePlaybackPosition(double progressPercentage)
+    {
+        var position = PlayerService.CurrentTime;
+        if (_movie is null || position <= 0)
+            return;
+
+        var state = _movie.UserState ?? new UserMediaStateDto();
+        _movie = _movie with
+        {
+            UserState = state with { LastPlaybackPosition = position, ProgressPercentage = progressPercentage }
+        };
+        InvokeAsync(StateHasChanged);
     }
 
     private async Task RefreshProgressFromHubAsync()

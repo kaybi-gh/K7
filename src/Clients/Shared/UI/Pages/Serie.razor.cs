@@ -89,10 +89,27 @@ public partial class Serie : IAsyncDisposable
         if (mediaType is MediaType.MusicTrack or MediaType.MusicAlbum or MediaType.MusicArtist)
             return;
 
-        // Ignore self-echo while playing an episode of this serie on this client.
+        // Self-echo while playing an episode of this serie on this client: no refetch, but
+        // keep the "Resume at" label live from the player position for the resume episode.
         if (PlaybackProgressTracker.CurrentSerieId == _serie.Id
             || PlaybackProgressTracker.CurrentMediaId == mediaId)
+        {
+            if (_resumeEpisode is not null && _resumeEpisode.Id == mediaId && PlayerService.CurrentTime > 0)
+            {
+                var state = _resumeEpisode.UserState ?? new UserMediaStateDto();
+                _resumeEpisode = _resumeEpisode with
+                {
+                    UserState = state with
+                    {
+                        LastPlaybackPosition = PlayerService.CurrentTime,
+                        ProgressPercentage = progressPercentage
+                    }
+                };
+                InvokeAsync(StateHasChanged);
+            }
+
             return;
+        }
 
         // Episode ticks use episode ids; only react to this serie, its seasons, or the
         // current resume episode (not every SerieEpisode in the household).
