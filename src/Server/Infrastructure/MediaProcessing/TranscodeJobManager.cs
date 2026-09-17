@@ -37,12 +37,20 @@ public class TranscodeJobManager(
         bool isAudioOnly,
         Guid streamSessionId,
         CancellationToken cancellationToken = default,
-        int? subtitleBurnInStreamIndex = null)
+        int? subtitleBurnInStreamIndex = null,
+        int? audioChannels = null)
     {
         var settings = await transcodeSettingsProvider.GetSettingsAsync(cancellationToken);
         EnsureTempQuotaAvailable(settings.TranscodeTempQuotaMb);
 
-        var jobKey = GenerateJobKey(indexedFileId, quality, videoCodec ?? "copy", audioCodec ?? "copy", audioTrackIndex, isAudioOnly, subtitleBurnInStreamIndex);
+        // Channel-capped encodes are distinct outputs (a stereo browser and a 5.1 TV must
+        // not share aac segments); fold the count into the codec id for key and directory.
+        var audioCodecId = audioCodec is null
+            ? "copy"
+            : audioChannels is > 0
+                ? $"{audioCodec}{audioChannels.Value.ToString(CultureInfo.InvariantCulture)}ch"
+                : audioCodec;
+        var jobKey = GenerateJobKey(indexedFileId, quality, videoCodec ?? "copy", audioCodecId, audioTrackIndex, isAudioOnly, subtitleBurnInStreamIndex);
 
         if (_activeJobs.TryGetValue(jobKey, out var existingJob))
         {
@@ -76,7 +84,7 @@ public class TranscodeJobManager(
                 : $"video-{quality}-{videoCodec ?? "copy"}";
 
             var outputDir = FfmpegStreamingArgs.NormalizeOutputDirectory(isAudioOnly
-                ? Path.Combine(transcodingPath, indexedFileId.ToString("N"), $"audio-{audioCodec ?? "copy"}-a{audioTrackIndex}")
+                ? Path.Combine(transcodingPath, indexedFileId.ToString("N"), $"audio-{audioCodecId}-a{audioTrackIndex}")
                 : Path.Combine(transcodingPath, indexedFileId.ToString("N"), videoSubDir));
 
             if (Directory.Exists(outputDir))
@@ -118,6 +126,7 @@ public class TranscodeJobManager(
                 VideoCodec = videoCodec,
                 AudioCodec = audioCodec,
                 AudioTrackIndex = audioTrackIndex,
+                AudioChannels = audioCodec is null ? null : audioChannels,
                 IsAudioOnly = isAudioOnly,
                 SubtitleBurnInStreamIndex = subtitleBurnInStreamIndex,
                 OutputDirectory = outputDir,
@@ -253,7 +262,7 @@ public class TranscodeJobManager(
                 h.Running && requestedSegmentIndex >= h.From && requestedSegmentIndex <= h.TipIndex);
             var distance = FfmpegRemuxSeekPolicy.MinDistanceSecondsToLiveHead(
                 requestedSegmentIndex,
-                liveHeads.Select(h => (h.TipIndex, h.UntilInclusive, h.Running)),
+                liveHeads.Select(h => (h.From, h.TipIndex, h.UntilInclusive, h.Running)),
                 allSegments);
 
             if (!FfmpegRemuxSeekPolicy.ShouldSpawnRemuxHead(
@@ -433,9 +442,9 @@ public class TranscodeJobManager(
         var stagingDirectory = Path.Combine(job.OutputDirectory, "head-" + headId.ToString(CultureInfo.InvariantCulture));
         Directory.CreateDirectory(stagingDirectory);
 
-        var settings = await transcodeSettingsProvider.GetSettingsAsync(cancellationToken);
-        await WaitForTranscodeSlotAsync(settings.MaxConcurrentTranscodes, cancellationToken);
-
+        // Remux copy heads are bitstream copies (I/O bound, no encoder): they never wait
+        // for an encode slot. The caller holds FfmpegStartLock here, so waiting would also
+        // block every segment request of this job while other jobs occupy the slots.
         var cts = new CancellationTokenSource();
         var head = new TranscodeRemuxHead
         {
@@ -469,7 +478,8 @@ public class TranscodeJobManager(
                         endSegmentIndex,
                         cts.Token,
                         job.AudioTrackIndex,
-                        audioCodec);
+                        audioCodec,
+                        job.AudioChannels);
                 }
                 else
                 {
@@ -487,6 +497,9 @@ public class TranscodeJobManager(
             }
             finally
             {
+                // A head stopped early (killed mid-file) may leave a truncated last file:
+                // keep the closed-only rule for it. A natural exit closed every file.
+                var stoppedEarly = cts.IsCancellationRequested;
                 try
                 {
                     await cts.CancelAsync();
@@ -504,7 +517,7 @@ public class TranscodeJobManager(
                 }
 
                 // Final promote pass after ffmpeg exits.
-                PromoteRemuxHeadOnce(job, head);
+                PromoteRemuxHeadOnce(job, head, ffmpegExited: !stoppedEarly);
             }
         }, CancellationToken.None);
 
@@ -554,12 +567,17 @@ public class TranscodeJobManager(
     {
         while (!cancellationToken.IsCancellationRequested)
         {
-            PromoteRemuxHeadOnce(job, head);
+            PromoteRemuxHeadOnce(job, head, ffmpegExited: false);
 
-            // Stop this head when the next shared segment is already ready.
+            // Stop this head when the next shared segment is already ready, but only once
+            // it has delivered its own landing segment. TipIndex starts at From before
+            // anything is written: with From missing and From+1 ready (hole left by an
+            // early-stopped head) the check fired immediately, the waiter re-kicked a new
+            // head, and the job spawned dozens of heads per second without ever filling From.
             var next = head.TipIndex + 1;
             if (next <= head.UntilInclusive
                 && next > head.From
+                && HlsSegmentFileWaiter.IsSegmentReadyOnDisk(job.OutputDirectory, head.From)
                 && HlsSegmentFileWaiter.IsSegmentReadyOnDisk(job.OutputDirectory, next)
                 && !File.Exists(Path.Combine(head.StagingDirectory, next + ".m4s")))
             {
@@ -590,28 +608,50 @@ public class TranscodeJobManager(
         }
     }
 
-    private void PromoteRemuxHeadOnce(TranscodeJob job, TranscodeRemuxHead head)
+    private void PromoteRemuxHeadOnce(TranscodeJob job, TranscodeRemuxHead head, bool ffmpegExited)
     {
         // Promote closed media first so shared init can satisfy sibling-ready checks.
+        // "Closed" means ffmpeg moved on to the next file (or exited). A file whose boxes
+        // walk as complete can still be mid-write: frag_keyframe flushes a fragment at each
+        // collapsed interior keyframe, and copying that snapshot froze truncated segments
+        // (video holes) into the immutable shared cache.
         for (var i = head.From; i <= head.UntilInclusive; i++)
         {
             var stagingPath = Path.Combine(
                 head.StagingDirectory,
                 i.ToString(CultureInfo.InvariantCulture) + ".m4s");
+            if (!File.Exists(stagingPath))
+                continue;
+
+            if (!RemuxSegmentPromoter.IsStagingSegmentClosed(head.StagingDirectory, i, ffmpegExited))
+                break;
+
             if (!HlsSegmentFileWaiter.IsSegmentFileReady(stagingPath))
                 continue;
 
+            var shared = false;
             if (RemuxSegmentPromoter.TryPromoteMediaSegment(head.StagingDirectory, job.OutputDirectory, i))
             {
+                shared = true;
                 job.RemuxSegmentOwners.TryAdd(i, head.Id);
                 if (i >= head.TipIndex)
                     head.TipIndex = i;
             }
-            else if (HlsSegmentFileWaiter.IsSegmentReadyOnDisk(job.OutputDirectory, i) && i >= head.TipIndex)
+            else if (HlsSegmentFileWaiter.IsSegmentReadyOnDisk(job.OutputDirectory, i))
             {
-                job.RemuxSegmentOwners.TryAdd(i, head.Id);
-                head.TipIndex = i;
+                shared = true;
+                if (i >= head.TipIndex)
+                {
+                    job.RemuxSegmentOwners.TryAdd(i, head.Id);
+                    head.TipIndex = i;
+                }
             }
+
+            // Drop the closed staging copy once the shared cache has it. Every 50ms pass
+            // re-read and re-walked each staging file otherwise (whole head history),
+            // which starved promotion of new segments on long remuxes.
+            if (shared)
+                RemuxSegmentPromoter.TryDeleteStagingSegment(head.StagingDirectory, i);
         }
 
         var stagingInit = Path.Combine(head.StagingDirectory, HlsSegmentFileWaiter.InitSegmentFileName);
@@ -698,13 +738,25 @@ public class TranscodeJobManager(
     /// </summary>
     private async Task RecoverWipedOutputIfNeededAsync(TranscodeJob job, CancellationToken cancellationToken)
     {
-        if (!IsOutputCacheEmpty(job) || !NeedsWipedOutputReset(job))
+        if (!IsOutputCacheEmpty(job))
+        {
+            job.HasObservedReadyOutput = true;
+            return;
+        }
+
+        if (!NeedsWipedOutputReset(job))
             return;
 
         await job.FfmpegStartLock.WaitAsync(cancellationToken);
         try
         {
-            if (!IsOutputCacheEmpty(job) || !NeedsWipedOutputReset(job))
+            if (!IsOutputCacheEmpty(job))
+            {
+                job.HasObservedReadyOutput = true;
+                return;
+            }
+
+            if (!NeedsWipedOutputReset(job))
                 return;
 
             logger.LogWarning(
@@ -723,6 +775,7 @@ public class TranscodeJobManager(
             job.LastClientMediaSegmentRequest = -1;
             job.LastRequestedSegmentIndex = -1;
             job.TargetSegmentIndex = 0;
+            job.HasObservedReadyOutput = false;
             Directory.CreateDirectory(job.OutputDirectory);
         }
         finally
@@ -731,22 +784,44 @@ public class TranscodeJobManager(
         }
     }
 
-    private static bool NeedsWipedOutputReset(TranscodeJob job)
+    // Remux copy advertises Target = EOF and writes to head-* staging before promoting:
+    // an empty shared dir with a live head is a cold start, not a wipe. The old rule
+    // (Target > BufferSize) killed the resume head on the very next request and the
+    // browser waited forever on init.m4s / segment 1055. Same for an encode resume
+    // window that has not landed its first .m4s yet.
+    private static bool NeedsWipedOutputReset(TranscodeJob job) =>
+        TranscodeWipedOutputPolicy.NeedsReset(
+            Directory.Exists(job.OutputDirectory),
+            job.IsFfmpegRunning,
+            job.IsCopyRemux,
+            HasRemuxStaging(job),
+            job.HasObservedReadyOutput,
+            job.LastRequestedSegmentIndex,
+            job.TargetSegmentIndex,
+            job.WindowStartIndex,
+            job.GeneratingFromSegmentIndex,
+            job.BufferSize);
+
+    private static bool HasRemuxStaging(TranscodeJob job)
     {
-        // A cold start has an empty cache for a few seconds. Do not kill that ffmpeg.
-        // Reset only when prior playback left a high target / landing, or the directory
-        // itself is gone under a live process.
-        if (!Directory.Exists(job.OutputDirectory))
+        if (job.RemuxHeads.Values.Any(static head =>
+                !string.IsNullOrEmpty(head.StagingDirectory)
+                && Directory.Exists(head.StagingDirectory)))
         {
-            return job.IsFfmpegRunning
-                || job.LastRequestedSegmentIndex >= 0
-                || job.TargetSegmentIndex > 0;
+            return true;
         }
 
-        return job.LastRequestedSegmentIndex >= 0
-            || job.TargetSegmentIndex > job.BufferSize
-            || job.WindowStartIndex > 0
-            || job.GeneratingFromSegmentIndex > job.BufferSize;
+        if (!Directory.Exists(job.OutputDirectory))
+            return false;
+
+        try
+        {
+            return Directory.EnumerateDirectories(job.OutputDirectory, "head-*").Any();
+        }
+        catch (IOException)
+        {
+            return false;
+        }
     }
 
     private static bool IsOutputCacheEmpty(TranscodeJob job)
@@ -787,6 +862,43 @@ public class TranscodeJobManager(
                 streamSessionId,
                 jobId,
                 job.AttachedStreamSessions.Count);
+        }
+    }
+
+    public async Task ReleaseSessionAsync(Guid streamSessionId, CancellationToken cancellationToken = default)
+    {
+        foreach (var job in _activeJobs.Values.ToList())
+        {
+            if (!job.AttachedStreamSessions.TryRemove(streamSessionId, out _))
+                continue;
+
+            if (!job.AttachedStreamSessions.IsEmpty || !job.IsFfmpegRunning)
+                continue;
+
+            // Nobody is watching: stop ffmpeg now instead of letting the window / remux head
+            // run to its target. A relaunch otherwise paid the stop of that process (up to
+            // ~10s on the AAC window) on its first segment request, and the running process
+            // held a transcode slot. Ready segments are kept for reuse.
+            await job.FfmpegStartLock.WaitAsync(cancellationToken);
+            try
+            {
+                if (!job.AttachedStreamSessions.IsEmpty)
+                    continue;
+
+                logger.LogInformation(
+                    "Job {JobId}: last session {SessionId} closed, stopping ffmpeg (cache kept)",
+                    job.JobId,
+                    streamSessionId);
+                await StopFfmpegAsync(job);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                logger.LogWarning(ex, "Job {JobId}: failed to stop ffmpeg on session release", job.JobId);
+            }
+            finally
+            {
+                job.FfmpegStartLock.Release();
+            }
         }
     }
 
@@ -1112,7 +1224,7 @@ public class TranscodeJobManager(
         // Slot wait may use the request token, but ffmpeg itself must NOT - otherwise a
         // client abort/timeout on one segment request kills generation for everyone.
         var settings = await transcodeSettingsProvider.GetSettingsAsync(cancellationToken);
-        await WaitForTranscodeSlotAsync(settings.MaxConcurrentTranscodes, cancellationToken);
+        await WaitForTranscodeSlotAsync(job, settings.MaxConcurrentTranscodes, cancellationToken);
 
         // Determine video and audio codecs for transcoding
         var videoCodec = job.VideoCodec != "copy" ? job.VideoCodec : null;
@@ -1144,7 +1256,8 @@ public class TranscodeJobManager(
                         endSegmentIndex,
                         ffmpegToken,
                         job.AudioTrackIndex,
-                        audioCodec);
+                        audioCodec,
+                        job.AudioChannels);
                 }
                 else
                 {
@@ -1379,19 +1492,14 @@ public class TranscodeJobManager(
             }
         }
 
+        // Bounded waits: callers hold FfmpegStartLock. If ffmpeg ignores the cancel for a
+        // while, every segment request of this job would otherwise hang on the lock.
         foreach (var head in remuxHeads)
         {
             if (head.Task is null)
                 continue;
 
-            try
-            {
-                await head.Task;
-            }
-            catch (Exception ex)
-            {
-                logger.LogDebug(ex, "Remux head ended with error for job {JobId}", job.JobId);
-            }
+            await AwaitFfmpegExitBoundedAsync(head.Task, job, "remux head " + head.Id.ToString(CultureInfo.InvariantCulture));
         }
 
         if (job.FfmpegCancellation is null && remuxHeads.Count == 0)
@@ -1403,16 +1511,7 @@ public class TranscodeJobManager(
                 job.FfmpegCancellation.Cancel();
 
             if (job.FfmpegTask is not null)
-            {
-                try
-                {
-                    await job.FfmpegTask;
-                }
-                catch (Exception ex)
-                {
-                    logger.LogDebug(ex, "ffmpeg task ended with error for job {JobId}", job.JobId);
-                }
-            }
+                await AwaitFfmpegExitBoundedAsync(job.FfmpegTask, job, "ffmpeg task");
         }
         finally
         {
@@ -1449,19 +1548,63 @@ public class TranscodeJobManager(
         return totalBytes / (1024 * 1024);
     }
 
-    private async Task WaitForTranscodeSlotAsync(int maxConcurrent, CancellationToken cancellationToken)
+    // The requesting job never counts against its own slot: a remux job spawning a second
+    // head (seek back, restart from 0) while its first head runs to EOF used to wait on
+    // itself until the head finished, and the session create that awaited the prefetch hung.
+    private async Task WaitForTranscodeSlotAsync(TranscodeJob job, int maxConcurrent, CancellationToken cancellationToken)
     {
         if (maxConcurrent <= 0)
             return;
 
+        // Bounded: the callers hold the job's FfmpegStartLock, so an unbounded wait here
+        // stalls every segment request of the job (init.m4s included) for as long as other
+        // jobs keep their slots. Past the bound, start anyway and let the OS share the CPU.
+        var deadline = DateTime.UtcNow + TranscodeSlotMaxWait;
         while (true)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            var running = _activeJobs.Values.Count(j => j.FfmpegTask is { IsCompleted: false });
+            var running = _activeJobs.Values.Count(j => !ReferenceEquals(j, job) && j.IsFfmpegRunning);
             if (running < maxConcurrent)
                 return;
 
+            if (DateTime.UtcNow >= deadline)
+            {
+                logger.LogWarning(
+                    "Job {JobId}: {Running} transcodes running (max {Max}); slot wait exceeded {Seconds}s, starting anyway",
+                    job.JobId,
+                    running,
+                    maxConcurrent,
+                    TranscodeSlotMaxWait.TotalSeconds);
+                return;
+            }
+
             await Task.Delay(500, cancellationToken);
+        }
+    }
+
+    private static readonly TimeSpan TranscodeSlotMaxWait = TimeSpan.FromSeconds(15);
+    private static readonly TimeSpan FfmpegStopMaxWait = TimeSpan.FromSeconds(10);
+
+    private async Task AwaitFfmpegExitBoundedAsync(Task task, TranscodeJob job, string what)
+    {
+        try
+        {
+            var finished = await Task.WhenAny(task, Task.Delay(FfmpegStopMaxWait));
+            if (finished != task)
+            {
+                logger.LogWarning(
+                    "Job {JobId}: {What} did not exit within {Seconds}s after cancel; continuing without it",
+                    job.JobId,
+                    what,
+                    FfmpegStopMaxWait.TotalSeconds);
+                return;
+            }
+
+            await task;
+        }
+        catch (Exception ex)
+        {
+            logger.LogDebug(ex, "{What} ended with error for job {JobId}", what, job.JobId);
         }
     }
 }

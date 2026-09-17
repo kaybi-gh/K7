@@ -78,7 +78,7 @@ public class FfmpegRemuxSeekPolicyTests
         var segments = BuildFourSecondSegments(20);
         var distance = FfmpegRemuxSeekPolicy.MinDistanceSecondsToLiveHead(
             requestedIndex: 3,
-            liveHeads: [(TipIndex: 5, UntilInclusive: 19, Running: true)],
+            liveHeads: [(FromIndex: 0, TipIndex: 5, UntilInclusive: 19, Running: true)],
             segments);
 
         distance.Should().Be(0);
@@ -92,7 +92,7 @@ public class FfmpegRemuxSeekPolicyTests
         var segments = BuildFourSecondSegments(20);
         var distance = FfmpegRemuxSeekPolicy.MinDistanceSecondsToLiveHead(
             requestedIndex: 8,
-            liveHeads: [(TipIndex: 5, UntilInclusive: 19, Running: true)],
+            liveHeads: [(FromIndex: 0, TipIndex: 5, UntilInclusive: 19, Running: true)],
             segments);
 
         distance.Should().Be(12);
@@ -104,7 +104,7 @@ public class FfmpegRemuxSeekPolicyTests
         var segments = BuildFourSecondSegments(20);
         var distance = FfmpegRemuxSeekPolicy.MinDistanceSecondsToLiveHead(
             requestedIndex: 15,
-            liveHeads: [(TipIndex: 5, UntilInclusive: 10, Running: true)],
+            liveHeads: [(FromIndex: 0, TipIndex: 5, UntilInclusive: 10, Running: true)],
             segments);
 
         // Indices 5..15 exclusive end at 15 => 10 segments * 4s = 40s
@@ -137,12 +137,32 @@ public class FfmpegRemuxSeekPolicyTests
             requestedIndex: 15,
             liveHeads:
             [
-                (TipIndex: 5, UntilInclusive: 19, Running: false),
-                (TipIndex: 12, UntilInclusive: 19, Running: true)
+                (FromIndex: 0, TipIndex: 5, UntilInclusive: 19, Running: false),
+                (FromIndex: 0, TipIndex: 12, UntilInclusive: 19, Running: true)
             ],
             segments);
 
         distance.Should().Be(12);
+    }
+
+    [Test]
+    public void MinDistanceSecondsToLiveHead_ShouldBeInfinity_WhenRequestIsBehindEveryHeadStart()
+    {
+        // Restart from the beginning while the resume head runs at 113 (tip 130): no head
+        // will ever write segment 0, so it must spawn instead of waiting "covered".
+        var segments = BuildFourSecondSegments(200);
+        var distance = FfmpegRemuxSeekPolicy.MinDistanceSecondsToLiveHead(
+            requestedIndex: 0,
+            liveHeads: [(FromIndex: 113, TipIndex: 130, UntilInclusive: 199, Running: true)],
+            segments);
+
+        distance.Should().Be(double.PositiveInfinity);
+        FfmpegRemuxSeekPolicy.ShouldSpawnRemuxHead(
+                remuxCopy: true,
+                segmentReady: false,
+                coveredByLiveHead: false,
+                distance)
+            .Should().BeTrue();
     }
 
     [Test]
@@ -151,7 +171,7 @@ public class FfmpegRemuxSeekPolicyTests
         var segments = BuildFourSecondSegments(20);
         var distance = FfmpegRemuxSeekPolicy.MinDistanceSecondsToLiveHead(
             requestedIndex: 8,
-            liveHeads: [(TipIndex: 5, UntilInclusive: 19, Running: false)],
+            liveHeads: [(FromIndex: 0, TipIndex: 5, UntilInclusive: 19, Running: false)],
             segments);
 
         distance.Should().Be(double.PositiveInfinity);

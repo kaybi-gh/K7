@@ -20,7 +20,8 @@ public interface ITranscodeJobManager
         bool isAudioOnly,
         Guid streamSessionId,
         CancellationToken cancellationToken = default,
-        int? subtitleBurnInStreamIndex = null);
+        int? subtitleBurnInStreamIndex = null,
+        int? audioChannels = null);
 
     /// <summary>
     /// Signals that a session is still actively using this job.
@@ -42,6 +43,12 @@ public interface ITranscodeJobManager
     /// Detaches a stream session from a job. If no sessions remain, the job may be cleaned up.
     /// </summary>
     void DetachSession(Guid jobId, Guid streamSessionId);
+
+    /// <summary>
+    /// Playback closed: detach the session from every job and stop ffmpeg on jobs left
+    /// without sessions. Ready segments stay cached; the next session restarts on demand.
+    /// </summary>
+    Task ReleaseSessionAsync(Guid streamSessionId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Cleans up stale jobs that have no attached sessions for more than the specified duration.
@@ -69,6 +76,10 @@ public class TranscodeJob
     public required string? VideoCodec { get; init; }
     public required string? AudioCodec { get; init; }
     public required int AudioTrackIndex { get; init; }
+    /// <summary>
+    /// Output channel count for an audio encode job (HlsAudioChannelPolicy). Null: source layout.
+    /// </summary>
+    public int? AudioChannels { get; init; }
     public required bool IsAudioOnly { get; init; }
     public int? SubtitleBurnInStreamIndex { get; init; }
     public required string OutputDirectory { get; init; }
@@ -84,6 +95,12 @@ public class TranscodeJob
     /// Used to stop lookahead remux after the player pauses.
     /// </summary>
     public int LastRequestedSegmentIndex { get; set; } = -1;
+
+    /// <summary>
+    /// True once this generation served init or a media .m4s. Empty cache after that is a wipe.
+    /// A resume (remux head in staging, encode window not landed) has no files yet: not a wipe.
+    /// </summary>
+    public bool HasObservedReadyOutput { get; set; }
     /// <summary>
     /// Most recent media segment index from a client GET (not max).
     /// </summary>

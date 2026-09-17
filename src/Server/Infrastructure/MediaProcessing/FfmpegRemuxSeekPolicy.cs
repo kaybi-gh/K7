@@ -59,13 +59,20 @@ internal static class FfmpegRemuxSeekPolicy
 
     public static double MinDistanceSecondsToLiveHead(
         int requestedIndex,
-        IEnumerable<(int TipIndex, int UntilInclusive, bool Running)> liveHeads,
+        IEnumerable<(int FromIndex, int TipIndex, int UntilInclusive, bool Running)> liveHeads,
         IReadOnlyList<Domain.Entities.HlsSegment> allSegments)
     {
         var min = double.PositiveInfinity;
-        foreach (var (tip, _, running) in liveHeads)
+        foreach (var (from, tip, _, running) in liveHeads)
         {
             if (!running)
+                continue;
+
+            // A head never writes anything before its own start. A request behind From
+            // (restart from the beginning while a resume head runs at 113, seek back) can
+            // only be served by a new head: treating it as "distance 0" made the client
+            // wait forever on a segment no process would ever produce.
+            if (requestedIndex < from)
                 continue;
 
             // A head only actually covers up to its live TIP. Its target end (UntilInclusive)

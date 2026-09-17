@@ -293,7 +293,13 @@ frame with a moving seek bar. Encode HLS keeps PREVIOUS_SYNC (forced IDR /
 RAP so an already-ready `.m4s` is served with its CRA sync flag (no new head).
 
 Remux copy uses **multi-head** ffmpeg: ready `N.m4s` files are immutable
-(staging `head-{id}/` then atomic promote, never overwrite). A seek/resume that lands
+(staging `head-{id}/` then atomic promote, never overwrite). A staging file is promoted
+only once it is **closed**: `N+1.m4s` exists in the same staging dir, or the head's ffmpeg
+exited. Complete fMP4 boxes are not enough: `frag_keyframe` flushes a moof+mdat at every
+collapsed interior keyframe, so a mid-segment snapshot validates but misses the rest of
+the GOP. Copying it froze truncated segments into the shared cache (video holes, Video.js
+buffered ranges split at every such segment, Firefox seek never completing on resume).
+A seek/resume that lands
 on a ready segment is served as-is. If a live head already covers the request (or the
 nearest tip is within ~60s), wait on that head. Otherwise spawn a new head at the
 landing index. First successful head owns shared `init.m4s`. Remux mux options use
@@ -354,7 +360,20 @@ not past mid-GOP. Do not micro-rebase **audio copy** onto `#EXTINF`.
 - deleting the transcode cache under a live job must reset that job. An empty output
   plus a stale EOF `TargetSegmentIndex` used to start `init.m4s` near the end (70s wait,
   then Video.js error 4 / 1080p fallback). Recover stops zombie ffmpeg, forgets landings,
-  and starts init at 0
+  and starts init at 0. But remux copy advertises Target = EOF and writes to `head-*`
+  staging before promoting, and an encode resume window has no shared `.m4s` until the
+  first one lands: both are cold starts, not wipes (`TranscodeWipedOutputPolicy`,
+  `HasObservedReadyOutput`). Treating them as wipes killed the live head on the next
+  request and the browser waited forever on `init.m4s`
+- a job never counts itself in `WaitForTranscodeSlotAsync`: a remux job spawning a second
+  head while its first head runs to EOF waited on itself, and `/api/stream-sessions` hung
+- after ffmpeg exits, `FinalizeClosedDeliverSegments` skips indices with no file. The
+  finalize retry (50 x 20ms, for a file still flushing) cost ~1s per missing index over the
+  whole window of an early-stopped head or AAC window (minutes), so stop / release /
+  restart appeared to hang on "ffmpeg did not exit". Stops and slot waits are bounded
+  (10s / 15s) with a warning as a safety net
+- `MinDistanceSecondsToLiveHead` ignores heads whose `From` is after the request: a head
+  never writes behind its start, so restart-from-0 while a resume head runs must spawn
 
 - encode keeps `EncoderThrottleBufferSegments` (`requested + BufferSize` windows)
 - encode seek no longer purges ready `.m4s`. Far-forward and seek-back both re-anchor the
