@@ -78,6 +78,37 @@ public class HlsSegmentHelperTests
     }
 
     [Test]
+    public void ResolvePrefetchStartSegmentIndex_ShouldReturnInit_WhenNoResumeOffset()
+    {
+        var segments = new List<HlsSegment>
+        {
+            new() { Number = 0, StartTimestamp = 0, Duration = 6000 },
+            new() { Number = 1, StartTimestamp = 6000, Duration = 6000 }
+        };
+
+        HlsSegmentHelper.ResolvePrefetchStartSegmentIndex(segments, null).Should().Be(-1);
+        HlsSegmentHelper.ResolvePrefetchStartSegmentIndex(segments, 0).Should().Be(-1);
+        HlsSegmentHelper.ResolvePrefetchStartSegmentIndex(segments, 1).Should().Be(-1);
+        HlsSegmentHelper.ResolvePrefetchStartSegmentIndex([], 120).Should().Be(-1);
+    }
+
+    [Test]
+    public void ResolvePrefetchStartSegmentIndex_ShouldReturnLandingNumber_WhenResumeOffsetIsSet()
+    {
+        var segments = new List<HlsSegment>
+        {
+            new() { Number = 0, StartTimestamp = 0, Duration = 2000 },
+            new() { Number = 1, StartTimestamp = 2000, Duration = 4000 },
+            new() { Number = 1055, StartTimestamp = 5_390_000, Duration = 6000 }
+        };
+
+        HlsSegmentHelper.ResolvePrefetchStartSegmentIndex(segments, 1.5).Should().Be(0);
+        HlsSegmentHelper.ResolvePrefetchStartSegmentIndex(segments, 2.0).Should().Be(1);
+        HlsSegmentHelper.ResolvePrefetchStartSegmentIndex(segments, 5390).Should().Be(1055);
+        HlsSegmentHelper.ResolvePrefetchStartSegmentIndex(segments, 5395).Should().Be(1055);
+    }
+
+    [Test]
     public void FallbackTranscodingVideoCodec_ShouldBeH264()
     {
         HlsSegmentHelper.FallbackTranscodingVideoCodec.Should().Be("h264");

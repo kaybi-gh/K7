@@ -38,8 +38,10 @@ public class HlsMediaPlaylistBuilderTests
     }
 
     [Test]
-    public void Build_ShouldSnapExtXStart_ToPreviousBoundary()
+    public void Build_ShouldEmitRawExtXStart_NotSegmentBoundary()
     {
+        // VHS seeks to TIME-OFFSET itself on first play. A boundary-snapped value lands
+        // before the resume time and races the client seek (see HlsMediaPlaylistBuilder).
         double[] durations = [2.0, 4.0, 2.0];
         var playlist = HlsMediaPlaylistBuilder.Build(
             durations,
@@ -47,7 +49,19 @@ public class HlsMediaPlaylistBuilderTests
             i => $"{i}.m4s",
             startSeconds: 5.5);
 
-        playlist.Should().Contain("#EXT-X-START:TIME-OFFSET=2.000,PRECISE=NO");
+        playlist.Should().Contain("#EXT-X-START:TIME-OFFSET=5.500,PRECISE=NO");
+    }
+
+    [Test]
+    public void Build_ShouldClampExtXStart_ToPlaylistDuration()
+    {
+        var playlist = HlsMediaPlaylistBuilder.Build(
+            [2.0, 4.0],
+            "?streamSessionId=1",
+            i => $"{i}.m4s",
+            startSeconds: 9.0);
+
+        playlist.Should().Contain("#EXT-X-START:TIME-OFFSET=6.000,PRECISE=NO");
     }
 
     [Test]

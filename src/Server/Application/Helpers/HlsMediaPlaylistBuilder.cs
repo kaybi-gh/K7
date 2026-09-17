@@ -31,10 +31,15 @@ public static class HlsMediaPlaylistBuilder
 
         if (startSeconds is > 0)
         {
-            var snapped = HlsSegmentHelper.AlignToPreviousSegmentBoundary(
-                startSeconds.Value,
-                segmentDurationsSeconds);
-            var offset = snapped.ToString("F3", CultureInfo.InvariantCulture);
+            // Video.js VHS seeks to this exact TIME-OFFSET on first play (setupFirstPlay),
+            // after the client already positioned the playhead on the resume time. A value
+            // snapped to the previous segment boundary moved the playhead up to one segment
+            // BEFORE the resume point, then the client seeked forward again: three seeks in
+            // a row on Firefox MSE, which never completed the last one. Emit the raw resume
+            // time (clamped to the playlist) so both seeks land on the same position.
+            var total = segmentDurationsSeconds.Sum();
+            var start = Math.Min(startSeconds.Value, total);
+            var offset = start.ToString("F3", CultureInfo.InvariantCulture);
             content.AppendLine($"#EXT-X-START:TIME-OFFSET={offset},PRECISE=NO");
         }
 

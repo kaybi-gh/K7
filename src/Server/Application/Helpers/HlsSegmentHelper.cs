@@ -60,6 +60,27 @@ public static class HlsSegmentHelper
         long totalDurationMs) =>
         ResolveVideoStreamingSegments(keyframeSegments, totalDurationMs);
 
+    /// <summary>
+    /// Playlist index to start HLS ffmpeg on session create. Cold start uses init (-1).
+    /// Resume lands on the last segment whose start is at or before startSeconds.
+    /// </summary>
+    public static int ResolvePrefetchStartSegmentIndex(
+        IReadOnlyList<HlsSegment> allSegments,
+        double? startSeconds)
+    {
+        if (startSeconds is not > 1 || allSegments.Count == 0)
+            return -1;
+
+        var targetMs = (long)(startSeconds.Value * 1000.0);
+        for (var i = allSegments.Count - 1; i >= 0; i--)
+        {
+            if (allSegments[i].StartTimestamp <= targetMs)
+                return allSegments[i].Number;
+        }
+
+        return allSegments[0].Number;
+    }
+
     public static double[] ToDurationSeconds(IReadOnlyList<HlsSegment> segments) =>
         segments.Select(s => s.Duration / 1000.0).ToArray();
 

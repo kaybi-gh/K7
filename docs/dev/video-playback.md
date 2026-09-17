@@ -299,6 +299,10 @@ exited. Complete fMP4 boxes are not enough: `frag_keyframe` flushes a moof+mdat 
 collapsed interior keyframe, so a mid-segment snapshot validates but misses the rest of
 the GOP. Copying it froze truncated segments into the shared cache (video holes, Video.js
 buffered ranges split at every such segment, Firefox seek never completing on resume).
+Web resume: media playlists carry `#EXT-X-START:TIME-OFFSET=<raw resume>` and VHS seeks
+there itself on first `play()` (`setupFirstPlay`). Do not snap it to the segment boundary
+and do not seek again from JS when the URL has `startSeconds`: three seeks in a row on
+Firefox MSE left the player in `seeking` forever.
 A seek/resume that lands
 on a ready segment is served as-is. If a live head already covers the request (or the
 nearest tip is within ~60s), wait on that head. Otherwise spawn a new head at the
