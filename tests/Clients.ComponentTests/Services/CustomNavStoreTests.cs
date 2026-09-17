@@ -92,6 +92,8 @@ public class CustomNavStoreTests
         var provider = Substitute.For<IServiceProvider>();
         provider.GetService(typeof(IUserPreferencesService)).Returns(prefs);
         provider.GetService(typeof(ILibraryService)).Returns(libraries);
+        provider.GetService(typeof(ICollectionService)).Returns(Substitute.For<ICollectionService>());
+        provider.GetService(typeof(IPlaylistService)).Returns(Substitute.For<IPlaylistService>());
 
         var scope = Substitute.For<IServiceScope>();
         scope.ServiceProvider.Returns(provider);
