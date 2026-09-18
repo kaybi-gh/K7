@@ -27,7 +27,8 @@
     flex: 0 0 auto;
     position: relative;
     z-index: 3;
-    padding-block: var(--space-2);
+    /* No top padding: AppNav is translucent over the fixed hero, so padding shows as a gap. */
+    padding-block: 0 var(--space-2);
 }
 
 .tv-feed-page .vertical-carousel ::deep .carousel-wrapper h6 {

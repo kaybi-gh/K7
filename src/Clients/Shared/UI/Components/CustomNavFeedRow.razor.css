@@ -15,7 +15,7 @@ html.platform-tv .custom-nav-feed-row {
     flex: 0 0 auto;
     position: relative;
     z-index: 3;
-    padding-block: var(--space-2);
+    padding-block: 0 var(--space-2);
 }
 
 html.platform-tv .custom-nav-feed-row ::deep .carousel-wrapper > [data-carousel] {
