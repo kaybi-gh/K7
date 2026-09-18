@@ -4017,6 +4017,14 @@ K7.suppressEnterUntilKeyUp = function (callback) {
     if (typeof callback === 'function') {
         K7._enterSuppressCallbacks.push(callback);
     }
+    // Pointer-driven ActivateAsync (Explore category cards, MediaCard) sets the
+    // swallow flag after the capture-phase click listener has already run, so it
+    // would otherwise stick and block the next real click (e.g. Explore "Browse all").
+    // Do not clear _suppressEnterUntilKeyUp here: keyboard long-press still holds
+    // Enter and relies on keyup to clear it.
+    setTimeout(function () {
+        if (window.K7) K7._swallowNextEnterClick = false;
+    }, 50);
 };
 
 // Update the URL hash without involving Blazor navigation (so a mouse click
