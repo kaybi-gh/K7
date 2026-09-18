@@ -6,9 +6,9 @@
   <data name="Placement" xml:space="preserve"><value>Placement</value></data>
   <data name="PlacementFeedRow" xml:space="preserve"><value>Home row</value></data>
   <data name="PlacementBar" xml:space="preserve"><value>Bar under the menu</value></data>
-  <data name="PlacementHint" xml:space="preserve"><value>The row uses small cards. The bar is text-only, with optional icons.</value></data>
+  <data name="PlacementHint" xml:space="preserve"><value>The row uses small cards. The bar is text-only, with optional icons. On TV the row sits under the top menu, above the hero. The bar stays a bar.</value></data>
   <data name="FeedRowTitle" xml:space="preserve"><value>Row title</value></data>
-  <data name="FeedRowTitleHint" xml:space="preserve"><value>Leave empty to use Shortcuts (follows the interface language).</value></data>
+  <data name="FeedRowTitleHint" xml:space="preserve"><value>Leave empty to hide the title.</value></data>
   <data name="ShowOn" xml:space="preserve"><value>Show on</value></data>
   <data name="FeedRowScopeHome" xml:space="preserve"><value>Home</value></data>
   <data name="FeedRowScopeExploreFeeds" xml:space="preserve"><value>Explore feeds</value></data>
@@ -23,7 +23,7 @@
   <data name="DeviceDesktop" xml:space="preserve"><value>Desktop</value></data>
   <data name="DevicePhone" xml:space="preserve"><value>Phone</value></data>
   <data name="DeviceTv" xml:space="preserve"><value>TV</value></data>
-  <data name="DevicesHint" xml:space="preserve"><value>On phones, only the Home row, never the bar or Explore feeds.</value></data>
+  <data name="DevicesHint" xml:space="preserve"><value>On phones, only the Home row, never the bar or Explore feeds. On TV the chosen placement is used.</value></data>
   <data name="Items" xml:space="preserve"><value>Shortcuts</value></data>
   <data name="AddItem" xml:space="preserve"><value>Add</value></data>
   <data name="EditItem" xml:space="preserve"><value>Edit</value></data>

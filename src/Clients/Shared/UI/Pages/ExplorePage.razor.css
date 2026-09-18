@@ -20,11 +20,3 @@
         grid-template-columns: 1fr;
     }
 }
-
-.explore-group-page {
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    min-height: 0;
-    padding-bottom: var(--space-8);
-}

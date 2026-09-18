@@ -49,15 +49,15 @@ public static class CustomNavVisibility
     public static bool ShouldShowBar(CustomNavLayoutDto layout, string path, DeviceType device) =>
         HasItems(layout)
         && layout.Placement == CustomNavPlacement.Bar
-        && layout.ShowOnDesktop
-        && device is DeviceType.Desktop or DeviceType.Unknown
+        && MatchesDevice(layout, device)
+        && !IsPhone(device)
         && MatchesBarPages(layout, path);
 
     public static bool ShouldShowHomeRow(CustomNavLayoutDto layout, DeviceType device) =>
         HasItems(layout)
         && MatchesDevice(layout, device)
-        && ((layout.Placement == CustomNavPlacement.FeedRow && layout.ShowRowOnHome)
-            || (layout.Placement == CustomNavPlacement.Bar && device is DeviceType.TV));
+        && layout.Placement == CustomNavPlacement.FeedRow
+        && layout.ShowRowOnHome;
 
     public static bool ShouldShowGroupFeedRow(CustomNavLayoutDto layout, DeviceType device) =>
         HasItems(layout)

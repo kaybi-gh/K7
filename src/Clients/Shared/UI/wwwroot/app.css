@@ -197,16 +197,16 @@ html.platform-tv .media-card-subtitle {
     font-size: var(--text-sm);
 }
 
-html.platform-tv .k7-category-card {
+html.platform-tv .k7-category-card:not(.k7-category-card--sm) {
     height: 140px;
 }
 
-html.platform-tv .k7-category-card__desc {
+html.platform-tv .k7-category-card:not(.k7-category-card--sm) .k7-category-card__desc {
     font-size: var(--text-sm);
     letter-spacing: 0.08em;
 }
 
-html.platform-tv .k7-category-card__icon-badge {
+html.platform-tv .k7-category-card:not(.k7-category-card--sm) .k7-category-card__icon-badge {
     width: 60px;
     height: 60px;
     font-size: var(--text-3xl);

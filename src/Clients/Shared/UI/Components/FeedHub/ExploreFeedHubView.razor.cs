@@ -34,7 +34,7 @@ public partial class ExploreFeedHubView : IDisposable
         : "explore-group-page page-scrollable";
 
     private string? _initialFocus => _isTv == true
-        ? "[data-carousel-item] a, [data-carousel-item] button"
+        ? ".vertical-carousel [data-carousel-item] a, .vertical-carousel [data-carousel-item] button"
         : null;
 
     protected override void OnInitialized()

@@ -1,0 +1,16 @@
+.explore-group-page {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    padding-bottom: var(--space-8);
+    gap: 24px;
+    --carousel-margin-start: 40px;
+}
+
+@media (max-width: 599.98px) {
+    .explore-group-page {
+        gap: 16px;
+        --carousel-margin-start: 16px;
+    }
+}

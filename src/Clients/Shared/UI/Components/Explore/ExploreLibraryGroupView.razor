@@ -21,8 +21,9 @@
             @L["BrowseAll"]
         </K7Button>
     </header>
-    <CustomNavFeedRow IsGroupFeed="true" />
 }
+
+<CustomNavFeedRow IsGroupFeed="true" />
 
 <ExploreSectionContent IsTv="IsTv"
                        IsLoading="_loading"
@@ -31,25 +32,19 @@
                        BrowseLabel="@(IsTv ? L["BrowseAll"].Value : null)"
                        BackAriaLabel="@(IsTv ? L["Back"].Value : null)"
                        OnBack="GoBack">
-    @if (IsTv && ShowCustomNavRow)
-    {
-        <TvFeedRow Index="0">
-            <CustomNavFeedRow IsGroupFeed="true" />
-        </TvFeedRow>
-    }
     @switch (Group.MediaType)
     {
         case LibraryMediaType.Movie:
-            <TvFeedRow Index="@(0 + CustomNavRowOffset)" KeepMounted="true">
+            <TvFeedRow Index="0" KeepMounted="true">
                 <HomeFeedCarouselRow Title="@L["RecentlyAddedMovies"]" LibraryIds="_libraryIds" LibraryGroupIds="_libraryGroupIds" MediaTypes="_movieTypes" OrderBy="CreatedOrder" ProgressEnabled="true" />
             </TvFeedRow>
-            <TvFeedRow Index="@(1 + CustomNavRowOffset)" KeepMounted="true">
+            <TvFeedRow Index="1" KeepMounted="true">
                 <MediasCarouselRow Title="@L["TrendingMovies"]" LibraryIds="_libraryIds" LibraryGroupIds="_libraryGroupIds" MediaTypes="_movieTypes" OrderBy="TrendingOrder" ProgressEnabled="true" />
             </TvFeedRow>
             @for (var genreIndex = 0; genreIndex < _genres.Count; genreIndex++)
             {
                 var genre = _genres[genreIndex];
-                <TvFeedRow Index="@(2 + CustomNavRowOffset + genreIndex)" KeepMounted="true">
+                <TvFeedRow Index="@(2 + genreIndex)" KeepMounted="true">
                     <MediasCarouselRow Title="@string.Format(L["BestMoviesGenre"].Value, genre.DisplayName)"
                                        LibraryIds="_libraryIds"
                                        LibraryGroupIds="_libraryGroupIds"
@@ -62,16 +57,16 @@
             }
             break;
         case LibraryMediaType.Serie:
-            <TvFeedRow Index="@(0 + CustomNavRowOffset)" KeepMounted="true">
+            <TvFeedRow Index="0" KeepMounted="true">
                 <HomeFeedCarouselRow Title="@L["RecentlyAddedSeries"]" LibraryIds="_libraryIds" LibraryGroupIds="_libraryGroupIds" MediaTypes="_serieTypes" OrderBy="CreatedOrder" ProgressEnabled="true" />
             </TvFeedRow>
-            <TvFeedRow Index="@(1 + CustomNavRowOffset)" KeepMounted="true">
+            <TvFeedRow Index="1" KeepMounted="true">
                 <MediasCarouselRow Title="@L["TrendingSeries"]" LibraryIds="_libraryIds" LibraryGroupIds="_libraryGroupIds" MediaTypes="_serieTypes" OrderBy="TrendingOrder" ProgressEnabled="true" />
             </TvFeedRow>
             @for (var genreIndex = 0; genreIndex < _genres.Count; genreIndex++)
             {
                 var genre = _genres[genreIndex];
-                <TvFeedRow Index="@(2 + CustomNavRowOffset + genreIndex)" KeepMounted="true">
+                <TvFeedRow Index="@(2 + genreIndex)" KeepMounted="true">
                     <MediasCarouselRow Title="@string.Format(L["BestSeriesGenre"].Value, genre.DisplayName)"
                                        LibraryIds="_libraryIds"
                                        LibraryGroupIds="_libraryGroupIds"
@@ -84,16 +79,16 @@
             }
             break;
         case LibraryMediaType.Music:
-            <TvFeedRow Index="@(0 + CustomNavRowOffset)">
+            <TvFeedRow Index="0">
                 <MusicRadioPresets Title="@L["Radios"]" LibraryGroupIds="_libraryGroupIds" />
             </TvFeedRow>
-            <TvFeedRow Index="@(1 + CustomNavRowOffset)" KeepMounted="true">
+            <TvFeedRow Index="1" KeepMounted="true">
                 <HomeFeedCarouselRow Title="@L["RecentlyAddedMusic"]" LibraryIds="_libraryIds" LibraryGroupIds="_libraryGroupIds" MediaTypes="_musicAlbumTypes" OrderBy="CreatedOrder" />
             </TvFeedRow>
-            <TvFeedRow Index="@(2 + CustomNavRowOffset)" KeepMounted="true">
+            <TvFeedRow Index="2" KeepMounted="true">
                 <MediasCarouselRow Title="@L["TrendingAlbums"]" LibraryIds="_libraryIds" LibraryGroupIds="_libraryGroupIds" MediaTypes="_musicAlbumTypes" OrderBy="TrendingOrder" />
             </TvFeedRow>
-            <TvFeedRow Index="@(3 + CustomNavRowOffset)">
+            <TvFeedRow Index="3">
                 <ExploreTopTracksTable LibraryIds="_libraryIds" IsTv="IsTv" />
             </TvFeedRow>
             break;

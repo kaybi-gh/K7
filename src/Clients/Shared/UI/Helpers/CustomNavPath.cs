@@ -26,9 +26,9 @@ internal static class CustomNavPath
 
         return CustomNavVisibility.HasItems(layout)
             && layout.Placement == CustomNavPlacement.Bar
-            && layout.ShowOnDesktop
+            && CustomNavVisibility.MatchesDevice(layout, device)
             && layout.ShowBarOnSettings
-            && device is DeviceType.Desktop or DeviceType.Unknown
+            && !CustomNavVisibility.IsPhone(device)
             && IsAdminPath(path);
     }
 

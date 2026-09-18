@@ -55,7 +55,7 @@ svg.k7-icon.k7-icon--xl { width: 3rem; }
 }
 
 html.platform-tv .app-shell--custom-nav {
-    --custom-nav-height: 0px;
+    --custom-nav-height: 52px;
 }
 
 .app-main {

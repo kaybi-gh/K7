@@ -61,13 +61,22 @@ public class CustomNavVisibilityTests
     }
 
     [Test]
-    public void ShouldShowBar_ShouldBeFalse_OnPhoneAndTv()
+    public void ShouldShowBar_ShouldBeFalse_OnPhone()
     {
         var layout = EnabledBar() with { ShowOnPhone = true };
 
         CustomNavVisibility.ShouldShowBar(layout, "/", DeviceType.Phone).Should().BeFalse();
         CustomNavVisibility.ShouldShowBar(layout, "/", DeviceType.Tablet).Should().BeFalse();
-        CustomNavVisibility.ShouldShowBar(layout, "/", DeviceType.TV).Should().BeFalse();
+    }
+
+    [Test]
+    public void ShouldShowBar_ShouldBeTrue_OnTv_WhenTvIsEnabled()
+    {
+        var layout = EnabledBar();
+
+        CustomNavVisibility.ShouldShowBar(layout, "/", DeviceType.TV).Should().BeTrue();
+        CustomNavVisibility.ShouldShowBar(layout, "/explore", DeviceType.TV).Should().BeTrue();
+        CustomNavVisibility.ShouldShowBar(layout with { ShowOnTv = false }, "/", DeviceType.TV).Should().BeFalse();
     }
 
     [Test]
@@ -79,14 +88,15 @@ public class CustomNavVisibilityTests
     }
 
     [Test]
-    public void ShouldShowHomeRow_ShouldUseFeedRow_OrTvBarFallback()
+    public void ShouldShowHomeRow_ShouldUseFeedRowOnly()
     {
         var feed = Enabled(CustomNavPlacement.FeedRow);
         var bar = Enabled(CustomNavPlacement.Bar);
 
         CustomNavVisibility.ShouldShowHomeRow(feed, DeviceType.Desktop).Should().BeTrue();
+        CustomNavVisibility.ShouldShowHomeRow(feed, DeviceType.TV).Should().BeTrue();
         CustomNavVisibility.ShouldShowHomeRow(bar, DeviceType.Desktop).Should().BeFalse();
-        CustomNavVisibility.ShouldShowHomeRow(bar, DeviceType.TV).Should().BeTrue();
+        CustomNavVisibility.ShouldShowHomeRow(bar, DeviceType.TV).Should().BeFalse();
     }
 
     [Test]

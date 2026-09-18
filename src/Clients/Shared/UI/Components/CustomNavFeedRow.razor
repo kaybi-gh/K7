@@ -2,7 +2,9 @@
 
 @if (Visible)
 {
-    <div class="custom-nav-feed-row">
+    <div class="custom-nav-feed-row"
+         data-sn-section="custom-nav"
+         data-sn-enter="last-focused">
         <Carousel Title="@RowTitle" ContentKey="@ContentKey">
         @foreach (var item in VisibleItems)
         {

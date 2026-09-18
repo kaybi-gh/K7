@@ -3,7 +3,7 @@
     align-items: center;
     justify-content: space-between;
     gap: var(--space-4);
-    padding: var(--space-4) var(--space-5);
+    padding: var(--space-4) var(--carousel-margin-start, 40px) 0;
 }
 
 .explore-group-header__start {
@@ -26,7 +26,7 @@
     .explore-group-header {
         flex-direction: column;
         align-items: stretch;
-        padding: var(--space-3);
+        padding: var(--space-3) var(--carousel-margin-start, 16px) 0;
     }
 
     .explore-group-header__start {

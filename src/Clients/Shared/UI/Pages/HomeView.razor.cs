@@ -7,7 +7,6 @@ using K7.Clients.Shared.UI.Components;
 using K7.Clients.Shared.UI.Components.Dialogs;
 using K7.Clients.Shared.UI.Helpers;
 using K7.Server.Domain.Enums;
-using K7.Shared.CustomNav;
 using K7.Shared.Dtos.Home;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
@@ -31,7 +30,6 @@ public partial class HomeView : IAsyncDisposable
     [Inject] private IFeedHubHostService FeedHub { get; set; } = default!;
     [Inject] private ILibraryService LibraryService { get; set; } = default!;
     [Inject] private AuthenticationStateProvider AuthStateProvider { get; set; } = default!;
-    [Inject] private ICustomNavStore CustomNavStore { get; set; } = default!;
 
     private readonly SuppressRenderEventHandler _silentFocus = new();
     private bool _canExclude;
@@ -39,7 +37,6 @@ public partial class HomeView : IAsyncDisposable
     private bool _isAdmin;
     private bool _hasConfiguredLibraries = true;
     private bool? _isTv;
-    private bool _isNativeClient;
     private MediaCardViewModel? _focusedItem;
     private bool _focusRestored;
     private bool _emptyFeedRetried;
@@ -67,7 +64,7 @@ public partial class HomeView : IAsyncDisposable
             if (NavigationState.SavedFocus is { } focus)
                 return $"#home-card-{focus.MediaId} a, #home-card-{focus.MediaId} button";
 
-            return "[data-carousel-item] a, [data-carousel-item] button";
+            return ".vertical-carousel [data-carousel-item] a, .vertical-carousel [data-carousel-item] button";
         }
     }
 
@@ -76,29 +73,16 @@ public partial class HomeView : IAsyncDisposable
         get
         {
             if (NavigationState.SavedFocus is not { } saved)
-                return CustomNavRowOffset;
+                return 0;
 
             var idx = GetVisibleRows().ToList().FindIndex(r => r.Config.Id == saved.RowId);
-            var offset = CustomNavRowOffset;
-            return idx >= 0 ? idx + offset : offset;
+            return idx >= 0 ? idx : 0;
         }
     }
-
-    private bool ShowCustomNavRow =>
-        CustomNavVisibility.ShouldShowHomeRow(CustomNavStore.Layout, CurrentDevice)
-        && CustomNavStore.Layout.Items.Any(item =>
-            CustomNavRoutes.IsItemAvailableForClient(item, _isNativeClient));
-
-    private int CustomNavRowOffset => ShowCustomNavRow ? 1 : 0;
-
-    private DeviceType CurrentDevice =>
-        DeviceService.CachedDeviceType
-        ?? (_isTv == true ? DeviceType.TV : DeviceType.Desktop);
 
     protected override void OnInitialized()
     {
         // MAUI resolves device type synchronously; use it before any await so the first paint is TV.
-        _isNativeClient = DeviceService.GetClientType() != ClientType.Web;
         if (DeviceService.CachedDeviceType is { } cached)
             _isTv = cached == DeviceType.TV;
     }
@@ -110,9 +94,7 @@ public partial class HomeView : IAsyncDisposable
         FeedStore.Changed += OnFeedStoreChanged;
         FeedHub.Changed += OnFeedHubChanged;
         AuthStateProvider.AuthenticationStateChanged += OnAuthenticationStateChanged;
-        CustomNavStore.Changed += OnCustomNavChanged;
         _hubHomeActive = IsHubHomeActive();
-        await CustomNavStore.EnsureLoadedAsync();
         // Resolve auth in the Blazor UI scope - HomeFeedStore must not open a fresh DI scope
         // (WASM DeserializedAuthenticationStateProvider is single-consume).
         await BindIdentityAndLoadAsync();
@@ -254,7 +236,7 @@ public partial class HomeView : IAsyncDisposable
             if (onAppNav)
                 return;
 
-            await SpatialNav.FocusFirstAsync("[data-carousel-item] a, [data-carousel-item] button");
+            await SpatialNav.FocusFirstAsync(".vertical-carousel [data-carousel-item] a, .vertical-carousel [data-carousel-item] button");
         }
         catch (InvalidOperationException)
         {
@@ -420,8 +402,6 @@ public partial class HomeView : IAsyncDisposable
         InvokeAsync(StateHasChanged).FireAndForget();
     }
 
-    private void OnCustomNavChanged() => InvokeAsync(StateHasChanged);
-
     private IEnumerable<HomeFeedRow> GetVisibleRows() =>
         _rows.Where(r => r.Items.Count > 0 && (!r.Config.ContinueWatching || _canTrackProgress));
 
@@ -568,7 +548,6 @@ public partial class HomeView : IAsyncDisposable
         FeedStore.Changed -= OnFeedStoreChanged;
         FeedHub.Changed -= OnFeedHubChanged;
         AuthStateProvider.AuthenticationStateChanged -= OnAuthenticationStateChanged;
-        CustomNavStore.Changed -= OnCustomNavChanged;
 
         if (_homeRestoreModule is not null)
         {

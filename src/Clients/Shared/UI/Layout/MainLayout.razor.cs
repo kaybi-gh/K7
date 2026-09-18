@@ -69,6 +69,7 @@ public partial class MainLayout : IDisposable
         FeedHub.Changed += OnFeedHubChanged;
         CustomNavStore.Changed += OnCustomNavChanged;
         NavigationManager.LocationChanged += OnCustomNavLocationChanged;
+        await DeviceService.GetDeviceTypeAsync();
         await CustomNavStore.EnsureLoadedAsync();
         UpdateCustomNavBarVisibility();
     }

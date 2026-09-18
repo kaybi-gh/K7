@@ -6,9 +6,9 @@
   <data name="Placement" xml:space="preserve"><value>Emplacement</value></data>
   <data name="PlacementFeedRow" xml:space="preserve"><value>Rangée Accueil</value></data>
   <data name="PlacementBar" xml:space="preserve"><value>Barre sous le menu</value></data>
-  <data name="PlacementHint" xml:space="preserve"><value>La rangée utilise de petites cartes. La barre n'affiche que du texte, avec icônes optionnelles.</value></data>
+  <data name="PlacementHint" xml:space="preserve"><value>La rangée utilise de petites cartes. La barre n'affiche que du texte, avec icônes optionnelles. Sur TV, la rangée reste sous le menu, au-dessus du hero. La barre reste une barre.</value></data>
   <data name="FeedRowTitle" xml:space="preserve"><value>Titre de la rangée</value></data>
-  <data name="FeedRowTitleHint" xml:space="preserve"><value>Vide = Raccourcis (selon la langue de l'interface).</value></data>
+  <data name="FeedRowTitleHint" xml:space="preserve"><value>Vide = pas de titre.</value></data>
   <data name="ShowOn" xml:space="preserve"><value>Afficher sur</value></data>
   <data name="FeedRowScopeHome" xml:space="preserve"><value>Accueil</value></data>
   <data name="FeedRowScopeExploreFeeds" xml:space="preserve"><value>Feeds Explorer</value></data>
@@ -23,7 +23,7 @@
   <data name="DeviceDesktop" xml:space="preserve"><value>Ordinateur</value></data>
   <data name="DevicePhone" xml:space="preserve"><value>Téléphone</value></data>
   <data name="DeviceTv" xml:space="preserve"><value>TV</value></data>
-  <data name="DevicesHint" xml:space="preserve"><value>Sur téléphone, seule la rangée Accueil, jamais la barre ni les feeds Explorer.</value></data>
+  <data name="DevicesHint" xml:space="preserve"><value>Sur téléphone, seule la rangée Accueil, jamais la barre ni les feeds Explorer. Sur TV, l'emplacement choisi s'applique.</value></data>
   <data name="Items" xml:space="preserve"><value>Raccourcis</value></data>
   <data name="AddItem" xml:space="preserve"><value>Ajouter</value></data>
   <data name="EditItem" xml:space="preserve"><value>Modifier</value></data>

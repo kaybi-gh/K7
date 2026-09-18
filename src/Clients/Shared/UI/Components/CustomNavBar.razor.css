@@ -4,7 +4,7 @@
     left: 0;
     right: 0;
     z-index: var(--z-drawer);
-    height: 44px;
+    height: var(--custom-nav-height, 44px);
     border-bottom: 1px solid var(--color-border-subtle);
     background: color-mix(in srgb, var(--color-surface) 82%, transparent);
     backdrop-filter: blur(8px);
@@ -121,5 +121,10 @@ button.custom-nav-bar__item {
 }
 
 html.platform-tv .custom-nav-bar {
-    display: none;
+    backdrop-filter: none;
+}
+
+html.platform-tv .custom-nav-bar__item {
+    height: 40px;
+    font-size: var(--text-base);
 }

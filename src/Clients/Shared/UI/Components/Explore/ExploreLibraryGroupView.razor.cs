@@ -1,7 +1,6 @@
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Helpers;
 using K7.Server.Domain.Enums;
-using K7.Shared.CustomNav;
 using K7.Shared.Dtos;
 using K7.Shared.Dtos.Entities;
 using K7.Shared.Dtos.Requests;
@@ -12,8 +11,6 @@ namespace K7.Clients.Shared.UI.Components.Explore;
 public partial class ExploreLibraryGroupView : IDisposable
 {
     [Inject] private IExploreGroupStore ExploreGroupStore { get; set; } = default!;
-    [Inject] private ICustomNavStore CustomNavStore { get; set; } = default!;
-    [Inject] private IDeviceService DeviceService { get; set; } = default!;
     [Inject] private NavigationManager NavigationManager { get; set; } = default!;
 
     [Parameter, EditorRequired] public LibraryGroupDto Group { get; set; } = default!;
@@ -27,16 +24,6 @@ public partial class ExploreLibraryGroupView : IDisposable
 
     private string BrowseHref => $"/library-groups/{Group.Id}";
 
-    private bool ShowCustomNavRow =>
-        CustomNavVisibility.ShouldShowGroupFeedRow(CustomNavStore.Layout, CurrentDevice);
-
-    private int CustomNavRowOffset => ShowCustomNavRow ? 1 : 0;
-
-    private DeviceType CurrentDevice =>
-        IsTv
-            ? DeviceType.TV
-            : DeviceService.CachedDeviceType ?? DeviceType.Desktop;
-
     private static readonly HashSet<MediaType> _movieTypes = [MediaType.Movie];
     private static readonly HashSet<MediaType> _serieTypes = [MediaType.Serie];
     private static readonly HashSet<MediaType> _musicAlbumTypes = [MediaType.MusicAlbum];
@@ -48,15 +35,10 @@ public partial class ExploreLibraryGroupView : IDisposable
     protected override void OnInitialized()
     {
         ExploreGroupStore.Changed += OnExploreGroupChanged;
-        CustomNavStore.Changed += OnCustomNavChanged;
     }
 
     protected override async Task OnParametersSetAsync()
     {
-        await CustomNavStore.EnsureLoadedAsync();
-        if (DeviceService.CachedDeviceType is null)
-            await DeviceService.GetDeviceTypeAsync();
-
         if (Group.Id == _loadedGroupId)
             return;
 
@@ -66,10 +48,7 @@ public partial class ExploreLibraryGroupView : IDisposable
     public void Dispose()
     {
         ExploreGroupStore.Changed -= OnExploreGroupChanged;
-        CustomNavStore.Changed -= OnCustomNavChanged;
     }
-
-    private void OnCustomNavChanged() => InvokeAsync(StateHasChanged);
 
     private void OnExploreGroupChanged(Guid groupId)
     {

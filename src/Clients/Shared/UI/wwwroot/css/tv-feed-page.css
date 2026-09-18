@@ -23,6 +23,13 @@
     padding-bottom: 32px;
 }
 
+.tv-feed-page > .custom-nav-feed-row {
+    flex: 0 0 auto;
+    position: relative;
+    z-index: 3;
+    padding-block: var(--space-2);
+}
+
 .tv-feed-page .vertical-carousel ::deep .carousel-wrapper h6 {
     font-size: var(--text-2xl);
     text-shadow: var(--media-copy-shadow);

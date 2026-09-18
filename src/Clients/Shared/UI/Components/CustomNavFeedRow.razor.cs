@@ -32,10 +32,7 @@ public partial class CustomNavFeedRow : IDisposable
             ? CustomNavVisibility.ShouldShowGroupFeedRow(Store.Layout, _device)
             : CustomNavVisibility.ShouldShowHomeRow(Store.Layout, _device));
 
-    private string RowTitle =>
-        string.IsNullOrWhiteSpace(Store.Layout.FeedRowTitle)
-            ? NavL["FeedRowTitle"]
-            : Store.Layout.FeedRowTitle;
+    private string RowTitle => Store.Layout.FeedRowTitle?.Trim() ?? "";
 
     private string ContentKey => string.Join(',', VisibleItems.Select(i => i.Id));
 
