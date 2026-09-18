@@ -574,12 +574,20 @@ public class TranscodeJobManager(
             // anything is written: with From missing and From+1 ready (hole left by an
             // early-stopped head) the check fired immediately, the waiter re-kicked a new
             // head, and the job spawned dozens of heads per second without ever filling From.
+            // Same loop when media is already cached and only init.m4s is missing: From and
+            // From+1 look ready, the head dies before ffmpeg writes init, EnsureInit respawns.
             var next = head.TipIndex + 1;
-            if (next <= head.UntilInclusive
-                && next > head.From
-                && HlsSegmentFileWaiter.IsSegmentReadyOnDisk(job.OutputDirectory, head.From)
-                && HlsSegmentFileWaiter.IsSegmentReadyOnDisk(job.OutputDirectory, next)
-                && !File.Exists(Path.Combine(head.StagingDirectory, next + ".m4s")))
+            if (RemuxHeadOverlapStopPolicy.ShouldStopBecauseNextIsReady(
+                    head.From,
+                    head.TipIndex,
+                    head.UntilInclusive,
+                    HlsSegmentFileWaiter.IsSegmentReadyOnDisk(job.OutputDirectory, head.From),
+                    next <= head.UntilInclusive
+                    && HlsSegmentFileWaiter.IsSegmentReadyOnDisk(job.OutputDirectory, next),
+                    File.Exists(Path.Combine(
+                        head.StagingDirectory,
+                        next.ToString(CultureInfo.InvariantCulture) + ".m4s")),
+                    HlsSegmentFileWaiter.IsInitReadyOnDisk(job.OutputDirectory)))
             {
                 logger.LogInformation(
                     "Job {JobId}: Stopping remux head {HeadId} because segment {Next} is already ready",
@@ -658,10 +666,13 @@ public class TranscodeJobManager(
         if (HlsSegmentFileWaiter.IsSegmentFileReady(stagingInit)
             || File.Exists(stagingInit))
         {
-            // Init may still be empty_moov until a media sibling exists; promote once media is shared.
-            if (HlsSegmentFileWaiter.IsSegmentReadyOnDisk(job.OutputDirectory, head.From)
-                || HlsSegmentFileWaiter.IsSegmentFileReady(
-                    Path.Combine(head.StagingDirectory, head.From.ToString(CultureInfo.InvariantCulture) + ".m4s")))
+            // Init may still be empty_moov until a media sibling exists. Promote once the
+            // landing .m4s is a valid media file. Do not use IsSegmentReadyOnDisk(From):
+            // index 0 also requires init, so a From=0 head that already promoted and
+            // deleted staging 0.m4s could never copy init into the shared cache.
+            var fromName = head.From.ToString(CultureInfo.InvariantCulture) + ".m4s";
+            if (HlsSegmentFileWaiter.IsSegmentFileReady(Path.Combine(job.OutputDirectory, fromName))
+                || HlsSegmentFileWaiter.IsSegmentFileReady(Path.Combine(head.StagingDirectory, fromName)))
             {
                 RemuxSegmentPromoter.TryPromoteInit(head.StagingDirectory, job.OutputDirectory);
             }

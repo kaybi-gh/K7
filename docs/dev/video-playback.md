@@ -378,6 +378,14 @@ not past mid-GOP. Do not micro-rebase **audio copy** onto `#EXTINF`.
 - remux copy keeps cooperative heads to EOF. Seek never purges ready shared `.m4s`.
   Missing far targets spawn another head. Near targets wait on an existing tip
   (~60s). Ready segments stay immutable across clients
+- a remux head started because `init.m4s` is missing must keep running until shared
+  init is promoted. Stopping just because `From` and `From+1` are already cached
+  (resume mid-movie, cache kept) spawned heads 77+ that died before ffmpeg wrote
+  init, then the client 90s-timed-out `init.m4s` (HTTP 503, Video.js error 4)
+- promoting remux init must look at the landing `.m4s` file itself, not
+  `IsSegmentReadyOnDisk(0)`. Segment 0 readiness also requires init, so a From=0
+  head that promoted and deleted staging `0.m4s` never copied init into the shared
+  cache
 - deleting the transcode cache under a live job must reset that job. An empty output
   plus a stale EOF `TargetSegmentIndex` used to start `init.m4s` near the end (70s wait,
   then Video.js error 4 / 1080p fallback). Recover stops zombie ffmpeg, forgets landings,
