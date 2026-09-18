@@ -398,7 +398,9 @@ public sealed class MockAudioPlayerService : IAudioPlayerService, IDisposable
     }
 
     public void ToggleShuffle() { }
+    public void SetShuffle(bool enabled) { }
     public void CycleRepeatMode() { }
+    public void SetRepeat(RepeatMode mode) { }
     public void ToggleAdaptiveCrossfade() { }
     public void SetCrossfadeDuration(double seconds) { }
     public Task OnCrossfadeNeededAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;

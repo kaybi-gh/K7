@@ -106,7 +106,9 @@ public interface IAudioPlayerService
 
     // Modes
     void ToggleShuffle();
+    void SetShuffle(bool enabled);
     void CycleRepeatMode();
+    void SetRepeat(RepeatMode mode);
 
     // Crossfade
     bool AdaptiveCrossfade { get; }

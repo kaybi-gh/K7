@@ -24,4 +24,29 @@
   <data name="PresetDiscoveryAi" xml:space="preserve"><value>Similar discovery</value></data>
   <data name="PresetTimeCapsule" xml:space="preserve"><value>Time Capsule</value></data>
   <data name="PresetRecentlyAdded" xml:space="preserve"><value>Recently added</value></data>
+  <data name="Home" xml:space="preserve"><value>Home</value></data>
+  <data name="Library" xml:space="preserve"><value>Library</value></data>
+  <data name="Playlists" xml:space="preserve"><value>Playlists</value></data>
+  <data name="Downloads" xml:space="preserve"><value>Downloads</value></data>
+  <data name="HomeRecentPlaylists" xml:space="preserve"><value>Recent playlists</value></data>
+  <data name="HomeRecentPlays" xml:space="preserve"><value>Recent plays</value></data>
+  <data name="HomeRecentlyAdded" xml:space="preserve"><value>Recently added</value></data>
+  <data name="PlayAll" xml:space="preserve"><value>Play all</value></data>
+  <data name="Shuffle" xml:space="preserve"><value>Shuffle</value></data>
+  <data name="ShuffleAll" xml:space="preserve"><value>Shuffle all</value></data>
+  <data name="ShuffleOn" xml:space="preserve"><value>Shuffle on</value></data>
+  <data name="ShuffleOff" xml:space="preserve"><value>Shuffle off</value></data>
+  <data name="RepeatOff" xml:space="preserve"><value>Repeat off</value></data>
+  <data name="RepeatAll" xml:space="preserve"><value>Repeat all</value></data>
+  <data name="RepeatOne" xml:space="preserve"><value>Repeat one</value></data>
+  <data name="RateStars" xml:space="preserve"><value>Rating {0}/5</value></data>
+  <data name="UnableToLoad" xml:space="preserve"><value>Unable to load</value></data>
+  <data name="CheckServerOrDownloads" xml:space="preserve"><value>Check server connection, or use Downloads</value></data>
+  <data name="ServerUnavailable" xml:space="preserve"><value>Server unavailable</value></data>
+  <data name="YouCanStillUseDownloads" xml:space="preserve"><value>You can still use Downloads</value></data>
+  <data name="UnknownTrack" xml:space="preserve"><value>Unknown track</value></data>
+  <data name="UnknownAlbum" xml:space="preserve"><value>Unknown album</value></data>
+  <data name="UnknownArtist" xml:space="preserve"><value>Unknown artist</value></data>
+  <data name="Unknown" xml:space="preserve"><value>Unknown</value></data>
+  <data name="TrackCount" xml:space="preserve"><value>{0} tracks</value></data>
 </root>

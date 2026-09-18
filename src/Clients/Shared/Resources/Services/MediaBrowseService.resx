@@ -24,4 +24,29 @@
   <data name="PresetDiscoveryAi" xml:space="preserve"><value>D&#233;couverte similaire</value></data>
   <data name="PresetTimeCapsule" xml:space="preserve"><value>Time Capsule</value></data>
   <data name="PresetRecentlyAdded" xml:space="preserve"><value>Nouveaut&#233;s</value></data>
+  <data name="Home" xml:space="preserve"><value>Accueil</value></data>
+  <data name="Library" xml:space="preserve"><value>Biblioth&#232;que</value></data>
+  <data name="Playlists" xml:space="preserve"><value>Playlists</value></data>
+  <data name="Downloads" xml:space="preserve"><value>T&#233;l&#233;chargements</value></data>
+  <data name="HomeRecentPlaylists" xml:space="preserve"><value>Playlists r&#233;centes</value></data>
+  <data name="HomeRecentPlays" xml:space="preserve"><value>&#201;coutes r&#233;centes</value></data>
+  <data name="HomeRecentlyAdded" xml:space="preserve"><value>Ajouts r&#233;cents</value></data>
+  <data name="PlayAll" xml:space="preserve"><value>Tout lire</value></data>
+  <data name="Shuffle" xml:space="preserve"><value>Al&#233;atoire</value></data>
+  <data name="ShuffleAll" xml:space="preserve"><value>Tout en al&#233;atoire</value></data>
+  <data name="ShuffleOn" xml:space="preserve"><value>Al&#233;atoire activ&#233;</value></data>
+  <data name="ShuffleOff" xml:space="preserve"><value>Al&#233;atoire d&#233;sactiv&#233;</value></data>
+  <data name="RepeatOff" xml:space="preserve"><value>R&#233;p&#233;tition d&#233;sactiv&#233;e</value></data>
+  <data name="RepeatAll" xml:space="preserve"><value>R&#233;p&#233;ter tout</value></data>
+  <data name="RepeatOne" xml:space="preserve"><value>R&#233;p&#233;ter le titre</value></data>
+  <data name="RateStars" xml:space="preserve"><value>Note {0}/5</value></data>
+  <data name="UnableToLoad" xml:space="preserve"><value>Impossible de charger</value></data>
+  <data name="CheckServerOrDownloads" xml:space="preserve"><value>V&#233;rifiez la connexion au serveur, ou utilisez T&#233;l&#233;chargements</value></data>
+  <data name="ServerUnavailable" xml:space="preserve"><value>Serveur indisponible</value></data>
+  <data name="YouCanStillUseDownloads" xml:space="preserve"><value>Les t&#233;l&#233;chargements restent disponibles</value></data>
+  <data name="UnknownTrack" xml:space="preserve"><value>Titre inconnu</value></data>
+  <data name="UnknownAlbum" xml:space="preserve"><value>Album inconnu</value></data>
+  <data name="UnknownArtist" xml:space="preserve"><value>Artiste inconnu</value></data>
+  <data name="Unknown" xml:space="preserve"><value>Inconnu</value></data>
+  <data name="TrackCount" xml:space="preserve"><value>{0} titres</value></data>
 </root>

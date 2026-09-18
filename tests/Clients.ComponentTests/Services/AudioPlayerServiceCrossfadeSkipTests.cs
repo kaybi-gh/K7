@@ -97,6 +97,30 @@ public class AudioPlayerServiceCrossfadeSkipTests
     }
 
     [Test]
+    public async Task NotifyCrossfadeCompleted_ShouldAllowGaplessPrebufferOfFollowingTrack()
+    {
+        var tracks = CreateTracks(3);
+        await _sut.PlayTracksAsync(tracks, 0);
+        _sut.CurrentTime = 170;
+        await _sut.OnGaplessPrebufferNeededAsync();
+        await _sut.OnCrossfadeNeededAsync();
+        _sut.NotifyCrossfadeCompleted();
+
+        PlayerSource? prebuffered = null;
+        _sut.GaplessPrebufferRequested += source =>
+        {
+            prebuffered = source;
+            return Task.CompletedTask;
+        };
+
+        await _sut.OnGaplessPrebufferNeededAsync();
+
+        prebuffered.Should().NotBeNull();
+        prebuffered!.MediaId.Should().Be(tracks[2].MediaId);
+        prebuffered.IndexedFileId.Should().Be(tracks[2].IndexedFileId);
+    }
+
+    [Test]
     public async Task PreviousAsync_ShouldRestart_WhenNotInCrossfadeHandoffAndTimeElapsed()
     {
         var tracks = CreateTracks(2);

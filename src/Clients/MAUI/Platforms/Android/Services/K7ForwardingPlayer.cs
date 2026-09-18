@@ -1,6 +1,7 @@
 using AndroidX.Concurrent.Futures;
 using AndroidX.Media3.Common;
 using Google.Common.Util.Concurrent;
+using K7.Clients.Shared.Helpers;
 
 #pragma warning disable XAOBS001 // ResolvableFuture is the only way to create IListenableFuture in .NET Android bindings
 
@@ -12,6 +13,7 @@ namespace K7.Clients.MAUI.Platforms.Android.Services;
 /// Next/previous from notifications, lock screen, and Bluetooth AVRCP go through
 /// IAudioPlayerService when ExoPlayer has a single item. Multi-item Android Auto
 /// playlists skip natively so artwork and audio stay aligned.
+/// Shuffle and repeat always follow IAudioPlayerService, never ExoPlayer.
 /// </summary>
 public class K7ForwardingPlayer : ForwardingSimpleBasePlayer
 {
@@ -26,18 +28,30 @@ public class K7ForwardingPlayer : ForwardingSimpleBasePlayer
     private readonly Func<bool> _hasPrevious;
     private readonly Action _onSeekToNext;
     private readonly Action _onSeekToPrevious;
+    private readonly Func<bool> _getShuffle;
+    private readonly Action<bool> _setShuffle;
+    private readonly Func<int> _getRepeat;
+    private readonly Action<int> _setRepeat;
 
     public K7ForwardingPlayer(
         IPlayer player,
         Func<bool> hasNext,
         Func<bool> hasPrevious,
         Action onSeekToNext,
-        Action onSeekToPrevious) : base(player)
+        Action onSeekToPrevious,
+        Func<bool> getShuffle,
+        Action<bool> setShuffle,
+        Func<int> getRepeat,
+        Action<int> setRepeat) : base(player)
     {
         _hasNext = hasNext;
         _hasPrevious = hasPrevious;
         _onSeekToNext = onSeekToNext;
         _onSeekToPrevious = onSeekToPrevious;
+        _getShuffle = getShuffle;
+        _setShuffle = setShuffle;
+        _getRepeat = getRepeat;
+        _setRepeat = setRepeat;
     }
 
     public void SetActivePlayer(IPlayer player) => Player = player;
@@ -47,29 +61,43 @@ public class K7ForwardingPlayer : ForwardingSimpleBasePlayer
     protected override State GetState()
     {
         var state = base.GetState()!;
-        if (HasNativePlaylist())
-            return state!;
+        var itemCount = Player?.MediaItemCount ?? 0;
+        var playbackState = Media3SessionPlaybackState.ForSession(
+            state.PlaybackState,
+            itemCount,
+            _hasNext is not null && _hasNext());
 
         var commands = new PlayerCommands.Builder()
             .AddAll(state.AvailableCommands!)!;
-        if (_hasPrevious is not null && _hasPrevious())
+        commands.Add(AndroidAutoPlaybackCommands.CommandSetShuffleMode);
+        commands.Add(AndroidAutoPlaybackCommands.CommandSetRepeatMode);
+
+        if (itemCount > 0 && !HasNativePlaylist())
+        {
+            if (_hasPrevious is not null && _hasPrevious())
+            {
+                commands.Add(CommandSeekToPrevious);
+                commands.Add(CommandSeekToPreviousMediaItem);
+            }
+
+            if (_hasNext is not null && _hasNext())
+            {
+                commands.Add(CommandSeekToNext);
+                commands.Add(CommandSeekToNextMediaItem);
+            }
+        }
+        else if (itemCount > 0 && ShouldRoutePreviousThroughQueue())
         {
             commands.Add(CommandSeekToPrevious);
             commands.Add(CommandSeekToPreviousMediaItem);
         }
 
-        if (_hasNext is not null && _hasNext())
-        {
-            commands.Add(CommandSeekToNext);
-            commands.Add(CommandSeekToNextMediaItem);
-        }
-
-        var builder = state.BuildUpon()!.SetAvailableCommands(commands.Build()!)!;
-        // OEM lock screens hide Next when the forwarded player is ENDED, even if
-        // we added SEEK_TO_NEXT. READY keeps the action tappable during the
-        // outgoing-end / incoming-bind window of a crossfade.
-        if (state.PlaybackState == 4 && _hasNext is not null && _hasNext())
-            builder.SetPlaybackState(3);
+        var builder = state.BuildUpon()!
+            .SetAvailableCommands(commands.Build()!)!
+            .SetShuffleModeEnabled(_getShuffle())!
+            .SetRepeatMode(_getRepeat())!;
+        if (playbackState != state.PlaybackState)
+            builder.SetPlaybackState(playbackState);
 
         return builder.Build()!;
     }
@@ -81,7 +109,15 @@ public class K7ForwardingPlayer : ForwardingSimpleBasePlayer
         // routing through IAudioPlayerService used to patch now-playing metadata
         // (artwork/title change, URI stays) which is the AA / Bluetooth skip bug.
         if (HasNativePlaylist())
+        {
+            if (IsPreviousCommand(seekCommand) && ShouldRoutePreviousThroughQueue())
+            {
+                _onSeekToPrevious();
+                return ImmediateVoid();
+            }
+
             return base.HandleSeek(mediaItemIndex, positionMs, seekCommand)!;
+        }
 
         if (seekCommand is CommandSeekToNext or CommandSeekToNextMediaItem)
         {
@@ -98,7 +134,27 @@ public class K7ForwardingPlayer : ForwardingSimpleBasePlayer
         return base.HandleSeek(mediaItemIndex, positionMs, seekCommand)!;
     }
 
+    protected override IListenableFuture HandleSetShuffleModeEnabled(bool shuffleModeEnabled)
+    {
+        _setShuffle(shuffleModeEnabled);
+        return ImmediateVoid();
+    }
+
+    protected override IListenableFuture HandleSetRepeatMode(int repeatMode)
+    {
+        _setRepeat(repeatMode);
+        return ImmediateVoid();
+    }
+
     private bool HasNativePlaylist() => Player?.MediaItemCount > 1;
+
+    private bool ShouldRoutePreviousThroughQueue() =>
+        AndroidAutoRadioPlaylist.ShouldRoutePreviousThroughQueue(
+            Player?.CurrentMediaItemIndex ?? 0,
+            _hasPrevious is not null && _hasPrevious());
+
+    private static bool IsPreviousCommand(int seekCommand) =>
+        seekCommand is CommandSeekToPrevious or CommandSeekToPreviousMediaItem;
 
     // Service owns ExoPlayer lifetime; MediaSession.release must not release the audible player.
     protected override IListenableFuture HandleRelease() => ImmediateVoid();

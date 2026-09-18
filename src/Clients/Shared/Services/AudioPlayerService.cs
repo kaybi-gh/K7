@@ -503,9 +503,14 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
     }
 
     // Modes
-    public void ToggleShuffle()
+    public void ToggleShuffle() => SetShuffle(!Shuffle);
+
+    public void SetShuffle(bool enabled)
     {
-        Shuffle = !Shuffle;
+        if (Shuffle == enabled)
+            return;
+
+        Shuffle = enabled;
         if (Shuffle)
             RebuildShuffleOrder();
         ShuffleChanged?.Invoke(Shuffle);
@@ -513,13 +518,22 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
 
     public void CycleRepeatMode()
     {
-        Repeat = Repeat switch
+        var next = Repeat switch
         {
             RepeatMode.Off => RepeatMode.All,
             RepeatMode.All => RepeatMode.One,
             RepeatMode.One => RepeatMode.Off,
             _ => RepeatMode.Off
         };
+        SetRepeat(next);
+    }
+
+    public void SetRepeat(RepeatMode mode)
+    {
+        if (Repeat == mode)
+            return;
+
+        Repeat = mode;
         RepeatModeChanged?.Invoke(Repeat);
     }
 
@@ -641,12 +655,7 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
         }
         else if (!string.IsNullOrEmpty(nextTrack.LocalPath))
         {
-            source = new PlayerSource
-            {
-                Url = nextTrack.LocalPath,
-                MimeType = "audio/mpeg",
-                IndexedFileId = nextTrack.IndexedFileId
-            };
+            source = CreateTrackSource(nextTrack, nextTrack.LocalPath, "audio/mpeg");
         }
         else
         {
@@ -657,12 +666,11 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
                 return;
             }
 
-            source = new PlayerSource
-            {
-                Url = session.Source.Uri.OriginalString,
-                MimeType = session.Source.MimeType,
-                IndexedFileId = nextTrack.IndexedFileId
-            };
+            source = CreateTrackSource(
+                nextTrack,
+                session.Source.Uri.OriginalString,
+                session.Source.MimeType,
+                session.Id);
         }
 
         ClearPreparedNextSource();
@@ -687,6 +695,7 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
     public void NotifyCrossfadeCompleted()
     {
         _crossfadeTriggered = false;
+        _gaplessPrebufferTriggered = false;
         if (!_crossfadeUiDeferred)
             return;
 
@@ -788,23 +797,17 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
         PlayerSource source;
         if (!string.IsNullOrEmpty(nextTrack.LocalPath))
         {
-            source = new PlayerSource
-            {
-                Url = nextTrack.LocalPath,
-                MimeType = "audio/mpeg",
-                IndexedFileId = nextTrack.IndexedFileId
-            };
+            source = CreateTrackSource(nextTrack, nextTrack.LocalPath, "audio/mpeg");
         }
         else
         {
             var session = await GetSessionForTrackAsync(nextTrack, cancellationToken);
             if (session?.Source is null) return;
-            source = new PlayerSource
-            {
-                Url = session.Source.Uri.OriginalString,
-                MimeType = session.Source.MimeType,
-                IndexedFileId = nextTrack.IndexedFileId
-            };
+            source = CreateTrackSource(
+                nextTrack,
+                session.Source.Uri.OriginalString,
+                session.Source.MimeType,
+                session.Id);
         }
 
         _gaplessPrebufferTriggered = true;
@@ -993,12 +996,7 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
         }
         else if (!string.IsNullOrEmpty(track.LocalPath))
         {
-            source = new PlayerSource
-            {
-                Url = track.LocalPath,
-                MimeType = "audio/mpeg",
-                IndexedFileId = track.IndexedFileId
-            };
+            source = CreateTrackSource(track, track.LocalPath, "audio/mpeg");
         }
         else
         {
@@ -1014,13 +1012,11 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
                     return;
                 }
 
-                source = new PlayerSource
-                {
-                    StreamSessionId = session.Id,
-                    Url = session.Source.Uri.OriginalString,
-                    MimeType = session.Source.MimeType,
-                    IndexedFileId = track.IndexedFileId
-                };
+                source = CreateTrackSource(
+                    track,
+                    session.Source.Uri.OriginalString,
+                    session.Source.MimeType,
+                    session.Id);
             }
             catch (HttpRequestException)
             {
@@ -1035,6 +1031,22 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
 
         SourceChanged?.Invoke(source);
     }
+
+    private static PlayerSource CreateTrackSource(
+        AudioQueueItem track,
+        string url,
+        string mimeType,
+        Guid? streamSessionId = null) =>
+        new()
+        {
+            MediaId = track.MediaId,
+            IndexedFileId = track.IndexedFileId,
+            Title = track.Title,
+            CoverUrl = track.CoverUrl,
+            Url = url,
+            MimeType = mimeType,
+            StreamSessionId = streamSessionId
+        };
 
     private int? GetNextIndex()
     {

@@ -70,10 +70,10 @@ public sealed class MediaBrowseService : IMediaBrowseService
     {
         IReadOnlyList<MediaBrowseItem> items =
         [
-            new MediaBrowseItem { Id = RootHome, Title = "Home", IsBrowsable = true },
-            new MediaBrowseItem { Id = RootArtists, Title = "Library", IsBrowsable = true },
-            new MediaBrowseItem { Id = RootPlaylists, Title = "Playlists", IsBrowsable = true },
-            new MediaBrowseItem { Id = RootDownloads, Title = "Downloads", IsBrowsable = true }
+            new MediaBrowseItem { Id = RootHome, Title = T("Home"), IsBrowsable = true },
+            new MediaBrowseItem { Id = RootArtists, Title = T("Library"), IsBrowsable = true },
+            new MediaBrowseItem { Id = RootPlaylists, Title = T("Playlists"), IsBrowsable = true },
+            new MediaBrowseItem { Id = RootDownloads, Title = T("Downloads"), IsBrowsable = true }
         ];
         return Task.FromResult(items);
     }
@@ -214,7 +214,7 @@ public sealed class MediaBrowseService : IMediaBrowseService
             .Select(h => new MediaBrowseItem
             {
                 Id = $"{PrefixRecent}{h.MediaId}",
-                Title = h.MediaTitle ?? "Unknown",
+                Title = h.MediaTitle ?? T("Unknown"),
                 ArtworkUrl = h.ImageUrl is not null ? _apiClient.GetAbsoluteUri(h.ImageUrl)?.AbsoluteUri : null,
                 IsPlayable = true
             })
@@ -251,7 +251,7 @@ public sealed class MediaBrowseService : IMediaBrowseService
             .Select(a => new MediaBrowseItem
             {
                 Id = $"{PrefixArtist}{a.Id}",
-                Title = a.Title ?? "Unknown Artist",
+                Title = a.Title ?? T("UnknownArtist"),
                 ArtworkUrl = GetPictureUrl(a.Pictures),
                 IsBrowsable = true
             })
@@ -295,7 +295,7 @@ public sealed class MediaBrowseService : IMediaBrowseService
 
         var items = new List<MediaBrowseItem>
         {
-            new() { Id = $"{parentId}{ShuffleSuffix}", Title = "Shuffle All", IsPlayable = true }
+            new() { Id = $"{parentId}{ShuffleSuffix}", Title = T("ShuffleAll"), IsPlayable = true }
         };
 
         items.AddRange((result?.Items ?? [])
@@ -303,7 +303,7 @@ public sealed class MediaBrowseService : IMediaBrowseService
             .Select(a => new MediaBrowseItem
             {
                 Id = $"{PrefixAlbum}{a.Id}",
-                Title = a.Title ?? "Unknown Album",
+                Title = a.Title ?? T("UnknownAlbum"),
                 Subtitle = a.ReleaseDate?.Year.ToString(),
                 ArtworkUrl = GetPictureUrl(a.Pictures),
                 IsBrowsable = true
@@ -324,8 +324,8 @@ public sealed class MediaBrowseService : IMediaBrowseService
 
         var items = new List<MediaBrowseItem>
         {
-            new() { Id = parentId, Title = "Play All", IsPlayable = true },
-            new() { Id = $"{parentId}{ShuffleSuffix}", Title = "Shuffle", IsPlayable = true }
+            new() { Id = parentId, Title = T("PlayAll"), IsPlayable = true },
+            new() { Id = $"{parentId}{ShuffleSuffix}", Title = T("Shuffle"), IsPlayable = true }
         };
 
         items.AddRange((album.Tracks ?? [])
@@ -333,7 +333,7 @@ public sealed class MediaBrowseService : IMediaBrowseService
             .Select(t => new MediaBrowseItem
             {
                 Id = $"{PrefixAlbum}{albumId}:{t.Id}",
-                Title = t.Title ?? "Unknown Track",
+                Title = t.Title ?? T("UnknownTrack"),
                 Subtitle = album.ArtistName,
                 ArtworkUrl = (t.Pictures != null && t.Pictures.Count > 0) ? GetPictureUrl(t.Pictures) : coverUrl,
                 IsPlayable = true
@@ -349,9 +349,9 @@ public sealed class MediaBrowseService : IMediaBrowseService
 
         var homeSections = new List<MediaBrowseItem>
         {
-            new() { Id = HomeSectionRecentPlaylists, Title = "Recent Playlists", IsBrowsable = true },
-            new() { Id = HomeSectionRecentPlays, Title = "Recent Plays", IsBrowsable = true },
-            new() { Id = HomeSectionRecentlyAdded, Title = "Recently Added", IsBrowsable = true }
+            new() { Id = HomeSectionRecentPlaylists, Title = T("HomeRecentPlaylists"), IsBrowsable = true },
+            new() { Id = HomeSectionRecentPlays, Title = T("HomeRecentPlays"), IsBrowsable = true },
+            new() { Id = HomeSectionRecentlyAdded, Title = T("HomeRecentlyAdded"), IsBrowsable = true }
         };
 
         var recentPlaylists = await TryGetOnlineAsync(() => GetHomeRecentPlaylistsAsync(cancellationToken));
@@ -455,14 +455,18 @@ public sealed class MediaBrowseService : IMediaBrowseService
         _ => radioType.ToString()
     };
 
-    private static MediaBrowseItem CreateServerUnavailableItem() => new()
+    private MediaBrowseItem CreateServerUnavailableItem() => new()
     {
         Id = ServerUnavailableId,
-        Title = "Server unavailable",
-        Subtitle = "You can still use Downloads",
+        Title = T("ServerUnavailable"),
+        Subtitle = T("YouCanStillUseDownloads"),
         IsBrowsable = false,
         IsPlayable = false
     };
+
+    private string T(string name) => _localizer[name];
+
+    private string T(string name, params object[] arguments) => _localizer[name, arguments];
 
     private static async Task<IReadOnlyList<MediaBrowseItem>?> TryGetOnlineAsync(
         Func<Task<IReadOnlyList<MediaBrowseItem>>> load)
@@ -477,7 +481,7 @@ public sealed class MediaBrowseService : IMediaBrowseService
         }
     }
 
-    private static async Task<IReadOnlyList<MediaBrowseItem>> GetOnlineOrUnavailableAsync(
+    private async Task<IReadOnlyList<MediaBrowseItem>> GetOnlineOrUnavailableAsync(
         Func<Task<IReadOnlyList<MediaBrowseItem>>> load)
     {
         try
@@ -523,7 +527,7 @@ public sealed class MediaBrowseService : IMediaBrowseService
             .Select(a => new MediaBrowseItem
             {
                 Id = $"{PrefixAlbum}{a.Id}",
-                Title = a.Title ?? "Unknown Album",
+                Title = a.Title ?? T("UnknownAlbum"),
                 ArtworkUrl = GetPictureUrl(a.Pictures),
                 IsPlayable = true
             })
@@ -539,15 +543,15 @@ public sealed class MediaBrowseService : IMediaBrowseService
 
         var items = new List<MediaBrowseItem>
         {
-            new() { Id = parentId, Title = "Play All", IsPlayable = true },
-            new() { Id = $"{parentId}{ShuffleSuffix}", Title = "Shuffle", IsPlayable = true }
+            new() { Id = parentId, Title = T("PlayAll"), IsPlayable = true },
+            new() { Id = $"{parentId}{ShuffleSuffix}", Title = T("Shuffle"), IsPlayable = true }
         };
 
         items.AddRange((result?.Items ?? [])
             .Select(item => new MediaBrowseItem
             {
                 Id = $"{PrefixPlaylist}{playlistId}:{item.MediaId}",
-                Title = item.MediaTitle ?? "Unknown Track",
+                Title = item.MediaTitle ?? T("UnknownTrack"),
                 Subtitle = item.ArtistName,
                 ArtworkUrl = GetPictureUrl(item.Pictures) ?? playlistCoverUrl,
                 IsPlayable = true
@@ -573,7 +577,7 @@ public sealed class MediaBrowseService : IMediaBrowseService
             {
                 IndexedFileId = t.IndexedFileId!.Value,
                 MediaId = t.Id,
-                Title = t.Title ?? "Unknown Track",
+                Title = t.Title ?? T("UnknownTrack"),
                 Artist = t.ArtistName,
                 ArtistId = t.ArtistId,
                 AlbumTitle = t.AlbumTitle,
@@ -601,7 +605,7 @@ public sealed class MediaBrowseService : IMediaBrowseService
             {
                 IndexedFileId = t.IndexedFileId!.Value,
                 MediaId = t.Id,
-                Title = t.Title ?? "Unknown Track",
+                Title = t.Title ?? T("UnknownTrack"),
                 Artist = album.ArtistName,
                 ArtistId = album.ArtistId,
                 AlbumTitle = album.Title,
@@ -630,7 +634,7 @@ public sealed class MediaBrowseService : IMediaBrowseService
             {
                 IndexedFileId = indexedFile.Id,
                 MediaId = track.Id,
-                Title = track.Title ?? "Unknown Track",
+                Title = track.Title ?? T("UnknownTrack"),
                 Artist = track.ArtistName,
                 ArtistId = track.ArtistId,
                 AlbumTitle = null,
@@ -678,7 +682,7 @@ public sealed class MediaBrowseService : IMediaBrowseService
                 {
                     IndexedFileId = t.IndexedFileId!.Value,
                     MediaId = t.Id,
-                    Title = t.Title ?? "Unknown Track",
+                    Title = t.Title ?? T("UnknownTrack"),
                     Artist = t.ArtistName,
                     ArtistId = t.ArtistId,
                     AlbumTitle = t.AlbumTitle,
@@ -713,7 +717,7 @@ public sealed class MediaBrowseService : IMediaBrowseService
             {
                 IndexedFileId = item.IndexedFileId!.Value,
                 MediaId = item.MediaId,
-                Title = item.MediaTitle ?? "Unknown Track",
+                Title = item.MediaTitle ?? T("UnknownTrack"),
                 Artist = item.ArtistName,
                 ArtistId = item.ArtistId,
                 AlbumTitle = item.AlbumTitle,
@@ -763,8 +767,8 @@ public sealed class MediaBrowseService : IMediaBrowseService
             groups.Insert(0, new MediaBrowseItem
             {
                 Id = $"{RootDownloads}{ShuffleSuffix}",
-                Title = "Shuffle All",
-                Subtitle = $"{items.Count} tracks",
+                Title = T("ShuffleAll"),
+                Subtitle = T("TrackCount", items.Count),
                 IsPlayable = true
             });
         }
@@ -873,7 +877,7 @@ public sealed class MediaBrowseService : IMediaBrowseService
             {
                 IndexedFileId = t.IndexedFileId!.Value,
                 MediaId = t.Id,
-                Title = t.Title ?? "Unknown Track",
+                Title = t.Title ?? T("UnknownTrack"),
                 Artist = t.ArtistName,
                 ArtistId = t.ArtistId,
                 AlbumTitle = t.AlbumTitle,
@@ -914,7 +918,7 @@ public sealed class MediaBrowseService : IMediaBrowseService
             results.Add(new MediaBrowseItem
             {
                 Id = $"{PrefixArtist}{item.Id}",
-                Title = item.Title ?? "Unknown",
+                Title = item.Title ?? T("Unknown"),
                 ArtworkUrl = GetPictureUrl(item.Pictures),
                 IsBrowsable = true
             });
@@ -934,7 +938,7 @@ public sealed class MediaBrowseService : IMediaBrowseService
             results.Add(new MediaBrowseItem
             {
                 Id = $"{PrefixAlbum}{item.Id}",
-                Title = item.Title ?? "Unknown",
+                Title = item.Title ?? T("Unknown"),
                 ArtworkUrl = GetPictureUrl(item.Pictures),
                 IsBrowsable = true,
                 IsPlayable = true
@@ -955,7 +959,7 @@ public sealed class MediaBrowseService : IMediaBrowseService
             results.Add(new MediaBrowseItem
             {
                 Id = $"{PrefixAlbum}{item.AlbumId}:{item.Id}",
-                Title = item.Title ?? "Unknown",
+                Title = item.Title ?? T("Unknown"),
                 Subtitle = item.ArtistName,
                 ArtworkUrl = GetPictureUrl(item.Pictures),
                 IsPlayable = true

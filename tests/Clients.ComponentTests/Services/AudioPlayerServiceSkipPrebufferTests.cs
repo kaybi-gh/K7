@@ -59,6 +59,7 @@ public class AudioPlayerServiceSkipPrebufferTests
         skipped.Should().NotBeNull();
         skipped!.Url.Should().Be(prebuffered!.Url);
         skipped.IndexedFileId.Should().Be(tracks[1].IndexedFileId);
+        prebuffered.MediaId.Should().Be(tracks[1].MediaId);
         await _streamUri.Received(2).GetOrCreateSessionAsync(
             Arg.Any<Guid>(),
             Arg.Any<int?>(),
