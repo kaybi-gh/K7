@@ -1,7 +1,7 @@
 ﻿@namespace K7.Clients.Shared.UI.Components
 @typeparam TItem
 
-<div class="k7-table-wrap @Class">
+<div class="k7-table-wrap @Class" @ref="_tableRef">
     <table class="k7-table @(Dense ? "k7-table--dense" : "") @(Hover ? "k7-table--hover" : "")">
         @if (HeaderContent is not null)
         {
@@ -15,7 +15,7 @@
                 @foreach (var item in Items)
                 {
                     var localItem = item;
-                    <tr id="@(RowId?.Invoke(localItem))" class="focusable @RowClass" tabindex="0" @onclick="() => OnRowClick.InvokeAsync(new TableRowClickEventArgs<TItem> { Item = localItem })">
+                    <tr id="@(RowId?.Invoke(localItem))" class="k7-table-row focusable @RowClass" tabindex="0" @onclick="() => OnRowClick.InvokeAsync(new TableRowClickEventArgs<TItem> { Item = localItem })">
                         @RowTemplate?.Invoke(localItem)
                     </tr>
                 }
