@@ -12,11 +12,14 @@ namespace K7.Clients.Shared.Services;
 public sealed class CustomNavStore : ICustomNavStore, IDisposable
 {
     private readonly IServiceScopeFactory _scopeFactory;
+    private readonly ICustomNavHubEvents _hubEvents;
     private readonly SemaphoreSlim _gate = new(1, 1);
 
-    public CustomNavStore(IServiceScopeFactory scopeFactory)
+    public CustomNavStore(IServiceScopeFactory scopeFactory, ICustomNavHubEvents hubEvents)
     {
         _scopeFactory = scopeFactory;
+        _hubEvents = hubEvents;
+        _hubEvents.CustomNavLayoutUpdated += OnCustomNavLayoutUpdated;
     }
 
     public event Action? Changed;
@@ -115,5 +118,16 @@ public sealed class CustomNavStore : ICustomNavStore, IDisposable
         Changed?.Invoke();
     }
 
-    public void Dispose() => _gate.Dispose();
+    public void Dispose()
+    {
+        _hubEvents.CustomNavLayoutUpdated -= OnCustomNavLayoutUpdated;
+        _gate.Dispose();
+    }
+
+    private void OnCustomNavLayoutUpdated(CustomNavLayoutDto layout)
+    {
+        Layout = layout;
+        IsLoaded = true;
+        Changed?.Invoke();
+    }
 }

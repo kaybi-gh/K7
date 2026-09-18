@@ -123,6 +123,7 @@ public static class DependencyInjection
         services.AddSingleton<IPlaybackProgressNotifier, PlaybackProgressNotifier>();
         services.AddSingleton<IUserRatingNotifier, UserRatingNotifier>();
         services.AddSingleton<IUserVideoPlayerSettingsNotifier, UserVideoPlayerSettingsNotifier>();
+        services.AddSingleton<IUserCustomNavNotifier, UserCustomNavNotifier>();
         services.AddSingleton<MediaNotificationBatcher>();
         services.AddSingleton<ILibraryNotifier, LibraryNotifier>();
         services.AddSingleton<IBackgroundTaskNotifier, BackgroundTaskNotifier>();

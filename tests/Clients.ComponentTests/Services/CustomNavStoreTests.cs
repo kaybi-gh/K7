@@ -74,10 +74,44 @@ public class CustomNavStoreTests
         sut.Groups.Should().BeEmpty();
     }
 
+    [Test]
+    public void HubLayoutUpdated_ShouldApplyLayoutAndRaiseChanged()
+    {
+        var hub = Substitute.For<ICustomNavHubEvents>();
+        using var sut = CreateStore(hubEvents: hub);
+        var raised = 0;
+        sut.Changed += () => raised++;
+
+        var layout = new CustomNavLayoutDto
+        {
+            Enabled = true,
+            Placement = CustomNavPlacement.Bar,
+            BarScope = CustomNavBarScope.Everywhere,
+            BarShowIcons = true,
+            Items =
+            [
+                new CustomNavItemDto
+                {
+                    Id = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"),
+                    Kind = CustomNavItemKind.AppRoute,
+                    Route = "/explore"
+                }
+            ]
+        };
+
+        hub.CustomNavLayoutUpdated += Raise.Event<Action<CustomNavLayoutDto>>(layout);
+
+        sut.IsLoaded.Should().BeTrue();
+        sut.Layout.Enabled.Should().BeTrue();
+        sut.Layout.Placement.Should().Be(CustomNavPlacement.Bar);
+        raised.Should().Be(1);
+    }
+
     private static CustomNavStore CreateStore(
         CustomNavLayoutDto? layout = null,
         List<LibraryGroupDto>? groups = null,
-        IUserPreferencesService? prefs = null)
+        IUserPreferencesService? prefs = null,
+        ICustomNavHubEvents? hubEvents = null)
     {
         prefs ??= Substitute.For<IUserPreferencesService>();
         prefs.GetCustomNavLayoutAsync(Arg.Any<CancellationToken>())
@@ -100,7 +134,7 @@ public class CustomNavStoreTests
         var scopeFactory = Substitute.For<IServiceScopeFactory>();
         scopeFactory.CreateScope().Returns(scope);
 
-        return new CustomNavStore(scopeFactory);
+        return new CustomNavStore(scopeFactory, hubEvents ?? Substitute.For<ICustomNavHubEvents>());
     }
 
     private static LibraryGroupDto CreateGroup(Guid id, string title) => new()

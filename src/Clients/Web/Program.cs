@@ -92,6 +92,7 @@ builder.Services.AddSingleton<PlaybackProgressTracker>();
 builder.Services.AddSingleton<AudioPlaybackProgressTracker>();
 builder.Services.AddSingleton<K7HubClient>();
 builder.Services.AddSingleton<IVideoPlayerSettingsHubEvents>(sp => sp.GetRequiredService<K7HubClient>());
+builder.Services.AddSingleton<ICustomNavHubEvents>(sp => sp.GetRequiredService<K7HubClient>());
 builder.Services.AddSingleton<IUserRatingSync, UserRatingSync>();
 builder.Services.AddSingleton<IVideoPlayerUxSettingsSync, VideoPlayerUxSettingsSync>();
 builder.Services.AddSingleton<MediaCacheStore>();

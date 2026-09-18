@@ -2,6 +2,7 @@ using System.Text.Json;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Security;
 using K7.Server.Application.Features.CustomNav;
+using K7.Server.Application.Features.CustomNav.Queries.GetEffectiveCustomNavLayout;
 using K7.Server.Domain.Settings;
 using K7.Shared.Dtos.CustomNav;
 
@@ -13,7 +14,11 @@ public record UpdateUserCustomNavLayoutCommand : IRequest
     public required CustomNavLayoutDto Layout { get; init; }
 }
 
-public class UpdateUserCustomNavLayoutCommandHandler(IUserSettingsService userSettingsService, IUser currentUser)
+public class UpdateUserCustomNavLayoutCommandHandler(
+    IUserSettingsService userSettingsService,
+    IUser currentUser,
+    ISender sender,
+    IUserCustomNavNotifier customNavNotifier)
     : IRequestHandler<UpdateUserCustomNavLayoutCommand>
 {
     public async Task Handle(UpdateUserCustomNavLayoutCommand request, CancellationToken cancellationToken)
@@ -21,6 +26,12 @@ public class UpdateUserCustomNavLayoutCommandHandler(IUserSettingsService userSe
         var userId = Guard.Against.Null(currentUser.Id);
         var json = JsonSerializer.Serialize(request.Layout);
         await userSettingsService.SetAsync(userId, UserSettingKeys.CustomNavLayout, json, cancellationToken);
+
+        if (currentUser.IdentityId is not { } identityId)
+            return;
+
+        var effective = await sender.Send(new GetEffectiveCustomNavLayoutQuery(), cancellationToken);
+        await customNavNotifier.NotifyCustomNavLayoutUpdatedAsync(identityId, effective, cancellationToken);
     }
 }
 
