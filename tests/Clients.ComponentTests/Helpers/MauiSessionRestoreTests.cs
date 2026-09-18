@@ -226,6 +226,20 @@ public class MauiSessionRestoreTests
             hasUsableOnlineAccessToken: true).Should().BeFalse();
     }
 
+    [Test]
+    public void ShouldSignInOfflineWhenDisconnected_ShouldBeFalse_WhenAccessTokenIsStillUsable()
+    {
+        MauiSessionRestore.ShouldSignInOfflineWhenDisconnected(hasUsableOnlineAccessToken: true)
+            .Should().BeFalse();
+    }
+
+    [Test]
+    public void ShouldSignInOfflineWhenDisconnected_ShouldBeTrue_WhenAccessTokenIsMissing()
+    {
+        MauiSessionRestore.ShouldSignInOfflineWhenDisconnected(hasUsableOnlineAccessToken: false)
+            .Should().BeTrue();
+    }
+
     private static ILocalUserService SoloUsers(
         string id,
         bool unlocked,

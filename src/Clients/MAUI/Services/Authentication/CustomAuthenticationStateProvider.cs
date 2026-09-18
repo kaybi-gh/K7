@@ -106,35 +106,43 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
     {
         await WaitForNetworkHintAsync(cancellationToken);
 
-        AllowRestoreRetryIfNeeded();
-        await GetAuthenticationStateAsync();
-
-        if (HasUsableOnlineAccessToken())
-            return;
-
-        var serverConfigured = _k7ServerService.HttpClient.BaseAddress is not null;
-        if (MauiSessionRestore.ShouldRestoreHeadless(_localUserService, serverConfigured)
-            && !MauiSessionRestore.ShouldRestore(_localUserService, serverConfigured))
+        for (var attempt = 0; attempt < MauiSessionRestore.HeadlessRestoreMaxAttempts; attempt++)
         {
-            var lastUser = _localUserService.GetLastActive();
-            if (lastUser is not null)
+            AllowRestoreRetryIfNeeded();
+            await GetAuthenticationStateAsync();
+
+            if (HasUsableOnlineAccessToken())
+                return;
+
+            var serverConfigured = _k7ServerService.HttpClient.BaseAddress is not null;
+            if (MauiSessionRestore.ShouldRestoreHeadless(_localUserService, serverConfigured)
+                && !MauiSessionRestore.ShouldRestore(_localUserService, serverConfigured))
             {
-                RestoreOnCallStack.Value = true;
-                try
+                var lastUser = _localUserService.GetLastActive();
+                if (lastUser is not null)
                 {
-                    await RestoreUserInBackgroundAsync(lastUser);
-                }
-                finally
-                {
-                    RestoreOnCallStack.Value = false;
+                    RestoreOnCallStack.Value = true;
+                    try
+                    {
+                        await RestoreUserInBackgroundAsync(lastUser);
+                    }
+                    finally
+                    {
+                        RestoreOnCallStack.Value = false;
+                    }
                 }
             }
+
+            if (HasUsableOnlineAccessToken())
+                return;
+
+            await TryRefreshAsync(cancellationToken);
+            if (HasUsableOnlineAccessToken())
+                return;
+
+            if (attempt < MauiSessionRestore.HeadlessRestoreMaxAttempts - 1)
+                await Task.Delay(MauiSessionRestore.HeadlessRestoreRetryDelay, cancellationToken);
         }
-
-        if (HasUsableOnlineAccessToken())
-            return;
-
-        await TryRefreshAsync(cancellationToken);
     }
 
     public async Task LoginAsync(CancellationToken cancellationToken = default)
@@ -446,10 +454,16 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
         // NetworkAccess.Local / ConstrainedInternet are common for self-hosted LAN
         // servers and Android Auto (phone may have no upstream Internet). Treating
         // those as offline wiped the access token and left AA online tabs empty.
+        // A brief NetworkAccess.None while the car binds must not drop a still-valid Bearer
+        // or block on a 15s refresh timeout.
         if (Connectivity.Current.NetworkAccess == NetworkAccess.None)
         {
-            SignInOffline(lastUser);
-            await RestoreSharedProfileAsync();
+            if (MauiSessionRestore.ShouldSignInOfflineWhenDisconnected(HasUsableOnlineAccessToken()))
+            {
+                SignInOffline(lastUser);
+                await RestoreSharedProfileAsync();
+            }
+
             return;
         }
 
@@ -974,7 +988,7 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
         if (Connectivity.Current.NetworkAccess != NetworkAccess.None)
             return;
 
-        var deadline = DateTime.UtcNow.AddSeconds(2);
+        var deadline = DateTime.UtcNow.Add(MauiSessionRestore.HeadlessNetworkWait);
         while (DateTime.UtcNow < deadline && Connectivity.Current.NetworkAccess == NetworkAccess.None)
             await Task.Delay(200, cancellationToken);
     }

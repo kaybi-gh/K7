@@ -4,6 +4,7 @@ using K7.Clients.MAUI.Services.Authentication;
 using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Services;
+using K7.Server.Domain.Enums;
 using Microsoft.AspNetCore.Components.Authorization;
 
 namespace K7.Clients.MAUI.Services;
@@ -71,5 +72,32 @@ internal static class MauiSessionBootstrap
         var userId = await AuthIdentity.GetOnlineUserIdAsync(authProvider, cancellationToken);
         if (userId is not null)
             await DeviceInitializer.InitializeDeviceAsync(services, userId);
+
+        await EnableHeadlessPlaybackReportingAsync(services, userId, cancellationToken);
+    }
+
+    private static async Task EnableHeadlessPlaybackReportingAsync(
+        IServiceProvider services,
+        string? userId,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrEmpty(userId))
+            return;
+
+        // Phone UI never painted. Still report now-playing so admin streams and
+        // scrobbles work when Android Auto starts K7 headless.
+        AppReadySignal.Signal();
+
+        var features = services.GetService<IFeatureAccessService>();
+        var tracker = services.GetService<AudioPlaybackProgressTracker>();
+        if (features is not null && tracker is not null)
+        {
+            var canReport = await features.HasCapabilityAsync(Capability.CanReportPlaybackProgress);
+            tracker.SetCanReport(canReport);
+        }
+
+        var sync = services.GetService<IPlaybackSyncService>();
+        if (sync is not null)
+            sync.SyncPendingEventsAsync(cancellationToken).FireAndForget();
     }
 }

@@ -98,4 +98,24 @@ public class AudioPlaybackProgressTrackerTests
         await _streaming.DidNotReceiveWithAnyArgs()
             .ReportPlaybackProgressAsync(default, default, default, default, default, default, default);
     }
+
+    [Test]
+    public async Task Report_ShouldNotSend_WhenCanReportIsFalse()
+    {
+        _sut.SetCanReport(false);
+        var mediaId = Guid.NewGuid();
+        _audio.CurrentTrackChanged += Raise.Event<Action<AudioQueueItem?>>(new AudioQueueItem
+        {
+            MediaId = mediaId,
+            IndexedFileId = Guid.NewGuid(),
+            Title = "Track",
+            Artist = "Artist",
+            AlbumTitle = "Album"
+        });
+        _audio.PlaybackStateChanged += Raise.Event<Action<PlaybackState>>(PlaybackState.Playing);
+        await Task.Delay(50);
+
+        await _streaming.DidNotReceiveWithAnyArgs()
+            .ReportPlaybackProgressAsync(default, default, default, default, default, default, default);
+    }
 }

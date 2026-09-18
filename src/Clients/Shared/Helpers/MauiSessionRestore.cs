@@ -10,6 +10,10 @@ namespace K7.Clients.Shared.Helpers;
 /// </summary>
 public static class MauiSessionRestore
 {
+    public static readonly TimeSpan HeadlessNetworkWait = TimeSpan.FromSeconds(8);
+    public static readonly TimeSpan HeadlessRestoreRetryDelay = TimeSpan.FromSeconds(1);
+    public const int HeadlessRestoreMaxAttempts = 4;
+
     public static bool ShouldRestore(ILocalUserService localUsers, bool serverConfigured)
     {
         ArgumentNullException.ThrowIfNull(localUsers);
@@ -77,4 +81,11 @@ public static class MauiSessionRestore
             && !restoreInFlight
             && !hasUsableOnlineAccessToken;
     }
+
+    /// <summary>
+    /// Android Auto can report <c>NetworkAccess.None</c> for a few seconds while Bluetooth
+    /// comes up. Wiping a still-valid Bearer there makes the first car play fail.
+    /// </summary>
+    public static bool ShouldSignInOfflineWhenDisconnected(bool hasUsableOnlineAccessToken) =>
+        !hasUsableOnlineAccessToken;
 }
