@@ -36,7 +36,7 @@ public class GetMusicRadioQueryHandler(
 
     public async Task<List<BaseMedia>> Handle(GetMusicRadioQuery request, CancellationToken cancellationToken)
     {
-        var userId = currentUser.Id;
+        var userId = await currentUser.GetIdAsync(cancellationToken);
         var libraryIds = await LibraryGroupFilterHelper.ResolveLibraryIdsAsync(
             context, request.LibraryIds, request.LibraryGroupIds, cancellationToken);
 
@@ -171,26 +171,31 @@ public class GetMusicRadioQueryHandler(
         }
 
         var uid = userId.Value;
+        var ratedMediaIds = await GetUserRatedMediaIdsAsync(uid, ct);
 
-        var neverPlayedIds = await baseQuery
+        var neverPlayedIds = await WhereNotRatedByUser(baseQuery, ratedMediaIds)
             .Where(t => !t.UserMediaStates.Any(s => s.UserId == uid && s.PlayCount > 0))
-            .Where(t => !t.Ratings.OfType<UserRating>().Any(r => r.UserId == uid && r.Value > 0))
             .OrderBy(_ => EF.Functions.Random())
             .Select(t => t.Id)
             .Take(limit)
             .ToListAsync(ct);
 
-        if (neverPlayedIds.Count > 0)
-            return await LoadTracksByIdsAsync(neverPlayedIds, userId, libraryIds, ct);
+        IReadOnlyList<Guid> selectedIds = neverPlayedIds;
+        if (neverPlayedIds.Count < limit)
+        {
+            var existing = neverPlayedIds.ToHashSet();
+            var neverRatedIds = await WhereNotRatedByUser(baseQuery, ratedMediaIds)
+                .Where(t => !existing.Contains(t.Id))
+                .OrderBy(_ => EF.Functions.Random())
+                .Select(t => t.Id)
+                .Take(limit - neverPlayedIds.Count)
+                .ToListAsync(ct);
 
-        var neverRatedIds = await baseQuery
-            .Where(t => !t.Ratings.OfType<UserRating>().Any(r => r.UserId == uid && r.Value > 0))
-            .OrderBy(_ => EF.Functions.Random())
-            .Select(t => t.Id)
-            .Take(limit)
-            .ToListAsync(ct);
+            selectedIds = neverPlayedIds.Concat(neverRatedIds).ToList();
+        }
 
-        return await LoadTracksByIdsAsync(neverRatedIds, userId, libraryIds, ct);
+        var tracks = await LoadTracksByIdsAsync(selectedIds, userId, libraryIds, ct);
+        return FilterUnexploredTracks(tracks, selectedIds, userId, limit, ratedMediaIds);
     }
 
     private async Task<List<BaseMedia>> GetDiscoveryAiMix(
@@ -254,7 +259,11 @@ public class GetMusicRadioQueryHandler(
             return [];
 
         var tracks = await LoadTracksByIdsAsync(candidateIds, userId, libraryIds, ct);
-        return FilterUnexploredTracks(tracks, candidateIds, userId, limit);
+        HashSet<Guid>? ratedMediaIds = null;
+        if (userId is { } uid)
+            ratedMediaIds = await GetUserRatedMediaIdsAsync(uid, ct);
+
+        return FilterUnexploredTracks(tracks, candidateIds, userId, limit, ratedMediaIds);
     }
 
     private async Task<List<Guid>> PickTasteSeedTrackIdsAsync(
@@ -471,6 +480,23 @@ public class GetMusicRadioQueryHandler(
         return query;
     }
 
+    private async Task<HashSet<Guid>> GetUserRatedMediaIdsAsync(Guid userId, CancellationToken ct)
+    {
+        var ids = await context.Ratings
+            .OfType<UserRating>()
+            .AsNoTracking()
+            .Where(r => r.UserId == userId && r.Value > 0)
+            .Select(r => r.MediaId)
+            .ToListAsync(ct);
+
+        return ids.ToHashSet();
+    }
+
+    private static IQueryable<MusicTrack> WhereNotRatedByUser(
+        IQueryable<MusicTrack> query,
+        HashSet<Guid> ratedMediaIds) =>
+        query.Where(t => !ratedMediaIds.Contains(t.Id) && !ratedMediaIds.Contains(t.AlbumId));
+
     private IQueryable<MusicTrack> ApplyLibraryFilter(IQueryable<MusicTrack> query, Guid[]? libraryIds) =>
         libraryIds is not { Length: > 0 }
             ? query
@@ -500,7 +526,8 @@ public class GetMusicRadioQueryHandler(
         List<BaseMedia> loaded,
         IReadOnlyList<Guid> orderedIds,
         Guid? userId,
-        int limit)
+        int limit,
+        IReadOnlySet<Guid>? ratedMediaIds = null)
     {
         var trackMap = loaded.OfType<MusicTrack>().ToDictionary(t => t.Id);
         var ordered = orderedIds
@@ -514,7 +541,7 @@ public class GetMusicRadioQueryHandler(
         var uid = userId.Value;
 
         var neverPlayed = ordered
-            .Where(t => !HasBeenPlayed(t, uid) && !HasUserRating(t, uid))
+            .Where(t => !HasBeenPlayed(t, uid) && !HasUserRating(t, uid, ratedMediaIds))
             .ToList();
 
         if (neverPlayed.Count >= limit)
@@ -523,7 +550,7 @@ public class GetMusicRadioQueryHandler(
         var neverPlayedIds = neverPlayed.Select(t => t.Id).ToHashSet();
         var neverRated = ordered
             .Where(t => !neverPlayedIds.Contains(t.Id))
-            .Where(t => !HasUserRating(t, uid))
+            .Where(t => !HasUserRating(t, uid, ratedMediaIds))
             .ToList();
 
         return neverPlayed
@@ -536,8 +563,14 @@ public class GetMusicRadioQueryHandler(
     private static bool HasBeenPlayed(MusicTrack track, Guid userId) =>
         track.UserMediaStates.Any(s => s.UserId == userId && s.PlayCount > 0);
 
-    private static bool HasUserRating(MusicTrack track, Guid userId) =>
-        track.Ratings.OfType<UserRating>().Any(r => r.UserId == userId && r.Value > 0);
+    private static bool HasUserRating(MusicTrack track, Guid userId, IReadOnlySet<Guid>? ratedMediaIds)
+    {
+        if (ratedMediaIds is not null)
+            return ratedMediaIds.Contains(track.Id) || ratedMediaIds.Contains(track.AlbumId);
+
+        return track.Ratings.OfType<UserRating>().Any(r => r.UserId == userId && r.Value > 0)
+            || (track.Album?.Ratings.OfType<UserRating>().Any(r => r.UserId == userId && r.Value > 0) ?? false);
+    }
 
     private static List<Guid> InterleaveUnique(IReadOnlyList<List<Guid>> batches, HashSet<Guid> seen)
     {

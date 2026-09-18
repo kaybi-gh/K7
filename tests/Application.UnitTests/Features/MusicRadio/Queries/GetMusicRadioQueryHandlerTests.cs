@@ -93,6 +93,7 @@ public class GetMusicRadioQueryHandlerTests
 
         _currentUser = Substitute.For<IUser>();
         _currentUser.Id.Returns(_userId);
+        _currentUser.GetIdAsync(Arg.Any<CancellationToken>()).Returns(_userId);
         _musicIntelligence = Substitute.For<IMusicIntelligenceService>();
         _musicIntelligence.IsEnabledAsync(Arg.Any<CancellationToken>()).Returns(true);
 
@@ -253,6 +254,29 @@ public class GetMusicRadioQueryHandlerTests
             UserId = _userId,
             MediaId = _similarTrackId,
             Value = 3,
+            MinimumValue = 0,
+            MaximumValue = 10
+        });
+        await _context.SaveChangesAsync();
+
+        var result = await _handler.Handle(new GetMusicRadioQuery
+        {
+            RadioType = MusicRadioType.Discovery,
+            Limit = 3
+        }, CancellationToken.None);
+
+        result.Should().BeEmpty();
+    }
+
+    [Test]
+    public async Task Handle_Discovery_ShouldExcludeTracks_WhenAlbumIsRated()
+    {
+        _context.Ratings.RemoveRange(_context.Ratings.OfType<UserRating>().Where(r => r.MediaId == _favoriteTrackId));
+        _context.Ratings.Add(new UserRating
+        {
+            UserId = _userId,
+            MediaId = _albumId,
+            Value = 8,
             MinimumValue = 0,
             MaximumValue = 10
         });
