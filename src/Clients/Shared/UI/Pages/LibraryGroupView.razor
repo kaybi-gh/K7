@@ -208,24 +208,43 @@
         </K7DataTable>
     </TableContent>
     <ListTemplate Context="item">
-        @{
-            var vm = GetCardViewModel(item);
+        @if (item is UnloadedBrowseItem unloaded)
+        {
+            <LibraryBrowseListRow>
+                <div class="library-list-item library-list-item--loading focusable"
+                     tabindex="0"
+                     role="presentation"
+                     aria-busy="true"
+                     @onfocus="@CreateUnloadedSlotFocusCallback(unloaded.SlotIndex)">
+                    <div class="library-list-item-thumb-placeholder library-list-item-thumb-placeholder--loading rounded" aria-hidden="true">
+                        <K7Spinner Size="sm" />
+                    </div>
+                    <div class="library-list-item-info">
+                        <K7Skeleton Shape="text" Width="40%" Height="14px" />
+                        <K7Skeleton Shape="text" Width="24%" Height="12px" />
+                    </div>
+                </div>
+            </LibraryBrowseListRow>
         }
-        <LibraryListItem Item="item" Href="@GetItemHref(item)" ElementId="@GetCardElementId(item)" OnFocused="@CreateSilentCardFocusCallback(item)">
-            <Actions>
-                @if (vm is not null)
-                {
-                    <LibraryBrowseRowActions Model="vm"
-                                              Href="@GetItemHref(item)"
-                                              OverlayEnabled="true"
-                                              ExcludeMenuEnabled="_canExclude"
-                                              WatchStateMenuEnabled="_canSetWatchState"
-                                              IsAdmin="_isAdmin"
-                                              OnExcludeForSelf="() => ExcludeForSelf(vm)"
-                                              OnExcludeForOthers="() => ExcludeForOthers(vm)"
-                                              OnWatchStateChanged="StateHasChanged" />
-                }
-            </Actions>
-        </LibraryListItem>
+        else
+        {
+            var vm = GetCardViewModel(item);
+            <LibraryListItem Item="item" Href="@GetItemHref(item)" ElementId="@GetCardElementId(item)" OnFocused="@CreateSilentCardFocusCallback(item)">
+                <Actions>
+                    @if (vm is not null)
+                    {
+                        <LibraryBrowseRowActions Model="vm"
+                                                  Href="@GetItemHref(item)"
+                                                  OverlayEnabled="true"
+                                                  ExcludeMenuEnabled="_canExclude"
+                                                  WatchStateMenuEnabled="_canSetWatchState"
+                                                  IsAdmin="_isAdmin"
+                                                  OnExcludeForSelf="() => ExcludeForSelf(vm)"
+                                                  OnExcludeForOthers="() => ExcludeForOthers(vm)"
+                                                  OnWatchStateChanged="StateHasChanged" />
+                    }
+                </Actions>
+            </LibraryListItem>
+        }
     </ListTemplate>
 </BrowseView>

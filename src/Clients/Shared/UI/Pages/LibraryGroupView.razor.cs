@@ -770,7 +770,9 @@ public partial class LibraryGroupView : IDisposable
             ? result.Items.ToList()
             : [];
 
-        _pageCache.Set((_queryFingerprint, page), (items, totalCount));
+        // Empty page with TotalCount > 0 would block SchedulePageFetch forever.
+        if (items.Count > 0 || totalCount == 0)
+            _pageCache.Set((_queryFingerprint, page), (items, totalCount));
         return (page, items);
     }
 
@@ -826,12 +828,15 @@ public partial class LibraryGroupView : IDisposable
 
         try
         {
+            EnsureQueryFingerprint();
+
             var startIndex = state.StartIndex;
             var count = state.Count;
             var orderBy = MapSortKeyToOrdering(state.SortKey, state.SortDirection);
 
             var firstPage = (startIndex / PageSize) + 1;
             var lastPage = ((startIndex + count - 1) / PageSize) + 1;
+            var fingerprint = _queryFingerprint;
 
             var pages = Enumerable.Range(firstPage, lastPage - firstPage + 1);
             var tasks = pages.Select(page =>
@@ -841,16 +846,36 @@ public partial class LibraryGroupView : IDisposable
             var results = await Task.WhenAll(tasks);
 
             var allItems = new List<LiteMediaDto>(count);
+            var pageIndex = firstPage;
             foreach (var result in results)
             {
                 if (result is null)
+                {
+                    pageIndex++;
                     continue;
+                }
 
                 _totalCount = result.TotalCount ?? 0;
                 _totalCountKnown = true;
 
-                if (result.Items is { Count: > 0 })
-                    allItems.AddRange(result.Items);
+                IReadOnlyList<LiteMediaDto> pageItems = result.Items is { Count: > 0 }
+                    ? result.Items.ToList()
+                    : [];
+
+                // Seed browse cache for grid/list after table. Never store an empty
+                // page when TotalCount > 0: that blocks SchedulePageFetch forever.
+                var effectiveSort = orderBy ?? _selectedSort;
+                if (!string.IsNullOrEmpty(fingerprint)
+                    && effectiveSort == _selectedSort
+                    && (pageItems.Count > 0 || _totalCount == 0))
+                {
+                    _pageCache.Set((fingerprint, pageIndex), (pageItems, _totalCount));
+                }
+
+                if (pageItems.Count > 0)
+                    allItems.AddRange(pageItems);
+
+                pageIndex++;
             }
 
             var offset = startIndex - (firstPage - 1) * PageSize;
@@ -1461,13 +1486,12 @@ public partial class LibraryGroupView : IDisposable
         _ => $"/movies/{item.Id}"
     };
 
-    private Task RefreshPlaceholdersAsync()
+    private async Task RefreshPlaceholdersAsync()
     {
         if (_browseView is null || _loading)
-            return Task.CompletedTask;
+            return;
 
-        _browseView.PatchGridSlots(i => GetCachedSlotOrPlaceholder(i, _queryFingerprint));
-        return Task.CompletedTask;
+        await _browseView.ResolvePlaceholdersAsync(i => GetCachedSlotOrPlaceholder(i, _queryFingerprint));
     }
 
     private MediaCardViewModel? GetGridCardViewModel(LiteMediaDto item)

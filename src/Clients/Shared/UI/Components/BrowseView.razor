@@ -58,115 +58,133 @@
     }
     else
     {
-        @switch (_currentMode)
-        {
-            case BrowseViewMode.Grid when GridTemplate is not null && GridItemAspectRatio is not null:
-                @if (UseProvider)
-                {
-                    <K7VirtualGrid TItem="TItem"
-                                   @key="GridCardVariant"
-                                   ItemsProvider="WrappedItemsProvider"
-                                   ItemWidth="_itemWidth"
-                                   Spacing="_spacing"
-                                   AspectRatio="GridItemAspectRatio.Value"
-                                   PlaceholderVariant="GridCardVariant"
-                                   FooterHeight="GridFooterHeight"
-                                   OverscanCount="OverscanCount"
-                                   SingleColumnOnMobile="SingleColumnOnMobile"
-                                   MaxColumnCount="MaxColumnCount"
-                                   OnNearEnd="OnSentinelVisible"
-                                   @ref="_gridComponentRef">
-                        <ItemTemplate>@GridTemplate(context)</ItemTemplate>
-                    </K7VirtualGrid>
-                }
-                else
-                {
-                    <K7VirtualGrid TItem="TItem"
-                                   @key="GridCardVariant"
-                                   Items="Items"
-                                   ItemWidth="_itemWidth"
-                                   Spacing="_spacing"
-                                   AspectRatio="GridItemAspectRatio.Value"
-                                   PlaceholderVariant="GridCardVariant"
-                                   FooterHeight="GridFooterHeight"
-                                   OverscanCount="OverscanCount"
-                                   SingleColumnOnMobile="SingleColumnOnMobile"
-                                   MaxColumnCount="MaxColumnCount"
-                                   OnNearEnd="OnSentinelVisible"
-                                   @ref="_gridComponentRef">
-                        <ItemTemplate>@GridTemplate(context)</ItemTemplate>
-                    </K7VirtualGrid>
-                }
-                break;
-
-            case BrowseViewMode.Grid when GridTemplate is not null && GridItemAspectRatio is null:
-                <div class="browse-view-simple-grid @(SingleColumnOnMobile ? "browse-view-simple-grid--single-col-mobile" : null)"
-                     style="--item-width: @(_itemWidth)px; --grid-gap: @(_spacing)px;">
-                    @foreach (var item in Items!)
+        <div class="browse-view-surfaces">
+            @* Keep grid/list/table mounted. Remounting Virtualize on mode change
+               leaves ItemsProvider stuck (height 0 / cancelled first fetch). *@
+            @if (GridTemplate is not null && GridItemAspectRatio is not null)
+            {
+                <div class="browse-view-surface @(IsMode(BrowseViewMode.Grid) ? "is-active" : "is-inactive")"
+                     aria-hidden="@(!IsMode(BrowseViewMode.Grid))"
+                     inert="@(!IsMode(BrowseViewMode.Grid) ? "" : null)">
+                    @if (UseProvider)
                     {
-                        <div @key="item">
-                            @GridTemplate(item)
+                        <K7VirtualGrid TItem="TItem"
+                                       @key="GridCardVariant"
+                                       ItemsProvider="WrappedItemsProvider"
+                                       ItemWidth="_itemWidth"
+                                       Spacing="_spacing"
+                                       AspectRatio="GridItemAspectRatio.Value"
+                                       PlaceholderVariant="GridCardVariant"
+                                       FooterHeight="GridFooterHeight"
+                                       OverscanCount="OverscanCount"
+                                       SingleColumnOnMobile="SingleColumnOnMobile"
+                                       MaxColumnCount="MaxColumnCount"
+                                       OnNearEnd="OnSentinelVisible"
+                                       @ref="_gridComponentRef">
+                            <ItemTemplate>@GridTemplate(context)</ItemTemplate>
+                        </K7VirtualGrid>
+                    }
+                    else
+                    {
+                        <K7VirtualGrid TItem="TItem"
+                                       @key="GridCardVariant"
+                                       Items="Items"
+                                       ItemWidth="_itemWidth"
+                                       Spacing="_spacing"
+                                       AspectRatio="GridItemAspectRatio.Value"
+                                       PlaceholderVariant="GridCardVariant"
+                                       FooterHeight="GridFooterHeight"
+                                       OverscanCount="OverscanCount"
+                                       SingleColumnOnMobile="SingleColumnOnMobile"
+                                       MaxColumnCount="MaxColumnCount"
+                                       OnNearEnd="OnSentinelVisible"
+                                       @ref="_gridComponentRef">
+                            <ItemTemplate>@GridTemplate(context)</ItemTemplate>
+                        </K7VirtualGrid>
+                    }
+                </div>
+            }
+            else if (GridTemplate is not null && GridItemAspectRatio is null && IsMode(BrowseViewMode.Grid))
+            {
+                <div class="browse-view-surface is-active">
+                    <div class="browse-view-simple-grid @(SingleColumnOnMobile ? "browse-view-simple-grid--single-col-mobile" : null)"
+                         style="--item-width: @(_itemWidth)px; --grid-gap: @(_spacing)px;">
+                        @foreach (var item in Items!)
+                        {
+                            <div @key="item">
+                                @GridTemplate(item)
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+
+            @if (ListTemplate is not null)
+            {
+                <div class="browse-view-surface @(IsMode(BrowseViewMode.List) ? "is-active" : "is-inactive")"
+                     aria-hidden="@(!IsMode(BrowseViewMode.List))"
+                     inert="@(!IsMode(BrowseViewMode.List) ? "" : null)">
+                    @if (UseProvider)
+                    {
+                        <K7VirtualList TItem="TItem"
+                                       ItemsProvider="WrappedItemsProvider"
+                                       ItemHeight="ListItemHeight"
+                                       OverscanCount="OverscanCount"
+                                       @ref="_listComponentRef">
+                            <ItemTemplate>@ListTemplate(context)</ItemTemplate>
+                        </K7VirtualList>
+                    }
+                    else
+                    {
+                        <K7VirtualList TItem="TItem"
+                                       Items="Items"
+                                       ItemHeight="ListItemHeight"
+                                       OverscanCount="OverscanCount"
+                                       @ref="_listComponentRef">
+                            <ItemTemplate>@ListTemplate(context)</ItemTemplate>
+                        </K7VirtualList>
+                    }
+                </div>
+            }
+
+            @if (TableContent is not null || (TableHeaderContent is not null && TableRowTemplate is not null))
+            {
+                <div class="browse-view-surface @(IsMode(BrowseViewMode.Table) ? "is-active" : "is-inactive")"
+                     aria-hidden="@(!IsMode(BrowseViewMode.Table))"
+                     inert="@(!IsMode(BrowseViewMode.Table) ? "" : null)">
+                    @if (TableContent is not null)
+                    {
+                        @TableContent
+                    }
+                    else
+                    {
+                        <div class="browse-view-table" @ref="_tableScrollRef">
+                            <table class="browse-view-table-el">
+                                @if (TableColgroupContent is not null)
+                                {
+                                    <colgroup>
+                                        @TableColgroupContent
+                                    </colgroup>
+                                }
+                                <thead>
+                                    <tr>
+                                        @TableHeaderContent
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <Virtualize TItem="BrowseViewTableRowContext<TItem>" Items="_tableRows" Context="row" ItemSize="48" OverscanCount="OverscanCount"
+                                                SpacerElement="tr">
+                                        <tr class="browse-view-table-row focusable @(row.IsAlternate ? "browse-view-table-row--alt" : "")" tabindex="0">
+                                            @TableRowTemplate!(row)
+                                        </tr>
+                                    </Virtualize>
+                                </tbody>
+                            </table>
                         </div>
                     }
                 </div>
-                break;
-
-            case BrowseViewMode.Table:
-                @if (TableContent is not null)
-                {
-                    @TableContent
-                }
-                else if (TableHeaderContent is not null && TableRowTemplate is not null)
-                {
-                    <div class="browse-view-table" @ref="_tableScrollRef">
-                        <table class="browse-view-table-el">
-                            @if (TableColgroupContent is not null)
-                            {
-                                <colgroup>
-                                    @TableColgroupContent
-                                </colgroup>
-                            }
-                            <thead>
-                                <tr>
-                                    @TableHeaderContent
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <Virtualize TItem="BrowseViewTableRowContext<TItem>" Items="_tableRows" Context="row" ItemSize="48" OverscanCount="OverscanCount"
-                                            SpacerElement="tr">
-                                    <tr class="browse-view-table-row focusable @(row.IsAlternate ? "browse-view-table-row--alt" : "")" tabindex="0">
-                                        @TableRowTemplate(row)
-                                    </tr>
-                                </Virtualize>
-                            </tbody>
-                        </table>
-                    </div>
-                }
-                break;
-
-            case BrowseViewMode.List when ListTemplate is not null:
-                @if (UseProvider)
-                {
-                    <K7VirtualList TItem="TItem"
-                                   ItemsProvider="WrappedItemsProvider"
-                                   ItemHeight="ListItemHeight"
-                                   OverscanCount="OverscanCount"
-                                   @ref="_listComponentRef">
-                        <ItemTemplate>@ListTemplate(context)</ItemTemplate>
-                    </K7VirtualList>
-                }
-                else
-                {
-                    <K7VirtualList TItem="TItem"
-                                   Items="Items"
-                                   ItemHeight="ListItemHeight"
-                                   OverscanCount="OverscanCount"
-                                   @ref="_listComponentRef">
-                        <ItemTemplate>@ListTemplate(context)</ItemTemplate>
-                    </K7VirtualList>
-                }
-                break;
-        }
+            }
+        </div>
 
         @if (!UseProvider && HasMore && OnLoadMore is not null
              && (_currentMode is not BrowseViewMode.Grid || GridItemAspectRatio is null))

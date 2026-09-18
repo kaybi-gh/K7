@@ -31,11 +31,13 @@ public partial class K7VirtualGrid<TItem> : IAsyncDisposable
     private DotNetObjectReference<K7VirtualGrid<TItem>>? _dotnetRef;
 
     private int _containerWidth;
+    private int _containerHeight;
     private int _lastColumnCount;
     private float _estimatedRowHeight = 300;
     private int _lastTotalRows;
     private bool _observing;
     private bool _disposed;
+    private bool _pendingProviderRefresh;
 
     private List<List<TItem>> _rows = [];
 
@@ -68,6 +70,9 @@ public partial class K7VirtualGrid<TItem> : IAsyncDisposable
 
         if (!_observing && HasContent() && _module is not null)
         {
+            // Register the observer even when width is still 0 so ResizeObserver can
+            // deliver the first measure. Returning early without _observing left the
+            // element stuck until an unrelated remount.
             _observing = true;
             _dotnetRef ??= DotNetObjectReference.Create(this);
 
@@ -76,13 +81,11 @@ public partial class K7VirtualGrid<TItem> : IAsyncDisposable
             {
                 _containerWidth = initialWidth;
                 UpdateEstimatedRowHeight();
-                // Rows were chunked with the width=0 fallback (4 cols). Rebuild once we know the real width
-                // so CSS column count and item chunking stay in sync. ResizeObserver may report the same
-                // width and early-return without rebuilding.
                 if (Items is not null)
                     RebuildRows();
                 else
                     _lastColumnCount = CalculateColumnCount();
+                _pendingProviderRefresh = ItemsProvider is not null;
                 StateHasChanged();
             }
 
@@ -96,6 +99,8 @@ public partial class K7VirtualGrid<TItem> : IAsyncDisposable
             {
             }
         }
+
+        await FlushPendingProviderRefreshAsync();
     }
 
     [JSInvokable]
@@ -108,20 +113,23 @@ public partial class K7VirtualGrid<TItem> : IAsyncDisposable
     }
 
     [JSInvokable]
-    public async Task OnContainerWidthChanged(int width)
+    public async Task OnContainerWidthChanged(int width, int height = 0)
     {
-        if (_disposed || width == _containerWidth) return;
+        if (_disposed || (width == _containerWidth && height == _containerHeight)) return;
 
         var isFirstMeasure = _containerWidth == 0;
         var previousRowHeight = _estimatedRowHeight;
         var wasCompact = IsCompactGrid;
         _containerWidth = width;
+        _containerHeight = height;
         UpdateEstimatedRowHeight();
 
         var newCols = CalculateColumnCount();
         var colsChanged = newCols != _lastColumnCount || isFirstMeasure;
         var rowHeightChanged = Math.Abs(_estimatedRowHeight - previousRowHeight) >= 1f;
         var compactChanged = wasCompact != IsCompactGrid;
+        // First layout for ItemsProvider mounts Virtualize only after width is known.
+        var providerNeedsMount = ItemsProvider is not null && _virtualizeRef is null && _containerWidth > 0;
 
         if (colsChanged)
         {
@@ -138,8 +146,12 @@ public partial class K7VirtualGrid<TItem> : IAsyncDisposable
         {
             await _virtualizeRef.RefreshDataAsync();
         }
+        else if (providerNeedsMount)
+        {
+            _pendingProviderRefresh = true;
+        }
 
-        if (colsChanged || rowHeightChanged || compactChanged || isFirstMeasure)
+        if (colsChanged || rowHeightChanged || compactChanged || isFirstMeasure || providerNeedsMount)
         {
             if (_module is not null && rowHeightChanged)
             {
@@ -164,7 +176,20 @@ public partial class K7VirtualGrid<TItem> : IAsyncDisposable
         if (_virtualizeRef is not null)
         {
             await _virtualizeRef.RefreshDataAsync();
+            return;
         }
+
+        if (ItemsProvider is not null)
+            _pendingProviderRefresh = true;
+    }
+
+    private async Task FlushPendingProviderRefreshAsync()
+    {
+        if (_disposed || !_pendingProviderRefresh || _virtualizeRef is null)
+            return;
+
+        _pendingProviderRefresh = false;
+        await _virtualizeRef.RefreshDataAsync();
     }
 
     public void PatchLoadedSlots(Func<int, TItem> itemAtIndex)
@@ -318,11 +343,12 @@ public partial class K7VirtualGrid<TItem> : IAsyncDisposable
             return 1;
         }
 
-        return VirtualGridLayout.CalculateColumnCount(_containerWidth, ItemWidth, Spacing, AspectRatio, MaxColumnCount);
+        return VirtualGridLayout.CalculateColumnCount(
+            _containerWidth, ItemWidth, Spacing, AspectRatio, MaxColumnCount, _containerHeight);
     }
 
     private int GetEffectiveSpacing() =>
-        VirtualGridLayout.GetEffectiveSpacing(_containerWidth, Spacing);
+        VirtualGridLayout.GetEffectiveSpacing(_containerWidth, Spacing, _containerHeight);
 
     private void UpdateEstimatedRowHeight()
     {
@@ -343,7 +369,7 @@ public partial class K7VirtualGrid<TItem> : IAsyncDisposable
         _estimatedRowHeight = (float)Math.Floor(actualItemWidth * AspectRatio) + FooterHeight + spacing;
     }
 
-    private bool IsCompactGrid => _containerWidth > 0 && _containerWidth < VirtualGridLayout.CompactBreakpoint;
+    private bool IsCompactGrid => VirtualGridLayout.IsCompact(_containerWidth, _containerHeight);
 
     private int EffectiveSpacing => GetEffectiveSpacing();
 

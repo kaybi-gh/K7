@@ -176,8 +176,21 @@ public partial class BrowseView<TItem> : IAsyncDisposable
             await SaveSettingsAsync();
     }
 
+    private bool IsMode(BrowseViewMode mode) => _currentMode == mode;
+
     public void PatchGridSlots(Func<int, TItem> itemAtIndex) =>
         _gridComponentRef?.PatchLoadedSlots(itemAtIndex);
+
+    /// <summary>
+    /// After background pages land, swap grid placeholders in place and re-query the
+    /// list window so UnloadedBrowseItem rows become real items without scrolling.
+    /// </summary>
+    public async Task ResolvePlaceholdersAsync(Func<int, TItem> itemAtIndex)
+    {
+        _gridComponentRef?.PatchLoadedSlots(itemAtIndex);
+        if (_listComponentRef is not null)
+            await _listComponentRef.RefreshAsync();
+    }
 
     public async Task RefreshAsync()
     {

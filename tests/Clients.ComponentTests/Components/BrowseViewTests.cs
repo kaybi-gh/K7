@@ -12,7 +12,7 @@ namespace K7.Clients.ComponentTests.Components;
 public class BrowseViewTests
 {
     [Test]
-    public async Task OnViewportChanged_ShouldHideTableMode_OnMobile()
+    public async Task OnViewportChanged_ShouldPreferGridOverTable_OnMobile()
     {
         // Arrange
         using var ctx = CreateContext();
@@ -29,12 +29,42 @@ public class BrowseViewTests
 
         // Act
         await cut.InvokeAsync(() => cut.Instance.OnViewportChanged(true));
-        cut.WaitForAssertion(() =>
-            cut.Markup.Should().Contain("grid-alpha").And.NotContain("browse-table-marker"));
 
-        // Assert - only grid remains on mobile when list is unavailable
-        cut.Markup.Should().NotContain("browse-table-marker");
-        cut.Markup.Should().Contain("grid-beta");
+        // Assert - grid becomes the active surface; table stays mounted but inert
+        // so Virtualize is not destroyed on the next desktop switch.
+        cut.WaitForAssertion(() =>
+        {
+            cut.Markup.Should().Contain("grid-alpha");
+            cut.Markup.Should().Contain("browse-view-surface is-active");
+            var active = cut.Find(".browse-view-surface.is-active");
+            active.TextContent.Should().Contain("grid-alpha");
+            cut.Find(".browse-view-surface.is-inactive .browse-table-marker").Should().NotBeNull();
+            cut.Find(".browse-view-surface.is-inactive").HasAttribute("inert").Should().BeTrue();
+        });
+    }
+
+    [Test]
+    public void Render_ShouldKeepGridAndTableMounted_OnDesktop()
+    {
+        using var ctx = CreateContext();
+        var items = new List<string> { "alpha" };
+
+        var cut = ctx.Render<BrowseView<string>>(p => p
+            .Add(x => x.Items, items)
+            .Add(x => x.DefaultMode, BrowseViewMode.Grid)
+            .Add(x => x.DisableViewModePersistence, true)
+            .Add(x => x.GridItemAspectRatio, (float?)null)
+            .Add(x => x.GridTemplate, item => (RenderFragment)(builder =>
+                builder.AddContent(0, $"grid-{item}")))
+            .Add(x => x.TableContent, builder =>
+                builder.AddMarkupContent(0, "<div class=\"browse-table-marker\">table</div>")));
+
+        cut.WaitForAssertion(() =>
+        {
+            cut.FindAll(".browse-view-surface").Count.Should().Be(2);
+            cut.Find(".browse-view-surface.is-active").TextContent.Should().Contain("grid-alpha");
+            cut.Find(".browse-view-surface.is-inactive .browse-table-marker").Should().NotBeNull();
+        });
     }
 
     private static BunitContext CreateContext()

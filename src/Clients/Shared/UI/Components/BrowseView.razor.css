@@ -8,13 +8,53 @@
     position: relative;
 }
 
+.browse-view-surfaces {
+    flex: 1;
+    min-height: 0;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+.browse-view-surface {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.browse-view-surface > ::deep .k7-virtual-grid,
+.browse-view-surface > ::deep .k7-virtual-list,
+.browse-view-surface > ::deep .k7-data-table,
+.browse-view-surface > .browse-view-table,
+.browse-view-surface > .browse-view-simple-grid {
+    flex: 1;
+    min-height: 0;
+}
+
+.browse-view-surface.is-active {
+    position: relative;
+    visibility: visible;
+    z-index: 1;
+}
+
+.browse-view-surface.is-inactive {
+    position: absolute;
+    inset: 0;
+    visibility: hidden;
+    pointer-events: none;
+    z-index: 0;
+}
+
 .browse-view:has(.k7-jump-index) {
-    --browse-jump-index-inset: 40px;
+    --browse-jump-index-inset: 48px;
 }
 
 .browse-view:has(.k7-jump-index) ::deep .k7-virtual-grid,
+.browse-view:has(.k7-jump-index) ::deep .k7-virtual-list,
 .browse-view:has(.k7-jump-index) .browse-view-simple-grid,
-.browse-view:has(.k7-jump-index) .browse-view-list {
+.browse-view:has(.k7-jump-index) .browse-view-list,
+.browse-view:has(.k7-jump-index) ::deep .k7-data-table-scroll {
     padding-right: calc(16px + var(--browse-jump-index-inset));
 }
 
@@ -582,12 +622,14 @@
     }
 
     .browse-view:has(.k7-jump-index) {
-        --browse-jump-index-inset: 28px;
+        --browse-jump-index-inset: 36px;
     }
 
     .browse-view:has(.k7-jump-index) ::deep .k7-virtual-grid,
+    .browse-view:has(.k7-jump-index) ::deep .k7-virtual-list,
     .browse-view:has(.k7-jump-index) .browse-view-simple-grid,
-    .browse-view:has(.k7-jump-index) .browse-view-list {
+    .browse-view:has(.k7-jump-index) .browse-view-list,
+    .browse-view:has(.k7-jump-index) ::deep .k7-data-table-scroll {
         padding-right: calc(var(--space-3) + var(--browse-jump-index-inset));
     }
 
@@ -621,6 +663,19 @@
 
     .browse-view-simple-grid--single-col-mobile {
         grid-template-columns: 1fr;
+    }
+
+    .browse-view-simple-grid ::deep .media-card {
+        width: 100%;
+        min-width: 0;
+    }
+}
+
+@media (orientation: landscape) and (max-height: 600px) {
+    .browse-view-simple-grid {
+        padding: 0 var(--space-3) var(--space-3);
+        gap: var(--space-3) var(--space-3);
+        grid-template-columns: repeat(auto-fill, minmax(var(--media-card-grid-column-min-poster), 1fr));
     }
 
     .browse-view-simple-grid ::deep .media-card {

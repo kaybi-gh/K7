@@ -98,6 +98,9 @@ public partial class K7DataTable<TItem> : IAsyncDisposable
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        if (firstRender && ServerData is not null)
+            _pendingVirtualizeRefresh = true;
+
         if (_pendingVirtualizeRefresh && _virtualizeRef is not null)
         {
             _pendingVirtualizeRefresh = false;
@@ -244,13 +247,18 @@ public partial class K7DataTable<TItem> : IAsyncDisposable
     {
         InvalidateServerDataCache();
 
-        // Always defer Virtualize refresh to OnAfterRenderAsync. Calling RefreshDataAsync
-        // before a guaranteed re-render races with ShouldRender gating and leaves stale
-        // rows until the user scrolls.
-        _pendingVirtualizeRefresh = true;
-        _needsRender = true;
-        StateHasChanged();
-        await Task.CompletedTask;
+        if (_virtualizeRef is not null)
+        {
+            await _virtualizeRef.RefreshDataAsync();
+            return;
+        }
+
+        if (ServerData is not null)
+        {
+            _pendingVirtualizeRefresh = true;
+            _needsRender = true;
+            StateHasChanged();
+        }
     }
 
     public void InvalidateLayout()

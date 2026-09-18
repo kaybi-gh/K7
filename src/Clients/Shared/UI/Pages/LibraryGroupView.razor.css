@@ -2,3 +2,36 @@
     display: inline-flex;
     align-items: center;
 }
+
+.library-list-item--loading {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-width: 0;
+    padding: 8px 4px;
+    border-radius: var(--radius-sm);
+}
+
+.library-list-item--loading:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: -2px;
+}
+
+.library-list-item-thumb-placeholder--loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 56px;
+    flex-shrink: 0;
+    background: var(--color-surface-2);
+}
+
+.library-list-item--loading .library-list-item-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}

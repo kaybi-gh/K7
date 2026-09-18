@@ -23,6 +23,7 @@ public partial class K7VirtualList<TItem> : IAsyncDisposable
     private List<IndexedListItem>? _indexedItems;
     private bool _keyNavInitialized;
     private bool _disposed;
+    private bool _pendingProviderRefresh = true;
 
     private string PlaceholderStyle =>
         FormattableString.Invariant($"height: {ItemHeight}px; min-height: {ItemHeight}px");
@@ -36,14 +37,23 @@ public partial class K7VirtualList<TItem> : IAsyncDisposable
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (_disposed || _keyNavInitialized || !HasContent())
+        if (_disposed)
             return;
 
-        _module ??= await JSRuntime.InvokeAsync<IJSObjectReference>(
-            "import", "./_content/K7.Clients.Shared.UI/js/browseView.js");
+        if (!_keyNavInitialized && HasContent())
+        {
+            _module ??= await JSRuntime.InvokeAsync<IJSObjectReference>(
+                "import", "./_content/K7.Clients.Shared.UI/js/browseView.js");
 
-        await _module.InvokeVoidAsync("initListKeyNav", _listRef, ItemHeight);
-        _keyNavInitialized = true;
+            await _module.InvokeVoidAsync("initListKeyNav", _listRef, ItemHeight);
+            _keyNavInitialized = true;
+        }
+
+        if (_pendingProviderRefresh && ItemsProvider is not null && _virtualizeRef is not null)
+        {
+            _pendingProviderRefresh = false;
+            await _virtualizeRef.RefreshDataAsync();
+        }
     }
 
     private async ValueTask<ItemsProviderResult<IndexedListItem>> ProvideIndexedItemsAsync(ItemsProviderRequest request)
@@ -76,6 +86,23 @@ public partial class K7VirtualList<TItem> : IAsyncDisposable
         var cacheKey = FormattableString.Invariant($"{request.StartIndex}:{request.Count}");
         if (_itemsCache.TryGetValue(cacheKey, out var cached))
         {
+            // Virtualize can re-ask a range it already mounted. Re-run the provider so
+            // background page fills (UnloadedBrowseItem -> real item) are picked up
+            // when RefreshAsync clears or when the same window is asked again.
+            try
+            {
+                var fresh = await ItemsProvider(request);
+                if (fresh.Items is not null)
+                {
+                    _itemsCache[cacheKey] = fresh;
+                    return fresh;
+                }
+            }
+            catch (OperationCanceledException) when (request.CancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+
             return cached;
         }
 
@@ -101,7 +128,11 @@ public partial class K7VirtualList<TItem> : IAsyncDisposable
         if (_virtualizeRef is not null)
         {
             await _virtualizeRef.RefreshDataAsync();
+            return;
         }
+
+        if (ItemsProvider is not null)
+            _pendingProviderRefresh = true;
     }
 
     public async Task ScrollToItemIndex(int itemIndex)

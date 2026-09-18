@@ -78,4 +78,35 @@ public class VirtualGridLayoutTests
 
         cols.Should().Be(10);
     }
+
+    [Test]
+    public void IsCompact_ShouldBeTrue_OnShortViewport()
+    {
+        VirtualGridLayout.IsCompact(844, 280).Should().BeTrue();
+        VirtualGridLayout.IsCompact(844, 800).Should().BeFalse();
+        VirtualGridLayout.IsCompact(390, 800).Should().BeTrue();
+    }
+
+    [Test]
+    public void GetEffectiveSpacing_ShouldUseCompactSpacing_OnShortViewport()
+    {
+        VirtualGridLayout.GetEffectiveSpacing(844, 24, 280).Should().Be(VirtualGridLayout.CompactSpacing);
+        VirtualGridLayout.GetEffectiveSpacing(844, 24, 800).Should().Be(24);
+    }
+
+    [Test]
+    public void CalculateColumnCount_ShouldAddColumns_WhenShortLandscapeRowWouldOverflow()
+    {
+        var cols = VirtualGridLayout.CalculateColumnCount(800, 160, 24, 1.5f, containerHeight: 220);
+
+        cols.Should().BeGreaterThan(4);
+    }
+
+    [Test]
+    public void CalculateColumnCount_ShouldKeepDesktopColumns_WhenViewportIsTall()
+    {
+        var cols = VirtualGridLayout.CalculateColumnCount(800, 160, 24, 1.5f, containerHeight: 800);
+
+        cols.Should().Be(4);
+    }
 }

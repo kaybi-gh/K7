@@ -72,7 +72,8 @@ export function observeContainerWidth(element, dotnetRef) {
     const observer = new ResizeObserver(entries => {
         for (const entry of entries) {
             const width = Math.floor(entry.contentRect.width);
-            invokeDotNet(dotnetRef, "OnContainerWidthChanged", width);
+            const height = Math.floor(entry.contentRect.height);
+            invokeDotNet(dotnetRef, "OnContainerWidthChanged", width, height);
         }
     });
 
@@ -155,7 +156,8 @@ const VIRTUAL_ROW_SELECTOR = [
     '.k7-virtual-list-placeholder',
     'tr.k7-data-table-row',
     'tr.k7-data-table-placeholder',
-    'tr.browse-view-table-row'
+    'tr.browse-view-table-row',
+    'tr.k7-table-row'
 ].join(', ');
 
 const VIRTUAL_PLACEHOLDER_FOCUS_SELECTOR = [
@@ -209,7 +211,10 @@ export function initVirtualKeyNav(scrollRoot, itemHeight, options = {}) {
 
     function getRowFocusables(row) {
         if (!row) return [];
-        return Array.from(row.querySelectorAll(focusableSelector));
+        const nested = Array.from(row.querySelectorAll(focusableSelector));
+        if (row.matches && row.matches(focusableSelector))
+            return [row, ...nested];
+        return nested;
     }
 
     function isPlaceholder(el) {
@@ -302,6 +307,11 @@ export function initVirtualKeyNav(scrollRoot, itemHeight, options = {}) {
         const inView = rowRect.top >= rootRect.top - 2 && rowRect.bottom <= rootRect.bottom + 2;
         if (inView)
             return;
+
+        if (scrollRoot.scrollHeight <= scrollRoot.clientHeight + 2) {
+            row.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+            return;
+        }
 
         if (direction === 'down') {
             const bottomEdge = rowRect.bottom - rootRect.top + scrollRoot.scrollTop;
@@ -764,7 +774,7 @@ export function handleVirtualBrowseArrow(arrowKey, focusedEl) {
     if (focusedEl && focusedEl.closest && focusedEl.closest('.k7-jump-index')) return false;
 
     let root = focusedEl && focusedEl.closest
-        ? focusedEl.closest('.k7-virtual-grid, .k7-virtual-list, .k7-data-table-scroll, .browse-view-table')
+        ? focusedEl.closest('.k7-virtual-grid, .k7-virtual-list, .k7-data-table-scroll, .browse-view-table, .k7-table-wrap')
         : null;
 
     if (!root) {
