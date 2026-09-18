@@ -5,6 +5,7 @@
     flex: 1;
     min-height: 0;
     height: 100%;
+    max-height: 100%;
     overflow: hidden;
     padding: var(--space-4);
     padding-bottom: 0;
@@ -24,16 +25,25 @@
 }
 
 .playlist-header {
-    display: flex;
-    gap: var(--space-6);
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas:
+        "cover info"
+        "cover actions";
+    column-gap: var(--space-6);
+    row-gap: var(--space-3);
     margin-bottom: var(--space-6);
-    align-items: flex-start;
+    align-items: start;
     flex-shrink: 0;
+    transition: column-gap 0.2s ease, row-gap 0.2s ease, margin-bottom 0.2s ease;
 }
 
 .playlist-header-cover {
+    grid-area: cover;
     flex-shrink: 0;
     width: 180px;
+    overflow: hidden;
+    transition: width 0.2s ease;
 }
 
 .playlist-header-cover .k7-cover-mosaic,
@@ -42,20 +52,245 @@
 }
 
 .playlist-header-info {
-    flex: 1;
+    grid-area: info;
     min-width: 0;
 }
 
+.playlist-header-info h4 {
+    margin: 0;
+    transition: font-size 0.2s ease;
+}
+
+.playlist-rules {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-width: 0;
+    margin: var(--space-1) 0 0;
+    font-size: var(--text-xs);
+    color: var(--color-text-secondary);
+}
+
+.playlist-rules span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.playlist-detail-page.page-scrollable .playlist-header {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    padding-top: var(--space-2);
+    margin-top: calc(-1 * var(--space-2));
+    background: var(--color-bg);
+}
+
+.playlist-detail-page.is-header-compact {
+    padding-top: 0;
+}
+
+.playlist-detail-page.is-header-compact .playlist-header {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas: "cover info actions";
+    column-gap: var(--space-3);
+    row-gap: 0;
+    margin: 0 calc(-1 * var(--space-4));
+    align-items: center;
+    background: var(--color-bg);
+    padding: var(--space-1) var(--space-4);
+    overflow: hidden;
+    border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.playlist-detail-page.is-header-compact .playlist-header-cover {
+    width: 40px;
+}
+
+.playlist-detail-page.is-header-compact .playlist-header-info h4 {
+    font-size: var(--text-base);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.playlist-detail-page.is-header-compact .playlist-header-overline,
+.playlist-detail-page.is-header-compact .playlist-header-desc,
+.playlist-detail-page.is-header-compact .playlist-header-meta,
+.playlist-detail-page.is-header-compact .playlist-rules {
+    display: none;
+}
+
+.playlist-detail-page.is-header-compact .playlist-header-manage {
+    display: none;
+}
+
+.playlist-detail-page.is-header-compact .playlist-header-actions:not(:has(.k7-btn--filled)) {
+    display: none;
+}
+
+.playlist-detail-page.is-header-compact .playlist-header-actions > .k7-btn--filled {
+    min-width: 36px;
+    width: 36px;
+    height: 36px;
+    min-height: 36px;
+    padding: 0;
+    justify-content: center;
+}
+
+.playlist-detail-page.is-header-compact .playlist-header-actions > .k7-btn--filled .playlist-action-label {
+    display: none;
+}
+
+.playlist-detail-page.is-header-compact:has(.browse-view-toolbar) .playlist-header {
+    margin-bottom: 0;
+    padding-inline-end: calc(var(--space-4) + 8.5rem);
+}
+
+.playlist-detail-page.is-header-compact > .browse-view {
+    padding-top: var(--space-3);
+    min-height: 0;
+    z-index: 0;
+}
+
+.playlist-detail-page.is-header-compact .k7-virtual-grid,
+.playlist-detail-page.is-header-compact .browse-view-simple-grid,
+.playlist-detail-page.is-header-compact .k7-virtual-list,
+.playlist-detail-page.is-header-compact .k7-data-table-scroll,
+.playlist-detail-page.is-header-compact .browse-view-list {
+    padding-top: var(--space-3);
+}
+
+.playlist-detail-page.is-header-compact .browse-view-toolbar {
+    position: relative;
+    z-index: 21;
+    align-items: flex-start;
+    margin-top: calc(-1 * (40px + var(--space-2) + var(--space-3)));
+    margin-bottom: 0;
+    padding-block: 0;
+    padding-inline: 0;
+    height: 0;
+    min-height: 0;
+    overflow: visible;
+    pointer-events: none;
+    background: transparent;
+}
+
+.playlist-detail-page.is-header-compact .browse-view-toolbar-end {
+    pointer-events: auto;
+    height: 40px;
+}
+
+html.platform-tv .playlist-detail-page.is-header-compact .playlist-header-cover {
+    width: 56px;
+}
+
 .playlist-header-actions {
+    grid-area: actions;
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: var(--space-2);
-    margin-top: var(--space-3);
+    margin-top: 0;
 }
 
-.playlist-header-actions > .k7-btn,
-.playlist-header-actions > .k7-icon-btn {
+.playlist-header-manage {
+    display: contents;
+}
+
+.is-header-compact .playlist-header-manage {
+    display: none;
+}
+
+.collapsible-detail-shell {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    height: 100%;
+    overflow: hidden;
+}
+
+.collapsible-detail-shell > .album-detail-page {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+.is-header-compact .album-header-cover,
+.is-header-compact .album-header-cover .album-detail-cover,
+.is-header-compact .album-header-cover img,
+.is-header-compact .album-detail-cover-placeholder {
+    width: 40px;
+    height: 40px;
+    max-width: 40px;
+    max-height: 40px;
+}
+
+.collapsible-detail-shell.is-header-compact .album-chrome {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: var(--media-content-bottom-color, var(--color-bg));
+}
+
+.collapsible-detail-shell.is-header-compact .album-header {
+    padding-inline-start: calc(var(--space-3) + 32px + var(--space-3));
+}
+
+.collapsible-detail-shell.is-header-compact .k7-back-btn {
+    top: var(--space-1);
+    left: var(--space-3);
+}
+
+.library-table-title .k7-cover-mosaic.collection-table-cover,
+.library-table-title .k7-cover-mosaic--poster-thumb {
+    width: 40px;
+    height: 56px;
+    max-width: 40px;
+    max-height: 56px;
+    flex: 0 0 40px;
+    aspect-ratio: 40 / 56;
+}
+
+.collection-detail-browse .library-list-item-thumb,
+.collection-detail-browse .library-list-item-thumb img {
+    max-width: 85px;
+    max-height: 48px;
+    object-fit: cover;
+}
+
+.is-header-compact .album-header .k7-btn,
+.is-header-compact .album-header .k7-btn--filled.k7-btn--lg,
+.is-header-compact .album-header .k7-icon-btn {
+    box-sizing: border-box;
+    min-width: 36px;
+    width: 36px;
+    height: 36px;
+    min-height: 36px;
+    padding: 0;
+}
+
+.is-header-compact .album-header .playlist-action-label {
+    display: none;
+}
+
+@media (min-width: 600px) and (min-height: 601px) {
+    .collapsible-detail-shell.is-header-compact .album-header .playlist-header-manage {
+        display: contents;
+    }
+
+    .collapsible-detail-shell.is-header-compact .album-header .k7-download-btn {
+        display: none;
+    }
+}
+
+.playlist-header-actions .k7-btn,
+.playlist-header-actions .k7-icon-btn {
     flex: 0 0 auto;
 }
 
@@ -71,26 +306,71 @@
 
 @media (max-width: 599.98px) {
     .playlist-header {
-        flex-direction: column;
-        gap: var(--space-4);
+        grid-template-columns: auto minmax(0, 1fr);
+        grid-template-areas:
+            "cover info"
+            "actions actions";
+        column-gap: var(--space-4);
+        row-gap: var(--space-3);
+        margin-bottom: 0;
+        align-items: start;
     }
 
     .playlist-header-cover {
-        width: 140px;
+        width: 112px;
+    }
+
+    .playlist-header-info {
+        align-self: center;
+    }
+
+    .playlist-detail-page.is-header-compact .playlist-header {
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        grid-template-areas: "cover info actions";
+        column-gap: var(--space-3);
+        margin-bottom: var(--space-2);
+        align-items: center;
+    }
+
+    .playlist-detail-page.is-header-compact:has(.browse-view-toolbar) .playlist-header {
+        margin-bottom: 0;
+        padding-inline-end: calc(var(--space-4) + 8.5rem);
+    }
+
+    .playlist-detail-page.is-header-compact .playlist-header-cover {
+        width: 40px;
     }
 
     .playlist-cover-placeholder-large {
-        width: 140px;
-        height: 140px;
+        width: 112px;
+        height: 112px;
     }
 
     .playlist-header-actions {
-        gap: var(--space-2);
-        row-gap: var(--space-2);
+        min-height: 40px;
+        flex-wrap: nowrap;
+    }
+
+    .playlist-detail-page:not(.is-header-compact):has(.browse-view-toolbar) .playlist-header-actions {
+        padding-inline-end: 8.5rem;
+    }
+
+    .playlist-detail-page:not(.is-header-compact) .browse-view-toolbar {
+        margin-top: -40px;
+        margin-bottom: var(--space-3);
+        padding-block: 0;
+        padding-inline: 0;
+        min-height: 40px;
+        pointer-events: none;
+        background: transparent;
+    }
+
+    .playlist-detail-page:not(.is-header-compact) .browse-view-toolbar-end {
+        pointer-events: auto;
     }
 
     /* Icon-only secondary actions on small screens; keep Play label. */
-    .playlist-header-actions > .k7-btn:not(.k7-btn--filled) {
+    .playlist-header-actions .k7-btn:not(.k7-btn--filled) {
         min-width: 40px;
         width: 40px;
         height: 40px;
@@ -98,11 +378,102 @@
         justify-content: center;
     }
 
-    .playlist-header-actions > .k7-btn:not(.k7-btn--filled) .playlist-action-label {
+    .playlist-header-actions .k7-btn:not(.k7-btn--filled) .playlist-action-label {
         display: none;
     }
 
     .playlist-header-actions > .k7-btn--filled .playlist-action-label {
         display: inline;
+    }
+}
+
+@media (orientation: landscape) and (max-height: 600px) {
+    .detail-header-host.playlist-detail-page {
+        padding-top: 0;
+    }
+
+    .detail-header-host .playlist-header {
+        position: relative;
+        top: 0;
+        z-index: 20;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        grid-template-areas: "cover info actions";
+        column-gap: var(--space-3);
+        row-gap: 0;
+        margin: 0 calc(-1 * var(--space-4));
+        align-items: center;
+        background: var(--color-bg);
+        padding: var(--space-1) var(--space-4);
+        overflow: hidden;
+        border-bottom: 1px solid var(--color-border-subtle);
+    }
+
+    .detail-header-host:has(.browse-view-toolbar) .playlist-header {
+        margin-bottom: 0;
+        padding-inline-end: calc(var(--space-4) + 8.5rem);
+    }
+
+    .detail-header-host.playlist-detail-page > .browse-view {
+        padding-top: var(--space-3);
+        min-height: 0;
+        z-index: 0;
+    }
+
+    .detail-header-host .k7-virtual-grid,
+    .detail-header-host .browse-view-simple-grid,
+    .detail-header-host .k7-virtual-list,
+    .detail-header-host .k7-data-table-scroll,
+    .detail-header-host .browse-view-list {
+        padding-top: var(--space-3);
+    }
+
+    .detail-header-host .playlist-header-cover {
+        width: 40px;
+    }
+
+    .detail-header-host .playlist-header-info h4 {
+        font-size: var(--text-base);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .detail-header-host .playlist-header-overline,
+    .detail-header-host .playlist-header-desc,
+    .detail-header-host .playlist-header-meta,
+    .detail-header-host .playlist-rules,
+    .detail-header-host .playlist-header-manage,
+    .detail-header-host .playlist-header-actions:not(:has(.k7-btn--filled)),
+    .detail-header-host .playlist-header-actions > .k7-btn--filled .playlist-action-label {
+        display: none;
+    }
+
+    .detail-header-host .playlist-header-actions > .k7-btn--filled {
+        min-width: 36px;
+        width: 36px;
+        height: 36px;
+        min-height: 36px;
+        padding: 0;
+        justify-content: center;
+    }
+
+    .detail-header-host .browse-view-toolbar {
+        position: relative;
+        z-index: 21;
+        align-items: flex-start;
+        margin-top: calc(-1 * (40px + var(--space-2) + var(--space-3)));
+        margin-bottom: 0;
+        padding-block: 0;
+        padding-inline: 0;
+        height: 0;
+        min-height: 0;
+        overflow: visible;
+        pointer-events: none;
+        background: transparent;
+    }
+
+    .detail-header-host .browse-view-toolbar-end {
+        pointer-events: auto;
+        height: 40px;
     }
 }

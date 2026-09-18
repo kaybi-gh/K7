@@ -117,3 +117,12 @@
         --media-card-grid-column-min-backdrop: 140px;
     }
 }
+
+@media (orientation: landscape) and (max-height: 600px) {
+    :root {
+        --media-card-compact-poster-width: 16vw;
+        --media-card-compact-backdrop-width: 32vw;
+        --media-card-grid-column-min-poster: 72px;
+        --media-card-grid-column-min-backdrop: 120px;
+    }
+}

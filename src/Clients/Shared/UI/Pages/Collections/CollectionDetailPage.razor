@@ -29,7 +29,7 @@ else if (_collection is null)
 }
 else
 {
-    <div class="playlist-detail-page">
+    <PlaylistDetailShell>
         <div class="playlist-header">
             <div class="playlist-header-cover">
                 <K7CoverMosaic CoverPicture="@(_showHeaderPlaceholder ? null : _collection.CoverPicture)"
@@ -41,15 +41,15 @@ else
             </div>
 
             <div class="playlist-header-info">
-                <p class="text-overline">@(_collection.IsDynamic ? L["DynamicHeader"] : L["Header"])</p>
+                <p class="text-overline playlist-header-overline">@(_collection.IsDynamic ? L["DynamicHeader"] : L["Header"])</p>
                 <h4>@_collection.Title</h4>
 
                 @if (!string.IsNullOrEmpty(_collection.Description))
                 {
-                    <p class="text-sm mt-1" Color="secondary">@_collection.Description</p>
+                    <p class="text-sm mt-1 playlist-header-desc" Color="secondary">@_collection.Description</p>
                 }
 
-                <p class="text-sm mt-1" Color="secondary">
+                <p class="text-sm mt-1 playlist-header-meta" Color="secondary">
                     @_collection.ItemCount @L["Items"]
                     <span class="ml-2">
                         <K7Chip Size="xs" Variant="outlined">
@@ -62,63 +62,63 @@ else
                     }
                 </p>
 
-                <div class="playlist-header-actions">
-                    @if (_collection.IsDynamic)
+                @if (_collection.IsDynamic && !string.IsNullOrEmpty(_rulesDescription))
+                {
+                    <p class="playlist-rules" title="@_rulesDescription">
+                        <K7Icon Name="funnel" IconSize="@K7IconSize.Xs" />
+                        <span>@_rulesDescription</span>
+                    </p>
+                }
+            </div>
+
+            <div class="playlist-header-actions">
+                <div class="playlist-header-manage">
+                @if (_collection.IsDynamic)
+                {
+                    <K7Button Variant="outlined" Color="secondary"
+                               StartIcon="@Phosphor.ArrowClockwise"
+                               OnClick="EvaluateAsync" Disabled="_evaluating"
+                               AriaLabel="@L["Reevaluate"]">
+                        @if (_evaluating)
+                        {
+                            <K7Spinner Size="sm" />
+                            <span class="playlist-action-label">@L["Evaluating"]</span>
+                        }
+                        else
+                        {
+                            <span class="playlist-action-label">@L["Reevaluate"]</span>
+                        }
+                    </K7Button>
+                    @if (_collection.LibraryGroupId.HasValue)
                     {
                         <K7Button Variant="outlined" Color="secondary"
-                                   StartIcon="@Phosphor.ArrowClockwise"
-                                   OnClick="EvaluateAsync" Disabled="_evaluating"
-                                   AriaLabel="@L["Reevaluate"]">
-                            @if (_evaluating)
-                            {
-                                <K7Spinner Size="sm" />
-                                <span class="playlist-action-label">@L["Evaluating"]</span>
-                            }
-                            else
-                            {
-                                <span class="playlist-action-label">@L["Reevaluate"]</span>
-                            }
+                                   StartIcon="@Phosphor.Funnel"
+                                   OnClick="BrowseInLibraryAsync"
+                                   Disabled="@(_collection.RuleFilter is null || _collection.RuleFilter.Items.Count == 0)"
+                                   AriaLabel="@L["BrowseInLibrary"]">
+                            <span class="playlist-action-label">@L["BrowseInLibrary"]</span>
                         </K7Button>
-                        @if (_collection.LibraryGroupId.HasValue)
-                        {
-                            <K7Button Variant="outlined" Color="secondary"
-                                       StartIcon="@Phosphor.Funnel"
-                                       OnClick="BrowseInLibraryAsync"
-                                       Disabled="@(_collection.RuleFilter is null || _collection.RuleFilter.Items.Count == 0)"
-                                       AriaLabel="@L["BrowseInLibrary"]">
-                                <span class="playlist-action-label">@L["BrowseInLibrary"]</span>
-                            </K7Button>
-                        }
                     }
-                    <K7IconButton Icon="@Phosphor.Pencil" OnClick="OpenEditDialog" />
-                    <K7IconButton Icon="@Phosphor.Trash" Color="error" OnClick="ConfirmDelete" />
-                    @if (!_collection.IsDynamic)
-                    {
-                        <K7Menu>
-                            <ActivatorContent>
-                                <K7IconButton Icon="@Phosphor.DotsThreeVertical" AriaLabel="@L["MoreActions"]" />
-                            </ActivatorContent>
-                            <ChildContent>
-                                <K7MenuItem Icon="@(_showUnavailable ? "eye-slash" : "eye")"
-                                            OnClick="ToggleShowUnavailableAsync">
-                                    @(_showUnavailable ? L["HideUnavailable"] : L["ShowUnavailable"])
-                                </K7MenuItem>
-                            </ChildContent>
-                        </K7Menu>
-                    }
+                }
+                <K7IconButton Icon="@Phosphor.Pencil" OnClick="OpenEditDialog" />
+                <K7IconButton Icon="@Phosphor.Trash" Color="error" OnClick="ConfirmDelete" />
+                @if (!_collection.IsDynamic)
+                {
+                    <K7Menu>
+                        <ActivatorContent>
+                            <K7IconButton Icon="@Phosphor.DotsThreeVertical" AriaLabel="@L["MoreActions"]" />
+                        </ActivatorContent>
+                        <ChildContent>
+                            <K7MenuItem Icon="@(_showUnavailable ? "eye-slash" : "eye")"
+                                        OnClick="ToggleShowUnavailableAsync">
+                                @(_showUnavailable ? L["HideUnavailable"] : L["ShowUnavailable"])
+                            </K7MenuItem>
+                        </ChildContent>
+                    </K7Menu>
+                }
                 </div>
             </div>
         </div>
-
-        @if (_collection.IsDynamic && !string.IsNullOrEmpty(_rulesDescription))
-        {
-            <div class="surface ma-4 pa-3">
-                <div class="d-flex gap-2">
-                    <K7Icon Name="funnel" IconSize="@K7IconSize.Sm" Color="secondary" />
-                    <p class="text-sm" Color="secondary">@_rulesDescription</p>
-                </div>
-            </div>
-        }
 
         <BrowseView TItem="CollectionBrowseRow"
                       Items="_browseRows"
@@ -126,8 +126,8 @@ else
                       PersistenceKey="@($"collection-{Id}")"
                       Class="collection-detail-browse"
                       DefaultItemWidth="160"
-                      DefaultSpacing="6"
-                      GridItemAspectRatio="1.8f"
+                      DefaultSpacing="24"
+                      GridItemAspectRatio="1.5f"
                       ListItemHeight="64"
                       @ref="_browseView"
                       OnColumnPickerRequested="OnColumnPickerRequested">
@@ -172,7 +172,7 @@ else
                                                 PlaceholderIcon="@Phosphor.Image"
                                                 PictureSize="MetadataPictureSize.Small"
                                                 Alt="@row.Media.Title"
-                                                Class="collection-table-cover" />
+                                                Class="collection-table-cover k7-cover-mosaic--poster-thumb" />
                                 <p class="text-sm">@row.Media.Title</p>
                             </div>
                         </CellTemplate>
@@ -228,5 +228,5 @@ else
                 </LibraryListItem>
             </ListTemplate>
         </BrowseView>
-    </div>
+    </PlaylistDetailShell>
 }

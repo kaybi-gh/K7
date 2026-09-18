@@ -358,11 +358,26 @@ public partial class K7CategoryCard : IDisposable
             return;
         }
 
-        await ActivateAsync();
+        // Mouse path: do not call suppressEnterUntilKeyUp. That flag is for the
+        // keyboard Enter release / synthetic click, and leaving _swallowNextEnterClick
+        // set after a pointer activate blocks the next click (Browse all on Explore).
+        if (OnClick.HasDelegate)
+            await OnClick.InvokeAsync();
     }
 
-    private Task ActivateAsync() =>
-        OnClick.HasDelegate ? OnClick.InvokeAsync() : Task.CompletedTask;
+    private async Task ActivateAsync()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("K7.suppressEnterUntilKeyUp");
+        }
+        catch (Exception ex) when (ex is JSDisconnectedException or InvalidOperationException or JSException)
+        {
+        }
+
+        if (OnClick.HasDelegate)
+            await OnClick.InvokeAsync();
+    }
 
     public void Dispose()
     {

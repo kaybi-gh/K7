@@ -22,7 +22,7 @@
 
 {
 
-    <div class="playlist-detail-page">
+    <PlaylistDetailShell>
 
         <div class="playlist-header">
 
@@ -46,7 +46,7 @@
 
             <div class="playlist-header-info">
 
-                <p class="text-overline">@L["Header"]</p>
+                <p class="text-overline playlist-header-overline">@L["Header"]</p>
 
                 <h4>@_playlist.Title</h4>
 
@@ -56,13 +56,13 @@
 
                 {
 
-                    <p class="text-sm mt-1" Color="secondary">@_playlist.Description</p>
+                    <p class="text-sm mt-1 playlist-header-desc" Color="secondary">@_playlist.Description</p>
 
                 }
 
 
 
-                <p class="text-sm mt-1" Color="secondary">
+                <p class="text-sm mt-1 playlist-header-meta" Color="secondary">
 
                     @_playlist.ItemCount @GetItemLabel(_playlist.MediaType)
 
@@ -78,57 +78,63 @@
 
 
 
-                <div class="playlist-header-actions">
+            </div>
 
-                    <K7Button Variant="filled"
 
-                               Color="primary"
 
-                               StartIcon="@Phosphor.Play"
+            <div class="playlist-header-actions">
 
-                               OnClick="PlayAll"
+                <K7Button Variant="filled"
 
-                               Disabled="@(!_items.Any(i => !i.IsUnavailable))"
+                           Color="primary"
 
-                               AriaLabel="@S["PlayAll"]">
+                           StartIcon="@Phosphor.Play"
 
-                        <span class="playlist-action-label">@S["PlayAll"]</span>
+                           OnClick="PlayAll"
 
-                    </K7Button>
+                           Disabled="@(!_items.Any(i => !i.IsUnavailable))"
 
-                    <K7Button Variant="outlined"
+                           AriaLabel="@S["PlayAll"]">
 
-                               Color="primary"
+                    <span class="playlist-action-label">@S["PlayAll"]</span>
 
-                               StartIcon="@Phosphor.Shuffle"
+                </K7Button>
 
-                               OnClick="ShuffleAll"
+                <div class="playlist-header-manage">
 
-                               Disabled="@(!_items.Any(i => !i.IsUnavailable))"
+                <K7Button Variant="outlined"
 
-                               AriaLabel="@S["Shuffle"]">
+                           Color="primary"
 
-                        <span class="playlist-action-label">@S["Shuffle"]</span>
+                           StartIcon="@Phosphor.Shuffle"
 
-                    </K7Button>
+                           OnClick="ShuffleAll"
 
-                    <DownloadAllButton Items="GetDownloadRequests()" Label="@_playlist?.Title" />
+                           Disabled="@(!_items.Any(i => !i.IsUnavailable))"
 
-                    <K7IconButton Icon="@Phosphor.Pencil" OnClick="OpenEditDialog" AriaLabel="@L["EditDialogTitle"]" />
+                           AriaLabel="@S["Shuffle"]">
 
-                    <K7IconButton Icon="@Phosphor.Trash" Color="error" OnClick="ConfirmDelete" AriaLabel="@L["DeleteDialogTitle"]" />
+                    <span class="playlist-action-label">@S["Shuffle"]</span>
 
-                    <K7Menu>
-                        <ActivatorContent>
-                            <K7IconButton Icon="@Phosphor.DotsThreeVertical" AriaLabel="@L["MoreActions"]" />
-                        </ActivatorContent>
-                        <ChildContent>
-                            <K7MenuItem Icon="@(_showUnavailable ? "eye-slash" : "eye")"
-                                        OnClick="ToggleShowUnavailableAsync">
-                                @(_showUnavailable ? L["HideUnavailable"] : L["ShowUnavailable"])
-                            </K7MenuItem>
-                        </ChildContent>
-                    </K7Menu>
+                </K7Button>
+
+                <DownloadAllButton Items="GetDownloadRequests()" Label="@_playlist?.Title" />
+
+                <K7IconButton Icon="@Phosphor.Pencil" OnClick="OpenEditDialog" AriaLabel="@L["EditDialogTitle"]" />
+
+                <K7IconButton Icon="@Phosphor.Trash" Color="error" OnClick="ConfirmDelete" AriaLabel="@L["DeleteDialogTitle"]" />
+
+                <K7Menu>
+                    <ActivatorContent>
+                        <K7IconButton Icon="@Phosphor.DotsThreeVertical" AriaLabel="@L["MoreActions"]" />
+                    </ActivatorContent>
+                    <ChildContent>
+                        <K7MenuItem Icon="@(_showUnavailable ? "eye-slash" : "eye")"
+                                    OnClick="ToggleShowUnavailableAsync">
+                            @(_showUnavailable ? L["HideUnavailable"] : L["ShowUnavailable"])
+                        </K7MenuItem>
+                    </ChildContent>
+                </K7Menu>
 
                 </div>
 
@@ -330,7 +336,7 @@
 
         </BrowseView>
 
-    </div>
+    </PlaylistDetailShell>
 
 }
 

@@ -323,6 +323,14 @@ public partial class MediaCard : IDisposable
         if (!IsEnterKey(e))
             return;
 
+        // Always record keydown on this card. A keyup without a matching keydown
+        // means Enter started on another control (e.g. My Space hub) before focus
+        // moved here after navigation - do not treat that as activation.
+        if (e.Repeat && _keyHeldDown)
+            return;
+
+        _keyHeldDown = true;
+
         if (!LongPressEnabled)
             return;
 
@@ -331,7 +339,6 @@ public partial class MediaCard : IDisposable
 
         _ = EnsureLongPressRegisteredAsync();
 
-        _keyHeldDown = true;
         CancelLongPress();
         _longPressTriggered = false;
         _longPressCts = new CancellationTokenSource();
@@ -343,11 +350,14 @@ public partial class MediaCard : IDisposable
         if (!IsEnterKey(e))
             return;
 
+        if (!_keyHeldDown)
+            return;
+
         if (LongPressEnabled)
         {
             CancelLongPress();
 
-            var wasShortPress = _keyHeldDown && !_longPressTriggered;
+            var wasShortPress = !_longPressTriggered;
             _keyHeldDown = false;
 
             if (_longPressTriggered)
@@ -358,6 +368,10 @@ public partial class MediaCard : IDisposable
 
             if (!wasShortPress)
                 return;
+        }
+        else
+        {
+            _keyHeldDown = false;
         }
 
         await ActivateAsync();

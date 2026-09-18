@@ -2,6 +2,16 @@
     padding-inline: var(--space-4);
 }
 
+@media (max-width: 599.98px) {
+    ::deep .collection-detail-browse .browse-view-toolbar {
+        padding-inline: 0;
+    }
+}
+
+::deep .playlist-detail-page.is-header-compact .collection-detail-browse .browse-view-toolbar {
+    padding-inline: 0;
+}
+
 ::deep .collection-detail-browse .k7-virtual-grid,
 ::deep .collection-detail-browse .browse-view-simple-grid,
 ::deep .collection-detail-browse .k7-virtual-list,
@@ -27,14 +37,18 @@
 ::deep .collection-detail-browse .collection-table-cover {
     width: 40px;
     height: 56px;
-    flex-shrink: 0;
-    aspect-ratio: auto;
+    max-width: 40px;
+    max-height: 56px;
+    flex: 0 0 40px;
+    aspect-ratio: 40 / 56;
 }
 
 ::deep .collection-detail-browse .collection-table-cover .k7-cover-mosaic__placeholder {
     width: 40px;
     height: 56px;
-    aspect-ratio: auto;
+    max-width: 40px;
+    max-height: 56px;
+    aspect-ratio: 40 / 56;
 }
 
 ::deep .collection-detail-browse .library-list-item-secondary {

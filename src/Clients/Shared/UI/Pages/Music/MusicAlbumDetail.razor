@@ -45,7 +45,9 @@ else if (_album is not null)
                       FullWash="true"
                       DominantColor="@_coverDominantColor"
                       Tinted="@(_coverDominantColor is not null)">
+        <PlaylistDetailShell CssClass="collapsible-detail-shell">
         <div class="album-detail-page">
+        <div class="album-chrome">
         <K7BackButton />
 
         <div class="album-header">
@@ -56,7 +58,8 @@ else if (_album is not null)
                               Src="@_coverUrl"
                               Alt="@_album.Title"
                               Class="album-detail-cover"
-                              ObjectFit="cover" />
+                              ObjectFit="cover"
+                              Fluid="true" />
                 }
                 else
                 {
@@ -69,23 +72,25 @@ else if (_album is not null)
 
             <div class="album-header-info">
                 <p class="text-overline album-type-label">@L["AlbumType"]</p>
-                <div class="album-title-row">
-                    <h3 class="album-detail-title">
-                        @_album.Title
-                        @if (_album.ReleaseDate.HasValue)
-                        {
-                            <span class="album-title-year"> (@_album.ReleaseDate.Value.Year)</span>
-                        }
-                    </h3>
-                </div>
+                <div class="album-header-text">
+                    <div class="album-title-row">
+                        <h3 class="album-detail-title">
+                            @_album.Title
+                            @if (_album.ReleaseDate.HasValue)
+                            {
+                                <span class="album-title-year"> (@_album.ReleaseDate.Value.Year)</span>
+                            }
+                        </h3>
+                    </div>
 
-                <div class="album-artists">
-                    @foreach (var artist in _artists)
-                    {
-                        <a href="@($"/music/artists/{artist.Id}")" class="album-artist-link focusable">
-                            @artist.Name
-                        </a>
-                    }
+                    <div class="album-artists">
+                        @foreach (var artist in _artists)
+                        {
+                            <a href="@($"/music/artists/{artist.Id}")" class="album-artist-link focusable">
+                                @artist.Name
+                            </a>
+                        }
+                    </div>
                 </div>
 
                 <div class="album-meta">
@@ -122,6 +127,7 @@ else if (_album is not null)
                         }
                     </div>
                 }
+            </div>
 
                 <div class="album-actions">
                     <div class="album-actions-primary">
@@ -130,22 +136,27 @@ else if (_album is not null)
                                    StartIcon="@Phosphor.Play"
                                    Size="lg"
                                    OnClick="PlayAll" data-initial-focus>
-                            @S["PlayAll"]
+                            <span class="playlist-action-label">@S["PlayAll"]</span>
                         </K7Button>
+                        <div class="playlist-header-manage">
                         <K7Button Variant="outlined"
                                    Color="primary"
+                                   Class="album-mini-shuffle"
                                    StartIcon="@Phosphor.Shuffle"
                                    OnClick="ShuffleAll">
-                            @S["Shuffle"]
+                            <span class="playlist-action-label">@S["Shuffle"]</span>
                         </K7Button>
                         <DownloadAllButton Items="GetDownloadRequests()" Label="@_album.Title" />
                         @if (_canRate)
                         {
-                            <K7IconButton Icon="@Phosphor.ChatCircleText" OnClick="OpenReviewDialogAsync" AriaLabel="@ReviewDialogL["Title"]" />
+                            <K7IconButton Class="album-mini-review"
+                                           Icon="@Phosphor.ChatCircleText"
+                                           OnClick="OpenReviewDialogAsync"
+                                           AriaLabel="@ReviewDialogL["Title"]" />
                         }
                         @if (_artists.Count > 0 || _isAdmin)
                         {
-                            <K7Menu Title="@L["MoreActions"]">
+                            <K7Menu Title="@L["MoreActions"]" Class="album-mini-more">
                                 <ActivatorContent>
                                     <K7IconButton Icon="@Phosphor.DotsThreeVertical" AriaLabel="@L["MoreActions"]" />
                                 </ActivatorContent>
@@ -162,9 +173,10 @@ else if (_album is not null)
                                 </ChildContent>
                             </K7Menu>
                         }
+                        </div>
                     </div>
                 </div>
-            </div>
+        </div>
         </div>
 
         <div class="album-tracklist">
@@ -270,5 +282,6 @@ else if (_album is not null)
             </div>
         </div>
         </div>
+        </PlaylistDetailShell>
     </MediaPageContent>
 }

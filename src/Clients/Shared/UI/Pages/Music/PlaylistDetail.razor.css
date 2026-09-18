@@ -2,6 +2,16 @@
     padding-inline: var(--space-4);
 }
 
+@media (max-width: 599.98px) {
+    ::deep .playlist-detail-browse .browse-view-toolbar {
+        padding-inline: 0;
+    }
+}
+
+::deep .playlist-detail-page.is-header-compact .playlist-detail-browse .browse-view-toolbar {
+    padding-inline: 0;
+}
+
 ::deep .playlist-detail-browse .k7-data-table-scroll,
 ::deep .playlist-detail-browse .k7-virtual-list {
     padding-inline: var(--space-4);
