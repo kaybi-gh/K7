@@ -122,4 +122,41 @@ public class BulkUpsertMediaStatesCommandHandlerTests
         seriesBookmark.NextEpisodeId.Should().Be(_episode2Id);
         seriesBookmark.ActivityAt.Should().Be(interactedAt);
     }
+
+    [Test]
+    public async Task Handle_ShouldCreateSingleSeriesBookmark_WhenMultipleCompletedEpisodesOfSameSerie()
+    {
+        var episode1At = DateTime.UtcNow.AddDays(-3);
+        var episode2At = DateTime.UtcNow.AddDays(-1);
+
+        var count = await _handler.Handle(new BulkUpsertMediaStatesCommand
+        {
+            UserId = _userId,
+            Items =
+            [
+                new BulkUpsertMediaStatesRequest.MediaStateItem
+                {
+                    MediaId = _episode1Id,
+                    PlayCount = 1,
+                    IsCompleted = true,
+                    LastInteractedAt = episode1At
+                },
+                new BulkUpsertMediaStatesRequest.MediaStateItem
+                {
+                    MediaId = _episode2Id,
+                    PlayCount = 1,
+                    IsCompleted = true,
+                    LastInteractedAt = episode2At
+                }
+            ]
+        }, CancellationToken.None);
+
+        count.Should().Be(2);
+
+        var seriesBookmark = await _context.PlaybackBookmarks
+            .OfType<SeriesPlaybackBookmark>()
+            .SingleAsync(b => b.UserId == _userId);
+        seriesBookmark.LastCompletedEpisodeId.Should().Be(_episode2Id);
+        seriesBookmark.ActivityAt.Should().Be(episode2At);
+    }
 }

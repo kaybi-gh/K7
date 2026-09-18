@@ -635,6 +635,18 @@ public class PlaybackBookmarkService(
         Guid serieId,
         CancellationToken cancellationToken)
     {
+        // Prefer Local: unsaved Added bookmarks are invisible to a DB query, and
+        // a second create in the same unit of work would violate the unique index.
+        var local = context.PlaybackBookmarks.Local
+            .OfType<SeriesPlaybackBookmark>()
+            .FirstOrDefault(b =>
+                b.SerieId == serieId &&
+                (userId is { } uid
+                    ? b.UserId == uid
+                    : b.SharedProfileId == sharedProfileId));
+        if (local is not null)
+            return local;
+
         var query = context.PlaybackBookmarks
             .OfType<SeriesPlaybackBookmark>()
             .Where(b => b.SerieId == serieId);

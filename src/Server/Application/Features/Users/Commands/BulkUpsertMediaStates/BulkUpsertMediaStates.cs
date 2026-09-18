@@ -125,20 +125,11 @@ public class BulkUpsertMediaStatesCommandHandler(
     {
         if (isCompleted)
         {
+            // Series bookmarks are created once per serie in EnqueueSeriesBookmarksAsync
+            // (deduped). Calling OnEpisodeCompletedAsync here per episode would add
+            // multiple SeriesPlaybackBookmark rows before SaveChanges and hit
+            // IX_PlaybackBookmarks_UserId_SerieId_Series.
             await bookmarkService.RemoveItemBookmarkAsync(userId, sharedProfileId: null, item.MediaId, cancellationToken);
-            var isEpisode = await context.Medias
-                .OfType<SerieEpisode>()
-                .AnyAsync(e => e.Id == item.MediaId, cancellationToken);
-            if (isEpisode)
-            {
-                await bookmarkService.OnEpisodeCompletedAsync(
-                    userId,
-                    sharedProfileId: null,
-                    item.MediaId,
-                    item.LastInteractedAt ?? timeNow,
-                    cancellationToken);
-            }
-
             return;
         }
 

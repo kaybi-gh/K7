@@ -103,6 +103,23 @@ public class PlaybackBookmarkServiceTests
     }
 
     [Test]
+    public async Task OnEpisodeCompletedAsync_ShouldReusePendingSeriesBookmark_WhenCalledTwiceBeforeSave()
+    {
+        var firstAt = DateTime.UtcNow.AddHours(-2);
+        var secondAt = DateTime.UtcNow.AddHours(-1);
+
+        await _sut.OnEpisodeCompletedAsync(_userId, null, _episode1Id, firstAt);
+        await _sut.OnEpisodeCompletedAsync(_userId, null, _episode2Id, secondAt);
+        await _context.SaveChangesAsync();
+
+        var seriesBookmark = await _context.PlaybackBookmarks
+            .OfType<SeriesPlaybackBookmark>()
+            .SingleAsync(b => b.UserId == _userId && b.SerieId == _serieId);
+        seriesBookmark.LastCompletedEpisodeId.Should().Be(_episode2Id);
+        seriesBookmark.ActivityAt.Should().Be(secondAt);
+    }
+
+    [Test]
     public async Task UpsertItemBookmarkAsync_ShouldBeEligibleForKeepWatching()
     {
         var timeNow = DateTime.UtcNow;
