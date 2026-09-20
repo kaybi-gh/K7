@@ -1834,6 +1834,7 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
         ClearTvChromeFocus();
         _suppressShowUntil = DateTime.UtcNow.AddMilliseconds(500);
         UpdateChromeVisibility();
+        ApplySkipSegmentAtCurrentTime();
         StopHideTimer();
         MaybeRunTvDecodeResync();
     }
@@ -2666,15 +2667,29 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
             return;
 
         var segmentType = segment.Type;
-        var endSeconds = segment.EndMs / 1000.0;
         _skipState = _skipState with
         {
             Visible = false,
-            ActiveSegment = null,
+            Dismissed = true,
             LastSkipUtc = DateTime.UtcNow
         };
-        _player.Seek(endSeconds);
         SetSkipSegmentVisible(false);
+
+        if (SkipSegmentPresenter.CompletesPlayback(segment, _player.Duration))
+        {
+            ShowSkippedNotification(segmentType);
+            NativeVideoDebug.Log("SkipSegment completePlayback type=" + segmentType);
+            if (_handlingPlaybackEnded)
+                return;
+
+            _player.Pause();
+            if (_player.PlaybackState != PlaybackState.Ended)
+                _player.PlaybackState = PlaybackState.Ended;
+            return;
+        }
+
+        var endSeconds = segment.EndMs / 1000.0;
+        _player.Seek(endSeconds);
         ShowSkippedNotification(segmentType);
         NativeVideoDebug.Log("SkipSegment seek type=" + segmentType + " to=" + endSeconds.ToString("F1") + "s");
     }

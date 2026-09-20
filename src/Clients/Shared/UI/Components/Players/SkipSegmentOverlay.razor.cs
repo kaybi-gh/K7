@@ -1,6 +1,7 @@
 using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
+using K7.Server.Domain.Enums;
 using K7.Shared.Dtos;
 using K7.Shared.Dtos.Entities.Medias;
 using K7.Shared.Interfaces;
@@ -132,16 +133,16 @@ public partial class SkipSegmentOverlay : IDisposable
             ControlsVisible,
             DateTime.UtcNow);
 
-        if (result.Action == SkipSegmentPresenter.ActionKind.AutoSkip
-            && result.State.ActiveSegment is { } segment)
-        {
-            PlayerService.Seek(segment.EndMs / 1000.0);
-            ShowSkippedNotification(segment.Type);
-        }
-
         _skipState = result.State;
         _activeSegment = result.State.ActiveSegment;
         _visible = result.State.Visible;
+
+        if (result.Action == SkipSegmentPresenter.ActionKind.AutoSkip
+            && result.State.ActiveSegment is { } segment)
+        {
+            ApplySkip(segment);
+        }
+
         if (render)
             _ = InvokeAsync(StateHasChanged);
     }
@@ -151,16 +152,31 @@ public partial class SkipSegmentOverlay : IDisposable
         if (_skipState.ActiveSegment is null)
             return;
 
-        var endSeconds = _skipState.ActiveSegment.EndMs / 1000.0;
-        PlayerService.Seek(endSeconds);
+        ApplySkip(_skipState.ActiveSegment);
+    }
+
+    private void ApplySkip(MediaSegmentDto segment)
+    {
         _skipState = _skipState with
         {
             Visible = false,
-            ActiveSegment = null,
+            Dismissed = true,
             LastSkipUtc = DateTime.UtcNow
         };
-        _activeSegment = null;
+        _activeSegment = segment;
         _visible = false;
+
+        if (SkipSegmentPresenter.CompletesPlayback(segment, PlayerService.Duration))
+        {
+            PlayerService.Pause();
+            if (PlayerService.PlaybackState != PlaybackState.Ended)
+                PlayerService.PlaybackState = PlaybackState.Ended;
+            ShowSkippedNotification(segment.Type);
+            return;
+        }
+
+        PlayerService.Seek(segment.EndMs / 1000.0);
+        ShowSkippedNotification(segment.Type);
     }
 
     public void Dispose()

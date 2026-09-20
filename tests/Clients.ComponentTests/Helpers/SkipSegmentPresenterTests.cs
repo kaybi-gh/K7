@@ -42,6 +42,86 @@ public class SkipSegmentPresenterTests
     }
 
     [Test]
+    public void FindActive_ShouldReturnNull_WhenTimeAtSegmentEnd()
+    {
+        SkipSegmentPresenter.FindActive([Intro], 90).Should().BeNull();
+    }
+
+    [Test]
+    public void FindActive_ShouldReturnIntro_WhenTimeJustBeforeEnd()
+    {
+        SkipSegmentPresenter.FindActive([Intro], 89.9).Should().Be(Intro);
+    }
+
+    [Test]
+    public void CompletesPlayback_ShouldBeTrue_WhenOutroEndsAtDuration()
+    {
+        SkipSegmentPresenter.CompletesPlayback(Outro, durationSeconds: 1260).Should().BeTrue();
+    }
+
+    [Test]
+    public void CompletesPlayback_ShouldBeTrue_WhenOutroEndsWithinTolerance()
+    {
+        SkipSegmentPresenter.CompletesPlayback(Outro, durationSeconds: 1261.5).Should().BeTrue();
+    }
+
+    [Test]
+    public void CompletesPlayback_ShouldBeFalse_WhenOutroEndsBeforeCreditsClear()
+    {
+        SkipSegmentPresenter.CompletesPlayback(Outro, durationSeconds: 1400).Should().BeFalse();
+    }
+
+    [Test]
+    public void CompletesPlayback_ShouldBeFalse_WhenSegmentIsIntro()
+    {
+        SkipSegmentPresenter.CompletesPlayback(Intro, durationSeconds: 90).Should().BeFalse();
+    }
+
+    [Test]
+    public void Tick_ShouldRestartFloatingWindow_WhenChromeHidesAfterDisplayDuration()
+    {
+        var shown = SkipSegmentPresenter.Tick(default, [Intro], Settings(), 5, chromeVisible: true, T0);
+        var chromeHidden = SkipSegmentPresenter.Tick(
+            shown.State, [Intro], Settings(), 10, chromeVisible: false,
+            T0 + SkipSegmentPresenter.DisplayDuration);
+
+        chromeHidden.State.Visible.Should().BeTrue();
+        chromeHidden.State.Dismissed.Should().BeFalse();
+
+        var later = SkipSegmentPresenter.Tick(
+            chromeHidden.State, [Intro], Settings(), 15, chromeVisible: false,
+            T0 + SkipSegmentPresenter.DisplayDuration + SkipSegmentPresenter.DisplayDuration);
+
+        later.State.Visible.Should().BeFalse();
+        later.State.Dismissed.Should().BeTrue();
+    }
+
+    [Test]
+    public void Tick_ShouldKeepHidden_WhenDismissedAfterSkipWhileStillInSegment()
+    {
+        var shown = SkipSegmentPresenter.Tick(default, [Intro], Settings(), 5, chromeVisible: false, T0);
+        var skipped = shown.State with
+        {
+            Visible = false,
+            Dismissed = true,
+            LastSkipUtc = T0
+        };
+
+        var stillInIntro = SkipSegmentPresenter.Tick(
+            skipped, [Intro], Settings(), 6, chromeVisible: false, T0.AddSeconds(1));
+
+        stillInIntro.State.Visible.Should().BeFalse();
+        stillInIntro.State.Dismissed.Should().BeTrue();
+        stillInIntro.State.ActiveSegment.Should().Be(Intro);
+
+        var afterCooldown = SkipSegmentPresenter.Tick(
+            stillInIntro.State, [Intro], Settings(), 40, chromeVisible: false, T0.AddSeconds(4));
+
+        afterCooldown.State.Visible.Should().BeFalse();
+        afterCooldown.State.Dismissed.Should().BeTrue();
+    }
+
+    [Test]
     public void Tick_ShouldHide_WhenSettingsAreMissing()
     {
         var result = SkipSegmentPresenter.Tick(default, [Intro], null, 5, chromeVisible: false, T0);

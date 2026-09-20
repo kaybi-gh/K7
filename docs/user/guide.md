@@ -138,8 +138,12 @@ Single tap shows or hides controls when you are not mid-gesture.
 
 When **Settings -> Video playback** is set to show the skip button, it appears on its own (controls stay
 hidden). Enter / Select skips. After a few seconds the floating button hides, but opening controls
-keeps skip available and focusable until the intro/outro chapter ends. Auto-skip jumps to the end
+keeps skip available and focusable until the intro/outro chapter ends. Hiding the controls starts a
+fresh floating window so skip does not disappear with the transport bar. Auto-skip jumps to the end
 of the chapter with no button. Disabled does nothing.
+
+Skip outro that runs to the end of the file ends the episode (next-episode offer / autoplay) instead
+of parking on the last frame of the credits.
 
 When controls are visible, arrows / D-pad also reach the skip intro/outro button (it is focused
 first if it is on screen. Up from play/seek/settings also jumps to it). Enter / Select then skips.
