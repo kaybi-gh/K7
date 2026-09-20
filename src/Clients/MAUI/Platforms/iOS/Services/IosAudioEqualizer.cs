@@ -29,12 +29,20 @@ internal sealed class IosAudioEqualizer : IDisposable
         if (_disposed || item is null || _tap is null)
             return;
 
-        item.Asset.LoadValuesAsynchronously(["tracks"], () =>
+        var mediaType = AVMediaTypes.Audio.GetConstant();
+        if (mediaType is null)
+            return;
+
+        item.Asset.LoadTracksWithMediaType(mediaType, (tracks, error) =>
         {
-            if (_disposed || _tap is null)
+            if (_disposed || _tap is null || error is not null || tracks is null || tracks.Count == 0)
                 return;
 
-            MainThread.BeginInvokeOnMainThread(() => TryAttach(item));
+            var audioTrack = ((NSArray)tracks).GetItem<AVAssetTrack>((nuint)0);
+            if (audioTrack is null)
+                return;
+
+            MainThread.BeginInvokeOnMainThread(() => TryAttach(item, audioTrack));
         });
     }
 
@@ -48,20 +56,11 @@ internal sealed class IosAudioEqualizer : IDisposable
         _tap = null;
     }
 
-    private void TryAttach(AVPlayerItem item)
+    private void TryAttach(AVPlayerItem item, AVAssetTrack audioTrack)
     {
         try
         {
-            var status = item.Asset.StatusOfValue("tracks", out var error);
-            if (status != AVKeyValueStatus.Loaded || error is not null)
-                return;
-
-            var mediaType = AVMediaTypes.Audio.GetConstant();
-            if (mediaType is null)
-                return;
-
-            var audioTrack = item.Asset.TracksWithMediaType(mediaType).FirstOrDefault();
-            if (audioTrack is null || _tap is null)
+            if (_tap is null)
                 return;
 
             var inputParams = AVMutableAudioMixInputParameters.FromTrack(audioTrack);
