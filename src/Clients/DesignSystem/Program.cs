@@ -96,6 +96,7 @@ builder.Services.AddSingleton<IPlaybackSyncService, MockPlaybackSyncService>();
 builder.Services.AddSingleton<ICastService, MockCastService>();
 builder.Services.AddSingleton<ICastOrchestrationService, MockCastOrchestrationService>();
 builder.Services.AddSingleton<IRemoteControlService, MockRemoteControlService>();
+builder.Services.AddSingleton<NowPlayingService>();
 builder.Services.AddSingleton<IDownloadManager, MockDownloadManager>();
 
 // Concrete services whose dependencies are satisfied by the mocks above

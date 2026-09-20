@@ -120,6 +120,7 @@ builder.Services.AddSingleton<ICastOrchestrationService, CastOrchestrationServic
 builder.Services.AddSingleton<RemotePlaybackHandler>();
 builder.Services.AddSingleton<RemoteControlService>();
 builder.Services.AddSingleton<IRemoteControlService>(sp => sp.GetRequiredService<RemoteControlService>());
+builder.Services.AddSingleton<NowPlayingService>();
 builder.Services.AddSingleton<SyncPlayService>();
 builder.Services.AddSingleton<ISyncPlayService>(sp => sp.GetRequiredService<SyncPlayService>());
 builder.Services.AddSingleton<ISyncPlayMediaLoader, SyncPlayMediaLoader>();

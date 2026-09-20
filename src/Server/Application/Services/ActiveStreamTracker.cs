@@ -15,6 +15,9 @@ public sealed record ActiveStreamInfo
     public string? MediaTitle { get; set; }
     public string? MediaType { get; set; }
     public Guid? ParentId { get; set; }
+    public Guid? IndexedFileId { get; set; }
+    public int? SeasonNumber { get; set; }
+    public int? EpisodeNumber { get; set; }
     public Guid? DeviceId { get; set; }
     public string? DeviceName { get; set; }
     public string? DeviceClient { get; set; }
@@ -33,6 +36,8 @@ public sealed record ActiveStreamInfo
     /// </summary>
     public bool HasPlaybackProgress { get; set; }
     public double PlaybackRate { get; set; } = 1.0;
+    public int? AudioTrackIndex { get; set; }
+    public int? SubtitleTrackIndex { get; set; }
 }
 
 public interface IActiveStreamTracker
@@ -75,9 +80,14 @@ public class ActiveStreamTracker : IActiveStreamTracker
             {
                 info.ThumbnailUrl ??= existing.ThumbnailUrl;
                 info.StreamDecision ??= existing.StreamDecision;
+                info.IndexedFileId ??= existing.IndexedFileId;
+                info.SeasonNumber ??= existing.SeasonNumber;
+                info.EpisodeNumber ??= existing.EpisodeNumber;
                 info.HasPlaybackProgress = info.HasPlaybackProgress || existing.HasPlaybackProgress;
                 if (info.PlaybackRate <= 0)
                     info.PlaybackRate = existing.PlaybackRate > 0 ? existing.PlaybackRate : 1.0;
+                info.AudioTrackIndex ??= existing.AudioTrackIndex;
+                info.SubtitleTrackIndex ??= existing.SubtitleTrackIndex;
             }
         }
         else

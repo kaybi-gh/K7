@@ -114,6 +114,7 @@ public class UpdatePlaybackProgressCommandHandlerTests
             Substitute.For<IFfmpegCapabilitiesService>(),
             CreateDisabledScrobbleDispatcher(),
             Substitute.For<ITranscodeJobManager>(),
+            Substitute.For<INowPlayingNotifier>(),
             Substitute.For<ILogger<UpdatePlaybackProgressCommandHandler>>());
     }
 
@@ -459,6 +460,7 @@ public class UpdatePlaybackProgressCommandHandlerTests
             Substitute.For<IFfmpegCapabilitiesService>(),
             CreateDisabledScrobbleDispatcher(),
             Substitute.For<ITranscodeJobManager>(),
+            Substitute.For<INowPlayingNotifier>(),
             Substitute.For<ILogger<UpdatePlaybackProgressCommandHandler>>());
 
         var sessionId = Guid.NewGuid();

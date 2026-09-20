@@ -19,4 +19,8 @@
     {
         @ChildContent
     }
+    @if (BadgeCount > 0)
+    {
+        <span class="k7-badge">@(BadgeCount > 99 ? "99+" : BadgeCount.ToString())</span>
+    }
 </span>

@@ -86,6 +86,10 @@ public class AudioPlaybackProgressTrackerTests
             (int)PlaybackState.Playing,
             Arg.Any<Guid?>(),
             Arg.Any<Guid?>(),
+            Arg.Any<Guid?>(),
+            Arg.Any<Guid?>(),
+            Arg.Any<int?>(),
+            Arg.Any<int?>(),
             Arg.Any<Guid?>());
     }
 

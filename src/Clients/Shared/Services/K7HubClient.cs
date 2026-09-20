@@ -54,6 +54,8 @@ public sealed class K7HubClient(ILogger<K7HubClient> logger) : IAsyncDisposable,
     public event Action<RemoteTransportCommandDto>? RemoteTransportCommandReceived;
     public event Action<IReadOnlyList<ConnectedDeviceDto>>? ConnectedDevicesUpdated;
     public event Action<RemotePlaybackStateDto>? RemotePlaybackStateReceived;
+    public event Action<PlaybackTakenOverDto>? PlaybackTakenOverReceived;
+    public event Action<IReadOnlyList<NowPlayingSessionDto>>? NowPlayingUpdated;
     public event Action<SyncPlayGroupDto>? SyncPlayGroupUpdated;
     public event Action<SyncPlayCommandDto>? SyncPlayCommandReceived;
     public event Action<long, double>? SyncPlayPlayAtReceived;
@@ -251,6 +253,16 @@ public sealed class K7HubClient(ILogger<K7HubClient> logger) : IAsyncDisposable,
                 RemotePlaybackStateReceived?.Invoke(state);
             });
 
+            _hubConnection.On<PlaybackTakenOverDto>("ReceivePlaybackTakenOver", (dto) =>
+            {
+                PlaybackTakenOverReceived?.Invoke(dto);
+            });
+
+            _hubConnection.On<IReadOnlyList<NowPlayingSessionDto>>("ReceiveNowPlayingUpdated", (sessions) =>
+            {
+                NowPlayingUpdated?.Invoke(sessions);
+            });
+
             _hubConnection.On<SyncPlayGroupDto>("ReceiveSyncPlayGroupUpdated", (group) =>
             {
                 SyncPlayGroupUpdated?.Invoke(group);
@@ -363,6 +375,12 @@ public sealed class K7HubClient(ILogger<K7HubClient> logger) : IAsyncDisposable,
 
     public Task ReportRemotePlaybackStateAsync(Guid controllerDeviceId, RemotePlaybackStateDto state) =>
         SendIfConnectedAsync("ReportRemotePlaybackState", controllerDeviceId, state);
+
+    public Task NotifyPlaybackTakenOverAsync(PlaybackTakenOverDto dto) =>
+        SendIfConnectedAsync("NotifyPlaybackTakenOver", dto);
+
+    public Task RequestNowPlayingAsync() =>
+        SendIfConnectedAsync("GetNowPlaying");
 
     // --- SyncPlay ---
 

@@ -22750,6 +22750,13 @@
               "string"
             ],
             "format": "int32"
+          },
+          "indexedFileId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
           }
         }
       },

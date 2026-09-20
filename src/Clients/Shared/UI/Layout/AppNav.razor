@@ -54,19 +54,19 @@
                             type="button" @ref="_profileButtonRef" @onclick="async () => await ToggleProfile()">
                         @if (!string.IsNullOrEmpty(_sharedAvatarUrl))
                         {
-                            <K7Avatar Size="sm" Image="@_sharedAvatarUrl" Letter="@_sharedAvatarLetter">
+                            <K7Avatar Size="sm" Image="@_sharedAvatarUrl" Letter="@_sharedAvatarLetter" BadgeCount="@NowPlayingCount">
                                 <span class="connection-badge connection-badge--@_badgeClass" title="@_badgeTitle"></span>
                             </K7Avatar>
                         }
                         else if (_sharedAvatarMembers is { Count: > 0 })
                         {
-                            <K7AvatarGroup Size="sm" Members="_sharedAvatarMembers">
+                            <K7AvatarGroup Size="sm" Members="_sharedAvatarMembers" BadgeCount="@NowPlayingCount">
                                 <span class="connection-badge connection-badge--@_badgeClass" title="@_badgeTitle"></span>
                             </K7AvatarGroup>
                         }
                         else
                         {
-                            <K7Avatar Size="sm" Image="@_avatarUrl" Letter="@_avatarInitial" UserId="@_userId">
+                            <K7Avatar Size="sm" Image="@_avatarUrl" Letter="@_avatarInitial" UserId="@_userId" BadgeCount="@NowPlayingCount">
                                 <span class="connection-badge connection-badge--@_badgeClass" title="@_badgeTitle"></span>
                             </K7Avatar>
                         }
@@ -122,6 +122,36 @@
                     </div>
                 </div>
                 <hr class="k7-menu-divider" />
+                @foreach (var session in NowPlaying.OtherDeviceSessions)
+                {
+                    <div class="app-nav-now-playing">
+                        <span class="app-nav-now-playing-text">@FormatNowPlaying(session)</span>
+                        <div class="app-nav-now-playing-actions">
+                            @if (GetMediaHref(session) is { } mediaHref)
+                            {
+                                <button class="k7-menu-item focusable" type="button" @onclick="@(() => NavigateNowPlaying(mediaHref))">
+                                    <span class="k7-menu-item-icon"><K7Icon Icon="@Phosphor.Info" /></span>
+                                    <span class="k7-menu-item-text">@L["GoToMedia"]</span>
+                                </button>
+                            }
+                            @if (session.CanControl)
+                            {
+                                <button class="k7-menu-item focusable" type="button" @onclick="@(() => TakeControlAsync(session))">
+                                    <span class="k7-menu-item-icon"><K7Icon Icon="@Phosphor.HandWithdraw" /></span>
+                                    <span class="k7-menu-item-text">@L["RemoteControl"]</span>
+                                </button>
+                                <button class="k7-menu-item focusable" type="button" @onclick="@(() => ResumeHereAsync(session))">
+                                    <span class="k7-menu-item-icon"><K7Icon Icon="@Phosphor.ArrowSquareIn" /></span>
+                                    <span class="k7-menu-item-text">@L["ResumeHere"]</span>
+                                </button>
+                            }
+                        </div>
+                    </div>
+                }
+                @if (NowPlaying.OtherDeviceSessions.Count > 0)
+                {
+                    <hr class="k7-menu-divider" />
+                }
                 <button class="k7-menu-item focusable" type="button" @onclick="OpenSyncPlayDialog">
                     <span class="k7-menu-item-icon"><K7Icon Icon="@Phosphor.UsersThree" /></span>
                     <span class="k7-menu-item-text">SyncPlay</span>
@@ -138,6 +168,10 @@
                     <NavLink class="k7-menu-item focusable" href="/admin" @onclick="CloseAll">
                         <span class="k7-menu-item-icon"><K7Icon Icon="@Phosphor.ShieldCheck" /></span>
                         <span class="k7-menu-item-text">@L["Admin"]</span>
+                        @if (_adminStreamCount > 0)
+                        {
+                            <span class="k7-menu-item-count">@_adminStreamCount</span>
+                        }
                     </NavLink>
                 </AuthorizeView>
                 @if (DeviceService.GetClientType() != ClientType.Web)

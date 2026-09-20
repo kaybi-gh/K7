@@ -1485,6 +1485,13 @@ hr.k7-menu-divider { border: none; border-top: 1px solid var(--color-border); ma
 .k7-badge--dot { width: 8px; height: 8px; min-width: 8px; padding: 0; }
 .k7-badge--error { background: var(--color-error-fill); color: var(--color-on-fill); }
 .k7-badge--success { background: var(--color-success-fill); color: var(--color-on-fill); }
+.k7-avatar--sm .k7-badge,
+.k7-avatar-group--sm .k7-badge {
+  min-width: 14px;
+  height: 14px;
+  font-size: 9px;
+  transform: translate(30%, -30%);
+}
 
 /* ── DateRangePicker ─────────────────────────────────────────────────────────── */
 .k7-date-picker {

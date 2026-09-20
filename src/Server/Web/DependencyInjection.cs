@@ -121,6 +121,7 @@ public static class DependencyInjection
         services.AddSingleton<INotificationServerInfo, NotificationServerInfo>();
         services.AddScoped<OpenSubsonicAuthenticator>();
         services.AddSingleton<IPlaybackProgressNotifier, PlaybackProgressNotifier>();
+        services.AddSingleton<INowPlayingNotifier, NowPlayingNotifier>();
         services.AddSingleton<IUserRatingNotifier, UserRatingNotifier>();
         services.AddSingleton<IUserVideoPlayerSettingsNotifier, UserVideoPlayerSettingsNotifier>();
         services.AddSingleton<IUserCustomNavNotifier, UserCustomNavNotifier>();

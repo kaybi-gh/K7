@@ -3,8 +3,10 @@ using K7.Clients.Shared.Models;
 using K7.Clients.Shared.Services;
 using K7.Clients.Shared.UI.Components;
 using K7.Clients.Shared.UI.Components.Dialogs;
+using K7.Server.Domain.Constants;
 using K7.Shared.Dtos;
 using K7.Shared.Interfaces;
+using K7.Shared.Navigation;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Routing;
@@ -32,6 +34,8 @@ public partial class AppNav : IDisposable
     private IReadOnlyList<K7AvatarGroupItem>? _sharedAvatarMembers;
     private bool _chatOpen;
     private readonly Dictionary<Guid, string> _knownParticipants = [];
+    private int _adminStreamCount;
+    private bool _joinedAdminStreams;
 
     [Inject] private NavigationManager NavigationManager { get; set; } = default!;
     [Inject] private ISpatialNavService SpatialNav { get; set; } = default!;
@@ -46,6 +50,13 @@ public partial class AppNav : IDisposable
     [Inject] private IK7DialogService DialogService { get; set; } = default!;
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
     [Inject] private IJSRuntime JS { get; set; } = default!;
+    [Inject] private NowPlayingService NowPlaying { get; set; } = default!;
+    [Inject] private RemotePlaybackLauncher RemotePlayback { get; set; } = default!;
+    [Inject] private ISyncPlayMediaLoader MediaLoader { get; set; } = default!;
+    [Inject] private IPlayerService Player { get; set; } = default!;
+    [Inject] private IAudioPlayerService Audio { get; set; } = default!;
+
+    private int NowPlayingCount => NowPlaying.OtherDeviceSessions.Count;
 
     public bool IsAnyMenuOpen => _profileMenuOpen;
 
@@ -54,6 +65,7 @@ public partial class AppNav : IDisposable
         NavigationManager.LocationChanged += OnLocationChanged;
         AuthenticationStateProvider.AuthenticationStateChanged += OnAuthStateChanged;
         HubClient.ConnectionStateChanged += OnConnectionStateChanged;
+        NowPlaying.Changed += OnNowPlayingChanged;
         SyncPlay.GroupUpdated += OnSyncPlayGroupUpdated;
         SyncPlay.ChatMessageReceived += OnChatMessageReceived;
         SyncPlay.ErrorReceived += OnSyncPlayErrorReceived;
@@ -63,6 +75,8 @@ public partial class AppNav : IDisposable
         UpdateActiveNav();
         await AuthenticationStateProvider.GetAuthenticationStateAsync();
         await LoadAvatarAsync();
+        await NowPlaying.RefreshAsync();
+        await BindAdminStreamCountAsync();
     }
 
     private async Task LoadAvatarAsync()
@@ -254,9 +268,104 @@ public partial class AppNav : IDisposable
         {
             await task;
             await LoadAvatarAsync();
+            await BindAdminStreamCountAsync();
         }
         catch { }
         await InvokeAsync(StateHasChanged);
+    }
+
+    private void OnNowPlayingChanged() => InvokeAsync(StateHasChanged);
+
+    private string FormatNowPlaying(NowPlayingSessionDto session)
+    {
+        var title = string.IsNullOrWhiteSpace(session.MediaTitle) ? L["SyncPlayNoMedia"] : session.MediaTitle;
+        var device = string.IsNullOrWhiteSpace(session.DeviceName) ? session.DeviceType ?? "" : session.DeviceName;
+        return string.Format(L["NowPlayingOn"], title, device);
+    }
+
+    private static string? GetMediaHref(NowPlayingSessionDto session)
+    {
+        if (session.MediaId is not Guid mediaId)
+            return null;
+
+        return MediaPageUrls.BuildFromTypeName(
+            session.MediaType,
+            mediaId,
+            serieId: session.ParentId,
+            seasonNumber: session.SeasonNumber,
+            episodeNumber: session.EpisodeNumber,
+            albumId: session.ParentId);
+    }
+
+    private async Task TakeControlAsync(NowPlayingSessionDto session)
+    {
+        CloseAll();
+        await RemotePlayback.AttachToDeviceAsync(session);
+    }
+
+    private void NavigateNowPlaying(string href)
+    {
+        CloseAll();
+        NavigationManager.NavigateTo(href);
+    }
+
+    private async Task ResumeHereAsync(NowPlayingSessionDto session)
+    {
+        CloseAll();
+        await RemotePlayback.NotifyLocalTakeoverAsync(
+            session.MediaTitle,
+            session.MediaId,
+            session.IndexedFileId,
+            session.IsAudio,
+            session.ThumbnailUrl,
+            session.Position,
+            session.Duration);
+
+        if (session.MediaId is not Guid mediaId)
+            return;
+
+        await MediaLoader.LoadAndPlayMediaAsync(
+            mediaId,
+            session.MediaTitle,
+            session.ThumbnailUrl,
+            session.Position > 1 ? session.Position : null,
+            indexedFileId: session.IndexedFileId,
+            audioTrackIndex: session.AudioTrackIndex,
+            subtitleTrackIndex: session.SubtitleTrackIndex,
+            playbackRate: session.PlaybackRate > 0 ? session.PlaybackRate : null);
+    }
+
+    private async Task BindAdminStreamCountAsync()
+    {
+        try
+        {
+            var auth = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            if (auth.User.IsInRole(Roles.Administrator))
+            {
+                if (!_joinedAdminStreams)
+                {
+                    HubClient.ActiveStreamsUpdated += OnAdminStreamsUpdated;
+                    await HubClient.JoinAdminStreamsGroupAsync();
+                    _joinedAdminStreams = true;
+                }
+            }
+            else if (_joinedAdminStreams)
+            {
+                HubClient.ActiveStreamsUpdated -= OnAdminStreamsUpdated;
+                await HubClient.LeaveAdminStreamsGroupAsync();
+                _joinedAdminStreams = false;
+                _adminStreamCount = 0;
+            }
+        }
+        catch
+        {
+        }
+    }
+
+    private void OnAdminStreamsUpdated(IReadOnlyList<ActiveStreamDto> streams)
+    {
+        _adminStreamCount = streams.Count;
+        InvokeAsync(StateHasChanged);
     }
 
     public void Dispose()
@@ -264,6 +373,9 @@ public partial class AppNav : IDisposable
         NavigationManager.LocationChanged -= OnLocationChanged;
         AuthenticationStateProvider.AuthenticationStateChanged -= OnAuthStateChanged;
         HubClient.ConnectionStateChanged -= OnConnectionStateChanged;
+        NowPlaying.Changed -= OnNowPlayingChanged;
+        if (_joinedAdminStreams)
+            HubClient.ActiveStreamsUpdated -= OnAdminStreamsUpdated;
         SyncPlay.GroupUpdated -= OnSyncPlayGroupUpdated;
         SyncPlay.ChatMessageReceived -= OnChatMessageReceived;
         SyncPlay.ErrorReceived -= OnSyncPlayErrorReceived;

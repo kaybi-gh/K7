@@ -314,7 +314,8 @@ public class PlaybackProgressTracker : IDisposable
                     sharedProfileId: _viewingGroupSession?.ActiveGroupId,
                     syncPlayGroupId: _syncPlayService?.IsInGroup == true ? _syncPlayService.CurrentGroup?.GroupId : null,
                     audioTrackIndex: _playerService.SelectedAudioTrack?.Index,
-                    subtitleTrackIndex: _playerService.SelectedSubtitleTrack?.Index);
+                    subtitleTrackIndex: _playerService.SelectedSubtitleTrack?.Index,
+                    indexedFileId: _currentIndexedFileId);
             }
             catch (Exception ex)
             {

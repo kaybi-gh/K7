@@ -102,6 +102,7 @@ public class PlaybackSyncService : IPlaybackSyncService
                             evt.Duration,
                             state,
                             sharedProfileId: evt.SharedProfileId,
+                            indexedFileId: evt.IndexedFileId,
                             cancellationToken: cancellationToken);
                     }
 

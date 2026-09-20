@@ -144,7 +144,8 @@ public class AudioPlaybackProgressTracker : IDisposable
                 (int)state,
                 deviceId,
                 _audio.ActivePlaylistId,
-                syncPlayGroupId: _syncPlayService?.IsInGroup == true ? _syncPlayService.CurrentGroup?.GroupId : null);
+                syncPlayGroupId: _syncPlayService?.IsInGroup == true ? _syncPlayService.CurrentGroup?.GroupId : null,
+                indexedFileId: indexedFileId);
         }
         catch
         {

@@ -61,5 +61,8 @@
   <data name="PromoteLeader" xml:space="preserve"><value>Promouvoir leader</value></data>
   <data name="SyncPlayKicked" xml:space="preserve"><value>Vous avez été expulsé du groupe</value></data>
   <data name="SyncPlayDeviceNotRegistered" xml:space="preserve"><value>Appareil non connecté au hub. Rechargez la page puis réessayez.</value></data>
-  <data name="SyncPlayHubNotConnected" xml:space="preserve"><value>Connexion temps réel indisponible. Attendez la reconnexion puis réessayez.</value></data>
+  <data name="NowPlayingOn" xml:space="preserve"><value>Vous etes en train de visionner {0} sur {1}</value></data>
+  <data name="RemoteControl" xml:space="preserve"><value>Telecommande</value></data>
+  <data name="ResumeHere" xml:space="preserve"><value>Reprendre ici</value></data>
+  <data name="GoToMedia" xml:space="preserve"><value>Voir le media</value></data>
 </root>

@@ -23,6 +23,7 @@ public partial class K7Avatar
     [Parameter] public string Style { get; set; } = "";
     [Parameter] public string Letter { get; set; } = "";
     [Parameter] public Guid? UserId { get; set; }
+    [Parameter] public int BadgeCount { get; set; }
 
     [Inject] private IK7ServerService ApiClient { get; set; } = default!;
 

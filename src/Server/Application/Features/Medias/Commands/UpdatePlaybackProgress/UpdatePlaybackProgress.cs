@@ -33,7 +33,8 @@ public record UpdatePlaybackProgressCommand(
     Guid? SharedProfileId = null,
     Guid? SyncPlayGroupId = null,
     int? AudioTrackIndex = null,
-    int? SubtitleTrackIndex = null) : IRequest;
+    int? SubtitleTrackIndex = null,
+    Guid? IndexedFileId = null) : IRequest;
 
 public class UpdatePlaybackProgressCommandHandler(
     IApplicationDbContext context,
@@ -51,6 +52,7 @@ public class UpdatePlaybackProgressCommandHandler(
     IFfmpegCapabilitiesService ffmpegCapabilitiesService,
     ScrobbleDispatcher scrobbleDispatcher,
     ITranscodeJobManager transcodeJobManager,
+    INowPlayingNotifier nowPlayingNotifier,
     ILogger<UpdatePlaybackProgressCommandHandler> logger) : IRequestHandler<UpdatePlaybackProgressCommand>
 {
     private readonly ITranscodeJobManager _transcodeJobManager = transcodeJobManager;
@@ -68,6 +70,7 @@ public class UpdatePlaybackProgressCommandHandler(
     private readonly ISyncPlayPlaybackContextResolver _syncPlayPlaybackContextResolver = syncPlayPlaybackContextResolver;
     private readonly IFfmpegCapabilitiesService _ffmpegCapabilitiesService = ffmpegCapabilitiesService;
     private readonly ScrobbleDispatcher _scrobbleDispatcher = scrobbleDispatcher;
+    private readonly INowPlayingNotifier _nowPlayingNotifier = nowPlayingNotifier;
     private readonly ILogger _logger = logger;
 
     public async Task Handle(UpdatePlaybackProgressCommand request, CancellationToken cancellationToken)
@@ -446,6 +449,24 @@ public class UpdatePlaybackProgressCommandHandler(
                 thumbnailUrl = $"/api/metadata-pictures/{thumbnailPictureId.Value}?size=Small";
             }
 
+            Guid? parentId = null;
+            int? seasonNumber = null;
+            int? episodeNumber = null;
+            if (media is MusicTrack track)
+            {
+                parentId = track.AlbumId;
+            }
+            else if (media is SerieEpisode ep)
+            {
+                parentId = ep.SerieId;
+                episodeNumber = ep.EpisodeNumber;
+                seasonNumber = ep.Season?.SeasonNumber
+                    ?? await _context.Medias.OfType<SerieSeason>()
+                        .Where(s => s.Id == ep.SeasonId)
+                        .Select(s => (int?)s.SeasonNumber)
+                        .FirstOrDefaultAsync(cancellationToken);
+            }
+
             _activeStreamTracker.Upsert(request.SessionId, new ActiveStreamInfo
             {
                 SessionId = request.SessionId,
@@ -455,9 +476,10 @@ public class UpdatePlaybackProgressCommandHandler(
                 MediaId = request.MediaId,
                 MediaTitle = media.Title,
                 MediaType = media.Type.ToString(),
-                ParentId = media is MusicTrack track ? track.AlbumId
-                    : media is SerieEpisode ep ? ep.SerieId
-                    : null,
+                ParentId = parentId,
+                IndexedFileId = request.IndexedFileId,
+                SeasonNumber = seasonNumber,
+                EpisodeNumber = episodeNumber,
                 DeviceId = request.DeviceId,
                 DeviceName = device?.DeviceName,
                 DeviceClient = device?.ClientType,
@@ -467,13 +489,19 @@ public class UpdatePlaybackProgressCommandHandler(
                 Position = request.Position,
                 Duration = request.Duration,
                 State = (int)request.State,
-                SharedProfileName = session.SharedProfileNameSnapshot ?? session.CoWatchingWithSnapshot
+                SharedProfileName = session.SharedProfileNameSnapshot ?? session.CoWatchingWithSnapshot,
+                AudioTrackIndex = request.AudioTrackIndex,
+                SubtitleTrackIndex = request.SubtitleTrackIndex
             });
         }
         else
         {
             _activeStreamTracker.Remove(request.SessionId);
         }
+
+        var nowPlayingIdentity = _currentUser.IdentityId;
+        if (!string.IsNullOrEmpty(nowPlayingIdentity))
+            await _nowPlayingNotifier.NotifyAsync(nowPlayingIdentity, cancellationToken);
 
         // Player closed (Idle) or media finished (Ended): stop ffmpeg for jobs this session
         // was the last consumer of. Otherwise the AAC window / remux head ran on to its

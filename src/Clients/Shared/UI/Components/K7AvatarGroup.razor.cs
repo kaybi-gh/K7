@@ -16,6 +16,7 @@ public partial class K7AvatarGroup
     [Parameter] public int MaxVisible { get; set; } = 3;
     [Parameter] public string Class { get; set; } = "";
     [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public int BadgeCount { get; set; }
 
     private IEnumerable<K7AvatarGroupItem> VisibleMembers =>
         Members.Take(MaxVisible > 0 ? MaxVisible : 3);

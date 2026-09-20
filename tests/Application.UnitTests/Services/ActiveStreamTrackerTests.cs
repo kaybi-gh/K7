@@ -244,6 +244,25 @@ public class ActiveStreamTrackerTests
         tracker.GetActiveStreams().Should().HaveCount(2);
     }
 
+    [Test]
+    public void Upsert_ShouldKeepIndexedFileId_WhenLaterUpdateOmitsIt()
+    {
+        var tracker = new ActiveStreamTracker();
+        var sessionId = Guid.NewGuid();
+        var fileId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        var mediaId = Guid.NewGuid();
+        var deviceId = Guid.NewGuid();
+
+        tracker.Upsert(sessionId, CreateStream(sessionId, userId, mediaId, deviceId, "TV") with
+        {
+            IndexedFileId = fileId
+        });
+        tracker.Upsert(sessionId, CreateStream(sessionId, userId, mediaId, deviceId, "TV"));
+
+        tracker.GetStreamInfo(sessionId)!.IndexedFileId.Should().Be(fileId);
+    }
+
     private static ActiveStreamInfo CreateStream(
         Guid sessionId,
         Guid userId,

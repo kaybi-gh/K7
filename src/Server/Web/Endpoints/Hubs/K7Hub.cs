@@ -4,6 +4,7 @@ using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Features.Devices.Commands.UpdateDeviceLastSeen;
 using K7.Server.Application.Features.IndexedFiles.Queries.GetStreamUri;
 using K7.Server.Application.Services;
+using K7.Server.Web.Services;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos;
@@ -49,6 +50,7 @@ public partial class K7Hub(
         var registeredDeviceId = await TryRegisterCallerDeviceFromQueryAsync();
         if (registeredDeviceId is Guid deviceId)
         {
+            await Groups.AddToGroupAsync(Context.ConnectionId, DeviceGroupName(deviceId));
             await sender.Send(new UpdateDeviceLastSeenCommand(deviceId));
             await BroadcastConnectedDevicesAsync(identityUserId);
             await BroadcastOnlineUsersPresenceToAdminsAsync();
@@ -91,6 +93,7 @@ public partial class K7Hub(
         if (presenceTracker.TryRemoveByConnectionId(Context.ConnectionId, out var deviceId, out var disconnectedConnection)
             && disconnectedConnection is not null)
         {
+            await Groups.RemoveFromGroupAsync(Context.ConnectionId, DeviceGroupName(deviceId));
             if (!string.IsNullOrEmpty(identityUserId))
             {
                 await BroadcastConnectedDevicesAsync(identityUserId);
@@ -213,7 +216,59 @@ public partial class K7Hub(
             return;
         }
 
-        await Clients.Client(target.ConnectionId).ReceiveRemotePlaybackRequest(request);
+        logger.LogInformation(
+            "Forwarding remote playback to device {DeviceId} attachOnly={AttachOnly}",
+            targetDeviceId,
+            request.AttachOnly);
+        await Clients.Group(DeviceGroupName(targetDeviceId)).ReceiveRemotePlaybackRequest(request);
+
+        if (!request.AttachOnly)
+        {
+            await NotifyOthersPlaybackTakenOverAsync(
+                identityUserId,
+                new PlaybackTakenOverDto
+                {
+                    NewDeviceId = targetDeviceId,
+                    NewDeviceName = target.DeviceName,
+                    Title = request.Title,
+                    MediaId = request.MediaId,
+                    IndexedFileId = request.IndexedFileId,
+                    IsAudio = request.IsAudio,
+                    CoverUrl = request.CoverUrl,
+                    Position = request.StartPosition ?? 0,
+                    Duration = request.Duration ?? 0
+                },
+                Context.ConnectionId,
+                target.ConnectionId);
+        }
+    }
+
+    public async Task NotifyPlaybackTakenOver(PlaybackTakenOverDto dto)
+    {
+        var identityUserId = ResolveIdentityUserId();
+        if (string.IsNullOrEmpty(identityUserId))
+            return;
+
+        await NotifyOthersPlaybackTakenOverAsync(identityUserId, dto, Context.ConnectionId);
+    }
+
+    private async Task NotifyOthersPlaybackTakenOverAsync(
+        string identityUserId,
+        PlaybackTakenOverDto dto,
+        params string[] excludedConnectionIds)
+    {
+        var except = excludedConnectionIds
+            .Where(id => !string.IsNullOrEmpty(id))
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
+
+        if (except.Count == 0)
+        {
+            await Clients.OthersInGroup(identityUserId).ReceivePlaybackTakenOver(dto);
+            return;
+        }
+
+        await Clients.GroupExcept(identityUserId, except).ReceivePlaybackTakenOver(dto);
     }
 
     public async Task SendRemoteTransportCommand(Guid targetDeviceId, RemoteTransportCommandDto command)
@@ -231,7 +286,7 @@ public partial class K7Hub(
             return;
         }
 
-        await Clients.Client(target.ConnectionId).ReceiveRemoteTransportCommand(command);
+        await Clients.Group(DeviceGroupName(targetDeviceId)).ReceiveRemoteTransportCommand(command);
     }
 
     public async Task ReportRemotePlaybackState(Guid controllerDeviceId, RemotePlaybackStateDto state)
@@ -249,7 +304,7 @@ public partial class K7Hub(
             return;
         }
 
-        await Clients.Client(controller.ConnectionId).ReceiveRemotePlaybackState(state);
+        await Clients.Group(DeviceGroupName(controllerDeviceId)).ReceiveRemotePlaybackState(state);
     }
 
     public async Task GetConnectedDevices()
@@ -260,6 +315,18 @@ public partial class K7Hub(
 
         var devices = await BuildConnectedDevicesAsync(identityUserId);
         await Clients.Caller.ReceiveConnectedDevicesUpdated(devices);
+    }
+
+    public async Task GetNowPlaying()
+    {
+        var identityUserId = ResolveIdentityUserId();
+        if (string.IsNullOrEmpty(identityUserId))
+            return;
+
+        await using var scope = scopeFactory.CreateAsyncScope();
+        var tracker = scope.ServiceProvider.GetRequiredService<IActiveStreamTracker>();
+        var sessions = NowPlayingMapper.FromTracker(tracker, identityUserId);
+        await Clients.Caller.ReceiveNowPlayingUpdated(sessions);
     }
 
     private async Task BroadcastConnectedDevicesAsync(string identityUserId)
@@ -380,4 +447,6 @@ public partial class K7Hub(
 
         return string.Empty;
     }
+
+    internal static string DeviceGroupName(Guid deviceId) => $"device:{deviceId:N}";
 }
