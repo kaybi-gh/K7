@@ -143,7 +143,8 @@ fresh floating window so skip does not disappear with the transport bar. Auto-sk
 of the chapter with no button. Disabled does nothing.
 
 Skip outro that runs to the end of the file ends the episode (next-episode offer / autoplay) instead
-of parking on the last frame of the credits.
+of parking on the last frame of the credits. Seeking the playhead to the end of the file does the
+same.
 
 When controls are visible, arrows / D-pad also reach the skip intro/outro button (it is focused
 first if it is on screen. Up from play/seek/settings also jumps to it). Enter / Select then skips.

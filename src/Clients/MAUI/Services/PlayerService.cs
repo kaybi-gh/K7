@@ -100,11 +100,11 @@ internal class PlayerService(
         get => _playbackState;
         set
         {
-            if (_playbackState != value)
-            {
-                _playbackState = value;
-                PlaybackStateChanged?.Invoke(value);
-            }
+            if (!NativeVideoPlaybackEnd.ShouldApplyPlaybackState(_playbackState, value))
+                return;
+
+            _playbackState = value;
+            PlaybackStateChanged?.Invoke(value);
         }
     }
 
@@ -900,7 +900,7 @@ internal class PlayerService(
 
     public Task HideAsync()
     {
-        if (PlaybackState is PlaybackState.Playing or PlaybackState.Paused or PlaybackState.Buffering)
+        if (PlaybackState is PlaybackState.Playing or PlaybackState.Paused or PlaybackState.Buffering or PlaybackState.Ended)
         {
             PlaybackState = PlaybackState.Idle;
         }
@@ -915,7 +915,20 @@ internal class PlayerService(
     public void Play() => PlayRequested?.Invoke();
 
     public void Pause() => PauseRequested?.Invoke();
-    public void Seek(double time) => SeekRequested?.Invoke(time);
+
+    public void Seek(double time)
+    {
+        if (NativeVideoPlaybackEnd.IsSeekToMediaEnd(time, Duration))
+        {
+            if (Duration > 0)
+                CurrentTime = Duration;
+            Pause();
+            PlaybackState = PlaybackState.Ended;
+            return;
+        }
+
+        SeekRequested?.Invoke(time);
+    }
     public void Mute()
     {
         IsMuted = true;

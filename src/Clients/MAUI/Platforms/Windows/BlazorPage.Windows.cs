@@ -417,8 +417,16 @@ public partial class BlazorPage
 
     private void OnWindowsVlcPaused()
     {
-        if (IsWindowsVlcActive)
-            _playerService.PlaybackState = Server.Domain.Enums.PlaybackState.Paused;
+        if (!IsWindowsVlcActive)
+            return;
+
+        _playerService.PlaybackState = NativeVideoPlaybackEnd.PromoteIfMediaEnded(
+            Server.Domain.Enums.PlaybackState.Paused,
+            engineIsPlaying: false,
+            isOpeningSource: false,
+            isVisible: _playerService.IsVisible,
+            durationSeconds: Math.Max(_playerService.Duration, _vlcPlayer?.DurationSeconds ?? 0),
+            positionSeconds: _vlcPlayer?.PositionSeconds ?? _playerService.CurrentTime);
     }
 
     private void OnWindowsVlcEnded()

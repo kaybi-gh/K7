@@ -830,6 +830,26 @@ public partial class BlazorPage
         }
     }
 
+    private double GetExoPlaybackDurationSeconds()
+    {
+        try
+        {
+            var player = UnwrapPlayer(GetPlayer(NativePlayer));
+            if (player is not IExoPlayer exo)
+                return NativePlayer.Duration.TotalSeconds;
+
+            var durMs = exo.Duration;
+            if (durMs > 0 && durMs < 864_000_000_000L)
+                return durMs / 1000.0;
+
+            return NativePlayer.Duration.TotalSeconds;
+        }
+        catch (Exception)
+        {
+            return NativePlayer.Duration.TotalSeconds;
+        }
+    }
+
     /// <summary>
     /// Seek via the tuned Exo instance. Remux Original uses EXACT (open-GOP: only t=0 is a
     /// true IDR, so PREVIOUS_SYNC snaps video back while AAC audio seeks). Encode HLS uses
@@ -1386,6 +1406,15 @@ public partial class BlazorPage
             return;
 
         var mapped = ExoPlaybackStateMapping.Map(exoState, playWhenReady, isPlaying);
+        mapped = NativeVideoPlaybackEnd.PromoteIfMediaEnded(
+            mapped,
+            engineIsPlaying: isPlaying,
+            isOpeningSource: _openingNativeSource,
+            isVisible: _playerService.IsVisible,
+            durationSeconds: _playerService.Duration > 0
+                ? _playerService.Duration
+                : GetExoPlaybackDurationSeconds(),
+            positionSeconds: GetExoPlaybackPositionSeconds());
         _playerService.PlaybackState = mapped;
         NativeVideoDebug.Log(
             "ExoState mapped=" + mapped

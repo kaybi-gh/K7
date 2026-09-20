@@ -17,12 +17,6 @@ public static class SkipSegmentPresenter
     public static readonly TimeSpan DisplayDuration = TimeSpan.FromSeconds(5);
     public static readonly TimeSpan Cooldown = TimeSpan.FromSeconds(3);
 
-    /// <summary>
-    /// Outros snapped to EOF by detection (2s window) should complete the episode
-    /// instead of seeking to the last frame.
-    /// </summary>
-    public const double MediaEndToleranceSeconds = 2.0;
-
     public enum ActionKind
     {
         None,
@@ -66,13 +60,8 @@ public static class SkipSegmentPresenter
     /// </summary>
     public static bool CompletesPlayback(MediaSegmentDto segment, double durationSeconds)
     {
-        if (segment.Type != MediaSegmentType.Outro)
-            return false;
-
-        if (durationSeconds < NativeVideoPlaybackEnd.MinDurationSeconds)
-            return false;
-
-        return segment.EndMs / 1000.0 >= durationSeconds - MediaEndToleranceSeconds;
+        return segment.Type == MediaSegmentType.Outro
+            && NativeVideoPlaybackEnd.IsSeekToMediaEnd(segment.EndMs / 1000.0, durationSeconds);
     }
 
     public static Result Tick(

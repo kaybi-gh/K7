@@ -912,7 +912,13 @@ public partial class VideoPlayer : IAsyncDisposable
 
             // Fired whenever the media has been paused
             case "pause":
-                PlayerService.PlaybackState = PlaybackState.Paused;
+                PlayerService.PlaybackState = NativeVideoPlaybackEnd.PromoteIfMediaEnded(
+                    PlaybackState.Paused,
+                    engineIsPlaying: false,
+                    isOpeningSource: false,
+                    isVisible: PlayerService.IsVisible,
+                    durationSeconds: PlayerService.Duration,
+                    positionSeconds: PlayerService.CurrentTime);
                 break;
 
             // Fired when the end of the media resource is reached (currentTime == duration)

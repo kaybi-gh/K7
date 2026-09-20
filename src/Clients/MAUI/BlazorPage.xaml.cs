@@ -780,6 +780,16 @@ public partial class BlazorPage : ContentPage
                 _ => Server.Domain.Enums.PlaybackState.Unknown,
             };
 
+            mapped = NativeVideoPlaybackEnd.PromoteIfMediaEnded(
+                mapped,
+                engineIsPlaying: mediaState is MediaElementState.Playing,
+                isOpeningSource: _openingNativeSource,
+                isVisible: _playerService.IsVisible,
+                durationSeconds: _playerService.Duration > 0
+                    ? _playerService.Duration
+                    : NativePlayer.Duration.TotalSeconds,
+                positionSeconds: NativePlayer.Position.TotalSeconds);
+
             _playerService.PlaybackState = mapped;
 #if ANDROID
             NativeVideoDebug.Log(
