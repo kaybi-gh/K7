@@ -690,20 +690,21 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
 
                 SupplementalEpisodeMetadataResolver.MergeMetadataProviderRatings(episode, episodeRatings);
 
+                var preferredStillUrl = await PreferHdEpisodeStillUrlAsync(
+                    episode,
+                    stillImageUrl,
+                    enrichmentProvider,
+                    enrichmentExternalId,
+                    enrichmentProviderName,
+                    season.SeasonNumber,
+                    episode.EpisodeNumber,
+                    request.Language,
+                    request.FallbackLanguage,
+                    request.Incremental,
+                    cancellationToken);
+
                 if (!episode.IsPictureTypeLocked(MetadataPictureType.Still))
-                {
-                    stillImageUrl = await PreferHdEpisodeStillUrlAsync(
-                        stillImageUrl,
-                        enrichmentProvider,
-                        enrichmentExternalId,
-                        enrichmentProviderName,
-                        season.SeasonNumber,
-                        episode.EpisodeNumber,
-                        request.Language,
-                        request.FallbackLanguage,
-                        request.Incremental,
-                        cancellationToken);
-                }
+                    stillImageUrl = preferredStillUrl;
 
                 if (!string.IsNullOrEmpty(stillImageUrl)
                     && !episode.IsPictureTypeLocked(MetadataPictureType.Still)
@@ -1200,6 +1201,7 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
     }
 
     private async Task<string?> PreferHdEpisodeStillUrlAsync(
+        SerieEpisode episode,
         string? canonStillUrl,
         ISerieMetadataProvider? enrichmentProvider,
         string? enrichmentExternalId,
@@ -1217,10 +1219,13 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
             || !string.Equals(enrichmentProviderName, MetadataProviderNames.Tmdb, StringComparison.OrdinalIgnoreCase))
             return canonStillUrl;
 
+        var missingTmdbId = !episode.ExternalIds.Any(e =>
+            string.Equals(e.ProviderName, MetadataProviderNames.Tmdb, StringComparison.OrdinalIgnoreCase));
+
         MetadataImageUrlHelper.TryCreateRemoteUri(canonStillUrl, out var canonUri);
-        var shouldFetchTmdb = string.IsNullOrWhiteSpace(canonStillUrl)
+        var shouldFetchStill = string.IsNullOrWhiteSpace(canonStillUrl)
             || MetadataImageUrlHelper.ShouldReplaceEpisodeStillWithHdAlternate(null, null, canonUri);
-        if (!shouldFetchTmdb)
+        if (!shouldFetchStill && !missingTmdbId)
             return canonStillUrl;
 
         try
@@ -1241,7 +1246,10 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
                 cancellationToken,
                 fallbackLanguage);
 
-            if (!string.IsNullOrWhiteSpace(tmdbMetadata?.StillImageUrl))
+            if (tmdbMetadata is not null)
+                SupplementalEpisodeMetadataResolver.MergeSupplementalExternalIds(episode, tmdbMetadata.ExternalIds);
+
+            if (shouldFetchStill && !string.IsNullOrWhiteSpace(tmdbMetadata?.StillImageUrl))
                 return tmdbMetadata.StillImageUrl;
         }
         catch (InvalidOperationException)

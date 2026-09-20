@@ -17,15 +17,29 @@ public class SerieEpisodeEnrichmentHelperTests
     }
 
     [Test]
-    public void IsUnenriched_ShouldBeFalse_WhenTitleIsReal()
+    public void IsUnenriched_ShouldBeTrue_WhenMissingExternalIds()
+    {
+        var episode = new SerieEpisode
+        {
+            EpisodeNumber = 1,
+            Title = "Pilot",
+            Overview = "The start"
+        };
+
+        SerieEpisodeEnrichmentHelper.IsUnenriched(episode).Should().BeTrue();
+    }
+
+    [Test]
+    public void IsUnenriched_ShouldBeFalse_WhenTitleIsRealAndHasExternalIds()
     {
         var episode = new SerieEpisode { EpisodeNumber = 1, Title = "Pilot" };
+        episode.ExternalIds.Add(new ExternalId { ProviderName = "tmdb", Value = "42" });
 
         SerieEpisodeEnrichmentHelper.IsUnenriched(episode).Should().BeFalse();
     }
 
     [Test]
-    public void IsUnenriched_ShouldBeFalse_WhenPlaceholderTitleHasOverview()
+    public void IsUnenriched_ShouldBeFalse_WhenPlaceholderTitleHasOverviewAndExternalIds()
     {
         var episode = new SerieEpisode
         {
@@ -33,6 +47,7 @@ public class SerieEpisodeEnrichmentHelperTests
             Title = "Episode 1",
             Overview = "Provider overview"
         };
+        episode.ExternalIds.Add(new ExternalId { ProviderName = "tmdb", Value = "42" });
 
         SerieEpisodeEnrichmentHelper.IsUnenriched(episode).Should().BeFalse();
     }

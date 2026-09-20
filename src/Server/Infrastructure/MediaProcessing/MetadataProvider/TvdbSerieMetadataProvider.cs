@@ -362,6 +362,25 @@ public class TvdbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
             cancellationToken);
         var stillUrl = TvdbImageUrlHelper.BuildImageUrl(episodeRef.Image);
 
+        // Catalog episode list omits remotes (imdb/tmdb). Extended fetch is needed for scrobbling.
+        IReadOnlyList<TvdbRemoteId>? remoteIds = null;
+        try
+        {
+            var extended = await _apiClient.GetEpisodeExtendedAsync(episodeRef.Id, cancellationToken);
+            remoteIds = extended?.RemoteIds;
+            if (string.IsNullOrEmpty(stillUrl))
+                stillUrl = TvdbImageUrlHelper.BuildImageUrl(extended?.Image);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(
+                ex,
+                "TVDB episode remote ids lookup failed for episode {EpisodeId} S{SeasonNumber}E{EpisodeNumber}",
+                episodeRef.Id,
+                seasonNumber,
+                episodeNumber);
+        }
+
         return new ExternalEpisodeMetadata
         {
             EpisodeNumber = episodeNumber,
@@ -372,7 +391,7 @@ public class TvdbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
             AirDate = ParseDate(episodeRef.Aired),
             Runtime = episodeRef.Runtime,
             StillImageUrl = stillUrl,
-            ExternalIds = BuildExternalIds(episodeRef.Id.ToString(), remoteIds: null),
+            ExternalIds = BuildExternalIds(episodeRef.Id.ToString(), remoteIds),
             PersonRoles = []
         };
     }

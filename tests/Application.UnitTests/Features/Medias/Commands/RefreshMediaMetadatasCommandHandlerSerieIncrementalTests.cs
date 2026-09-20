@@ -123,7 +123,12 @@ public class RefreshMediaMetadatasCommandHandlerSerieIncrementalTests
                 SeasonNumber = 1,
                 EpisodeNumber = 2,
                 Title = "The Follow-up",
-                Overview = "New episode overview"
+                Overview = "New episode overview",
+                ExternalIds =
+                [
+                    new ExternalId { ProviderName = "tmdb", Value = "ep-2" },
+                    new ExternalId { ProviderName = "tvdb", Value = "tvdb-2" }
+                ]
             });
 
         await _handler.Handle(new RefreshMediaMetadatasCommand
@@ -143,6 +148,9 @@ public class RefreshMediaMetadatasCommandHandlerSerieIncrementalTests
             .Include(s => s.Seasons)
                 .ThenInclude(s => s.Episodes)
                     .ThenInclude(e => e.Pictures)
+            .Include(s => s.Seasons)
+                .ThenInclude(s => s.Episodes)
+                    .ThenInclude(e => e.ExternalIds)
             .SingleAsync(s => s.Id == serie.Id);
 
         refreshed.Status.Should().Be("Ended");
@@ -159,6 +167,8 @@ public class RefreshMediaMetadatasCommandHandlerSerieIncrementalTests
         episodes[0].Pictures.Should().ContainSingle(p => p.Id == existingStillId);
         episodes[1].Title.Should().Be("The Follow-up");
         episodes[1].Overview.Should().Be("New episode overview");
+        episodes[1].ExternalIds.Should().Contain(e => e.ProviderName == "tmdb" && e.Value == "ep-2");
+        episodes[1].ExternalIds.Should().Contain(e => e.ProviderName == "tvdb" && e.Value == "tvdb-2");
 
         await _serieProvider.DidNotReceive().FetchSeasonMetadataAsync(
             Arg.Any<string>(),
@@ -312,6 +322,7 @@ public class RefreshMediaMetadatasCommandHandlerSerieIncrementalTests
             Title = "Season two premiere",
             Overview = "Already enriched"
         };
+        season2Episode.ExternalIds.Add(new ExternalId { ProviderName = "tmdb", Value = "ep-s2e1" });
         season2.Episodes.Add(season2Episode);
 
         serie.Seasons.Add(season1);

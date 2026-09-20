@@ -299,13 +299,7 @@ public class TMDbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
             stillUrl = _tmdbClient.GetImageUrl("original", episode.StillPath, true)?.ToString();
         }
 
-        var externalIds = new List<ExternalId>();
-        if (episode.Id is int tmdbEpisodeId and > 0)
-            externalIds.Add(new ExternalId { ProviderName = "tmdb", Value = tmdbEpisodeId.ToString() });
-        if (episode.ExternalIds?.ImdbId is { } imdbId)
-            externalIds.Add(new ExternalId { ProviderName = "imdb", Value = imdbId });
-        if (episode.ExternalIds?.TvdbId is { } tvdbId)
-            externalIds.Add(new ExternalId { ProviderName = "tvdb", Value = tvdbId });
+        var externalIds = BuildEpisodeExternalIds(episode.Id, episode.ExternalIds);
 
         var (title, overview) = await ResolveLocalizedTextAsync(
             episode.Name,
@@ -455,6 +449,15 @@ public class TMDbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
                 return (fallbackEpisode?.Name, fallbackEpisode?.Overview);
             });
 
+        // Season catalog omits ExternalIds. Fetch them lightly so scrobbling (esp. TVDB) works
+        // without a full episode fetch (credits/images).
+        var externalIds = await FetchEpisodeExternalIdsAsync(
+            tmdbId,
+            seasonNumber,
+            episodeNumber,
+            catalogEpisodeId: episode.Id,
+            cancellationToken);
+
         return new ExternalEpisodeMetadata
         {
             EpisodeNumber = TmdbLibCompat.ToEpisodeNumber(episode.EpisodeNumber),
@@ -465,7 +468,7 @@ public class TMDbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
             AirDate = episode.AirDate.HasValue ? DateOnly.FromDateTime(episode.AirDate.Value) : null,
             Runtime = episode.Runtime,
             StillImageUrl = stillUrl,
-            ExternalIds = [],
+            ExternalIds = externalIds,
             PersonRoles = [],
             Ratings = episode.VoteCount > 0
                 ? [new MetadataProviderRating { MetadataProvider = Domain.Enums.MetadataProvider.TMDb, Value = episode.VoteAverage, MinimumValue = 0, MaximumValue = 10, RatingCount = episode.VoteCount }]
@@ -526,6 +529,51 @@ public class TMDbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
             Overview = overview,
             Popularity = popularity
         };
+    }
+
+    private async Task<List<ExternalId>> FetchEpisodeExternalIdsAsync(
+        int tmdbId,
+        int seasonNumber,
+        int episodeNumber,
+        int? catalogEpisodeId,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var episode = await _tmdbClient.GetTvEpisodeAsync(
+                tmdbId,
+                seasonNumber,
+                episodeNumber,
+                extraMethods: TvEpisodeMethods.ExternalIds,
+                cancellationToken: cancellationToken);
+
+            var ids = BuildEpisodeExternalIds(episode?.Id, episode?.ExternalIds);
+            if (ids.Count > 0)
+                return ids;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(
+                ex,
+                "TMDb episode external ids lookup failed for {TmdbId} S{SeasonNumber}E{EpisodeNumber}",
+                tmdbId,
+                seasonNumber,
+                episodeNumber);
+        }
+
+        return BuildEpisodeExternalIds(catalogEpisodeId, externalIds: null);
+    }
+
+    private static List<ExternalId> BuildEpisodeExternalIds(int? tmdbEpisodeId, ExternalIdsTvEpisode? externalIds)
+    {
+        var ids = new List<ExternalId>();
+        if (tmdbEpisodeId is > 0)
+            ids.Add(new ExternalId { ProviderName = "tmdb", Value = tmdbEpisodeId.Value.ToString() });
+        if (!string.IsNullOrEmpty(externalIds?.ImdbId))
+            ids.Add(new ExternalId { ProviderName = "imdb", Value = externalIds.ImdbId });
+        if (!string.IsNullOrEmpty(externalIds?.TvdbId))
+            ids.Add(new ExternalId { ProviderName = "tvdb", Value = externalIds.TvdbId });
+        return ids;
     }
 
     private List<ExternalId> BuildExternalIds(string tmdbId, ExternalIdsTvShow? externalIds)

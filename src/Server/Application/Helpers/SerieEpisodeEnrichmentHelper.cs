@@ -8,6 +8,11 @@ public static class SerieEpisodeEnrichmentHelper
 {
     public static bool IsUnenriched(SerieEpisode episode)
     {
+        // Missing provider ids blocks scrobbling (BetaSeries needs episode TVDB).
+        // Treat as unenriched so incremental refresh can backfill catalog-only episodes.
+        if (episode.ExternalIds.Count == 0)
+            return true;
+
         var placeholderTitle = string.IsNullOrWhiteSpace(episode.Title)
             || episode.Title.Equals($"Episode {episode.EpisodeNumber}", StringComparison.OrdinalIgnoreCase);
 
@@ -15,7 +20,6 @@ public static class SerieEpisodeEnrichmentHelper
             return false;
 
         return string.IsNullOrWhiteSpace(episode.Overview)
-            && episode.ExternalIds.Count == 0
             && !episode.Pictures.Any(picture => picture.Type == MetadataPictureType.Still);
     }
 
