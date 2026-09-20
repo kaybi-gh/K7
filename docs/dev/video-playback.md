@@ -270,7 +270,7 @@ Settings -> Video playback -> Advanced (this device) can send Play to **MPC-HC o
 
 Flow:
 
-1. `PlayerService.PlayIndexedFileAsync` intercepts when the device preset is on, and SyncPlay / remote control / Chromecast are not active.
+1. `PlayerService.PlayIndexedFileAsync` intercepts when the device preset is on, and SyncPlay / remote receive / remote control / Chromecast are not active (`IExternalPlayerPolicy.SuppressExternalPlayer`, SyncPlay group, `IsControlling`, casting). Remote play onto this PC always uses the built-in player. Attach while MPC is already active is refused.
 2. A stream session is created (progress reports still use it).
 3. If Settings has a local folder for that library, the Windows client maps `IndexedFile.Path` against `Library.RootPath` and launches MPC with that filesystem path when the file exists. No extra session fields. No ephemeral token. Otherwise K7 falls back to `/api/indexed-files/{id}/direct-stream?ephemeral_token=...`. Extra args default `/fullscreen /close`, plus `/webport {port}` and `/start {ms}` from the K7 bookmark.
 4. K7 does not show the in-app overlay. If `/start` is ignored, the host seeks once via `command.html` after the web UI answers.

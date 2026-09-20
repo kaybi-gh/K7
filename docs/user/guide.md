@@ -99,7 +99,7 @@ Play then opens that **local file** in MPC when the mapping exists and the file 
 
 If a library has no mapping, or the mapped file is missing, K7 falls back to HTTP `direct-stream`. That path shows the title `direct-stream`, often a short or incomplete seek bar, and can fail on large HDR / TrueHD remuxes. Resume into MPC still uses `/start` from the last K7 bookmark.
 
-SyncPlay, remote control, and Chromecast on that device keep the built-in player. Next episode, intro skip, and in-app track picking do not run while MPC is playing (pick tracks in MPC). Other devices in the family keep the built-in player.
+SyncPlay, remote control, and Chromecast on that device keep the built-in player (MPC is not driven by remote transport - only a position poll and seek-percent). Taking telecommande of a session already playing in MPC is refused. Next episode, intro skip, and in-app track picking do not run while MPC is playing (pick tracks in MPC). Other devices in the family keep the built-in player.
 
 ### Settings
 
@@ -221,7 +221,9 @@ On Android, an ongoing notification keeps transfers running when the app is in t
 
 ### Remote control
 
-Control playback on another logged-in device on the **same server**: open **Play on device** in the player, pick the target, use transport controls (you can resume on the controller later). Needs a live connection to the server.
+Control playback on another logged-in device on the **same server**. From a movie or episode page, open **Play on device** and pick the target without starting playback on the current device. From the player overlay, the same picker hands off the current title. The profile menu shows titles playing on your other devices: take remote control, resume on this device, or open the media page. Admins also see a live count of server-wide streams on the Admin item. Needs a live connection to the server.
+
+When playback moves to another device, the previous player can dismiss, switch to remote control, or resume locally. On the remote panel, **X** leaves control without stopping the other device. Stop still ends playback there. The gear menu matches the player overlay (audio, subtitles, speed, aspect ratio). **Open media page** leaves the remote view without stopping playback.
 
 ### Chromecast
 
