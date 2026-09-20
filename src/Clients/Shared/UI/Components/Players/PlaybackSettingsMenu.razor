@@ -59,35 +59,75 @@
                         @switch (_activeSection)
                         {
                             case SettingsSection.Audio:
-                                @foreach (var track in PlayerService.AudioTracks)
+                                @if (RemoteSession)
                                 {
-                                    <K7MenuItem @key="track.Index" OnClick="@(() => OnAudioTrackSelected(track))"
-                                                Icon="@(PlayerService.SelectedAudioTrack?.Index == track.Index ? "check-circle" : null)">
-                                        @{ var audioLang = SupportedLanguages.FindByCode(track.Language ?? ""); }
-                                        @if (audioLang is not null)
-                                        {
-                                            <span class="fi fi-@audioLang.CountryCode"></span>
-                                        }
-                                        @GetAudioTrackLabel(track)
-                                    </K7MenuItem>
+                                    @foreach (var track in Remote.AudioTracks)
+                                    {
+                                        <K7MenuItem @key="track.Index" OnClick="@(() => OnRemoteAudioSelected(track.Index))"
+                                                    Icon="@(Remote.SelectedAudioTrackIndex == track.Index ? "check-circle" : null)">
+                                            @{ var remoteAudioLang = SupportedLanguages.FindByCode(track.Language ?? ""); }
+                                            @if (remoteAudioLang is not null)
+                                            {
+                                                <span class="fi fi-@remoteAudioLang.CountryCode"></span>
+                                            }
+                                            @GetRemoteAudioTrackLabel(track)
+                                        </K7MenuItem>
+                                    }
+                                }
+                                else
+                                {
+                                    @foreach (var track in PlayerService.AudioTracks)
+                                    {
+                                        <K7MenuItem @key="track.Index" OnClick="@(() => OnAudioTrackSelected(track))"
+                                                    Icon="@(PlayerService.SelectedAudioTrack?.Index == track.Index ? "check-circle" : null)">
+                                            @{ var audioLang = SupportedLanguages.FindByCode(track.Language ?? ""); }
+                                            @if (audioLang is not null)
+                                            {
+                                                <span class="fi fi-@audioLang.CountryCode"></span>
+                                            }
+                                            @GetAudioTrackLabel(track)
+                                        </K7MenuItem>
+                                    }
                                 }
                                 break;
                             case SettingsSection.Subtitles:
-                                <K7MenuItem OnClick="@(() => OnSubtitleTrackSelected(null))"
-                                            Icon="@(PlayerService.SelectedSubtitleTrack is null ? "check-circle" : null)">
-                                    @L["SubtitlesOff"]
-                                </K7MenuItem>
-                                @foreach (var track in PlayerService.SubtitleTracks)
+                                @if (RemoteSession)
                                 {
-                                    <K7MenuItem @key="track.Index" OnClick="@(() => OnSubtitleTrackSelected(track))"
-                                                Icon="@(PlayerService.SelectedSubtitleTrack?.Index == track.Index ? "check-circle" : null)">
-                                        @{ var subLang = SupportedLanguages.FindByCode(track.Language ?? ""); }
-                                        @if (subLang is not null)
-                                        {
-                                            <span class="fi fi-@subLang.CountryCode"></span>
-                                        }
-                                        @GetSubtitleTrackLabel(track)
+                                    <K7MenuItem OnClick="@(() => OnRemoteSubtitleSelected(-1))"
+                                                Icon="@(Remote.SelectedSubtitleTrackIndex is null or < 0 ? "check-circle" : null)">
+                                        @L["SubtitlesOff"]
                                     </K7MenuItem>
+                                    @foreach (var track in Remote.SubtitleTracks)
+                                    {
+                                        <K7MenuItem @key="track.Index" OnClick="@(() => OnRemoteSubtitleSelected(track.Index))"
+                                                    Icon="@(Remote.SelectedSubtitleTrackIndex == track.Index ? "check-circle" : null)">
+                                            @{ var remoteSubLang = SupportedLanguages.FindByCode(track.Language ?? ""); }
+                                            @if (remoteSubLang is not null)
+                                            {
+                                                <span class="fi fi-@remoteSubLang.CountryCode"></span>
+                                            }
+                                            @GetRemoteSubtitleTrackLabel(track)
+                                        </K7MenuItem>
+                                    }
+                                }
+                                else
+                                {
+                                    <K7MenuItem OnClick="@(() => OnSubtitleTrackSelected(null))"
+                                                Icon="@(PlayerService.SelectedSubtitleTrack is null ? "check-circle" : null)">
+                                        @L["SubtitlesOff"]
+                                    </K7MenuItem>
+                                    @foreach (var track in PlayerService.SubtitleTracks)
+                                    {
+                                        <K7MenuItem @key="track.Index" OnClick="@(() => OnSubtitleTrackSelected(track))"
+                                                    Icon="@(PlayerService.SelectedSubtitleTrack?.Index == track.Index ? "check-circle" : null)">
+                                            @{ var subLang = SupportedLanguages.FindByCode(track.Language ?? ""); }
+                                            @if (subLang is not null)
+                                            {
+                                                <span class="fi fi-@subLang.CountryCode"></span>
+                                            }
+                                            @GetSubtitleTrackLabel(track)
+                                        </K7MenuItem>
+                                    }
                                 }
                                 break;
                             case SettingsSection.Quality:
@@ -112,7 +152,7 @@
                                 @foreach (var mode in _aspectRatioOptions)
                                 {
                                     <K7MenuItem @key="mode" OnClick="@(() => OnAspectRatioSelected(mode))"
-                                                Icon="@(PlayerService.AspectRatio == mode ? "check-circle" : null)">
+                                                Icon="@(IsCurrentAspectRatio(mode) ? "check-circle" : null)">
                                         @GetAspectRatioLabel(mode)
                                     </K7MenuItem>
                                 }

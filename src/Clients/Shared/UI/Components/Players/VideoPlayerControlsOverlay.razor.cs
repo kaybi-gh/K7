@@ -3,8 +3,9 @@ using System.Timers;
 using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
+using K7.Clients.Shared.Services;
 using K7.Clients.Shared.UI.Helpers;
-using K7.Shared;
+using K7.Shared.Dtos;
 using K7.Shared.Dtos.Entities.Medias;
 using K7.Shared.Dtos.Entities.Metadatas.Files.Tracks;
 using K7.Shared.Interfaces;
@@ -1319,13 +1320,9 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
         var source = PlayerService.Source;
         if (source?.IndexedFileId is null) return;
 
-        // Capture before Pause - CurrentTime can briefly read 0 after teardown.
         var startPosition = PlayerService.GetResumePosition();
         var volume = PlayerService.IsMuted ? 0 : PlayerService.Volume;
-        PlayerService.Pause();
-
-        var senderDeviceId = DeviceStorage.Get(PreferenceKeys.DEVICE_ID);
-        var request = new K7.Shared.Dtos.RemotePlaybackRequestDto
+        var request = new RemotePlaybackRequestDto
         {
             IndexedFileId = source.IndexedFileId.Value,
             StartPosition = startPosition > 0 ? startPosition : null,
@@ -1334,12 +1331,12 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
             Title = source.Title,
             CoverUrl = source.CoverUrl,
             Duration = PlayerService.Duration,
-            SenderDeviceId = senderDeviceId is not null ? Guid.Parse(senderDeviceId.AsSpan()) : null,
-            Volume = volume
+            Volume = volume,
+            ThumbnailsUrl = source.ThumbnailsUrl
         };
 
-        await HubClient.RequestRemotePlaybackAsync(device.DeviceId, request);
-        RemoteControl.StartSession(device.DeviceId, ConnectedDeviceLabels.GetDisplayName(device), request);
+        PlayerService.Pause();
+        await RemotePlayback.PlayOnDeviceAsync(device, request);
     }
 
     public async ValueTask DisposeAsync()

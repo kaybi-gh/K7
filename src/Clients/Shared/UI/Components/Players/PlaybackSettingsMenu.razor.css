@@ -3,6 +3,24 @@
   display: inline-flex;
 }
 
+.playback-settings-menu--remote {
+  z-index: 5;
+}
+
+/* Desktop remote: open below the gear (header is at the top). */
+@media (min-width: 600px) {
+  .playback-settings-menu--remote .playback-settings-stack {
+    bottom: auto;
+    top: calc(100% + 0.5rem);
+    right: 0;
+    z-index: 100020;
+  }
+
+  .playback-settings-menu--remote .playback-settings-backdrop {
+    z-index: 100019;
+  }
+}
+
 .playback-settings-backdrop {
   position: fixed;
   inset: 0;
@@ -165,6 +183,8 @@
     background: rgba(0, 0, 0, 0.55);
     backdrop-filter: blur(2px);
     -webkit-backdrop-filter: blur(2px);
+    /* Above app shell / bottom nav; remote host is 99989. */
+    z-index: 100050;
   }
 
   .playback-settings-stack {
@@ -173,6 +193,15 @@
     flex-direction: column;
     gap: 0;
     align-items: stretch;
+    z-index: 100051;
+  }
+
+  /* Remote used to force top: 100% which parked the fixed sheet below the viewport. */
+  .playback-settings-menu--remote .playback-settings-stack {
+    top: auto;
+    bottom: var(--k7-safe-bottom);
+    left: 0;
+    right: 0;
   }
 
   .playback-settings-panel {

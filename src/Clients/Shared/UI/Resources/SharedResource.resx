@@ -167,6 +167,14 @@
   <data name="AddToPlaylist" xml:space="preserve"><value>Ajouter a une playlist...</value></data>
   <data name="PlayingOn" xml:space="preserve"><value>Lecture sur {0}</value></data>
   <data name="ResumeHere" xml:space="preserve"><value>Reprendre ici</value></data>
+  <data name="LeaveRemoteControl" xml:space="preserve"><value>Quitter la telecommande</value></data>
+  <data name="GoToMedia" xml:space="preserve"><value>Fiche du media</value></data>
+  <data name="PlaybackMovedTitle" xml:space="preserve"><value>Lecture deplacee</value></data>
+  <data name="PlaybackMovedMessage" xml:space="preserve"><value>Votre lecture est partie sur {0}</value></data>
+  <data name="PlaybackMovedOk" xml:space="preserve"><value>OK</value></data>
+  <data name="PlaybackMovedRemote" xml:space="preserve"><value>Telecommande</value></data>
+  <data name="PlaybackMovedResume" xml:space="preserve"><value>Reprendre ici</value></data>
+  <data name="Volume" xml:space="preserve"><value>Volume</value></data>
   <data name="AudioTrack" xml:space="preserve"><value>Audio</value></data>
   <data name="Subtitles" xml:space="preserve"><value>Sous-titres</value></data>
   <data name="Joining" xml:space="preserve"><value>Connexion...</value></data>

@@ -76,7 +76,11 @@ public sealed class DemoPlayerService : IPlayerService
     public void Mute() => _ = MuteRequested?.Invoke();
     public void Unmute() => _ = UnmuteRequest?.Invoke();
     public void SetVolume(double volume) => _ = VolumeChangeRequested?.Invoke(volume);
-    public void SetPlaybackRate(double rate) => _ = PlaybackRateChangeRequested?.Invoke(rate);
+    public void SetPlaybackRate(double rate)
+    {
+        PlaybackRate = rate;
+        _ = PlaybackRateChangeRequested?.Invoke(rate);
+    }
     public void EnterFullScreen() => _ = EnterFullScreenRequested?.Invoke();
     public void ExitFullScreen() => _ = ExitFullScreenRequested?.Invoke();
     public void SetAspectRatioMode(AspectRatioMode mode) => AspectRatioModeChangeRequested?.Invoke(mode);

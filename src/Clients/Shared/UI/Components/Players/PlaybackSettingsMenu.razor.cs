@@ -2,6 +2,7 @@ using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Shared;
+using K7.Shared.Dtos;
 using K7.Shared.Dtos.Entities.Metadatas.Files.Tracks;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Localization;
@@ -15,8 +16,10 @@ public partial class PlaybackSettingsMenu : IDisposable
     [Parameter] public bool Open { get; set; }
     [Parameter] public EventCallback<bool> OpenChanged { get; set; }
     [Parameter] public string Class { get; set; } = "";
+    [Parameter] public bool RemoteSession { get; set; }
     [Inject] private ILogger<PlaybackSettingsMenu> Logger { get; set; } = default!;
     [Inject] private ISpatialNavService SpatialNav { get; set; } = default!;
+    [Inject] private IRemoteControlService Remote { get; set; } = default!;
 
     private bool _open;
     private SettingsSection _activeSection = SettingsSection.None;
@@ -48,6 +51,17 @@ public partial class PlaybackSettingsMenu : IDisposable
         get
         {
             var sections = new List<SettingsSection>();
+            if (RemoteSession)
+            {
+                if (Remote.AudioTracks.Count > 1)
+                    sections.Add(SettingsSection.Audio);
+                if (Remote.SubtitleTracks.Count > 0)
+                    sections.Add(SettingsSection.Subtitles);
+                sections.Add(SettingsSection.Speed);
+                sections.Add(SettingsSection.AspectRatio);
+                return sections;
+            }
+
             if (PlayerService.AudioTracks.Count > 1)
                 sections.Add(SettingsSection.Audio);
             if (PlayerService.SubtitleTracks.Count > 0)
@@ -98,6 +112,14 @@ public partial class PlaybackSettingsMenu : IDisposable
         PlayerService.QualityChanged += OnQualityChanged;
         PlayerService.AspectRatioModeChanged += OnAspectRatioModeChanged;
         PlayerService.IsVisibleChanged += OnPlayerVisibilityChanged;
+        Remote.StateChanged += OnRemoteStateChanged;
+        Remote.SessionChanged += OnRemoteStateChanged;
+    }
+
+    private void OnRemoteStateChanged()
+    {
+        if (RemoteSession)
+            RequestStateHasChanged();
     }
 
     private void OnPlaybackRateChanged(double _) => RequestStateHasChanged();
@@ -314,11 +336,27 @@ public partial class PlaybackSettingsMenu : IDisposable
         _ => L["PlaybackSettings"]
     };
 
-    private void OnSpeedSelected(double speed) => PlayerService.SetPlaybackRate(speed);
+    private void OnSpeedSelected(double speed)
+    {
+        if (RemoteSession)
+            Remote.SendPlaybackRateAsync(speed).FireAndForget(Logger);
+        else
+            PlayerService.SetPlaybackRate(speed);
+    }
 
-    private bool IsCurrentSpeed(double speed) => Math.Abs(PlayerService.PlaybackRate - speed) < 0.01;
+    private bool IsCurrentSpeed(double speed) =>
+        Math.Abs((RemoteSession ? Remote.PlaybackRate : PlayerService.PlaybackRate) - speed) < 0.01;
 
-    private void OnAspectRatioSelected(AspectRatioMode mode) => PlayerService.SetAspectRatioMode(mode);
+    private void OnAspectRatioSelected(AspectRatioMode mode)
+    {
+        if (RemoteSession)
+            Remote.SendAspectRatioAsync(mode).FireAndForget(Logger);
+        else
+            PlayerService.SetAspectRatioMode(mode);
+    }
+
+    private bool IsCurrentAspectRatio(AspectRatioMode mode) =>
+        RemoteSession ? Remote.AspectRatio == mode : PlayerService.AspectRatio == mode;
 
     private string GetAspectRatioLabel(AspectRatioMode mode) => mode switch
     {
@@ -336,12 +374,28 @@ public partial class PlaybackSettingsMenu : IDisposable
         await PlayerService.ChangeAudioTrackAsync(track);
     }
 
+    private async Task OnRemoteAudioSelected(int trackIndex)
+    {
+        if (Remote.SelectedAudioTrackIndex == trackIndex)
+            return;
+
+        await Remote.SendAudioTrackAsync(trackIndex);
+    }
+
     private async Task OnSubtitleTrackSelected(SubtitleFileTrackDto? track)
     {
         if (PlayerService.SelectedSubtitleTrack?.Index == track?.Index)
             return;
 
         await PlayerService.ChangeSubtitleTrackAsync(track);
+    }
+
+    private async Task OnRemoteSubtitleSelected(int trackIndex)
+    {
+        if (Remote.SelectedSubtitleTrackIndex == trackIndex)
+            return;
+
+        await Remote.SendSubtitleTrackAsync(trackIndex);
     }
 
     private async Task OnQualitySelected(VideoQualityOption quality)
@@ -355,6 +409,17 @@ public partial class PlaybackSettingsMenu : IDisposable
     private static string GetAudioTrackLabel(AudioFileTrackDto track) =>
         AudioTrackDisplayHelper.FormatLabel(track);
 
+    private string GetRemoteAudioTrackLabel(RemoteTrackInfoDto track) =>
+        AudioTrackDisplayHelper.FormatLabel(new AudioFileTrackDto
+        {
+            Index = track.Index,
+            Name = track.Name,
+            Language = track.Language,
+            Codec = track.Codec,
+            Channels = 0,
+            ChannelLayout = track.ChannelLayout
+        });
+
     private string GetSubtitleTrackLabel(SubtitleFileTrackDto track)
     {
         var type = track.IsHearingImpaired
@@ -363,6 +428,26 @@ public partial class PlaybackSettingsMenu : IDisposable
                 ? L["SubtitleTypeForced"]
                 : L["SubtitleTypeFull"];
         return AudioTrackDisplayHelper.FormatSubtitleLabel(track, type);
+    }
+
+    private string GetRemoteSubtitleTrackLabel(RemoteTrackInfoDto track)
+    {
+        var type = track.IsHearingImpaired
+            ? L["SubtitleTypeHearingImpaired"]
+            : track.IsForced
+                ? L["SubtitleTypeForced"]
+                : L["SubtitleTypeFull"];
+        return AudioTrackDisplayHelper.FormatSubtitleLabel(
+            new SubtitleFileTrackDto
+            {
+                Index = track.Index,
+                Name = track.Name,
+                Language = track.Language,
+                Codec = track.Codec,
+                IsForced = track.IsForced,
+                IsHearingImpaired = track.IsHearingImpaired
+            },
+            type);
     }
 
     public void Dispose()
@@ -375,6 +460,8 @@ public partial class PlaybackSettingsMenu : IDisposable
         PlayerService.QualityChanged -= OnQualityChanged;
         PlayerService.AspectRatioModeChanged -= OnAspectRatioModeChanged;
         PlayerService.IsVisibleChanged -= OnPlayerVisibilityChanged;
+        Remote.StateChanged -= OnRemoteStateChanged;
+        Remote.SessionChanged -= OnRemoteStateChanged;
         _menuCloseRef?.Dispose();
         _detailCloseRef?.Dispose();
         _menuCloseRef = null;

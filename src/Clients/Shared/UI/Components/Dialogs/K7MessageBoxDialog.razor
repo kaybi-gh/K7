@@ -15,7 +15,7 @@
 <div class="k7-dialog-actions">
     @if (!string.IsNullOrEmpty(CancelText))
     {
-        <K7Button OnClick="@(() => Dialog.Close(K7DialogResult.Cancel()))">@CancelText</K7Button>
+        <K7Button OnClick="@(() => Dialog.Close(CancelResult is not null ? K7DialogResult.Ok(CancelResult) : K7DialogResult.Cancel()))">@CancelText</K7Button>
     }
     @if (!string.IsNullOrEmpty(NoText))
     {

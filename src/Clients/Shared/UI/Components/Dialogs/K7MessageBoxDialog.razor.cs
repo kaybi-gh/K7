@@ -11,4 +11,5 @@ public partial class K7MessageBoxDialog
     [Parameter] public string YesText { get; set; } = "OK";
     [Parameter] public string? NoText { get; set; }
     [Parameter] public string? CancelText { get; set; }
+    [Parameter] public object? CancelResult { get; set; }
 }

@@ -33,7 +33,7 @@
                 @if (IsRemoteMode)
                 {
                     <span class="fullscreen-player-header-title remote-badge">
-                        <K7Icon Icon="@Phosphor.Screencast"  IconSize="@K7IconSize.Sm" />
+                        <K7Icon Icon="@Phosphor.HandWithdraw"  IconSize="@K7IconSize.Sm" />
                         @string.Format(S["PlayingOn"], string.IsNullOrWhiteSpace(RemoteControl.TargetDeviceName) ? "Device" : RemoteControl.TargetDeviceName)
                     </span>
                 }
@@ -187,7 +187,7 @@
                         <div class="fullscreen-player-controls">
                             @if (IsRemoteMode)
                             {
-                                <K7IconButton Icon="@Phosphor.ArrowBendDownLeft" OnClick="OnResumeHere" AriaLabel="@S["ResumeHere"]" />
+                                <K7IconButton Icon="@Phosphor.ArrowSquareIn" OnClick="OnResumeHere" AriaLabel="@S["ResumeHere"]" />
                                 <div class="fullscreen-fab-wrap @(IsBuffering ? "buffering" : "")">
                                     <K7FabButton Icon="@PlayPauseIcon" OnClick="TogglePlayPause" AriaLabel="Play pause" />
                                 </div>

@@ -20,6 +20,8 @@ public partial class RemoteControlSeekClock : ComponentBase, IDisposable
 
     private void OnStateChanged() => InvokeAsync(StateHasChanged);
 
+    private Task ForwardSeekAsync(double position) => OnSeekRequested.InvokeAsync(position);
+
     private static string FormatTime(double seconds)
     {
         var ts = TimeSpan.FromSeconds(Math.Max(0, seconds));
@@ -27,6 +29,9 @@ public partial class RemoteControlSeekClock : ComponentBase, IDisposable
             ? ts.ToString(@"h\:mm\:ss")
             : ts.ToString(@"m\:ss");
     }
+
+    private double DisplayPosition =>
+        Remote.Duration > 0 ? Math.Min(Remote.Position, Remote.Duration) : Math.Max(0, Remote.Position);
 
     public void Dispose()
     {

@@ -1,15 +1,17 @@
 .remote-control-panel__seek {
     display: flex;
-    align-items: center;
+    align-items: flex-end;
     gap: 0.75rem;
     width: 100%;
     max-width: min(720px, 92vw);
     padding: 0.25rem 0;
+    overflow: visible;
 }
 
 .remote-control-panel__seekbar-host {
     flex: 1;
     min-width: 0;
+    overflow: visible;
 }
 
 .remote-control-panel__seekbar-host ::deep .seekbar-container {

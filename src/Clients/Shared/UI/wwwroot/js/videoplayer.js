@@ -615,9 +615,12 @@ window.changeSource = function (id, src, type, subtitleSlug) {
     const player = players[id];
     if (player) {
         const normalizedType = normalizeHlsMimeType(type);
+        const savedRate = player.playbackRate() || 1;
         window.showVideoJs(id);
         player.src({ src: src, type: normalizedType });
         player.ready(function () {
+            if (savedRate && Math.abs(savedRate - 1) > 0.01)
+                player.playbackRate(savedRate);
             var promise = player.play();
             if (promise !== undefined) {
                 promise.catch(function (error) {
@@ -648,6 +651,7 @@ window.changeSourceAndSeek = function (id, src, type, seekTime, subtitleSlug) {
     // Own seek only when the playlist cannot anchor the position (no startSeconds).
     const playlistAnchorsStart = /[?&]startSeconds=/.test(src);
     window.showVideoJs(id);
+    const savedRate = player.playbackRate() || 1;
 
     let seekApplied = false;
     const applySeekAndPlay = function () {
@@ -655,6 +659,9 @@ window.changeSourceAndSeek = function (id, src, type, seekTime, subtitleSlug) {
         seekApplied = true;
         if (!playlistAnchorsStart && Math.abs(player.currentTime() - seekTime) > 0.5)
             player.currentTime(seekTime);
+
+        if (savedRate && Math.abs(savedRate - 1) > 0.01)
+            player.playbackRate(savedRate);
 
         var promise = player.play();
         if (promise !== undefined) {
@@ -694,18 +701,40 @@ window.switchAudioTrack = function (id, trackName) {
     if (!player) return false;
 
     const audioTracks = player.audioTracks();
-    if (!audioTracks) return false;
+    if (!audioTracks || !audioTracks.length) return false;
 
-    let found = false;
-    for (let i = 0; i < audioTracks.length; i++) {
-        if (audioTracks[i].label === trackName) {
-            audioTracks[i].enabled = true;
-            found = true;
-        } else {
-            audioTracks[i].enabled = false;
+    let targetIndex = -1;
+    if (typeof trackName === 'string') {
+        for (let i = 0; i < audioTracks.length; i++) {
+            const label = audioTracks[i].label || '';
+            const trackId = audioTracks[i].id != null ? String(audioTracks[i].id) : '';
+            if (label === trackName || trackId.indexOf(trackName) !== -1) {
+                targetIndex = i;
+                break;
+            }
+        }
+
+        if (targetIndex < 0 && trackName.indexOf('audio-') === 0) {
+            const parsed = parseInt(trackName.slice(6), 10);
+            if (!isNaN(parsed)) {
+                for (let i = 0; i < audioTracks.length; i++) {
+                    const trackId = audioTracks[i].id != null ? String(audioTracks[i].id) : '';
+                    if (trackId === String(parsed) || trackId.endsWith('-' + parsed)) {
+                        targetIndex = i;
+                        break;
+                    }
+                }
+                if (targetIndex < 0 && parsed >= 0 && parsed < audioTracks.length)
+                    targetIndex = parsed;
+            }
         }
     }
-    return found;
+
+    if (targetIndex < 0) return false;
+
+    for (let i = 0; i < audioTracks.length; i++)
+        audioTracks[i].enabled = i === targetIndex;
+    return true;
 }
 
 function isSelectableTextTrack(track) {
@@ -796,11 +825,15 @@ window.reapplyActiveSubtitleTrack = function (id) {
     if (!player)
         return;
 
-    // Sidecar VTT (Web / Windows Video.js): re-inject cues without restarting the loader.
+    // Sidecar VTT (Web / Windows Video.js): keep the existing cue set after seek.
+    // Re-injecting without remove stacked duplicate tracks and looked like an offset.
     const pending = player._k7PendingSidecar;
     if (pending && pending.vttUrl && pending.slug) {
         if (!k7SidecarPlayerIsLive(player, id))
             return;
+        if (k7EnsureSidecarTrackShowing(player, pending.slug))
+            return;
+        k7RemoveSidecarRemoteTracks(player);
         k7FetchAndInjectSidecarVtt(
             player,
             id,
@@ -818,6 +851,54 @@ window.reapplyActiveSubtitleTrack = function (id) {
         return;
 
     window.switchSubtitleTrackWhenReady(id, slug);
+}
+
+function k7RemoveSidecarRemoteTracks(player) {
+    if (!player)
+        return;
+    try {
+        const remoteTracks = player.remoteTextTracks && player.remoteTextTracks();
+        if (!remoteTracks)
+            return;
+        for (let i = remoteTracks.length - 1; i >= 0; i--) {
+            const track = remoteTracks[i];
+            if (track && track.id && String(track.id).indexOf('k7-sidecar-') === 0)
+                player.removeRemoteTextTrack(track);
+        }
+    } catch (e) {
+    }
+}
+
+function k7EnsureSidecarTrackShowing(player, slug) {
+    if (!player || !slug)
+        return false;
+
+    const sidecarId = 'k7-sidecar-' + slug;
+    const textTracks = player.textTracks && player.textTracks();
+    if (!textTracks)
+        return false;
+
+    let match = null;
+    for (let i = 0; i < textTracks.length; i++) {
+        const track = textTracks[i];
+        if (!track || track.id !== sidecarId)
+            continue;
+        if (track.cues && track.cues.length > 0) {
+            match = track;
+            break;
+        }
+    }
+
+    if (!match)
+        return false;
+
+    for (let i = 0; i < textTracks.length; i++) {
+        if (!isSelectableTextTrack(textTracks[i]))
+            continue;
+        textTracks[i].mode = textTracks[i] === match ? 'showing' : 'disabled';
+    }
+
+    return true;
 }
 
 // VHS registers EXT-X-MEDIA text tracks asynchronously; retry until the slug appears.
@@ -1041,6 +1122,9 @@ function k7EnsureSidecarSourceHook(player, id) {
             return;
         if (!k7SidecarPlayerIsLive(player, id))
             return;
+        if (k7EnsureSidecarTrackShowing(player, pending.slug))
+            return;
+        k7RemoveSidecarRemoteTracks(player);
         k7FetchAndInjectSidecarVtt(
             player,
             id,
@@ -1077,14 +1161,7 @@ window.loadSidecarSubtitleTrack = async function (id, vttUrl, slug) {
     const loadToken = player._k7SidecarLoadToken;
 
     try {
-        const remoteTracks = player.remoteTextTracks && player.remoteTextTracks();
-        if (remoteTracks) {
-            for (let i = remoteTracks.length - 1; i >= 0; i--) {
-                const track = remoteTracks[i];
-                if (track && track.id && String(track.id).indexOf('k7-sidecar-') === 0)
-                    player.removeRemoteTextTrack(track);
-            }
-        }
+        k7RemoveSidecarRemoteTracks(player);
     } catch (e) {
     }
 

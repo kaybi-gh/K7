@@ -167,6 +167,14 @@
   <data name="AddToPlaylist" xml:space="preserve"><value>Add to playlist...</value></data>
   <data name="PlayingOn" xml:space="preserve"><value>Playing on {0}</value></data>
   <data name="ResumeHere" xml:space="preserve"><value>Resume here</value></data>
+  <data name="LeaveRemoteControl" xml:space="preserve"><value>Leave remote control</value></data>
+  <data name="GoToMedia" xml:space="preserve"><value>Open media page</value></data>
+  <data name="PlaybackMovedTitle" xml:space="preserve"><value>Playback moved</value></data>
+  <data name="PlaybackMovedMessage" xml:space="preserve"><value>Playback moved to {0}</value></data>
+  <data name="PlaybackMovedOk" xml:space="preserve"><value>OK</value></data>
+  <data name="PlaybackMovedRemote" xml:space="preserve"><value>Remote control</value></data>
+  <data name="PlaybackMovedResume" xml:space="preserve"><value>Resume here</value></data>
+  <data name="Volume" xml:space="preserve"><value>Volume</value></data>
   <data name="AudioTrack" xml:space="preserve"><value>Audio</value></data>
   <data name="Subtitles" xml:space="preserve"><value>Subtitles</value></data>
   <data name="Joining" xml:space="preserve"><value>Joining...</value></data>

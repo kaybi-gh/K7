@@ -1,3 +1,17 @@
+.remote-control-host {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 99989;
+    background-color: var(--color-bg, #0d0907);
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
+    pointer-events: auto;
+}
+
 .video-container {
     position: fixed;
     top: 0;

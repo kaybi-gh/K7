@@ -12,6 +12,7 @@ using K7.Shared.Dtos.Entities;
 using K7.Shared.Dtos.Entities.Collections;
 using K7.Shared.Dtos.Entities.Medias;
 using K7.Shared.Dtos.Entities.Metadatas;
+using K7.Shared.Dtos.Entities.Metadatas.Files;
 using K7.Shared.Dtos.Entities.Metadatas.Files.Tracks;
 using K7.Shared.Dtos.Entities.Persons;
 using K7.Shared.Dtos.Entities.Playlists;
@@ -647,7 +648,7 @@ public sealed class MockStreamingService : IStreamingService
     public Task<IndexedFileStreamUri?> GetIndexedFileStreamUriAsync(GetIndexedFileStreamsUriQuery query, CancellationToken cancellationToken = default) => Task.FromResult<IndexedFileStreamUri?>(null);
     public Task<StreamingSessionDto?> CreateStreamSessionAsync(CreateStreamSessionRequest request, CancellationToken cancellationToken = default) => Task.FromResult<StreamingSessionDto?>(null);
     public Task<StreamingSessionDto?> CreateRemoteStreamSessionAsync(CreateRemoteStreamSessionRequest request, CancellationToken cancellationToken = default) => Task.FromResult<StreamingSessionDto?>(null);
-    public Task ReportPlaybackProgressAsync(Guid mediaId, Guid sessionId, Guid referenceId, double position, double duration, int state, Guid? deviceId = null, Guid? playlistId = null, Guid? sharedProfileId = null, Guid? syncPlayGroupId = null, int? audioTrackIndex = null, int? subtitleTrackIndex = null, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task ReportPlaybackProgressAsync(Guid mediaId, Guid sessionId, Guid referenceId, double position, double duration, int state, Guid? deviceId = null, Guid? playlistId = null, Guid? sharedProfileId = null, Guid? syncPlayGroupId = null, int? audioTrackIndex = null, int? subtitleTrackIndex = null, Guid? indexedFileId = null, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task<string?> GenerateEphemeralTokenAsync(Guid streamSessionId, CancellationToken cancellationToken = default) => Task.FromResult<string?>(null);
     public Task RevokeEphemeralTokenAsync(Guid streamSessionId, CancellationToken cancellationToken = default) => Task.CompletedTask;
 }
@@ -1137,14 +1138,18 @@ public sealed class MockRemoteControlService : IRemoteControlService
     public double Position => 0;
     public double Duration => 0;
     public double Volume => 1;
+    public double PlaybackRate => 1;
+    public AspectRatioMode AspectRatio => AspectRatioMode.Fit;
     public int? SelectedAudioTrackIndex => null;
     public int? SelectedSubtitleTrackIndex => null;
     public IReadOnlyList<RemoteTrackInfoDto> AudioTracks => [];
     public IReadOnlyList<RemoteTrackInfoDto> SubtitleTracks => [];
+    public IReadOnlyList<ChapterMarkerDto> Chapters => [];
     public string? Title => null;
     public string? Artist => null;
     public string? AlbumTitle => null;
     public string? CoverUrl => null;
+    public string? ThumbnailsUrl => null;
     public Guid? MediaId => null;
     public Guid? IndexedFileId => null;
 #pragma warning disable CS0067
@@ -1157,10 +1162,13 @@ public sealed class MockRemoteControlService : IRemoteControlService
     public Task SendPlayAsync() => Task.CompletedTask;
     public Task SendPauseAsync() => Task.CompletedTask;
     public Task SendStopAsync() => Task.CompletedTask;
+    public Task ReleaseControlAsync() => Task.CompletedTask;
     public Task SendSeekAsync(double position) => Task.CompletedTask;
     public Task SendVolumeAsync(double volume) => Task.CompletedTask;
     public Task SendAudioTrackAsync(int trackIndex) => Task.CompletedTask;
     public Task SendSubtitleTrackAsync(int trackIndex) => Task.CompletedTask;
+    public Task SendPlaybackRateAsync(double rate) => Task.CompletedTask;
+    public Task SendAspectRatioAsync(AspectRatioMode mode) => Task.CompletedTask;
 }
 
 public sealed class MockSyncPlayService : ISyncPlayService

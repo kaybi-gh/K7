@@ -97,8 +97,16 @@ public partial class BlazorPage : ContentPage
 #endif
         blazorWebView.WebResourceRequested += OnWebResourceRequested;
 #if ANDROID
+        // Audio uses native services on Android - drop unused MediaElements before
+        // handlers/ExoPlayers are created (page not attached to Window yet).
+        RootGrid.Children.Remove(NativeAudioPlayer);
+        RootGrid.Children.Remove(NativeAudioCrossfadePlayer);
+
         if (AndroidStartupLottieOverlay.IsShown)
         {
+            // DecorView Lottie owns branding. Skip a second Skottie decode / paint.
+            SplashAnimation.IsAnimationEnabled = false;
+            SplashAnimation.Source = null;
             SplashAnimation.IsVisible = false;
             SplashLogo.IsVisible = false;
         }
@@ -106,7 +114,8 @@ public partial class BlazorPage : ContentPage
         InitializeSplashOverlay();
         InitializePlayer();
         InitializeAudioPlayer();
-        InitializeNativeVideoOverlay();
+        // Native overlay chrome is deferred to Loaded so cold start is not paying for it
+        // before the first Blazor frame.
         Loaded += OnBlazorPageLoaded;
     }
 
@@ -179,6 +188,11 @@ public partial class BlazorPage : ContentPage
     private void InitializeSplashOverlay()
     {
         var startTime = System.Diagnostics.Stopwatch.GetTimestamp();
+#if ANDROID
+        var decorViewLottie = AndroidStartupLottieOverlay.IsShown;
+#else
+        var decorViewLottie = false;
+#endif
 
         _ = Task.Run(async () =>
         {
@@ -192,11 +206,15 @@ public partial class BlazorPage : ContentPage
                 System.Diagnostics.Debug.WriteLine("K7 MAUI - Splash timeout, hiding anyway");
             }
 
-            // Ensure minimum display time so the animation is visible
-            var elapsed = System.Diagnostics.Stopwatch.GetElapsedTime(startTime);
-            var remaining = TimeSpan.FromMilliseconds(1500) - elapsed;
-            if (remaining > TimeSpan.Zero)
-                await Task.Delay(remaining);
+            // DecorView Lottie already covered branding time. Extra min delay left a
+            // frozen last frame (or loop) after Blazor was ready.
+            if (!decorViewLottie)
+            {
+                var elapsed = System.Diagnostics.Stopwatch.GetElapsedTime(startTime);
+                var remaining = TimeSpan.FromMilliseconds(1500) - elapsed;
+                if (remaining > TimeSpan.Zero)
+                    await Task.Delay(remaining);
+            }
 
             MainThread.BeginInvokeOnMainThread(() =>
             {
@@ -1967,6 +1985,11 @@ public partial class BlazorPage : ContentPage
         {
             _remoteControlForChrome.SessionChanged -= OnRemoteControlChromeSessionChanged;
             _remoteControlChromeSubscribed = false;
+        }
+        if (_handoverChromeSubscribed && _handoverForChrome is not null)
+        {
+            _handoverForChrome.HandoverChanged -= OnHandoverChromeChanged;
+            _handoverChromeSubscribed = false;
         }
         _nativeOverlay?.Detach();
         _audioPlayerService.PlayerUxSettingsChanged -= HandleAudioPlayerUxSettingsChanged;

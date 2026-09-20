@@ -5,6 +5,8 @@
 @inject IDeviceService DeviceService
 @inject IK7ServerService K7ServerService
 @inject IRemoteControlService RemoteControl
+@inject RemotePlaybackLauncher RemotePlayback
+@inject IServiceProvider Services
 @inject ISyncPlayService SyncPlay
 @inject IK7Snackbar Snackbar
 @inject IClientErrorReporter ClientErrorReporter
@@ -13,7 +15,7 @@
 
 @if (RemoteControl.IsControlling && !RemoteControl.IsAudio)
 {
-    <div class="video-container">
+    <div class="remote-control-host">
         <RemoteControlPanel OnResumeRequested="OnResumeHere" />
     </div>
 }

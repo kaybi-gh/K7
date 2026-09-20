@@ -1,10 +1,13 @@
 using K7.Clients.Shared.Helpers;
+using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
+using K7.Clients.Shared.Services;
 using K7.Clients.Shared.UI;
 using K7.Server.Domain.Enums;
 using K7.Shared.QueryBuilders;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Localization;
 using Microsoft.JSInterop;
 
@@ -139,14 +142,21 @@ public partial class VideoPlayer : IAsyncDisposable
         }
     }
 
+    private RemotePlaybackHandler? _remotePlaybackHandler;
+
     protected override void OnInitialized()
     {
         PlayerService.SourceChanged += OnSourceChange;
         PlayerService.IsVisibleChanged += OnVisibilityChanged;
         PlayerService.PlaybackStartFailed += OnPlaybackStartFailed;
         RemoteControl.SessionChanged += OnRemoteSessionChanged;
-        RemoteControl.StateChanged += OnRemoteSessionChanged;
+        // Do not subscribe StateChanged here: 1 Hz position ticks re-render this host,
+        // strip data-sn-layer-uid, and SpatialNav autoFocus yank focus back to play.
+        // RemoteControlPanel / RemoteControlSeekClock own chrome + clock updates.
         SyncPlay.GroupUpdated += OnSyncPlayGroupUpdated;
+        _remotePlaybackHandler = Services.GetService<RemotePlaybackHandler>();
+        if (_remotePlaybackHandler is not null)
+            _remotePlaybackHandler.HandoverChanged += OnHandoverChanged;
 
         _webPipelineActive = UsesWebVideoPlayer();
         UpdateWebVideoControlSubscription();
@@ -197,10 +207,26 @@ public partial class VideoPlayer : IAsyncDisposable
 
     private void OnVideoPlayerUxSettingsChanged() => ApplySubtitleStyleAsync().FireAndForget();
 
-    private void OnRemoteSessionChanged() => InvokeAsync(() =>
+    private void OnHandoverChanged() => InvokeAsync(() =>
     {
         StateHasChanged();
         SyncNativePlayerShellCss();
+    });
+
+    private void OnRemoteSessionChanged() => InvokeAsync(async () =>
+    {
+        StateHasChanged();
+        SyncNativePlayerShellCss();
+        if (RemoteControl.IsControlling)
+        {
+            try
+            {
+                await JSRuntime.InvokeVoidAsync("K7.setNativePlayerActive", false, false);
+            }
+            catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException or ObjectDisposedException)
+            {
+            }
+        }
     });
 
     private void OnVisibilityChanged()
@@ -252,7 +278,8 @@ public partial class VideoPlayer : IAsyncDisposable
             return;
 
         var active = PlayerService.IsVisible
-            && !(RemoteControl.IsControlling && !RemoteControl.IsAudio);
+            && !(RemoteControl.IsControlling && !RemoteControl.IsAudio)
+            && _remotePlaybackHandler is not { HasPendingHandover: true };
         SetNativePlayerActiveAsync(active).FireAndForget();
     }
 
@@ -273,10 +300,39 @@ public partial class VideoPlayer : IAsyncDisposable
     private async Task OnResumeHere()
     {
         var position = RemoteControl.Position;
-        await RemoteControl.SendStopAsync();
+        var mediaId = RemoteControl.MediaId;
+        var title = RemoteControl.Title;
+        var coverUrl = RemoteControl.CoverUrl;
+        var indexedFileId = RemoteControl.IndexedFileId;
 
-        PlayerService.Play();
-        PlayerService.Seek(position);
+        await RemotePlayback.NotifyLocalTakeoverAsync(
+            title,
+            mediaId,
+            indexedFileId,
+            isAudio: false,
+            coverUrl,
+            position,
+            RemoteControl.Duration);
+        await RemoteControl.ReleaseControlAsync();
+
+        if (mediaId is not Guid id)
+            return;
+
+        var mediaLoader = Services.GetService<ISyncPlayMediaLoader>();
+        if (mediaLoader is null)
+            return;
+
+        await mediaLoader.LoadAndPlayMediaAsync(
+            id,
+            title,
+            coverUrl,
+            position > 1 ? position : null,
+            indexedFileId: indexedFileId,
+            audioTrackIndex: RemoteControl.SelectedAudioTrackIndex,
+            subtitleTrackIndex: RemoteControl.SelectedSubtitleTrackIndex,
+            playbackRate: RemoteControl.PlaybackRate > 0 ? RemoteControl.PlaybackRate : null,
+            aspectRatio: RemoteControl.AspectRatio,
+            volume: RemoteControl.Volume);
     }
 
     private void ToggleSyncPlaySidebar()
@@ -333,8 +389,9 @@ public partial class VideoPlayer : IAsyncDisposable
         PlayerService.IsVisibleChanged -= OnVisibilityChanged;
         PlayerService.PlaybackStartFailed -= OnPlaybackStartFailed;
         RemoteControl.SessionChanged -= OnRemoteSessionChanged;
-        RemoteControl.StateChanged -= OnRemoteSessionChanged;
         SyncPlay.GroupUpdated -= OnSyncPlayGroupUpdated;
+        if (_remotePlaybackHandler is not null)
+            _remotePlaybackHandler.HandoverChanged -= OnHandoverChanged;
 
         if (DeviceService.GetClientType() == ClientType.Native)
         {

@@ -43,6 +43,7 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
     private readonly IDeviceStorageService? _deviceStorage;
     private readonly K7HubClient? _hubClient;
     private readonly IRemoteControlService? _remoteControl;
+    private readonly RemotePlaybackLauncher? _remotePlayback;
 
     private readonly Grid _chrome = new();
     private readonly BoxView _chromeGradient = new() { InputTransparent = true };
@@ -187,7 +188,8 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
         IFeatureAccessService? featureAccess = null,
         IDeviceStorageService? deviceStorage = null,
         K7HubClient? hubClient = null,
-        IRemoteControlService? remoteControl = null)
+        IRemoteControlService? remoteControl = null,
+        RemotePlaybackLauncher? remotePlayback = null)
     {
         _player = player;
         _deviceService = deviceService;
@@ -204,6 +206,7 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
         _deviceStorage = deviceStorage;
         _hubClient = hubClient;
         _remoteControl = remoteControl;
+        _remotePlayback = remotePlayback;
         _seekBar = new NativeSeekBar { Player = player, HorizontalOptions = LayoutOptions.Fill };
         _settings = new NativePlaybackSettingsPanel(player)
         {

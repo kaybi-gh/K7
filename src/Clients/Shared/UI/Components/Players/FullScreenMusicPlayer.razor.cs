@@ -30,10 +30,10 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
     [Inject] private IStringLocalizer<SharedResource> S { get; set; } = default!;
     [Inject] private IJSRuntime JS { get; set; } = default!;
     [Inject] private ICastOrchestrationService CastOrchestration { get; set; } = default!;
-    [Inject] private K7HubClient HubClient { get; set; } = default!;
+    [Inject] private RemotePlaybackLauncher RemotePlayback { get; set; } = default!;
     [Inject] private IRemoteControlService RemoteControl { get; set; } = default!;
     [Inject] private ISyncPlayService SyncPlay { get; set; } = default!;
-    [Inject] private IDeviceStorageService DeviceStorage { get; set; } = default!;
+    [Inject] private ISyncPlayMediaLoader MediaLoader { get; set; } = default!;
     private ElementReference _playerRef;
     private ElementReference _seekBarRef;
     private bool _isDragging;
@@ -273,9 +273,6 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
         var track = Audio.CurrentTrack;
         if (track is null) return;
 
-        Audio.Pause();
-
-        var senderDeviceId = DeviceStorage.Get(PreferenceKeys.DEVICE_ID);
         var request = new RemotePlaybackRequestDto
         {
             IndexedFileId = track.IndexedFileId,
@@ -286,21 +283,40 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
             Artist = track.Artist,
             AlbumTitle = track.AlbumTitle,
             CoverUrl = track.CoverUrl,
-            Duration = track.Duration,
-            SenderDeviceId = senderDeviceId is not null ? Guid.Parse(senderDeviceId.AsSpan()) : null
+            Duration = track.Duration
         };
 
-        await HubClient.RequestRemotePlaybackAsync(device.DeviceId, request);
-        RemoteControl.StartSession(device.DeviceId, ConnectedDeviceLabels.GetDisplayName(device), request);
+        Audio.Pause();
+        await RemotePlayback.PlayOnDeviceAsync(device, request);
     }
 
     private async Task OnResumeHere()
     {
         var position = RemoteControl.Position;
-        await RemoteControl.SendStopAsync();
+        var mediaId = RemoteControl.MediaId;
+        var title = RemoteControl.Title;
+        var coverUrl = RemoteControl.CoverUrl;
 
-        Audio.Play();
-        Audio.Seek(position);
+        await RemotePlayback.NotifyLocalTakeoverAsync(
+            title,
+            mediaId,
+            RemoteControl.IndexedFileId,
+            isAudio: true,
+            coverUrl,
+            position,
+            RemoteControl.Duration);
+        await RemoteControl.ReleaseControlAsync();
+
+        if (mediaId is not Guid id)
+            return;
+
+        await MediaLoader.LoadAndPlayMediaAsync(
+            id,
+            title,
+            coverUrl,
+            position > 1 ? position : null,
+            indexedFileId: RemoteControl.IndexedFileId,
+            volume: RemoteControl.Volume);
     }
 
     private async Task OnRemoteStop()
@@ -345,7 +361,12 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
         _dotNetRef = null;
     }
 
-    private void Close() => Audio.ToggleFullScreen();
+    private void Close()
+    {
+        if (IsRemoteMode)
+            _ = RemoteControl.ReleaseControlAsync();
+        Audio.ToggleFullScreen();
+    }
 
     private async Task StopAndHide()
     {
