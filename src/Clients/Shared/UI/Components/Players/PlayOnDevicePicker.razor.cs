@@ -13,12 +13,13 @@ public partial class PlayOnDevicePicker : ComponentBase, IDisposable
     [Parameter] public string? ButtonClass { get; set; }
     [Parameter] public EventCallback<CastDeviceInfo> CastDeviceSelected { get; set; }
     [Parameter] public EventCallback<ConnectedDeviceDto> RemoteDeviceSelected { get; set; }
+    [Parameter] public bool ShowCast { get; set; } = true;
 
     private bool _isOpen;
     private IReadOnlyList<ConnectedDeviceDto> _remoteDevices = [];
 
     private bool _hasAnyDevice =>
-        CastService.IsAvailable || _remoteDevices.Count > 0;
+        (ShowCast && CastService.IsAvailable) || _remoteDevices.Count > 0;
 
     protected override void OnInitialized()
     {
@@ -31,7 +32,8 @@ public partial class PlayOnDevicePicker : ComponentBase, IDisposable
     {
         if (firstRender)
         {
-            await CastService.StartDiscoveryAsync();
+            if (ShowCast)
+                await CastService.StartDiscoveryAsync();
             await HubClient.RequestConnectedDevicesAsync();
         }
     }

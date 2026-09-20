@@ -11,7 +11,7 @@
             <K7IconButton Icon="@Phosphor.Screencast" AriaLabel="@L["CastToDevice"]" Class="@ButtonClass" />
         </ActivatorContent>
         <ChildContent>
-            @if (CastService.IsAvailable)
+            @if (ShowCast && CastService.IsAvailable)
             {
                 <div class="cast-section-header">@L["Chromecast"]</div>
                 @if (CastService.DiscoveredDevices.Count > 0)

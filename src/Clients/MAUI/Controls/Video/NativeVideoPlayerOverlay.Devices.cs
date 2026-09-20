@@ -314,9 +314,6 @@ public sealed partial class NativeVideoPlayerOverlay
         // Capture before Pause / chrome teardown - CurrentTime can briefly read 0.
         var startPosition = _player.GetResumePosition();
         var volume = _player.IsMuted ? 0 : _player.Volume;
-        _player.Pause();
-
-        var senderDeviceId = _deviceStorage?.Get(PreferenceKeys.DEVICE_ID);
         var request = new RemotePlaybackRequestDto
         {
             IndexedFileId = source.IndexedFileId.Value,
@@ -326,10 +323,21 @@ public sealed partial class NativeVideoPlayerOverlay
             Title = source.Title,
             CoverUrl = source.CoverUrl,
             Duration = _player.Duration,
-            SenderDeviceId = senderDeviceId is not null ? Guid.Parse(senderDeviceId.AsSpan()) : null,
-            Volume = volume
+            Volume = volume,
+            ThumbnailsUrl = source.ThumbnailsUrl
         };
 
+        _player.Pause();
+        if (_remotePlayback is not null)
+        {
+            await _remotePlayback.PlayOnDeviceAsync(device, request);
+            return;
+        }
+        var senderDeviceId = _deviceStorage?.Get(PreferenceKeys.DEVICE_ID);
+        request = request with
+        {
+            SenderDeviceId = Guid.TryParse(senderDeviceId, out var senderId) ? senderId : null
+        };
         await _hubClient.RequestRemotePlaybackAsync(device.DeviceId, request);
         _remoteControl?.StartSession(device.DeviceId, ConnectedDeviceLabels.GetDisplayName(device), request);
     }

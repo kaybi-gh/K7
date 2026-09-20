@@ -149,6 +149,12 @@ else
                     
                     @if (_selectedFile is not null)
                     {
+                        <MediaPlayOnDeviceButton IndexedFileId="_selectedFile.Id"
+                                                 MediaId="_movie.Id"
+                                                 Title="@(_movie.Title ?? string.Empty)"
+                                                 CoverUrl="@_posterSmallUrl"
+                                                 Duration="@((_selectedFile.FileMetadata as VideoFileMetadataDto)?.Duration.TotalSeconds)"
+                                                 StartPosition="@ResolveStartPosition(false)" />
                         <DownloadButton IndexedFileId="_selectedFile.Id"
                                         MediaId="_movie!.Id"
                                         Title="@(_movie.Title ?? string.Empty)"

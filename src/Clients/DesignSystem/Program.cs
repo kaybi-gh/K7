@@ -96,6 +96,8 @@ builder.Services.AddSingleton<IPlaybackSyncService, MockPlaybackSyncService>();
 builder.Services.AddSingleton<ICastService, MockCastService>();
 builder.Services.AddSingleton<ICastOrchestrationService, MockCastOrchestrationService>();
 builder.Services.AddSingleton<IRemoteControlService, MockRemoteControlService>();
+builder.Services.AddSingleton<IUiDispatcher, ImmediateUiDispatcher>();
+builder.Services.AddSingleton<RemotePlaybackLauncher>();
 builder.Services.AddSingleton<NowPlayingService>();
 builder.Services.AddSingleton<IDownloadManager, MockDownloadManager>();
 

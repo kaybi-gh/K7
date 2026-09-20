@@ -1,7 +1,9 @@
+using K7.Clients.Shared.Enums;
 using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Shared.Dtos;
+using K7.Shared.Dtos.Entities;
 using K7.Shared.Dtos.Entities.Medias;
 using K7.Shared.Dtos.Entities.Metadatas.Files;
 using K7.Shared.Interfaces;
@@ -23,12 +25,22 @@ public sealed class SyncPlayMediaLoader : ISyncPlayMediaLoader
         _progressTracker = progressTracker;
     }
 
-    public async Task LoadAndPlayMediaAsync(Guid mediaReferenceId, string? title, string? coverUrl)
+    public async Task LoadAndPlayMediaAsync(
+        Guid mediaReferenceId,
+        string? title,
+        string? coverUrl,
+        double? startPosition = null,
+        Guid? indexedFileId = null,
+        int? audioTrackIndex = null,
+        int? subtitleTrackIndex = null,
+        double? playbackRate = null,
+        AspectRatioMode? aspectRatio = null,
+        double? volume = null)
     {
         var media = await _mediaService.GetMediaAsync(mediaReferenceId);
         if (media is null) return;
 
-        var indexedFile = media.IndexedFiles?.FirstOrDefault();
+        var indexedFile = ResolveIndexedFile(media, indexedFileId);
         if (indexedFile is null) return;
 
         if (media is MusicTrackDto musicTrack)
@@ -48,6 +60,10 @@ public sealed class SyncPlayMediaLoader : ISyncPlayMediaLoader
             };
 
             await _audioPlayer.PlayTrackAsync(queueItem);
+            if (startPosition is > 1)
+                _audioPlayer.Seek(startPosition.Value);
+            if (volume is >= 0)
+                _audioPlayer.SetVolume(Math.Clamp(volume.Value, 0, 1));
         }
         else
         {
@@ -64,15 +80,41 @@ public sealed class SyncPlayMediaLoader : ISyncPlayMediaLoader
                 indexedFile.Id,
                 videoMetadata?.AudioTracks ?? [],
                 videoMetadata?.SubtitleTracks,
+                audioTrackIndex: audioTrackIndex,
+                subtitleTrackIndex: subtitleTrackIndex,
                 mediaId: media.Id,
                 title: title ?? VideoPlayerTitleHelper.FormatFromMedia(media),
                 coverUrl: coverUrl,
+                startPosition: startPosition is > 1 ? startPosition : null,
                 chapters: videoMetadata?.Chapters,
                 durationSeconds: videoMetadata?.Duration.TotalSeconds);
+
+            if (playbackRate is > 0 && Math.Abs(playbackRate.Value - 1) > 0.01)
+                _videoPlayer.SetPlaybackRate(playbackRate.Value);
+            if (aspectRatio is AspectRatioMode mode)
+                _videoPlayer.SetAspectRatioMode(mode);
+            if (volume is >= 0)
+                _videoPlayer.SetVolume(Math.Clamp(volume.Value, 0, 1));
 
             var serieId = (media as SerieEpisodeDto)?.SerieId;
             _progressTracker.StartTracking(media.Id, isAuthenticated: true, serieId: serieId, indexedFileId: indexedFile.Id);
         }
+    }
+
+    private static IndexedFileDto? ResolveIndexedFile(MediaDto media, Guid? preferredFileId)
+    {
+        var files = media.IndexedFiles;
+        if (files is null || files.Count == 0)
+            return null;
+
+        if (preferredFileId is Guid id && id != Guid.Empty)
+        {
+            var match = files.FirstOrDefault(f => f.Id == id);
+            if (match is not null)
+                return match;
+        }
+
+        return files.FirstOrDefault();
     }
 
     public async Task LoadQueueAsync(IReadOnlyList<SyncPlayQueueItemDto> queue, int currentIndex)

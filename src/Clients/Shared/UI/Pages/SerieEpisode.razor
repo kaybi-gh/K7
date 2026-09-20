@@ -136,6 +136,12 @@ else if (_episode is not null)
 
                             @if (_indexedFile is not null)
                             {
+                                <MediaPlayOnDeviceButton IndexedFileId="_indexedFile.Id"
+                                                         MediaId="_episode.Id"
+                                                         Title="@(_episode.Title ?? $"E{_episode.EpisodeNumber}")"
+                                                         CoverUrl="@_stillUrl"
+                                                         Duration="@((_indexedFile.FileMetadata as VideoFileMetadataDto)?.Duration.TotalSeconds)"
+                                                         StartPosition="@(CanResumePlayback ? _episode.UserState?.LastPlaybackPosition : null)" />
                                 <DownloadButton IndexedFileId="_indexedFile.Id"
                                                 MediaId="_episode.Id"
                                                 Title="@(_episode.Title ?? $"E{_episode.EpisodeNumber}")"

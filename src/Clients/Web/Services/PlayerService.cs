@@ -616,7 +616,11 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
     public void Mute() => MuteRequested?.Invoke();
     public void Unmute() => UnmuteRequest?.Invoke();
     public void SetVolume(double volume) => VolumeChangeRequested?.Invoke(volume);
-    public void SetPlaybackRate(double rate) => PlaybackRateChangeRequested?.Invoke(rate);
+    public void SetPlaybackRate(double rate)
+    {
+        PlaybackRate = rate;
+        _ = PlaybackRateChangeRequested?.Invoke(rate);
+    }
     public void Stop() => StopRequested?.Invoke();
     public void EnterFullScreen() => EnterFullScreenRequested?.Invoke();
     public void ExitFullScreen() => ExitFullScreenRequested?.Invoke();

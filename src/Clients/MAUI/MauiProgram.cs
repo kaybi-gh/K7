@@ -249,9 +249,12 @@ public static partial class MauiProgram
         builder.Services.AddScoped<IWindowsStreamFetchJsBridge, NoOpWindowsStreamFetchJsBridge>();
 #endif
         builder.Services.AddSingleton<ICastOrchestrationService, CastOrchestrationService>();
+        builder.Services.AddSingleton<IUiDispatcher, MauiUiDispatcher>();
+        builder.Services.AddSingleton<IExternalPlayerPolicy, ExternalPlayerPolicy>();
         builder.Services.AddSingleton<RemotePlaybackHandler>();
         builder.Services.AddSingleton<RemoteControlService>();
         builder.Services.AddSingleton<IRemoteControlService>(sp => sp.GetRequiredService<RemoteControlService>());
+        builder.Services.AddSingleton<RemotePlaybackLauncher>();
         builder.Services.AddSingleton<NowPlayingService>();
         builder.Services.AddSingleton<SyncPlayService>();
         builder.Services.AddSingleton<ISyncPlayService>(sp => sp.GetRequiredService<SyncPlayService>());

@@ -8,6 +8,7 @@ public interface IRemotePlaybackClient
     Task ReceiveRemoteTransportCommand(RemoteTransportCommandDto command);
     Task ReceiveConnectedDevicesUpdated(IReadOnlyList<ConnectedDeviceDto> devices);
     Task ReceiveRemotePlaybackState(RemotePlaybackStateDto state);
+    Task ReceivePlaybackTakenOver(PlaybackTakenOverDto dto);
 }
 
 public sealed record ConnectedDeviceDto

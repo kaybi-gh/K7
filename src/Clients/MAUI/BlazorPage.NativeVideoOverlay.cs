@@ -14,7 +14,9 @@ public partial class BlazorPage
 {
     private NativeVideoPlayerOverlay? _nativeOverlay;
     private IRemoteControlService? _remoteControlForChrome;
+    private RemotePlaybackHandler? _handoverForChrome;
     private bool _remoteControlChromeSubscribed;
+    private bool _handoverChromeSubscribed;
 
 #if ANDROID || IOS || WINDOWS
     private bool _nativeVideoWebViewShellSaved;
@@ -34,7 +36,9 @@ public partial class BlazorPage
             return;
 
         _remoteControlForChrome ??= services.GetService<IRemoteControlService>();
+        _handoverForChrome ??= services.GetService<RemotePlaybackHandler>();
         EnsureRemoteControlChromeSubscription();
+        EnsureHandoverChromeSubscription();
 
         _nativeOverlay = new NativeVideoPlayerOverlay(
             _playerService,
@@ -51,7 +55,8 @@ public partial class BlazorPage
             services.GetService<IFeatureAccessService>(),
             services.GetService<IDeviceStorageService>(),
             services.GetService<K7HubClient>(),
-            _remoteControlForChrome);
+            _remoteControlForChrome,
+            services.GetService<RemotePlaybackLauncher>());
 
         _nativeOverlay.ZIndex = 5;
         _nativeOverlay.HorizontalOptions = LayoutOptions.Fill;
@@ -72,13 +77,27 @@ public partial class BlazorPage
     private void OnRemoteControlChromeSessionChanged() =>
         MainThread.BeginInvokeOnMainThread(SyncNativeVideoChrome);
 
+    private void EnsureHandoverChromeSubscription()
+    {
+        if (_handoverChromeSubscribed || _handoverForChrome is null)
+            return;
+
+        _handoverForChrome.HandoverChanged += OnHandoverChromeChanged;
+        _handoverChromeSubscribed = true;
+    }
+
+    private void OnHandoverChromeChanged() =>
+        MainThread.BeginInvokeOnMainThread(SyncNativeVideoChrome);
+
     /// <summary>
     /// Local decode chrome only. While remoting video to another device, Blazor owns
     /// <c>RemoteControlPanel</c> and the native overlay must not cover the WebView.
+    /// Pending handover also restores the WebView so the takeover dialog can paint.
     /// </summary>
     private bool WantsNativeVideoChrome =>
         MauiNativeVideoChrome.IsEnabled
         && _playerService.IsVisible
+        && _handoverForChrome is not { HasPendingHandover: true }
         && !(_remoteControlForChrome is { IsControlling: true, IsAudio: false });
 
     private void OnNativeVideoVisibilityChanged(bool visible) => SyncNativeVideoChrome();
@@ -91,7 +110,9 @@ public partial class BlazorPage
         var services = Application.Current?.Handler?.MauiContext?.Services
             ?? IPlatformApplication.Current?.Services;
         _remoteControlForChrome ??= services?.GetService<IRemoteControlService>();
+        _handoverForChrome ??= services?.GetService<RemotePlaybackHandler>();
         EnsureRemoteControlChromeSubscription();
+        EnsureHandoverChromeSubscription();
 
         var showChrome = WantsNativeVideoChrome;
 #if WINDOWS
@@ -114,8 +135,8 @@ public partial class BlazorPage
 #if ANDROID || IOS || WINDOWS
         if (!showChrome)
         {
-            if (_playerService.IsVisible
-                && _remoteControlForChrome is { IsControlling: true, IsAudio: false })
+            // Remote-control UI lives in Blazor even when local IsVisible is false (attach-only).
+            if (_remoteControlForChrome is { IsControlling: true, IsAudio: false })
             {
                 RevealBlazorWebViewForRemoteControl();
             }
@@ -227,6 +248,9 @@ public partial class BlazorPage
 #if ANDROID
         Platforms.Android.AndroidOverlayComposition.Reset(blazorWebView);
 #endif
+        _ = TryEvaluateWebViewJs(
+            "try{if(window.K7&&K7.setNativePlayerActive)K7.setNativePlayerActive(false,false);"
+            + "if(window.K7&&K7.setNativePlayerPlaying)K7.setNativePlayerPlaying(false);}catch(e){}");
     }
 #endif
 

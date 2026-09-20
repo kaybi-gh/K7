@@ -17,7 +17,8 @@ internal class PlayerService(
     IWindowsMpcPlaybackHost? mpcPlaybackHost = null,
     ISyncPlayService? syncPlayService = null,
     IRemoteControlService? remoteControlService = null,
-    ICastService? castService = null) : IPlayerService
+    ICastService? castService = null,
+    IExternalPlayerPolicy? externalPlayerPolicy = null) : IPlayerService
 {
     public event Func<Task>? PlayRequested;
     public event Func<Task>? PauseRequested;
@@ -526,6 +527,8 @@ internal class PlayerService(
         }
 
         ResumeWebPlaybackIfNeeded();
+        if (_playbackRate > 0 && Math.Abs(_playbackRate - 1) > 0.01)
+            SetPlaybackRate(_playbackRate);
 
         return Task.CompletedTask;
 #endif
@@ -572,6 +575,8 @@ internal class PlayerService(
         }
 
         ResumeWebPlaybackIfNeeded();
+        if (_playbackRate > 0 && Math.Abs(_playbackRate - 1) > 0.01)
+            SetPlaybackRate(_playbackRate);
 
         return Task.CompletedTask;
     }
@@ -845,6 +850,9 @@ internal class PlayerService(
             return false;
         if (!WindowsMpcPlaybackSettings.IsEnabled(deviceStorageService))
             return false;
+        // MPC web UI only exposes position poll + seek-percent - not full remote transport.
+        if (externalPlayerPolicy?.SuppressExternalPlayer == true)
+            return false;
         if (syncPlayService?.IsInGroup == true)
             return false;
         if (remoteControlService?.IsControlling == true)
@@ -945,7 +953,11 @@ internal class PlayerService(
         Volume = Math.Clamp(volume, 0, 1);
         VolumeChangeRequested?.Invoke(Volume);
     }
-    public void SetPlaybackRate(double rate) => PlaybackRateChangeRequested?.Invoke(rate);
+    public void SetPlaybackRate(double rate)
+    {
+        PlaybackRate = rate;
+        _ = PlaybackRateChangeRequested?.Invoke(rate);
+    }
 
     public void Stop()
     {
