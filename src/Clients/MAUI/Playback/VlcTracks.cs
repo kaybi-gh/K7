@@ -74,19 +74,8 @@ internal static class VlcTracks
         out int index,
         out MediaTrack track)
     {
-        if (!string.IsNullOrEmpty(name))
-        {
-            for (var i = 0; i < tracks.Length; i++)
-            {
-                if (TrackLabel(tracks[i]).Contains(name, StringComparison.OrdinalIgnoreCase))
-                {
-                    index = i;
-                    track = tracks[i];
-                    return true;
-                }
-            }
-        }
-
+        // Prefer catalog ordinal first. Fuzzy name Contains() before ordinal picked the
+        // wrong ES when titles shared words ("English", "Track 1", ...).
         if (ordinal is int o && o >= 0 && o < tracks.Length)
         {
             index = o;
@@ -99,6 +88,30 @@ internal static class VlcTracks
             for (var i = 0; i < tracks.Length; i++)
             {
                 if (LanguageMatches(tracks[i], language))
+                {
+                    index = i;
+                    track = tracks[i];
+                    return true;
+                }
+            }
+        }
+
+        if (!string.IsNullOrEmpty(name))
+        {
+            for (var i = 0; i < tracks.Length; i++)
+            {
+                var label = TrackLabel(tracks[i]);
+                if (label.Equals(name, StringComparison.OrdinalIgnoreCase))
+                {
+                    index = i;
+                    track = tracks[i];
+                    return true;
+                }
+            }
+
+            for (var i = 0; i < tracks.Length; i++)
+            {
+                if (TrackLabel(tracks[i]).Contains(name, StringComparison.OrdinalIgnoreCase))
                 {
                     index = i;
                     track = tracks[i];

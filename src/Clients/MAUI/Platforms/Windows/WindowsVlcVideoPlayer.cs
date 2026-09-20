@@ -34,6 +34,8 @@ internal sealed class WindowsVlcVideoPlayer : IDisposable
     private double _pendingStartSeconds;
     private bool _active;
     private bool _suppressEnded;
+    private bool _directSeekReopenBusy;
+    private double? _coalescedDirectSeekSeconds;
     private bool _firstFrameRaised;
     private bool _handlerHooked;
     private bool _swapChainReady;
@@ -47,10 +49,19 @@ internal sealed class WindowsVlcVideoPlayer : IDisposable
     private bool _pendingPreciseStart;
     private bool _overlayOwnsTextSubs;
     private bool _holdTransport;
-    private bool _holdWallArmed;
-    private DateTime _holdStartedUtc;
     private double _pinnedPosition;
     private double _pinnedDuration;
+    /// <summary>
+    /// Absolute media seconds used as <c>:start-time</c> for the current Direct open.
+    /// LibVLC 4 may report Position 0..1 over the remaining span after start-time; multiplying
+    /// that by full duration makes soft-sub cues run fast (rate = duration/remaining).
+    /// </summary>
+    private double _timelineEpochSeconds;
+    /// <summary>
+    /// Sticky after <c>:start-time</c>: default relative remaining span; absolute Time near
+    /// the epoch locks absolute for the rest of the open.
+    /// </summary>
+    private bool? _demuxTimelineRelative;
     private double _volume01 = 1;
     private bool _muted;
     private double _rate = 1;
@@ -130,14 +141,15 @@ internal sealed class WindowsVlcVideoPlayer : IDisposable
         _pendingHlsAudioTrackIndex = hlsAudioTrackIndex;
         _pendingIsHls = nextIsHls;
         _engineIsHls = nextIsHls;
+        _directSeekReopenBusy = false;
+        _coalescedDirectSeekSeconds = null;
         _firstFrameNotified = false;
         _firstFrameRaised = false;
         // HLS also holds the overlay clock until demux/EXT-X-START lands.
         _holdTransport = startSeconds > 1;
-        _holdWallArmed = false;
-        if (_holdTransport)
-            _holdStartedUtc = DateTime.UtcNow;
         _pinnedPosition = startSeconds > 0 ? startSeconds : 0;
+        _timelineEpochSeconds = startSeconds > 1 ? startSeconds : 0;
+        _demuxTimelineRelative = startSeconds > 1 ? true : null;
         _pinnedDuration = knownDuration > 1 ? knownDuration : 0;
         _lastPublishedSeconds = _pinnedPosition;
         _ticksPerSecond = VlcTime.MicrosecondsPerSecond;
@@ -182,7 +194,7 @@ internal sealed class WindowsVlcVideoPlayer : IDisposable
         _clockTickId++;
         _player.SetPause(true);
         _hlsAudio?.Pause();
-        var seconds = ReadVlcSeconds();
+        var seconds = _lastPublishedSeconds > 0 ? _lastPublishedSeconds : ReadVlcSeconds();
         if (seconds >= 0)
         {
             _lastPublishedSeconds = seconds;
@@ -204,16 +216,133 @@ internal sealed class WindowsVlcVideoPlayer : IDisposable
         _clockTickId++;
         _suppressEnded = true;
         _active = false;
+        _directSeekReopenBusy = false;
+        _coalescedDirectSeekSeconds = null;
         _pendingUrl = null;
-        _videoView.IsVisible = false;
+        try
+        {
+            _videoView.IsVisible = false;
+        }
+        catch
+        {
+        }
 
-        // Detach D3D before MediaPlayer.Stop: Present during Stop/Dispose races into
-        // ExecutionEngineException / AccessViolation on fast Direct -> HLS swaps.
-        DetachD3d11();
-        StopPlayback();
-        DisposeLibVlcCore();
+        // Detach D3D on the UI thread while MediaPlayer is still alive, then Stop/Dispose
+        // LibVLC off the UI thread. MediaPlayer.Stop on the UI thread freezes WinUI
+        // ("Not responding") when quitting Direct Play.
+        var d3d = _d3d11;
+        var player = _player;
+        var libVlc = _libVlc;
+        var media = _media;
+        var proxy = _authProxy;
+        var hls = _hlsAudio;
+        _d3d11 = null;
+        _player = null;
+        _libVlc = null;
+        _media = null;
+        _authProxy = null;
+        _hlsAudio = null;
         _swapChainReady = false;
         _swapChainOptions = null;
+
+        if (d3d is not null)
+        {
+            try
+            {
+                d3d.FirstPresented -= OnD3d11FirstPresented;
+            }
+            catch
+            {
+            }
+
+            try
+            {
+                d3d.Detach(player);
+            }
+            catch
+            {
+            }
+
+            try
+            {
+                d3d.Dispose();
+            }
+            catch
+            {
+            }
+        }
+
+        if (player is not null)
+        {
+            try
+            {
+                Unhook(player);
+            }
+            catch
+            {
+            }
+
+            try
+            {
+                _videoView.MediaPlayer = null;
+            }
+            catch
+            {
+            }
+        }
+
+        _ = Task.Run(() =>
+        {
+            try
+            {
+                player?.Stop();
+            }
+            catch
+            {
+            }
+
+            try
+            {
+                player?.Dispose();
+            }
+            catch
+            {
+            }
+
+            try
+            {
+                media?.Dispose();
+            }
+            catch
+            {
+            }
+
+            try
+            {
+                libVlc?.Dispose();
+            }
+            catch
+            {
+            }
+
+            try
+            {
+                proxy?.Dispose();
+            }
+            catch
+            {
+            }
+
+            try
+            {
+                hls?.Dispose();
+            }
+            catch
+            {
+            }
+
+            GC.KeepAlive(d3d);
+        });
     }
 
     /// <summary>
@@ -373,16 +502,24 @@ internal sealed class WindowsVlcVideoPlayer : IDisposable
 
         // Direct Play over HTTP: SetTime is often ignored (seek-to-0 stays mid-film).
         // Audio track switches already reopen with :start-time; do the same for seek.
+        // Rapid remote seeks must not Stop+Start while a reopen is still buffering.
         if (!_pendingIsHls)
         {
+            if (_directSeekReopenBusy)
+            {
+                _coalescedDirectSeekSeconds = target;
+                _pinnedPosition = target;
+                _lastPublishedSeconds = target;
+                _holdTransport = true;
+                PositionChanged?.Invoke(target);
+                return;
+            }
+
             SeekDirectReopen(target);
             return;
         }
 
         _holdTransport = target > 1;
-        _holdWallArmed = false;
-        if (_holdTransport)
-            _holdStartedUtc = DateTime.UtcNow;
         _pinnedPosition = target;
         _player.SetTime(VlcTime.FromSeconds(target, _ticksPerSecond), fast: false);
         var duration = ReadVlcDurationSeconds();
@@ -401,7 +538,11 @@ internal sealed class WindowsVlcVideoPlayer : IDisposable
     {
         var url = _currentUrl;
         if (string.IsNullOrEmpty(url) || !_active)
+        {
+            _directSeekReopenBusy = false;
+            _coalescedDirectSeekSeconds = null;
             return;
+        }
 
         // Prefer the pinned/metadata duration. VLC Length is often 0 while stopped
         // for reopen, which previously wiped the seekbar total.
@@ -409,11 +550,13 @@ internal sealed class WindowsVlcVideoPlayer : IDisposable
         if (fromPlayer > 1)
             _pinnedDuration = Math.Max(_pinnedDuration, fromPlayer);
 
+        _directSeekReopenBusy = true;
+        _coalescedDirectSeekSeconds = null;
         _pendingStartSeconds = targetSeconds;
         _pinnedPosition = targetSeconds;
+        _timelineEpochSeconds = targetSeconds > 1 ? targetSeconds : 0;
+        _demuxTimelineRelative = targetSeconds > 1 ? true : null;
         _holdTransport = true;
-        _holdWallArmed = false;
-        _holdStartedUtc = DateTime.UtcNow;
         _pendingPreciseStart = true;
         _pendingUrl = url;
         _firstFrameRaised = false;
@@ -433,6 +576,40 @@ internal sealed class WindowsVlcVideoPlayer : IDisposable
         StopPlayback(keepSession: true);
         _suppressEnded = false;
         StartMedia(url);
+    }
+
+    /// <summary>
+    /// After Direct Play seek reopen settles, apply the latest coalesced remote seek
+    /// (if any) instead of stacking Stop+Start mid-buffer.
+    /// </summary>
+    private void TryDrainCoalescedDirectSeek()
+    {
+        if (_pendingIsHls)
+        {
+            _directSeekReopenBusy = false;
+            _coalescedDirectSeekSeconds = null;
+            return;
+        }
+
+        var next = _coalescedDirectSeekSeconds;
+        _coalescedDirectSeekSeconds = null;
+        if (next is null)
+        {
+            _directSeekReopenBusy = false;
+            return;
+        }
+
+        var target = next.Value;
+        Post(() =>
+        {
+            if (!_active)
+            {
+                _directSeekReopenBusy = false;
+                return;
+            }
+
+            SeekDirectReopen(target);
+        });
     }
 
     /// <summary>Keep metadata duration across Direct Play reopen/seek.</summary>
@@ -497,6 +674,8 @@ internal sealed class WindowsVlcVideoPlayer : IDisposable
             if (_pendingIsHls)
                 return VlcTracks.SelectedId(_player, TrackType.Audio) is not null;
 
+            // Direct Play: MediaPlayer.Select freezes the D3D11 video plane while audio
+            // keeps going. Always reopen with :audio-track + :start-time.
             ReopenAtCurrent("audio");
             return true;
         }
@@ -537,6 +716,7 @@ internal sealed class WindowsVlcVideoPlayer : IDisposable
             if (_pendingIsHls)
                 return false;
 
+            // Same as audio: mid-play Select can freeze the decode surface on Direct Play.
             ReopenAtCurrent("sub");
             return true;
         }
@@ -720,7 +900,7 @@ internal sealed class WindowsVlcVideoPlayer : IDisposable
             "--no-osd",
             "--aout=mmdevice",
             "--mmdevice-passthrough=0",
-            "--network-caching=1000"
+            "--network-caching=400"
         };
         args.AddRange(style);
         try
@@ -942,7 +1122,9 @@ internal sealed class WindowsVlcVideoPlayer : IDisposable
             var playUrl = EnsurePlayProxy(url);
             via = _authProxy is { LocalUrl: not null } ? "http-proxy" : "http-query";
             media = new Media(playUrl, FromType.FromLocation);
-            media.AddOption(":network-caching=3000");
+            // LAN/self-host Direct Play: keep cache low for first-frame reactivity.
+            // HLS keeps a larger cache below.
+            media.AddOption(":network-caching=400");
             media.AddOption(":http-reconnect");
             if (_authProxy is null)
                 AddHttpExtraHeader(media, _pendingAuthorization);
@@ -1053,11 +1235,10 @@ internal sealed class WindowsVlcVideoPlayer : IDisposable
 
         _pendingStartSeconds = resumeAt;
         _pinnedPosition = resumeAt;
+        _timelineEpochSeconds = resumeAt > 1 ? resumeAt : 0;
+        _demuxTimelineRelative = resumeAt > 1 ? true : null;
         _holdTransport = !_pendingIsHls;
-        _holdWallArmed = false;
-        if (_holdTransport)
-            _holdStartedUtc = DateTime.UtcNow;
-        _pendingPreciseStart = !_pendingIsHls;
+        _pendingPreciseStart = false;
         _pendingUrl = url;
         TearDownHlsAudioEngine();
         _firstFrameRaised = false;
@@ -1190,17 +1371,6 @@ internal sealed class WindowsVlcVideoPlayer : IDisposable
             if (!_active)
                 return;
 
-            // Arm wall-clock only once demux is live so HLS does not fake a
-            // running timer over a frozen frame.
-            if (_holdTransport && !_holdWallArmed)
-            {
-                if (!_pendingIsHls || (_player is { Length: > 0 }))
-                {
-                    _holdWallArmed = true;
-                    _holdStartedUtc = DateTime.UtcNow;
-                }
-            }
-
             ApplyAspectCore();
             ApplyOutputLevel();
             if (_pendingIsHls && _player is { Length: > 0 })
@@ -1209,8 +1379,8 @@ internal sealed class WindowsVlcVideoPlayer : IDisposable
                 BindPendingTracksIfNeeded();
 
             // Direct Play: Playing fires before D3D11 presents (HEVC seek/buffer).
-            // Clearing the veil here shows a black surface with a running overlay clock.
-            // Wait for OnVout / OnD3d11FirstPresented for the visual first frame.
+            // Wait for OnVout / OnD3d11FirstPresented before clearing the veil / soft-sub clock
+            // so cues do not race ahead of the picture.
             if (_pendingIsHls)
                 RaiseFirstFrame();
             else
@@ -1223,12 +1393,12 @@ internal sealed class WindowsVlcVideoPlayer : IDisposable
     private void ScheduleDirectFirstFrameFallback()
     {
         var playId = _clockTickId;
-        PostDelayed(8_000, () =>
+        PostDelayed(2_500, () =>
         {
             if (!_active || _firstFrameRaised || playId != _clockTickId)
                 return;
 
-            VlcPlayerLog.Warn("vlc direct first-frame fallback after 8s");
+            VlcPlayerLog.Warn("vlc direct first-frame fallback after 2.5s");
             RaiseFirstFrame();
             StartClockTick();
         });
@@ -1254,17 +1424,24 @@ internal sealed class WindowsVlcVideoPlayer : IDisposable
             if (!_active)
                 return;
 
+            _directSeekReopenBusy = false;
+            var pendingSeek = _coalescedDirectSeekSeconds;
+            _coalescedDirectSeekSeconds = null;
+
             var detail = string.IsNullOrEmpty(_lastNativeError)
                 ? (_media?.Mrl ?? "vlc-error")
                 : _lastNativeError;
             VlcPlayerLog.Warn("vlc error mrl=" + VlcPlayerLog.SummarizeUrl(_media?.Mrl) + " native=" + detail);
             EncounteredError?.Invoke(detail);
+
+            if (pendingSeek is double retry && !_pendingIsHls)
+                SeekDirectReopen(retry);
         });
 
     private void OnTimeChanged(object? sender, MediaPlayerTimeChangedEventArgs e)
     {
-        // Direct Play overlay clock is the playing wall-clock (Time/Position are
-        // unreliable after :start-time reopen). Still use TimeChanged for HLS resume.
+        // Direct Play overlay clock uses epoch-aware Time/Position (see ReadVlcSeconds).
+        // TimeChanged only drives HLS resume.
         if (_pendingIsHls && !_hlsResumeApplied)
         {
             Post(() =>
@@ -1361,6 +1538,7 @@ internal sealed class WindowsVlcVideoPlayer : IDisposable
         StartClockTick();
         if (!TryApplyHlsResume())
             ScheduleHlsResumeRetry();
+        TryDrainCoalescedDirectSeek();
     }
 
     /// <summary>
@@ -1494,9 +1672,6 @@ internal sealed class WindowsVlcVideoPlayer : IDisposable
                 seconds = VlcTime.FollowAfterReopen(
                     seconds,
                     _pinnedPosition,
-                    _holdStartedUtc,
-                    _rate,
-                    _firstFrameRaised && _holdWallArmed,
                     ref _holdTransport);
             }
 
@@ -1561,20 +1736,17 @@ internal sealed class WindowsVlcVideoPlayer : IDisposable
         if (_player.Length > 0)
             NoteVlcTimeScale(_player.Length);
 
-        // Prefer Position * duration: after :start-time, Position stays on the
-        // absolute media timeline while Time often restarts at 0 (relative).
         var duration = _pinnedDuration > 1 ? _pinnedDuration : ReadVlcDurationSeconds();
-        if (duration > 1 && _player.Position > 0)
-        {
-            var fromPos = _player.Position * duration;
-            if (fromPos >= 0.5)
-                return fromPos;
-        }
+        var timeSeconds = _player.Time > 0
+            ? VlcTime.ToSeconds(_player.Time, _ticksPerSecond)
+            : 0;
 
-        if (_player.Time > 0)
-            return VlcTime.ToSeconds(_player.Time, _ticksPerSecond);
-
-        return 0;
+        return VlcTime.MapDemuxSeconds(
+            timeSeconds,
+            _player.Position,
+            duration,
+            _timelineEpochSeconds,
+            ref _demuxTimelineRelative);
     }
 
     private void PublishTransportFromPlayer()
@@ -1592,9 +1764,6 @@ internal sealed class WindowsVlcVideoPlayer : IDisposable
             seconds = VlcTime.FollowAfterReopen(
                 seconds,
                 _pinnedPosition,
-                _holdStartedUtc,
-                _rate,
-                firstFrameSeen: _firstFrameRaised && _holdWallArmed,
                 ref _holdTransport);
         }
 
@@ -1729,12 +1898,15 @@ internal sealed class WindowsVlcVideoPlayer : IDisposable
             var ordinal = _pendingAudioOrdinal;
             if (!VlcTracks.TryResolve(tracks, ordinal, null, null, out var index, out var track))
             {
-                if (VlcTracks.SelectedId(_player, TrackType.Audio) is not null)
-                    return;
+                // ES list not ready yet after reopen - retry, never force track 0
+                // (that dropped the user's audio language on every Direct Play seek).
+                if (_audioBindAttempts < 16)
+                {
+                    _audioBindAttempts++;
+                    PostDelayed(250, BindPendingTracksIfNeeded);
+                }
 
-                index = 0;
-                track = tracks[0];
-                _pendingAudioOrdinal = 0;
+                return;
             }
 
             if (track.Selected)

@@ -80,39 +80,74 @@ internal static class VlcTime
     }
 
     /// <summary>
-    /// After a Direct Play reopen/seek, VLC often reports <c>Time</c> from 0 while
-    /// <c>:start-time</c> already placed the picture. Prefer demux-relative Time
-    /// (pin + Time) so sidecar cues stay locked to audio; wall-clock is only a
-    /// fallback while Time is still 0.
+    /// After a Direct Play reopen/seek with <c>:start-time</c>, demux can still report 0
+    /// briefly. Freeze soft-sub cues at the pin until <see cref="MapDemuxSeconds"/> catches up.
     /// </summary>
     public static double FollowAfterReopen(
         double reportedSeconds,
         double pinnedSeconds,
-        DateTime holdStartedUtc,
-        double rate,
-        bool firstFrameSeen,
         ref bool hold)
     {
         if (!hold)
             return reportedSeconds;
 
-        if (!firstFrameSeen)
-            return Math.Max(0, pinnedSeconds);
-
-        // Absolute media timeline caught up near the seek pin.
-        if (reportedSeconds >= pinnedSeconds - 2.5)
+        if (reportedSeconds >= pinnedSeconds - 2.5 && reportedSeconds > 1)
         {
             hold = false;
             return reportedSeconds;
         }
 
-        // Relative timeline after :start-time: Time restarts near 0 and tracks demux/audio.
-        if (reportedSeconds > 0.05)
-            return pinnedSeconds + reportedSeconds;
+        return Math.Max(0, pinnedSeconds);
+    }
 
-        // Time still 0: brief wall-clock until the demux ticks.
-        var speed = rate > 0 ? rate : 1;
-        return pinnedSeconds + Math.Max(0, (DateTime.UtcNow - holdStartedUtc).TotalSeconds) * speed;
+    /// <summary>
+    /// LibVLC 4 after <c>:start-time</c> may report Time/Position over the remaining span
+    /// (relative) or over the full media (absolute). Soft-sub cues must keep a sticky mapping
+    /// for the whole open: treating relative Position as absolute
+    /// (<c>Position * fullDuration</c>) makes cues run fast (rate = duration/remaining).
+    /// Default after <c>:start-time</c> is relative; absolute Time near the epoch locks absolute.
+    /// </summary>
+    public static double MapDemuxSeconds(
+        double timeSeconds,
+        double position01,
+        double durationSeconds,
+        double epochSeconds,
+        ref bool? demuxRelative)
+    {
+        var epoch = epochSeconds > 1 ? epochSeconds : 0;
+        var duration = durationSeconds > 1 ? durationSeconds : 0;
+
+        if (epoch > 1)
+            demuxRelative ??= true;
+
+        if (timeSeconds > 0)
+        {
+            if (epoch <= 1)
+                return timeSeconds;
+
+            // Absolute demux Time near the pin: lock absolute (overrides default relative).
+            if (timeSeconds >= epoch - 2.5)
+            {
+                demuxRelative = false;
+                return timeSeconds;
+            }
+
+            return demuxRelative is not false ? epoch + timeSeconds : timeSeconds;
+        }
+
+        if (duration <= 1 || position01 <= 0)
+            return 0;
+
+        if (epoch <= 1)
+            return position01 * duration;
+
+        if (demuxRelative is not false)
+        {
+            var remaining = Math.Max(1, duration - epoch);
+            return epoch + position01 * remaining;
+        }
+
+        return position01 * duration;
     }
 
     public static bool TryAcceptDuration(double reportedSeconds, double knownSeconds, out double seconds)

@@ -1,4 +1,5 @@
 #if WINDOWS
+using System.Globalization;
 using K7.Clients.MAUI.Playback;
 using K7.Clients.MAUI.Platforms.Windows;
 using K7.Clients.MAUI.Platforms.Windows.Services;
@@ -180,7 +181,10 @@ public partial class BlazorPage
             ResolveNativePlayerAuthorizationHeader(),
             startSeconds,
             ResolveVlcAudioOrdinal(),
-            ResolveVlcSubtitleOrdinal(),
+            // Text SRT/VTT: overlay owns paint - never pass a VLC :sub-track ordinal.
+            _playerService.SelectedSubtitleTrack is { IsTextBased: true }
+                ? null
+                : ResolveVlcSubtitleOrdinal(),
             hlsAudioTrackIndex: null,
             _playerService.Duration);
         if (_playerService.SelectedSubtitleTrack is { IsTextBased: true })
@@ -197,7 +201,7 @@ public partial class BlazorPage
             : StreamingSourceKind.IsHls(source.MimeType, source.Url)
                 ? "hls"
                 : "direct";
-        if (startSeconds > 1 && kind is not "hls")
+        if (startSeconds > 1)
             _playerService.CurrentTime = startSeconds;
 
         _playerService.PlaybackState = Server.Domain.Enums.PlaybackState.Buffering;
@@ -530,12 +534,19 @@ public partial class BlazorPage
         return index >= 0 ? index : null;
     }
 
+    /// <summary>
+    /// VLC :sub-track ordinal among image/PGS ES only. Text tracks are overlay-owned
+    /// and must not inflate the ordinal into VLC's Text list.
+    /// </summary>
     private int? ResolveVlcSubtitleOrdinal()
     {
-        if (_playerService.SelectedSubtitleTrack is not { } sub)
+        if (_playerService.SelectedSubtitleTrack is not { } sub || sub.IsTextBased)
             return null;
 
-        var ordered = _playerService.SubtitleTracks.OrderBy(t => t.Index).ToList();
+        var ordered = _playerService.SubtitleTracks
+            .Where(t => !t.IsTextBased)
+            .OrderBy(t => t.Index)
+            .ToList();
         var index = ordered.FindIndex(t => t.Index == sub.Index);
         return index >= 0 ? index : null;
     }
@@ -545,21 +556,27 @@ public partial class BlazorPage
         if (!IsWindowsVlcActive)
             return;
 
-        var ordinal = 0;
-        AudioFileTrackDto? catalog = null;
-        if (trackName.StartsWith("audio-", StringComparison.OrdinalIgnoreCase)
-            && int.TryParse(trackName.AsSpan(6), out var fileStreamIndex))
+        if (!trackName.StartsWith("audio-", StringComparison.OrdinalIgnoreCase)
+            || !int.TryParse(trackName.AsSpan(6), out var fileStreamIndex))
         {
-            var ordered = _playerService.AudioTracks.OrderBy(t => t.Index).ToList();
-            var index = ordered.FindIndex(t => t.Index == fileStreamIndex);
-            if (index >= 0)
-            {
-                ordinal = index;
-                catalog = ordered[index];
-            }
+            VlcPlayerLog.Warn("vlc audio switch bad slug=" + trackName);
+            return;
         }
 
-        if (_vlcPlayer!.TrySelectAudio(ordinal, catalog?.Language, catalog?.Name))
+        var ordered = _playerService.AudioTracks.OrderBy(t => t.Index).ToList();
+        var index = ordered.FindIndex(t => t.Index == fileStreamIndex);
+        if (index < 0)
+        {
+            VlcPlayerLog.Warn(
+                "vlc audio switch missing stream="
+                + fileStreamIndex.ToString(CultureInfo.InvariantCulture));
+            if (attempt < 5)
+                ScheduleVlcTrackRetry(() => TrySwitchVlcAudioTrack(trackName, attempt + 1));
+            return;
+        }
+
+        var catalog = ordered[index];
+        if (_vlcPlayer!.TrySelectAudio(index, catalog.Language, catalog.Name))
             return;
 
         if (attempt < 5)
@@ -585,25 +602,30 @@ public partial class BlazorPage
             return;
         }
 
-        int? ordinal = null;
-        string? language = null;
-        string? name = null;
-        if (int.TryParse(slug.AsSpan(4), out var fileStreamIndex))
+        if (!slug.StartsWith("sub-", StringComparison.OrdinalIgnoreCase)
+            || !int.TryParse(slug.AsSpan(4), out var fileStreamIndex))
         {
-            var subtitleTracks = _playerService.SubtitleTracks.OrderBy(t => t.Index).ToList();
-            for (var idx = 0; idx < subtitleTracks.Count; idx++)
-            {
-                if (subtitleTracks[idx].Index == fileStreamIndex)
-                {
-                    ordinal = idx;
-                    language = subtitleTracks[idx].Language;
-                    name = subtitleTracks[idx].Name;
-                    break;
-                }
-            }
+            VlcPlayerLog.Warn("vlc sub switch bad slug=" + slug);
+            return;
         }
 
-        if (_vlcPlayer!.TrySelectSubtitle(ordinal, language, name))
+        var imageTracks = _playerService.SubtitleTracks
+            .Where(t => !t.IsTextBased)
+            .OrderBy(t => t.Index)
+            .ToList();
+        var index = imageTracks.FindIndex(t => t.Index == fileStreamIndex);
+        if (index < 0)
+        {
+            VlcPlayerLog.Warn(
+                "vlc sub switch missing stream="
+                + fileStreamIndex.ToString(CultureInfo.InvariantCulture));
+            if (attempt < 5)
+                ScheduleVlcTrackRetry(() => TrySwitchVlcSubtitleTrack(slug, attempt + 1));
+            return;
+        }
+
+        var catalog = imageTracks[index];
+        if (_vlcPlayer!.TrySelectSubtitle(index, catalog.Language, catalog.Name))
             return;
 
         if (attempt < 5)
