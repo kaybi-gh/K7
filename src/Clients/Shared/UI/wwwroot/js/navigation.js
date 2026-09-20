@@ -721,6 +721,12 @@ var SpatialNav = (function () {
     // Used by handleEnter and handleTvRemoteSelect so both paths stay in sync on TV.
     function toggleActivatableEdit(el) {
         if (!el || !isActivatable(el)) return false;
+        // Block re-entering seekbar edit from key-repeat right after a commit.
+        if (el.classList && el.classList.contains('seekbar-container')
+            && window.K7 && K7.SeekBar && K7.SeekBar._commitLock) {
+            resumeAfterSeekBarCommit();
+            return false;
+        }
         if (tryActivateOpenSearchSelectHint(el)) return true;
         if (isEditing(el)) {
             stopEditing(el);
@@ -786,10 +792,115 @@ var SpatialNav = (function () {
         return overlay.classList.contains('controls-hidden');
     }
 
-    function getVideoSeekBarScrubbing() {
+    function getSeekBarScrubbing() {
+        var active = document.activeElement;
+
+        // Focus on pause/stop/menu: abandon leftover scrub, never steal Enter.
+        if (active && isNonSeekBarControl(active)) {
+            if (window.K7 && K7.SeekBar && K7.SeekBar._scrub)
+                K7.SeekBar.clearLocalScrub(null);
+            clearStaleSeekBarEditing();
+            return null;
+        }
+
+        if (window.K7 && K7.SeekBar && K7.SeekBar._scrub && K7.SeekBar._scrub.el
+            && K7.SeekBar._scrub.el.isConnected)
+            return K7.SeekBar._scrub.el;
+
+        var editingRoot = active && active.closest
+            ? active.closest('.seekbar-container[data-sn-editing]')
+            : null;
+        if (editingRoot)
+            return editingRoot;
+
+        // Remote: focus may sit on panel chrome while seekbar still has data-sn-editing.
+        var remotePanel = document.querySelector('.remote-control-panel');
+        if (remotePanel && active && remotePanel.contains(active)) {
+            var remoteEdit = remotePanel.querySelector('.seekbar-container[data-sn-editing]');
+            if (remoteEdit)
+                return remoteEdit;
+        }
+
+        return null;
+    }
+
+    function isNonSeekBarControl(el) {
+        if (!el || !el.closest) return false;
+        if (el.closest('.seekbar-container')) return false;
+        if (el.closest('button, a, [role="button"], [role="switch"], [role="menuitem"], .k7-icon-btn, .k7-btn, .focusable'))
+            return true;
+        return false;
+    }
+
+    // Drop stale seekbar edit attrs anywhere so a leftover cannot block Enter.
+    function clearStaleSeekBarEditing() {
+        var cleared = false;
+        if (window.K7 && K7.SeekBar && K7.SeekBar._scrub) {
+            K7.SeekBar.clearLocalScrub(null);
+            cleared = true;
+        }
+        var nodes = document.querySelectorAll(
+            '.seekbar-container[data-sn-editing], .seekbar-container.scrubbing, .seekbar-container[data-scrub-time]');
+        for (var i = 0; i < nodes.length; i++) {
+            var el = nodes[i];
+            el.removeAttribute('data-sn-editing');
+            el.removeAttribute('data-scrub-time');
+            el.classList.remove('scrubbing');
+            if (window.K7 && K7.SeekBar) K7.SeekBar.removeScrubPreviewChildren(el);
+            cleared = true;
+        }
+        if (cleared && window.SpatialNavigation) SpatialNavigation.resume();
+        return cleared;
+    }
+
+    function resumeAfterSeekBarCommit() {
+        if (window.K7) {
+            K7._suppressEnterUntilKeyUp = false;
+            K7._swallowNextEnterClick = false;
+        }
+        if (window.K7 && K7.tvDpadHoldStop) K7.tvDpadHoldStop(false);
+        if (window.SpatialNavigation) {
+            try { SpatialNavigation.resume(); } catch (ex) { }
+            try { SpatialNavigation.makeFocusable(); } catch (ex2) { }
+        }
+    }
+
+    function invokeSeekBarCommit(seekbar, scrubTime) {
+        if (!seekbar) return false;
+        var inst = window.K7 && K7.SeekBar && K7.SeekBar._instances.get(seekbar);
+        var dotNetRef = (inst && inst.dotNetRef) || seekbar._k7SeekBarDotNet;
+        if (!dotNetRef)
+            return false;
+        try {
+            if (dotNetRef.invokeMethodAsync)
+                dotNetRef.invokeMethodAsync('OnEditCommitAt', scrubTime);
+            else if (dotNetRef.invokeMethod)
+                dotNetRef.invokeMethod('OnEditCommitAt', scrubTime);
+            return true;
+        } catch (ex) {
+            return false;
+        }
+    }
+
+    // Prefer focused / editing seekbar, then remote panel, then video overlay.
+    function resolveSeekBarForScrub() {
+        var active = document.activeElement;
+        if (active && active.classList && active.classList.contains('seekbar-container'))
+            return active;
+        if (active && active.closest) {
+            var parentBar = active.closest('.seekbar-container');
+            if (parentBar) return parentBar;
+        }
+        var scrubbing = getSeekBarScrubbing();
+        if (scrubbing) return scrubbing;
+        var remote = document.querySelector('.remote-control-panel .seekbar-container');
+        if (remote) return remote;
         var overlay = document.querySelector('.video-controls-overlay');
-        if (!overlay) return null;
-        return overlay.querySelector('.seekbar-container[data-sn-editing], .seekbar-container.scrubbing');
+        return overlay ? overlay.querySelector('.seekbar-container') : null;
+    }
+
+    function isRemoteControlSeekBar(seekbar) {
+        return !!(seekbar && seekbar.closest && seekbar.closest('.remote-control-panel'));
     }
 
     function setVideoOverlayScrubbingClass(active) {
@@ -806,62 +917,110 @@ var SpatialNav = (function () {
 
     // Commit/cancel even when focus drifted off the seekbar (common on Android TV WebView).
     function commitVideoSeekBarScrubIfAny() {
-        var seekbar = getVideoSeekBarScrubbing();
-        if (!seekbar) return false;
-        try { seekbar.focus({ preventScroll: true }); } catch (ex) { }
-        var scrubTime = (window.K7 && K7.SeekBar) ? K7.SeekBar.getScrubTime(seekbar) : 0;
-        stopEditing(seekbar);
-        if (window.K7 && K7.SeekBar) K7.SeekBar.clearLocalScrub(seekbar);
-        setVideoOverlayScrubbingClass(false);
-        if (window.K7 && K7.tvDpadHoldStop) K7.tvDpadHoldStop(false);
-
-        // Call the JavascriptInterface directly. K7.tvNativeSeek may be missing if the
-        // bridge inject raced; never claim success without a real seek.
-        var nativeOk = false;
-        try {
-            if (window.K7TvVideo && typeof K7TvVideo.seek === 'function') {
-                K7TvVideo.seek(scrubTime);
-                nativeOk = true;
-            } else if (window.K7 && typeof K7.tvNativeSeek === 'function') {
-                K7.tvNativeSeek(scrubTime);
-                nativeOk = true;
-            }
-        } catch (exSeek) {
+        var seekbar = getSeekBarScrubbing();
+        if (!seekbar) {
+            clearStaleSeekBarEditing();
+            return false;
         }
 
-        if (nativeOk) {
-            var inst = window.K7 && K7.SeekBar && K7.SeekBar._instances.get(seekbar);
-            try {
-                if (inst && inst.dotNetRef) {
-                    if (inst.dotNetRef.invokeMethod) inst.dotNetRef.invokeMethod('OnEditCancelSoft');
-                    else if (inst.dotNetRef.invokeMethodAsync) inst.dotNetRef.invokeMethodAsync('OnEditCancelSoft');
-                }
-            } catch (exSoft) { }
-            if (window.K7 && K7.hideVideoControlsOverlay) K7.hideVideoControlsOverlay();
-            invokeCallbackAsync(_videoPlayerRemoteRef, 'OnRemoteOverlayHidden');
+        var scrubTime = (window.K7 && K7.SeekBar) ? K7.SeekBar.getScrubTime(seekbar) : 0;
+
+        try { seekbar.focus({ preventScroll: true }); } catch (ex) { }
+        stopEditing(seekbar);
+        setVideoOverlayScrubbingClass(false);
+        if (window.K7 && K7.tvDpadHoldStop) K7.tvDpadHoldStop(false);
+        if (window.K7 && K7.SeekBar) K7.SeekBar.clearLocalScrub(seekbar);
+
+        // Debounce double DotNet invoke only - never skip resume.
+        var skipDotNet = !!(window.K7 && K7.SeekBar && K7.SeekBar._commitLock);
+        if (window.K7 && K7.SeekBar) {
+            K7.SeekBar._commitLock = true;
+            setTimeout(function () { K7.SeekBar._commitLock = false; }, 400);
+        }
+
+        if (isRemoteControlSeekBar(seekbar)) {
+            if (!skipDotNet)
+                invokeSeekBarCommit(seekbar, scrubTime);
+            clearStaleSeekBarEditing();
+            resumeAfterSeekBarCommit();
+            try { seekbar.focus({ preventScroll: true }); } catch (exFocus) { }
             return true;
         }
 
-        // Fallback: SeekBar sn:editcommit -> DotNet OnEditCommitAt -> afterScrubCommit.
-        seekbar.dispatchEvent(new CustomEvent('sn:editcommit', { bubbles: false }));
+        if (!skipDotNet) {
+            var nativeOk = false;
+            try {
+                if (window.K7TvVideo && typeof K7TvVideo.seek === 'function') {
+                    K7TvVideo.seek(scrubTime);
+                    nativeOk = true;
+                } else if (window.K7 && typeof K7.tvNativeSeek === 'function') {
+                    K7.tvNativeSeek(scrubTime);
+                    nativeOk = true;
+                }
+            } catch (exSeek) {
+            }
+
+            if (nativeOk) {
+                var inst = window.K7 && K7.SeekBar && K7.SeekBar._instances.get(seekbar);
+                try {
+                    if (inst && inst.dotNetRef) {
+                        if (inst.dotNetRef.invokeMethod) inst.dotNetRef.invokeMethod('OnEditCancelSoft');
+                        else if (inst.dotNetRef.invokeMethodAsync) inst.dotNetRef.invokeMethodAsync('OnEditCancelSoft');
+                    }
+                } catch (exSoft) { }
+                if (window.K7 && K7.hideVideoControlsOverlay) K7.hideVideoControlsOverlay();
+                invokeCallbackAsync(_videoPlayerRemoteRef, 'OnRemoteOverlayHidden');
+                clearStaleSeekBarEditing();
+                resumeAfterSeekBarCommit();
+                return true;
+            }
+
+            invokeSeekBarCommit(seekbar, scrubTime);
+        }
+
+        clearStaleSeekBarEditing();
+        resumeAfterSeekBarCommit();
         return true;
     }
 
     // Returns "" | "soft" | "hard". soft = exit edit, keep overlay. hard = cancel scrub (hide chrome).
     function cancelVideoSeekBarScrubIfAny() {
         var overlay = document.querySelector('.video-controls-overlay');
-        var seekbar = getVideoSeekBarScrubbing();
+        var seekbar = getSeekBarScrubbing();
+        // Allow Escape to clear leftover edit attrs even when focus left the seekbar.
         if (!seekbar && overlay)
             seekbar = overlay.querySelector('.seekbar-container[data-sn-editing]');
-        if (!seekbar) return '';
+        if (!seekbar) {
+            var remoteEditing = document.querySelector('.remote-control-panel .seekbar-container[data-sn-editing]');
+            if (remoteEditing) seekbar = remoteEditing;
+        }
+        if (!seekbar) {
+            clearStaleSeekBarEditing();
+            return '';
+        }
 
         // stepLocal sets _scrub; OK-only edit must not initLocalScrub (see SeekBar.init).
         var hadLocalScrub = !!(window.K7 && K7.SeekBar && K7.SeekBar._scrub && K7.SeekBar._scrub.el === seekbar);
+        var remote = isRemoteControlSeekBar(seekbar);
 
         stopEditing(seekbar);
         if (window.K7 && K7.SeekBar) K7.SeekBar.clearLocalScrub(seekbar);
         setVideoOverlayScrubbingClass(false);
         if (window.K7 && K7.tvDpadHoldStop) K7.tvDpadHoldStop();
+        clearStaleSeekBarEditing();
+
+        if (remote) {
+            var instRemote = window.K7 && K7.SeekBar && K7.SeekBar._instances.get(seekbar);
+            try {
+                if (instRemote && instRemote.dotNetRef) {
+                    if (instRemote.dotNetRef.invokeMethod) instRemote.dotNetRef.invokeMethod('OnEditCancelSoft');
+                    else if (instRemote.dotNetRef.invokeMethodAsync) instRemote.dotNetRef.invokeMethodAsync('OnEditCancelSoft');
+                }
+            } catch (exR) { }
+            try { seekbar.focus({ preventScroll: true }); } catch (ex2) { }
+            if (window.SpatialNavigation) SpatialNavigation.resume();
+            return hadLocalScrub ? 'hard' : 'soft';
+        }
 
         if (hadLocalScrub) {
             // Hide in pure JS - do not wait for DotNet OnEditCancel / afterScrubCommit.
@@ -1404,6 +1563,11 @@ var SpatialNav = (function () {
             return;
         }
 
+        // Remote panel outside seekbar edit must never stay SN-paused.
+        var remotePanel = document.querySelector('.remote-control-panel');
+        if (remotePanel && !remotePanel.querySelector('.seekbar-container[data-sn-editing]'))
+            resumeAfterSeekBarCommit();
+
         // Long-press on [data-longpress]: block native Enter navigation on the <a> itself.
         // On TV, handleMediaCardLongPressKeyDown already owns timing and returns before this
         // runs. On desktop/mobile, MediaCard's own OnKeyDown/OnKeyUp own the short vs long
@@ -1421,7 +1585,7 @@ var SpatialNav = (function () {
             return;
         }
 
-        if (toggleActivatableEdit(active)) {
+        if (toggleActivatableEdit(active.closest('[data-sn-activatable]') || active)) {
             e.preventDefault();
             e.stopImmediatePropagation();
             return;
@@ -1436,27 +1600,34 @@ var SpatialNav = (function () {
             return;
         }
 
-        var tag = (active.tagName || '').toLowerCase();
-        var role = active.getAttribute('role') || '';
+        // Focus often sits on SVG/span inside K7IconButton - activate the real control.
+        var control = (active.closest && active.closest('button, a, [role="button"], [role="switch"]')) || active;
+        var tag = (control.tagName || '').toLowerCase();
+        var role = control.getAttribute('role') || '';
         if (tag === 'button' || tag === 'a') {
-            if (document.documentElement.classList.contains('platform-tv') && getLongPressContainer(active)) {
+            if (document.documentElement.classList.contains('platform-tv') && getLongPressContainer(control)) {
                 e.preventDefault();
                 return;
             }
+            if (control !== active) {
+                control.click();
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                return;
+            }
             // Native button/a elements receive click from Enter/DpadCenter natively.
-            // Don't synthesize - DpadCenter fires both keydown AND click on Android TV,
-            // causing double-fire if we also call .click() here.
             return;
         }
         if (role === 'button' || role === 'switch') {
-            active.click();
+            control.click();
             e.preventDefault();
             e.stopImmediatePropagation();
             return;
         }
         // Fallback: any focusable element (e.g. table rows) gets click on Enter
-        if (active.classList.contains('focusable')) {
-            active.click();
+        var focusable = (active.closest && active.closest('.focusable')) || active;
+        if (focusable.classList && focusable.classList.contains('focusable')) {
+            focusable.click();
             e.preventDefault();
             e.stopImmediatePropagation();
         }
@@ -2011,6 +2182,16 @@ var SpatialNav = (function () {
             }
             // When an activatable element is in editing mode, let the event through
             if (el && isActivatable(el) && isEditing(el)) {
+                // Post-commit lock: Arrow key-repeat must not keep scrubbing / keep SN paused.
+                if (el.classList.contains('seekbar-container')
+                    && window.K7 && K7.SeekBar && K7.SeekBar._commitLock) {
+                    stopEditing(el);
+                    if (window.K7 && K7.SeekBar) K7.SeekBar.clearLocalScrub(el);
+                    if (window.SpatialNavigation) SpatialNavigation.resume();
+                    e.preventDefault();
+                    e.stopImmediatePropagation();
+                    return;
+                }
                 if (window.SpatialNavigation) SpatialNavigation.pause();
                 // Seekbar: drive scrub via JS->.NET so TV key-repeat does not wait on Blazor @onkeydown.
                 if (el.classList.contains('seekbar-container')
@@ -2667,8 +2848,7 @@ var SpatialNav = (function () {
         var root = rootSelector ? document.querySelector(rootSelector) : document;
         if (!root) return false;
         if (root.querySelector('[data-sn-editing]')) return true;
-        // JS-local seekbar scrub may run briefly before data-sn-editing is set.
-        if (root.querySelector('.seekbar-container.scrubbing')) return true;
+        // Active JS scrub only - Blazor leftover `.scrubbing` must not count as editing.
         if (window.K7 && K7.SeekBar && K7.SeekBar._scrub && K7.SeekBar._scrub.el
             && root.contains(K7.SeekBar._scrub.el))
             return true;
@@ -3342,7 +3522,7 @@ K7.setNativePlayerActive = function (active, windowsWebVideo) {
     var useWindowsWebVideo = !!active && !!windowsWebVideo;
     document.documentElement.classList.toggle('windows-web-video', useWindowsWebVideo);
     document.body.classList.toggle('windows-web-video', useWindowsWebVideo);
-    if (!useWindowsWebVideo) {
+    if (!useWindowsWebVideo && active) {
         if (window.blankK7VideoSurfaces)
             window.blankK7VideoSurfaces();
         document.querySelectorAll('.video-container, .video-js, .vjs-error-display, .vjs-modal-dialog, .vjs-poster, video').forEach(function (node) {
@@ -3355,6 +3535,14 @@ K7.setNativePlayerActive = function (active, windowsWebVideo) {
     if (!active) {
         document.documentElement.classList.remove('native-player-playing');
         document.body.classList.remove('native-player-playing');
+        // Native path stamped inline display:none on .video-container. Clear it or
+        // RemoteControlPanel (and the next local player shell) stay invisible.
+        document.querySelectorAll('.video-container, .video-js, .vjs-error-display, .vjs-modal-dialog, .vjs-poster, video').forEach(function (node) {
+            node.style.removeProperty('display');
+            node.style.removeProperty('visibility');
+            node.style.removeProperty('opacity');
+            node.style.removeProperty('background');
+        });
         requestAnimationFrame(function () {
             var app = document.getElementById('app');
             if (app) app.style.removeProperty('visibility');
@@ -4701,6 +4889,7 @@ K7.SeekBar = {
     _instances: new WeakMap(),
     _scrub: null,
     _afterScrubCommitBusy: false,
+    _commitLock: false,
     directChild: function (el, className) {
         if (!el || !el.children) return null;
         for (var i = 0; i < el.children.length; i++) {
@@ -4720,23 +4909,36 @@ K7.SeekBar = {
     },
     init: function (el, dotNetRef) {
         if (!el || typeof el.addEventListener !== 'function') return;
+        var existing = K7.SeekBar._instances.get(el);
+        // Same node + same DotNet ref: already wired (progress re-renders call init often).
+        if (existing && existing.dotNetRef === dotNetRef) {
+            el._k7SeekBarDotNet = dotNetRef;
+            return;
+        }
+        if (existing && existing.handlers) {
+            el.removeEventListener('sn:editstart', existing.handlers.start);
+            el.removeEventListener('sn:editcommit', existing.handlers.commit);
+            el.removeEventListener('sn:editcancel', existing.handlers.cancel);
+            K7.SeekBar._instances.delete(el);
+        }
         var handlers = {
             start: function () {
                 try {
                     if (dotNetRef.invokeMethod) dotNetRef.invokeMethod('OnEditStart');
                     else dotNetRef.invokeMethodAsync('OnEditStart');
                 } catch (ex) { }
-                // Do not initLocalScrub until the first L/R step. OK-only edit must leave
-                // _scrub null so Escape can soft-cancel without afterScrubCommit / hide.
             },
             commit: function () {
+                if (K7.SeekBar._commitLock) return;
                 var scrubTime = K7.SeekBar.getScrubTime(el);
                 K7.SeekBar.clearLocalScrub(el);
+                K7.SeekBar._commitLock = true;
+                setTimeout(function () { K7.SeekBar._commitLock = false; }, 600);
                 try {
                     if (dotNetRef.invokeMethodAsync)
                         dotNetRef.invokeMethodAsync('OnEditCommitAt', scrubTime);
-                    else
-                        dotNetRef.invokeMethodAsync('OnEditCommit');
+                    else if (dotNetRef.invokeMethod)
+                        dotNetRef.invokeMethod('OnEditCommitAt', scrubTime);
                 } catch (ex) { }
             },
             cancel: function () {
@@ -4747,6 +4949,7 @@ K7.SeekBar = {
         el.addEventListener('sn:editstart', handlers.start);
         el.addEventListener('sn:editcommit', handlers.commit);
         el.addEventListener('sn:editcancel', handlers.cancel);
+        el._k7SeekBarDotNet = dotNetRef;
         K7.SeekBar._instances.set(el, { handlers: handlers, dotNetRef: dotNetRef });
     },
     dispose: function (el) {
@@ -4781,33 +4984,106 @@ K7.SeekBar = {
             overlay.classList.remove('controls-hidden');
             overlay.classList.add('controls-visible');
         }
-        // Drop any Blazor live-position preview nodes so only the scrub pair remains.
-        K7.SeekBar.removeDirectChildren(el, 'thumb');
-        K7.SeekBar.removeDirectChildren(el, 'thumbnail');
+        // Hide Blazor live-position nodes (do not remove - Blazor owns them).
+        K7.SeekBar.hideLivePositionPreviews(el);
         K7.SeekBar.ensurePreview(el);
         K7.SeekBar.applyPreview(el, current, duration);
     },
     clearLocalScrub: function (el) {
-        if (K7.SeekBar._scrub && (!el || K7.SeekBar._scrub.el === el)) {
+        // Always drop the scrub session. Matching on el identity failed when Blazor
+        // reused/replaced the node and left _scrub dangling - every Enter then
+        // re-entered commitVideoSeekBarScrubIfAny and blocked pause/stop/menu.
+        var scrubEl = K7.SeekBar._scrub && K7.SeekBar._scrub.el;
+        if (K7.SeekBar._scrub) {
             if (K7.SeekBar._scrub.decayTimer) clearTimeout(K7.SeekBar._scrub.decayTimer);
             K7.SeekBar._scrub = null;
         }
-        if (el) {
-            el.removeAttribute('data-scrub-time');
-            el.classList.remove('scrubbing');
-            K7.SeekBar.removeDirectChildren(el, 'thumb');
-            K7.SeekBar.removeDirectChildren(el, 'thumbnail');
-            var overlay = el.closest('.video-controls-overlay');
+        var targets = [];
+        if (el) targets.push(el);
+        if (scrubEl && scrubEl !== el) targets.push(scrubEl);
+        for (var t = 0; t < targets.length; t++) {
+            var node = targets[t];
+            if (!node) continue;
+            node.removeAttribute('data-scrub-time');
+            node.removeAttribute('data-sn-editing');
+            node.classList.remove('scrubbing');
+            K7.SeekBar.removeScrubPreviewChildren(node);
+            K7.SeekBar.restoreLivePositionPreviews(node);
+            var overlay = node.closest('.video-controls-overlay');
             if (overlay) overlay.classList.remove('seekbar-scrubbing');
         }
     },
+    removeScrubPreviewChildren: function (el) {
+        if (!el || !el.children) return;
+        for (var i = el.children.length - 1; i >= 0; i--) {
+            var child = el.children[i];
+            if (!child || !child.classList) continue;
+            // Only JS-owned scrub chrome. Never touch Blazor .thumb / .thumbnail.
+            if ((child.classList.contains('thumb') || child.classList.contains('thumbnail'))
+                && child.hasAttribute('data-scrub-preview'))
+                child.remove();
+        }
+    },
     afterScrubCommit: function () {
-        if (K7.SeekBar._afterScrubCommitBusy) return;
+        // Always clear edit chrome first - even if a previous call is still in its
+        // 100ms busy window. Leaving data-sn-editing blocks every subsequent Enter.
+        var remotePanel = document.querySelector('.remote-control-panel');
+        var active = document.activeElement;
+        var seekbar = (active && active.classList && active.classList.contains('seekbar-container'))
+            ? active
+            : null;
+        if (!seekbar && remotePanel)
+            seekbar = remotePanel.querySelector('.seekbar-container');
+        if (!seekbar)
+            seekbar = document.querySelector('.video-controls-overlay .seekbar-container');
+
+        if (seekbar) {
+            seekbar.removeAttribute('data-sn-editing');
+            K7.SeekBar.clearLocalScrub(seekbar);
+        } else {
+            K7.SeekBar.clearLocalScrub(null);
+        }
+        document.querySelectorAll('.seekbar-container[data-sn-editing], .seekbar-container[data-scrub-time]').forEach(function (el) {
+            el.removeAttribute('data-sn-editing');
+            el.removeAttribute('data-scrub-time');
+            el.classList.remove('scrubbing');
+            K7.SeekBar.removeScrubPreviewChildren(el);
+        });
+
+        if (window.K7) {
+            K7._suppressEnterUntilKeyUp = false;
+            K7._swallowNextEnterClick = false;
+        }
+        if (window.K7 && K7.tvDpadHoldStop) K7.tvDpadHoldStop(false);
+
+        // Remote telecommande: stay on the seekbar (non-edit). Do not jump to header
+        // close / play - .focusable matches the X button first in document order.
+        if (remotePanel) {
+            if (window.SpatialNavigation) {
+                try { SpatialNavigation.resume(); } catch (exR) { }
+                try { SpatialNavigation.makeFocusable(); } catch (exM) { }
+            }
+            var remoteSeek = seekbar && remotePanel.contains(seekbar)
+                ? seekbar
+                : remotePanel.querySelector('.seekbar-container');
+            if (remoteSeek) {
+                try { remoteSeek.focus({ preventScroll: true }); } catch (exF) { }
+            }
+            return;
+        }
+
+        if (K7.SeekBar._afterScrubCommitBusy) {
+            if (window.SpatialNavigation) SpatialNavigation.resume();
+            return;
+        }
         K7.SeekBar._afterScrubCommitBusy = true;
         try {
             var overlay = document.querySelector('.video-controls-overlay');
-            var seekbar = overlay && overlay.querySelector('.seekbar-container');
-            if (seekbar) K7.SeekBar.clearLocalScrub(seekbar);
+            var overlaySeek = overlay && overlay.querySelector('.seekbar-container');
+            if (overlaySeek) {
+                overlaySeek.removeAttribute('data-sn-editing');
+                K7.SeekBar.clearLocalScrub(overlaySeek);
+            }
             if (window.K7 && K7.hideVideoControlsOverlay)
                 K7.hideVideoControlsOverlay();
             else if (overlay) {
@@ -4818,6 +5094,30 @@ K7.SeekBar = {
             if (window.SpatialNavigation) SpatialNavigation.resume();
         } finally {
             setTimeout(function () { K7.SeekBar._afterScrubCommitBusy = false; }, 100);
+        }
+    },
+    // Called after pointer seek so edit mode cannot linger and steal Enter.
+    forceExitEdit: function (el) {
+        K7.SeekBar.clearLocalScrub(el || null);
+        document.querySelectorAll('.seekbar-container[data-sn-editing], .seekbar-container[data-scrub-time]').forEach(function (node) {
+            node.removeAttribute('data-sn-editing');
+            node.removeAttribute('data-scrub-time');
+            node.classList.remove('scrubbing');
+            K7.SeekBar.removeScrubPreviewChildren(node);
+        });
+        if (window.K7) {
+            K7._suppressEnterUntilKeyUp = false;
+            K7._swallowNextEnterClick = false;
+        }
+        if (window.K7 && K7.tvDpadHoldStop) K7.tvDpadHoldStop(false);
+        if (window.SpatialNavigation) SpatialNavigation.resume();
+
+        var remotePanel = document.querySelector('.remote-control-panel');
+        if (remotePanel) {
+            var remoteSeek = remotePanel.querySelector('.seekbar-container');
+            if (remoteSeek) {
+                try { remoteSeek.focus({ preventScroll: true }); } catch (exF) { }
+            }
         }
     },
     getScrubTime: function (el) {
@@ -4845,12 +5145,11 @@ K7.SeekBar = {
         return h > 0 ? h + ':' + pad(m) + ':' + pad(sec) : m + ':' + pad(sec);
     },
     ensurePreview: function (el) {
-        // Avoid :scope - older Android TV WebViews mishandle it and create duplicate nodes.
-        var thumb = K7.SeekBar.directChild(el, 'thumb');
-        if (thumb && !thumb.hasAttribute('data-scrub-preview')) {
-            thumb.remove();
-            thumb = null;
-        }
+        // Never remove Blazor-owned .thumb / .thumbnail - MAUI WebView then throws
+        // removeChild on null and freezes the remote UI after the first seek.
+        K7.SeekBar.hideLivePositionPreviews(el);
+
+        var thumb = K7.SeekBar.directScrubChild(el, 'thumb');
         if (!thumb) {
             thumb = document.createElement('div');
             thumb.className = 'thumb';
@@ -4869,11 +5168,7 @@ K7.SeekBar = {
         thumb.style.display = '';
         thumb.style.visibility = '';
 
-        var thumbnail = K7.SeekBar.directChild(el, 'thumbnail');
-        if (thumbnail && !thumbnail.hasAttribute('data-scrub-preview')) {
-            thumbnail.remove();
-            thumbnail = null;
-        }
+        var thumbnail = K7.SeekBar.directScrubChild(el, 'thumbnail');
         if (!thumbnail) {
             thumbnail = document.createElement('div');
             thumbnail.className = 'thumbnail';
@@ -4894,28 +5189,13 @@ K7.SeekBar = {
         thumbnail.style.pointerEvents = 'none';
         thumbnail.style.zIndex = '100006';
         thumbnail.style.visibility = '';
-
-        var track = el.querySelector('.seekbar-track');
-        if (track && !track.querySelector('.hover')) {
-            var hover = document.createElement('div');
-            hover.className = 'hover';
-            track.appendChild(hover);
-        }
+        // Do not inject .hover into Blazor's .seekbar-track - same removeChild trap.
     },
     applyPreview: function (el, time, duration) {
         var pct = duration > 0 ? Math.max(0, Math.min(100, (time / duration) * 100)) : 0;
         var pctStr = pct.toFixed(4) + '%';
-        var thumb = K7.SeekBar.directChild(el, 'thumb');
-        var thumbnail = K7.SeekBar.directChild(el, 'thumbnail');
-        // Prefer the scrub-marked pair if a live-position Blazor node reappeared.
-        if (thumb && !thumb.hasAttribute('data-scrub-preview')) {
-            var scrubThumb = el.querySelector(':scope > .thumb[data-scrub-preview], .thumb[data-scrub-preview]');
-            if (scrubThumb) thumb = scrubThumb;
-        }
-        if (thumbnail && !thumbnail.hasAttribute('data-scrub-preview')) {
-            var scrubThumbNail = el.querySelector('.thumbnail[data-scrub-preview]');
-            if (scrubThumbNail) thumbnail = scrubThumbNail;
-        }
+        var thumb = K7.SeekBar.directScrubChild(el, 'thumb');
+        var thumbnail = K7.SeekBar.directScrubChild(el, 'thumbnail');
         if (thumb) thumb.style.left = pctStr;
         if (thumbnail) {
             thumbnail.style.left = pctStr;
@@ -4992,6 +5272,29 @@ K7.SeekBar = {
                 child.style.visibility = 'hidden';
             }
         }
+    },
+    restoreLivePositionPreviews: function (el) {
+        if (!el || !el.children) return;
+        for (var i = 0; i < el.children.length; i++) {
+            var child = el.children[i];
+            if (!child || !child.classList) continue;
+            if ((child.classList.contains('thumb') || child.classList.contains('thumbnail'))
+                && !child.hasAttribute('data-scrub-preview')) {
+                child.style.display = '';
+                child.style.visibility = '';
+            }
+        }
+    },
+    // Direct child with data-scrub-preview only (never the Blazor live-position node).
+    directScrubChild: function (el, className) {
+        if (!el || !el.children) return null;
+        for (var i = 0; i < el.children.length; i++) {
+            var child = el.children[i];
+            if (child && child.classList && child.classList.contains(className)
+                && child.hasAttribute('data-scrub-preview'))
+                return child;
+        }
+        return null;
     }
 };
 
@@ -5021,24 +5324,34 @@ K7.getTvSkipDelta = function (dir) {
     return dir < 0 ? -back : fwd;
 };
 
+K7.resolveSeekBarForScrub = function () {
+    var active = document.activeElement;
+    if (active && active.classList && active.classList.contains('seekbar-container'))
+        return active;
+    if (K7.SeekBar && K7.SeekBar._scrub && K7.SeekBar._scrub.el && K7.SeekBar._scrub.el.isConnected)
+        return K7.SeekBar._scrub.el;
+    var editing = document.querySelector('.seekbar-container[data-sn-editing]');
+    if (editing) return editing;
+    var remote = document.querySelector('.remote-control-panel .seekbar-container');
+    if (remote) return remote;
+    var overlay = document.querySelector('.video-controls-overlay');
+    return overlay ? overlay.querySelector('.seekbar-container') : null;
+};
+
 K7.scrubSeekBar = function (direction) {
-    // Prefer beginSeekBarScrub (OnEditStart once + stepLocal).
-    if (window.K7 && K7.beginSeekBarScrub) {
-        K7.beginSeekBarScrub(direction);
-        return;
-    }
-    var seekbar = document.querySelector('.video-controls-overlay .seekbar-container');
-    if (!seekbar) return;
-    K7.SeekBar.stepLocal(seekbar, direction);
+    K7.beginSeekBarScrub(direction);
 };
 
 K7.beginSeekBarScrub = function (direction) {
-    var overlay = document.querySelector('.video-controls-overlay');
-    var seekbar = overlay && overlay.querySelector('.seekbar-container');
-    if (!seekbar) {
+    // After Enter-commit, OS/TV key-repeat still delivers Arrow L/R. Starting a new
+    // edit session here left SpatialNavigation paused and trapped the remote UI.
+    if (K7.SeekBar && K7.SeekBar._commitLock)
         return;
-    }
 
+    var seekbar = K7.resolveSeekBarForScrub();
+    if (!seekbar) return;
+
+    var overlay = seekbar.closest('.video-controls-overlay');
     var starting = !seekbar.hasAttribute('data-sn-editing');
 
     // Force controls visible immediately (Blazor StateHasChanged is async).
