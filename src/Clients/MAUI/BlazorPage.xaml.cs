@@ -104,7 +104,7 @@ public partial class BlazorPage : ContentPage
 
         if (AndroidStartupLottieOverlay.IsShown)
         {
-            // DecorView Lottie owns branding. Skip a second Skottie decode / paint.
+            // DecorView Skottie owns branding. Skip a second SKLottieView decode / paint.
             SplashAnimation.IsAnimationEnabled = false;
             SplashAnimation.Source = null;
             SplashAnimation.IsVisible = false;

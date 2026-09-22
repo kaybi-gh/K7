@@ -25,6 +25,10 @@ public class MainActivity : MauiAppCompatActivity
         // do nothing until a force-stop. A clean start matches Restart().
         base.OnCreate(null);
 
+        // Logo overlay ASAP - before permission prompts / window chrome - so cold
+        // start is not a long blank brand color.
+        AndroidStartupLottieOverlay.Show(this);
+
         if (Window is not null)
         {
             WindowCompat.SetDecorFitsSystemWindows(Window, false);
@@ -47,8 +51,6 @@ public class MainActivity : MauiAppCompatActivity
         // Media3/ExoPlayer init is heavy. Wait until the start page has painted so
         // we do not freeze the overlay Lottie.
         MauiStartupVisual.StartPageSet += OnStartPageSet;
-
-        AndroidStartupLottieOverlay.Show(this);
     }
 
     private void OnStartPageSet()

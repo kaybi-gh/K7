@@ -85,21 +85,31 @@ public partial class SelectProfile
             }
         }
 
+        // Paint from local cache first so AppReadySignal (and Android Lottie dismiss)
+        // is not blocked on SharedProfiles network. Refresh afterward.
+        ReloadPinnedGroups();
+        ComputeInitialFocusTarget();
+        K7.Clients.Shared.Services.AppReadySignal.Signal();
+
         if (Connectivity.IsOnline)
+            _ = RefreshPinnedGroupsInBackgroundAsync();
+    }
+
+    private async Task RefreshPinnedGroupsInBackgroundAsync()
+    {
+        try
         {
-            try
-            {
-                await SharedProfileCache.RefreshAsync();
-            }
-            catch
-            {
-                // Use cached groups
-            }
+            await SharedProfileCache.RefreshAsync();
+        }
+        catch
+        {
+            // Keep cached groups
+            return;
         }
 
         ReloadPinnedGroups();
         ComputeInitialFocusTarget();
-        K7.Clients.Shared.Services.AppReadySignal.Signal();
+        await InvokeAsync(StateHasChanged);
     }
 
     private void ReloadPinnedGroups()
