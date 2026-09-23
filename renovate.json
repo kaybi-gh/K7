@@ -54,16 +54,29 @@
       "groupName": "google-play-services"
     },
     {
-      "description": "Group ASP.NET / EF / Extensions / Aspire minors and patches only",
-      "matchManagers": ["nuget"],
+      "description": "Group ASP.NET / EF / Extensions / Aspire minors and patches (same 10.0.x line, avoid NU1109 with CPM pinning)",
+      "matchManagers": ["nuget", "dotnet-tools"],
       "matchPackageNames": [
-        "/^Microsoft\\.(AspNetCore|EntityFrameworkCore|Extensions)\\./",
-        "/^System\\.(Text\\.Json|IdentityModel)/",
+        "/^Microsoft\\.(AspNetCore|EntityFrameworkCore|Extensions)(\\.|$)/",
+        "Microsoft.JSInterop",
+        "Microsoft.Data.Sqlite",
+        "/^System\\.(Text\\.Json|Drawing\\.Common|IdentityModel)/",
         "Microsoft.IdentityModel.Protocols.OpenIdConnect",
-        "/^Aspire\\./"
+        "/^Aspire\\./",
+        "dotnet-ef"
       ],
       "matchUpdateTypes": ["minor", "patch"],
       "groupName": "microsoft runtime"
+    },
+    {
+      "description": "Group MAUI packages separately (10.0.100-style versioning, not AspNetCore 10.0.x)",
+      "matchManagers": ["nuget"],
+      "matchPackageNames": [
+        "/^Microsoft\\.Maui\\./",
+        "Microsoft.AspNetCore.Components.WebView.Maui"
+      ],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "microsoft maui"
     },
     {
       "description": "Microsoft.OpenApi 3.x is incompatible with Microsoft.AspNetCore.OpenApi 10",

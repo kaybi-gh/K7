@@ -180,7 +180,7 @@ If branch protection requires status checks, use the names under the **Build** w
 
 K7 uses **[Renovate](https://docs.renovatebot.com/)** (self-hosted via GitHub Actions), not Dependabot version updates. Config: [`renovate.json`](../../renovate.json). Workflow: [`.github/workflows/renovate.yml`](../../.github/workflows/renovate.yml) (weekly Monday + `workflow_dispatch`).
 
-Renovate groups only packages that must bump together (OpenIddict, OpenTelemetry, SkiaSharp, LibVLC, SQLite natives, Google Play Services, Microsoft runtime minors). Everything else gets its own PR so one breaking bump cannot block the rest. Majors for `Microsoft.OpenApi` (incompatible with `Microsoft.AspNetCore.OpenApi` 10) are disabled.
+Renovate groups only packages that must bump together (OpenIddict, OpenTelemetry, SkiaSharp, LibVLC, SQLite natives, Google Play Services, Microsoft runtime minors including `dotnet-ef`, Microsoft MAUI). The Microsoft 10.0.x runtime group is intentional: with `CentralPackageTransitivePinningEnabled`, splitting EF Core from Extensions/AspNetCore causes NU1109. MAUI stays in its own group (`10.0.100`-style versions). Everything else gets its own PR so one breaking bump cannot block the rest. Majors for `Microsoft.OpenApi` (incompatible with `Microsoft.AspNetCore.OpenApi` 10) are disabled.
 
 `Directory.Packages.props` also pins some transitive packages (`Azure.Identity`, `System.Drawing.Common`, `SSH.NET`) to patched versions. CI fails `dotnet list package --vulnerable` if those pins are removed.
 
