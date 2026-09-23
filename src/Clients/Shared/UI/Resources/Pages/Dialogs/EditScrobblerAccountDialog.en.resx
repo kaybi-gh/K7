@@ -16,7 +16,7 @@
   <data name="WebhookUrlHintYamtrack" xml:space="preserve"><value>Example: https://yamtrack.yourdomain.tld/webhook/jellyfin/{token}</value></data>
   <data name="WebhookUrlHintFloppy" xml:space="preserve"><value>Example: https://floppy.yourdomain.tld/webhook/jellyfin/{token}</value></data>
   <data name="WebhookUrlHintRyot" xml:space="preserve"><value>Example: https://ryot.yourdomain.tld/_i/{slug}</value></data>
-  <data name="WebhookUrlHintBetaSeries" xml:space="preserve"><value>Append your API token. Token: betaseries.com/api/</value></data>
+  <data name="WebhookUrlHintBetaSeries" xml:space="preserve"><value>Append your API token. Token: betaseries.com/compte/plex</value></data>
   <data name="WebhookUrlHintCustom" xml:space="preserve"><value>Full webhook URL.</value></data>
   <data name="PlayTemplate" xml:space="preserve"><value>Play payload</value></data>
   <data name="PauseTemplate" xml:space="preserve"><value>Pause payload</value></data>

@@ -19,7 +19,7 @@
   <data name="WebhookUrlHintYamtrack" xml:space="preserve"><value>Collez l URL webhook Yamtrack. Exemple: https://yamtrack.yourdomain.tld/webhook/jellyfin/{token}</value></data>
   <data name="WebhookUrlHintFloppy" xml:space="preserve"><value>Collez l URL webhook Floppy. Exemple: https://floppy.yourdomain.tld/webhook/jellyfin/{token}</value></data>
   <data name="WebhookUrlHintRyot" xml:space="preserve"><value>Collez l URL d integration Ryot. Exemple: https://ryot.yourdomain.tld/_i/{slug}</value></data>
-  <data name="WebhookUrlHintBetaSeries" xml:space="preserve"><value>Ajoutez votre jeton API a la fin de l URL. Jeton: betaseries.com/api/</value></data>
+  <data name="WebhookUrlHintBetaSeries" xml:space="preserve"><value>Ajoutez votre jeton API a la fin de l URL. Jeton: betaseries.com/compte/plex</value></data>
   <data name="WebhookUrlHintCustom" xml:space="preserve"><value>URL complete du webhook a appeler.</value></data>
   <data name="DisplayName" xml:space="preserve"><value>Nom affiche</value></data>
   <data name="LastFmAuthHint" xml:space="preserve"><value>Autorisez K7 sur Last.fm puis revenez ici.</value></data>

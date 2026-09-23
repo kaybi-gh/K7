@@ -56,7 +56,7 @@ public static class ScrobbleWebhookPresets
             Id = "betaseries",
             DisplayNameKey = "PresetBetaSeries",
             UrlHint = "https://www.betaseries.com/plex/webhook?token=",
-            SetupHelpUrl = ScrobblerSetupUrls.BetaSeriesApi,
+            SetupHelpUrl = ScrobblerSetupUrls.BetaSeriesPlex,
             // BetaSeries only marks watched on media.scrobble (no in-progress). Movies need IMDb, episodes need TVDB.
             PlayTemplate = Plex("media.play"),
             PauseTemplate = Plex("media.pause"),

@@ -9,5 +9,5 @@ public static class ScrobblerSetupUrls
     public const string ListenBrainzTokenSettings = "https://listenbrainz.org/settings/";
     public const string LastFmApiAccountCreate = "https://www.last.fm/api/account/create";
     public const string TraktOauthApplications = "https://trakt.tv/oauth/applications";
-    public const string BetaSeriesApi = "https://www.betaseries.com/api/";
+    public const string BetaSeriesPlex = "https://www.betaseries.com/compte/plex";
 }

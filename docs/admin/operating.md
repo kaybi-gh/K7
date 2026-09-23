@@ -531,7 +531,7 @@ ListenBrainz user tokens come from [listenbrainz.org/settings/](https://listenbr
 Admin Last.fm keys: [last.fm/api/account/create](https://www.last.fm/api/account/create). Admin Trakt app: [trakt.tv/oauth/applications](https://trakt.tv/oauth/applications).
 Webhook presets impersonate Jellyfin/Plex JSON for Yamtrack, Floppy, Ryot, and BetaSeries.
 URL hints use `yourdomain.tld` placeholders (for example `https://yamtrack.yourdomain.tld/webhook/jellyfin/{token}`).
-BetaSeries API tokens: [betaseries.com/api/](https://www.betaseries.com/api/).
+BetaSeries Plex webhook token: [betaseries.com/compte/plex](https://www.betaseries.com/compte/plex).
 Yamtrack / Floppy / Ryot use the unofficial Jellyfin webhook shape (`Event`, `Item.Type` Movie/Episode, `ProviderIds`, `Session.PlayState.PositionTicks`, `UserData.Played`). Ryot needs TMDB (or TVDB) ids and numeric ticks.
 After the completion scrobble (`Stop` + `UserData.Played: true`), K7 does not send further Play/Stop/progress for that session so Yamtrack stays Completed.
 BetaSeries is posted like Jellyfin Generic Form: `application/x-www-form-urlencoded` with a `payload` field containing the Plex JSON (`event`, `Account`, `Metadata`, Guids). Tracking happens only on Watched (`media.scrobble`) - there is no in-progress state via this webhook. Movies need an IMDb id, episodes need a TVDB episode id. BetaSeries always returns HTTP 200, so a successful send does not prove a match.
