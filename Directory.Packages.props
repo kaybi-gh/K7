@@ -15,7 +15,7 @@
     <PackageVersion Include="bunit" Version="2.11.3" />
     <PackageVersion Include="CommunityToolkit.Maui.MediaElement" Version="10.0.0" />
     <PackageVersion Include="coverlet.collector" Version="10.0.1" />
-    <PackageVersion Include="FFMpegCore" Version="5.4.0" />
+    <PackageVersion Include="FFMpegCore" Version="5.5.0" />
     <PackageVersion Include="AwesomeAssertions" Version="9.6.0" />
     <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
     <PackageVersion Include="LibVLCSharp" Version="4.0.0-alpha-20260904-10299" />
