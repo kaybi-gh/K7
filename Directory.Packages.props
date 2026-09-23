@@ -88,7 +88,7 @@
     <PackageVersion Include="OpenIddict.Server" Version="7.7.0" />
     <PackageVersion Include="OpenIddict.Server.AspNetCore" Version="7.7.0" />
     <PackageVersion Include="Respawn" Version="7.0.0" />
-    <PackageVersion Include="Scalar.AspNetCore.Microsoft" Version="2.17.3" />
+    <PackageVersion Include="Scalar.AspNetCore.Microsoft" Version="2.17.6" />
     <PackageVersion Include="SkiaSharp" Version="4.152.1" />
     <PackageVersion Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="4.152.1" />
     <PackageVersion Include="SourceGear.sqlite3" Version="3.53.4" />
