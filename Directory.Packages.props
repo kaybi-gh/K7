@@ -118,6 +118,6 @@
     <PackageVersion Include="Xamarin.AndroidX.Fragment.Ktx" Version="1.9.0" />
     <PackageVersion Include="Xamarin.GooglePlayServices.Cast" Version="122.3.1.2" />
     <PackageVersion Include="Xamarin.GooglePlayServices.Cast.Framework" Version="122.3.1.2" />
-    <PackageVersion Include="Xamarin.GooglePlayServices.Basement" Version="118.10.0.3" />
+    <PackageVersion Include="Xamarin.GooglePlayServices.Basement" Version="118.11.0" />
   </ItemGroup>
 </Project>
