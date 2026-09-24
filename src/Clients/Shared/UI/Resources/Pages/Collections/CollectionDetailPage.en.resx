@@ -51,4 +51,5 @@
   <data name="RelativeMinutes" xml:space="preserve"><value>{0} min ago</value></data>
   <data name="RelativeHours" xml:space="preserve"><value>{0} h ago</value></data>
   <data name="RelativeDays" xml:space="preserve"><value>{0} d ago</value></data>
+  <data name="SortOrder" xml:space="preserve"><value>Collection order</value></data>
 </root>

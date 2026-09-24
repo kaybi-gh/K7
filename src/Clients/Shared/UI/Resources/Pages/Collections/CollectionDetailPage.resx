@@ -51,4 +51,5 @@
   <data name="RelativeMinutes" xml:space="preserve"><value>il y a {0} min</value></data>
   <data name="RelativeHours" xml:space="preserve"><value>il y a {0} h</value></data>
   <data name="RelativeDays" xml:space="preserve"><value>il y a {0} j</value></data>
+  <data name="SortOrder" xml:space="preserve"><value>Ordre de la collection</value></data>
 </root>

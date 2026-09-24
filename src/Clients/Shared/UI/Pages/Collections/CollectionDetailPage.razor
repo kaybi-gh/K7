@@ -8,6 +8,7 @@
 @inject ICollectionService K7ServerService
 @inject IK7ServerService ApiClient
 @inject IStringLocalizer<CollectionDetailPage> L
+@inject IStringLocalizer<LibraryGroup> LibrarySortL
 @inject IStringLocalizer<SharedResource> S
 @inject IStringLocalizer<DynamicPlaylistDialog> FieldL
 @inject IStringLocalizer<K7RuleEditor> OpL
@@ -121,7 +122,7 @@ else
         </div>
 
         <BrowseView TItem="CollectionBrowseRow"
-                      Items="_browseRows"
+                      Items="_displayRows"
                       Loading="_loadingItems"
                       PersistenceKey="@($"collection-{Id}")"
                       Class="collection-detail-browse"
@@ -130,7 +131,17 @@ else
                       GridItemAspectRatio="1.5f"
                       ListItemHeight="64"
                       @ref="_browseView"
+                      JumpIndexLabels="JumpLabels"
+                      OnJumpRequested="OnJumpRequested"
                       OnColumnPickerRequested="OnColumnPickerRequested">
+            <ToolbarSecondaryContent>
+                <K7Select TValue="CollectionSortOption" Class="library-toolbar-sort" Value="_selectedSort" ValueChanged="OnSortChanged">
+                    @foreach (var opt in SortOptions)
+                    {
+                        <K7SelectItem Value="@opt" Text="@GetSortLabel(opt)">@GetSortLabel(opt)</K7SelectItem>
+                    }
+                </K7Select>
+            </ToolbarSecondaryContent>
             <EmptyContent>
                 <K7EmptyState Icon="@Phosphor.BookmarkSimple" Title="@L["Empty"]" />
             </EmptyContent>
@@ -159,6 +170,8 @@ else
             <TableContent>
                 <K7DataTable TItem="CollectionBrowseRow"
                              ServerData="LoadTableDataAsync"
+                             ActiveSortKey="@_activeSortKey"
+                             ActiveSortDirection="@_activeSortDirection"
                              OnSortChanged="OnTableSortChanged"
                              OnRowClick="NavigateToBrowseRow"
                              RowHeight="56"

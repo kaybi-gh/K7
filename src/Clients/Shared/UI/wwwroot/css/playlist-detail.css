@@ -24,6 +24,15 @@
     height: auto;
 }
 
+/* A-Z jump needs vertical room. Hide until the header collapses on scroll. */
+.playlist-detail-page:not(.is-header-compact) .k7-jump-index {
+    display: none;
+}
+
+.playlist-detail-page:not(.is-header-compact) .browse-view:has(.k7-jump-index) {
+    --browse-jump-index-inset: 0px;
+}
+
 .playlist-header {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr);

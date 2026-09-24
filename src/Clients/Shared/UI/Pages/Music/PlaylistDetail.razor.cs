@@ -14,6 +14,9 @@ namespace K7.Clients.Shared.UI.Pages.Music;
 
 public partial class PlaylistDetail
 {
+    // Server clamps page size to PagingDefaults.MaxPageSize (100).
+    private const int PageSize = 100;
+
     [Parameter]
     public required string Id { get; set; }
 
@@ -71,11 +74,26 @@ public partial class PlaylistDetail
     private async Task LoadItemsAsync()
     {
         _loadingItems = true;
-        var result = await K7ServerService.GetPlaylistItemsAsync(Guid.Parse(Id), 1, 500, _showUnavailable);
+        _items = [];
 
-        _items = result?.Items?
-            .Select(ToViewModel)
-            .ToList() ?? [];
+        var playlistId = Guid.Parse(Id);
+        var pageNumber = 1;
+
+        while (true)
+        {
+            var result = await K7ServerService.GetPlaylistItemsAsync(
+                playlistId, pageNumber, PageSize, _showUnavailable);
+
+            if (result?.Items is null || result.Items.Count == 0)
+                break;
+
+            _items.AddRange(result.Items.Select(ToViewModel));
+
+            if (!result.HasNextPage)
+                break;
+
+            pageNumber++;
+        }
 
         RebuildBrowseRows();
         _totalDuration = _items.Sum(i => i.Duration);

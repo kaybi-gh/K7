@@ -16,6 +16,9 @@ namespace K7.Clients.Shared.UI.Pages.Collections;
 
 public partial class CollectionDetailPage
 {
+    // Server clamps page size to PagingDefaults.MaxPageSize (100).
+    private const int PageSize = 100;
+
     [Parameter] public required string Id { get; set; }
 
     [Inject] private IK7DialogService DialogService { get; set; } = default!;
@@ -26,6 +29,7 @@ public partial class CollectionDetailPage
 
     private CollectionDto? _collection;
     private List<CollectionBrowseRow> _browseRows = [];
+    private List<CollectionBrowseRow> _displayRows = [];
     private IReadOnlyList<string> _headerPreviewUrls = [];
     private string? _rulesDescription;
     private bool _loading = true;
@@ -40,10 +44,34 @@ public partial class CollectionDetailPage
     private K7DataTable<CollectionBrowseRow>? _dataTable;
     private string? _activeSortKey = "order";
     private K7SortDirection _activeSortDirection = K7SortDirection.Ascending;
+    private CollectionSortOption _selectedSort = CollectionSortOption.Order;
 
     private bool _showHeaderPlaceholder => _browseRows.Count == 0;
 
+    private IReadOnlyList<string>? JumpLabels =>
+        _selectedSort is CollectionSortOption.TitleAsc or CollectionSortOption.TitleDesc
+            ? BrowseAlphabetJump.Labels
+            : null;
+
+    private static readonly CollectionSortOption[] SortOptions =
+    [
+        CollectionSortOption.Order,
+        CollectionSortOption.TitleAsc,
+        CollectionSortOption.TitleDesc,
+        CollectionSortOption.ReleaseDateDesc,
+        CollectionSortOption.ReleaseDateAsc
+    ];
+
     internal sealed record CollectionBrowseRow(Guid ItemId, LiteMediaDto Media, int Index);
+
+    private enum CollectionSortOption
+    {
+        Order,
+        TitleAsc,
+        TitleDesc,
+        ReleaseDateAsc,
+        ReleaseDateDesc
+    }
 
     protected override async Task OnParametersSetAsync()
     {
@@ -53,6 +81,7 @@ public partial class CollectionDetailPage
 
         _loading = true;
         _browseRows.Clear();
+        _displayRows = [];
         _headerPreviewUrls = [];
         _rulesDescription = null;
 
@@ -67,38 +96,71 @@ public partial class CollectionDetailPage
         if (_collection is not null)
         {
             _rulesDescription = _collection.IsDynamic ? BuildRulesDescription(_collection) : null;
+            ApplyCollectionDefaultSort();
             await LoadItemsAsync(id);
         }
 
         _loading = false;
     }
 
+    private void ApplyCollectionDefaultSort()
+    {
+        if (_collection is not { IsDynamic: true })
+            return;
+
+        _selectedSort = (_collection.OrderBy, _collection.OrderDescending) switch
+        {
+            (DynamicPlaylistOrderBy.Title, false) => CollectionSortOption.TitleAsc,
+            (DynamicPlaylistOrderBy.Title, true) => CollectionSortOption.TitleDesc,
+            (DynamicPlaylistOrderBy.Year, false) => CollectionSortOption.ReleaseDateAsc,
+            (DynamicPlaylistOrderBy.Year, true) => CollectionSortOption.ReleaseDateDesc,
+            _ => CollectionSortOption.Order
+        };
+        (_activeSortKey, _activeSortDirection) = MapSortOption(_selectedSort);
+    }
+
     private async Task LoadItemsAsync(Guid collectionId)
     {
         _loadingItems = true;
-        var page = await K7ServerService.GetCollectionItemsAsync(
-            collectionId,
-            pageSize: 500,
-            includeUnavailable: _collection is { IsDynamic: false } && _showUnavailable);
         _browseRows.Clear();
 
-        if (page?.Items is not null)
+        var includeUnavailable = _collection is { IsDynamic: false } && _showUnavailable;
+        var pageNumber = 1;
+        var index = 0;
+
+        while (true)
         {
-            var index = 0;
+            var page = await K7ServerService.GetCollectionItemsAsync(
+                collectionId,
+                pageNumber: pageNumber,
+                pageSize: PageSize,
+                includeUnavailable: includeUnavailable);
+
+            if (page?.Items is null || page.Items.Count == 0)
+                break;
+
             foreach (var item in page.Items)
             {
                 _browseRows.Add(new CollectionBrowseRow(item.Id, item.Media, index));
                 index++;
             }
+
+            if (!page.HasNextPage)
+                break;
+
+            pageNumber++;
         }
 
         _headerPreviewUrls = _browseRows
             .SelectMany(r => GetItemPreviewUrls(r.Media))
             .Take(4)
             .ToList();
+        RebuildDisplayRows();
         _loadingItems = false;
         if (_dataTable is not null)
             await _dataTable.RefreshAsync();
+        if (_browseView is not null)
+            await _browseView.RefreshAsync();
     }
 
     private Task<K7DataTableResult<CollectionBrowseRow>> LoadTableDataAsync(
@@ -107,13 +169,17 @@ public partial class CollectionDetailPage
         if (state.Count <= 0)
             return Task.FromResult(new K7DataTableResult<CollectionBrowseRow>([], 0));
 
-        var sorted = SortCollectionRows(_browseRows, state.SortKey, state.SortDirection);
-        var items = sorted
+        var items = _displayRows
             .Skip(state.StartIndex)
             .Take(state.Count)
             .ToList();
 
-        return Task.FromResult(new K7DataTableResult<CollectionBrowseRow>(items, sorted.Count));
+        return Task.FromResult(new K7DataTableResult<CollectionBrowseRow>(items, _displayRows.Count));
+    }
+
+    private void RebuildDisplayRows()
+    {
+        _displayRows = SortCollectionRows(_browseRows, _activeSortKey, _activeSortDirection);
     }
 
     private static List<CollectionBrowseRow> SortCollectionRows(
@@ -126,7 +192,9 @@ public partial class CollectionDetailPage
 
         query = sortKey switch
         {
-            "title" => desc ? query.OrderByDescending(r => r.Media.Title) : query.OrderBy(r => r.Media.Title),
+            "title" => desc
+                ? query.OrderByDescending(r => BrowseAlphabetJump.GetSortTitle(r.Media.SortTitle, r.Media.Title))
+                : query.OrderBy(r => BrowseAlphabetJump.GetSortTitle(r.Media.SortTitle, r.Media.Title)),
             "releaseDate" => desc
                 ? query.OrderByDescending(r => r.Media.ReleaseDate)
                 : query.OrderBy(r => r.Media.ReleaseDate),
@@ -136,14 +204,76 @@ public partial class CollectionDetailPage
         return query.ToList();
     }
 
+    private async Task OnSortChanged(CollectionSortOption value)
+    {
+        if (value == _selectedSort)
+            return;
+
+        _selectedSort = value;
+        (_activeSortKey, _activeSortDirection) = MapSortOption(value);
+        RebuildDisplayRows();
+
+        if (_dataTable is not null)
+            await _dataTable.RefreshAsync();
+        if (_browseView is not null)
+            await _browseView.RefreshAsync();
+    }
+
     private async Task OnTableSortChanged(SortChangedEventArgs args)
     {
         _activeSortKey = args.SortKey;
         _activeSortDirection = args.Direction;
+        _selectedSort = MapSortKey(args.SortKey, args.Direction);
+        RebuildDisplayRows();
 
         if (_dataTable is not null)
             await _dataTable.RefreshAsync();
+        if (_browseView is not null)
+            await _browseView.RefreshAsync();
     }
+
+    private void OnJumpRequested(string label)
+    {
+        if (_browseView is null || _displayRows.Count == 0)
+            return;
+
+        var ascending = _activeSortDirection is K7SortDirection.Ascending;
+        var titles = _displayRows
+            .Select(r => BrowseAlphabetJump.GetSortTitle(r.Media.SortTitle, r.Media.Title))
+            .ToList();
+        var index = BrowseAlphabetJump.FindIndexForLetter(titles, label, ascending);
+        _browseView.ScrollToItemIndex(index);
+    }
+
+    private static (string Key, K7SortDirection Direction) MapSortOption(CollectionSortOption option) =>
+        option switch
+        {
+            CollectionSortOption.TitleAsc => ("title", K7SortDirection.Ascending),
+            CollectionSortOption.TitleDesc => ("title", K7SortDirection.Descending),
+            CollectionSortOption.ReleaseDateAsc => ("releaseDate", K7SortDirection.Ascending),
+            CollectionSortOption.ReleaseDateDesc => ("releaseDate", K7SortDirection.Descending),
+            _ => ("order", K7SortDirection.Ascending)
+        };
+
+    private static CollectionSortOption MapSortKey(string? sortKey, K7SortDirection direction) =>
+        (sortKey, direction) switch
+        {
+            ("title", K7SortDirection.Ascending) => CollectionSortOption.TitleAsc,
+            ("title", K7SortDirection.Descending) => CollectionSortOption.TitleDesc,
+            ("releaseDate", K7SortDirection.Ascending) => CollectionSortOption.ReleaseDateAsc,
+            ("releaseDate", K7SortDirection.Descending) => CollectionSortOption.ReleaseDateDesc,
+            _ => CollectionSortOption.Order
+        };
+
+    private string GetSortLabel(CollectionSortOption option) => option switch
+    {
+        CollectionSortOption.Order => L["SortOrder"],
+        CollectionSortOption.TitleAsc => LibrarySortL["SortTitleAsc"],
+        CollectionSortOption.TitleDesc => LibrarySortL["SortTitleDesc"],
+        CollectionSortOption.ReleaseDateDesc => LibrarySortL["SortReleaseDateDesc"],
+        CollectionSortOption.ReleaseDateAsc => LibrarySortL["SortReleaseDateAsc"],
+        _ => option.ToString()
+    };
 
     private void NavigateToBrowseRow(CollectionBrowseRow row) =>
         NavigateToItem(row.Media);
@@ -165,10 +295,13 @@ public partial class CollectionDetailPage
             await K7ServerService.RemoveCollectionItemAsync(_collection.Id, row.ItemId);
             _browseRows.Remove(row);
             ReindexBrowseRows();
+            RebuildDisplayRows();
             _collection = _collection with { ItemCount = _browseRows.Count };
             _headerPreviewUrls = _browseRows.SelectMany(r => GetItemPreviewUrls(r.Media)).Take(4).ToList();
             if (_dataTable is not null)
                 await _dataTable.RefreshAsync();
+            if (_browseView is not null)
+                await _browseView.RefreshAsync();
         }
         catch
         {
@@ -196,6 +329,7 @@ public partial class CollectionDetailPage
             if (_collection is not null)
             {
                 _rulesDescription = BuildRulesDescription(_collection);
+                ApplyCollectionDefaultSort();
                 await LoadItemsAsync(_collection.Id);
             }
 
@@ -273,6 +407,7 @@ public partial class CollectionDetailPage
                 if (_collection is not null)
                 {
                     _rulesDescription = BuildRulesDescription(_collection);
+                    ApplyCollectionDefaultSort();
                     await LoadItemsAsync(collectionId);
                 }
             }
@@ -298,7 +433,10 @@ public partial class CollectionDetailPage
             _collection = await K7ServerService.GetCollectionAsync(collectionId);
             _browseRows.Clear();
             if (_collection is not null)
+            {
+                ApplyCollectionDefaultSort();
                 await LoadItemsAsync(collectionId);
+            }
         }
     }
 
@@ -417,9 +555,12 @@ public partial class CollectionDetailPage
         {
             _browseRows.RemoveAll(r => r.Media.Id.ToString() == item.Id || r.Media.Id.ToString() == item.ParentId);
             ReindexBrowseRows();
+            RebuildDisplayRows();
             _headerPreviewUrls = _browseRows.SelectMany(r => GetItemPreviewUrls(r.Media)).Take(4).ToList();
             if (_dataTable is not null)
                 await _dataTable.RefreshAsync();
+            if (_browseView is not null)
+                await _browseView.RefreshAsync();
         }
     }
 

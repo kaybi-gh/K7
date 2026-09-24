@@ -1608,11 +1608,8 @@ public partial class LibraryGroupView : IDisposable
         _ => mediaType.ToString()
     };
 
-    private static readonly IReadOnlyList<string> AlphabetLabels =
-        ["#", .. Enumerable.Range('A', 26).Select(c => ((char)c).ToString())];
-
     private IReadOnlyList<string>? JumpLabels => _selectedSort is MediaOrderingOption.TitleAsc or MediaOrderingOption.TitleDesc
-        ? AlphabetLabels
+        ? BrowseAlphabetJump.Labels
         : null;
 
     private async Task OnJumpRequested(string label)
