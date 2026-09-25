@@ -27,6 +27,12 @@ public partial class BlazorPage
     private int _androidDirectPlayRuntimeRetryCount;
     private bool? _androidLastSourceWasHls;
     private int _androidPlaceholderSuppressGeneration;
+    /// <summary>
+    /// Ignore Exo STATE_ENDED from Stop()/replace until the new source reaches READY.
+    /// <see cref="_openingNativeSource"/> alone is cleared when OpenAndroidExoSource returns,
+    /// which is too early for async Ended callbacks (reopens next-episode on the successor).
+    /// </summary>
+    private bool _suppressExoEndedUntilReady;
     private DefaultHttpDataSource.Factory? _exoHttpDataSourceFactory;
     private Dictionary<string, string>? _exoHttpRequestHeaders;
     private ExoPlaybackBridge? _exoPlaybackBridge;
@@ -519,6 +525,7 @@ public partial class BlazorPage
     /// </summary>
     private void OpenAndroidExoSource(string url)
     {
+        _suppressExoEndedUntilReady = true;
         NativePlayer.ShouldAutoPlay = true;
         CancelAndroidPlaceholderReSuppress();
         ClearChainedSeekTarget();
@@ -1405,11 +1412,20 @@ public partial class BlazorPage
         if (!_playerService.IsVisible)
             return;
 
+        if (exoState == ExoPlaybackStateMapping.StateEnded
+            && (_openingNativeSource || _suppressExoEndedUntilReady))
+        {
+            return;
+        }
+
+        if (exoState == ExoPlaybackStateMapping.StateReady)
+            _suppressExoEndedUntilReady = false;
+
         var mapped = ExoPlaybackStateMapping.Map(exoState, playWhenReady, isPlaying);
         mapped = NativeVideoPlaybackEnd.PromoteIfMediaEnded(
             mapped,
             engineIsPlaying: isPlaying,
-            isOpeningSource: _openingNativeSource,
+            isOpeningSource: _openingNativeSource || _suppressExoEndedUntilReady,
             isVisible: _playerService.IsVisible,
             durationSeconds: _playerService.Duration > 0
                 ? _playerService.Duration

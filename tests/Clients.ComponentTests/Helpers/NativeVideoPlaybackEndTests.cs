@@ -146,6 +146,30 @@ public class NativeVideoPlaybackEndTests
     }
 
     [Test]
+    public void PromoteIfMediaEnded_ShouldDemoteEnded_WhenOpeningSource()
+    {
+        NativeVideoPlaybackEnd.PromoteIfMediaEnded(
+            PlaybackState.Ended,
+            engineIsPlaying: false,
+            isOpeningSource: true,
+            isVisible: true,
+            durationSeconds: 100,
+            positionSeconds: 100).Should().Be(PlaybackState.Buffering);
+    }
+
+    [Test]
+    public void PromoteIfMediaEnded_ShouldKeepEnded_WhenNotOpeningSource()
+    {
+        NativeVideoPlaybackEnd.PromoteIfMediaEnded(
+            PlaybackState.Ended,
+            engineIsPlaying: false,
+            isOpeningSource: false,
+            isVisible: true,
+            durationSeconds: 100,
+            positionSeconds: 100).Should().Be(PlaybackState.Ended);
+    }
+
+    [Test]
     public void ShouldApplyPlaybackState_ShouldIgnorePauseAfterEnded()
     {
         NativeVideoPlaybackEnd.ShouldApplyPlaybackState(PlaybackState.Ended, PlaybackState.Paused)

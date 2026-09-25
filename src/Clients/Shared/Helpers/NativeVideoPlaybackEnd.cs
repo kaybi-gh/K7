@@ -56,8 +56,10 @@ public static class NativeVideoPlaybackEnd
         double durationSeconds,
         double positionSeconds)
     {
+        // Exo Stop()/replace reports STATE_ENDED. Treating that as Ended reopens the
+        // next-episode offer on top of the successor (1 to 3 skip on Android TV).
         if (mapped == PlaybackState.Ended)
-            return mapped;
+            return isOpeningSource ? PlaybackState.Buffering : mapped;
 
         if (isOpeningSource || !isVisible || engineIsPlaying)
             return mapped;

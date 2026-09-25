@@ -31,8 +31,14 @@ public sealed partial class NativeVideoPlayerOverlay
     private string _nepBehavior = "AutoPlay";
     private int _nepCountdownSeconds;
     private int _nepCountdownDuration;
-    private bool _nepCountdownActive;
-    private System.Timers.Timer? _nepCountdownTimer;
+    /// <summary>Bumped to cancel pending still-load / countdown loops.</summary>
+    private int _nepOfferEpoch;
+    /// <summary>
+    /// True from Play Next until the successor reaches Playing. Blocks a second NEP from a
+    /// spurious Ended during Android Exo source replace (OK would otherwise advance again).
+    /// </summary>
+    private bool _advancingToNextEpisode;
+    private Guid? _endedEpisodeIdForOffer;
 
     private Border? _nepReplayCard;
     private Border? _nepPlayCard;
@@ -73,7 +79,7 @@ public sealed partial class NativeVideoPlayerOverlay
         Grid.SetRow(cards, 0);
         _nextEpisodeOverlay.Children.Add(cards);
 
-        _nepProgressBar.ProgressColor = Color.FromArgb("#E50914");
+        _nepProgressBar.ProgressColor = NativeOverlayTheme.Accent;
         _nepCountdownLabel.TextColor = Colors.White;
         _nepCountdownLabel.FontSize = 13;
         _nepCountdownLabel.HorizontalTextAlignment = TextAlignment.Center;
@@ -86,9 +92,9 @@ public sealed partial class NativeVideoPlayerOverlay
 
         _nepDismissButton = new Border
         {
-            Stroke = Colors.Transparent,
-            StrokeThickness = 0,
-            BackgroundColor = Color.FromArgb("#33FFFFFF"),
+            Stroke = NativeOverlayTheme.OnMediaActionBorder,
+            StrokeThickness = 2,
+            BackgroundColor = NativeOverlayTheme.OnMediaAction,
             Padding = new Thickness(16, 10),
             HorizontalOptions = LayoutOptions.Center,
             Margin = new Thickness(0, 12, 0, 0),
@@ -116,15 +122,23 @@ public sealed partial class NativeVideoPlayerOverlay
 
     private static Border BuildNepCard(Image still, Label info, string actionText, string actionIcon, Action onAction, bool primary)
     {
+        var actionFg = primary ? NativeOverlayTheme.OnAccent : Colors.White;
+        var content = NativeIconText.CreateContent(actionIcon, actionText, fontSize: 14);
+        foreach (var child in content.Children)
+        {
+            if (child is Label label)
+                label.TextColor = actionFg;
+        }
+
         var actionButton = new Border
         {
-            Stroke = Colors.Transparent,
-            StrokeThickness = 0,
-            BackgroundColor = primary ? Color.FromArgb("#E50914") : Color.FromArgb("#33FFFFFF"),
+            Stroke = primary ? Colors.Transparent : NativeOverlayTheme.OnMediaActionBorder,
+            StrokeThickness = primary ? 0 : 2,
+            BackgroundColor = primary ? NativeOverlayTheme.Accent : NativeOverlayTheme.OnMediaAction,
             Padding = new Thickness(16, 10),
             HorizontalOptions = LayoutOptions.Center,
             VerticalOptions = LayoutOptions.Center,
-            Content = NativeIconText.CreateContent(actionIcon, actionText, fontSize: 14),
+            Content = content,
             StrokeShape = new RoundRectangle { CornerRadius = 8 }
         };
         // Real Button.Clicked is more reliable on Android than a root-level TapGestureRecognizer
@@ -149,7 +163,7 @@ public sealed partial class NativeVideoPlayerOverlay
         return new Border
         {
             Stroke = Colors.Transparent,
-            StrokeThickness = 0,
+            StrokeThickness = 2,
             BackgroundColor = Colors.Transparent,
             Content = stack,
             Padding = 4,
@@ -241,12 +255,14 @@ public sealed partial class NativeVideoPlayerOverlay
     {
         ApplyNepCardFocus(_nepReplayCard, _nepFocusIndex == 0);
         ApplyNepCardFocus(_nepPlayCard, _nepFocusIndex == 1);
-        ApplyNepCardFocus(_nepDismissButton, _nepFocusIndex == 2);
         if (_nepDismissButton is not null)
         {
-            _nepDismissButton.BackgroundColor = _nepFocusIndex == 2
-                ? Color.FromArgb("#66FFFFFF")
-                : Color.FromArgb("#33FFFFFF");
+            var focused = _nepFocusIndex == 2;
+            _nepDismissButton.StrokeThickness = 2;
+            _nepDismissButton.Stroke = focused ? Colors.White : NativeOverlayTheme.OnMediaActionBorder;
+            _nepDismissButton.BackgroundColor = focused
+                ? NativeOverlayTheme.OnMediaActionFocus
+                : NativeOverlayTheme.OnMediaAction;
         }
     }
 
@@ -255,8 +271,9 @@ public sealed partial class NativeVideoPlayerOverlay
         if (card is null)
             return;
 
+        // Keep StrokeThickness constant so focus does not resize cards/stills on TV.
+        card.StrokeThickness = 2;
         card.Stroke = focused ? Colors.White : Colors.Transparent;
-        card.StrokeThickness = focused ? 2 : 0;
         card.BackgroundColor = focused ? Color.FromArgb("#22FFFFFF") : Colors.Transparent;
     }
 
@@ -278,18 +295,13 @@ public sealed partial class NativeVideoPlayerOverlay
 
     private void PauseNextEpisodeCountdown()
     {
-        if (!_nepCountdownActive)
-            return;
-
-        _nepCountdownActive = false;
-        StopNepCountdownTimer();
+        _nepOfferEpoch++;
     }
 
     private void StopNepCountdownTimer()
     {
-        _nepCountdownTimer?.Stop();
-        _nepCountdownTimer?.Dispose();
-        _nepCountdownTimer = null;
+        // RunNepCountdownAsync watches _nepOfferEpoch; bumping cancels the loop.
+        _nepOfferEpoch++;
     }
 
     /// <summary>
@@ -302,11 +314,15 @@ public sealed partial class NativeVideoPlayerOverlay
         if (_mediaService is null || _progressTracker is null)
             return false;
 
-        if (_nepBehavior == "Off")
+        if (_nepBehavior == "Off" || _advancingToNextEpisode)
             return false;
 
         var serieId = _progressTracker.CurrentSerieId;
-        var episodeId = _progressTracker.CurrentMediaId ?? _player.Source?.MediaId;
+        // Prefer the episode that actually ended. After Play Next the tracker may already
+        // point at the successor - resolving next from that id offers ep+2 (1 to 3).
+        var episodeId = _endedEpisodeIdForOffer
+            ?? _progressTracker.CurrentMediaId
+            ?? _player.Source?.MediaId;
         if (serieId is null || episodeId is null)
             return false;
 
@@ -323,7 +339,6 @@ public sealed partial class NativeVideoPlayerOverlay
                     SeasonNumber = currentDto.SeasonNumber,
                     Pictures = currentDto.Pictures
                 };
-                _nepCurrentStill.Source = GetStillUrl(currentDto.Pictures);
                 _nepCurrentInfo.Text = FormatEpisodeLabel(_nepCurrentEpisode);
             }
         }
@@ -331,6 +346,9 @@ public sealed partial class NativeVideoPlayerOverlay
         {
             // Best-effort current-episode still.
         }
+
+        if (_advancingToNextEpisode || IsStaleNextEpisodeOffer(episodeId.Value))
+            return false;
 
         try
         {
@@ -344,23 +362,50 @@ public sealed partial class NativeVideoPlayerOverlay
         if (_nextEpisode is null)
             return false;
 
-        _nepNextStill.Source = GetStillUrl(_nextEpisode.Pictures);
+        if (_advancingToNextEpisode || IsStaleNextEpisodeOffer(episodeId.Value))
+        {
+            _nextEpisode = null;
+            return false;
+        }
+
         _nepNextInfo.Text = FormatEpisodeLabel(_nextEpisode);
+
+        // Capture URLs now; assign Image.Source after chrome + countdown are up so still
+        // decode cannot race the first countdown paints (Card/Medium, not Hero original).
+        var currentStillUrl = GetStillUrl(_nepCurrentEpisode?.Pictures);
+        var nextStillUrl = GetStillUrl(_nextEpisode.Pictures);
 
         void ShowOffer()
         {
-            SetInputModalActive(true);
+            if (_advancingToNextEpisode || IsStaleNextEpisodeOffer(episodeId.Value))
+                return;
+
+            // Make the NEP child visible BEFORE SetInputModalActive. That path runs
+            // SyncTvSurfaceComposition, which keeps the Android overlay GONE unless
+            // IsNextEpisodeVisible is already true (otherwise countdown ticks while the
+            // layer is off-screen and the user first sees ~10).
+            _nepCurrentStill.Source = null;
+            _nepNextStill.Source = null;
             _nextEpisodeOverlay.IsVisible = true;
             _nextEpisodeOverlay.ZIndex = 100;
+            SetInputModalActive(true);
+            SyncTvSurfaceComposition();
             _nepLastCardFocus = 1;
             SetNepFocusIndex(1); // Default TV focus on Play Next
 
             if (_nepBehavior == "AutoPlay")
-                StartNextEpisodeCountdown(AutoPlayCountdownSeconds);
+            {
+                _nepAutoplayFooter.IsVisible = true;
+                _nepCountdownDuration = AutoPlayCountdownSeconds;
+                _nepCountdownSeconds = AutoPlayCountdownSeconds;
+                UpdateNepCountdownUi();
+                _ = RunNepCountdownAsync(AutoPlayCountdownSeconds);
+            }
             else
                 _nepAutoplayFooter.IsVisible = false;
 
             NativeVideoDebug.Log("NextEpisode modal open focus=Play");
+            _ = LoadNepStillsAsync(currentStillUrl, nextStillUrl);
         }
 
         if (MainThread.IsMainThread)
@@ -371,10 +416,27 @@ public sealed partial class NativeVideoPlayerOverlay
         return true;
     }
 
+    /// <summary>
+    /// True when playback already moved past the ended episode (Play Next in flight or
+    /// successor source bound). Showing NEP then would overlay the wrong title.
+    /// </summary>
+    private bool IsStaleNextEpisodeOffer(Guid endedEpisodeId)
+    {
+        if (_progressTracker?.CurrentMediaId is Guid tracked && tracked != endedEpisodeId)
+            return true;
+
+        if (_player.Source?.MediaId is Guid playing && playing != endedEpisodeId
+            && _player.PlaybackState is PlaybackState.Playing or PlaybackState.Buffering)
+            return true;
+
+        return false;
+    }
+
     private string? GetStillUrl(IReadOnlyList<MetadataPictureDto>? pictures)
     {
+        // Card-sized stills for 260x146 NEP thumbs (Hero/original is far too heavy on TV).
         var uri = pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Still)?
-            .GetUri(MetadataPictureDisplayHelper.SizeFor(ImageDisplayRole.Hero))?.OriginalString;
+            .GetUri(MetadataPictureDisplayHelper.SizeFor(ImageDisplayRole.Card))?.OriginalString;
         return _server?.GetAbsoluteUri(uri)?.AbsoluteUri ?? uri;
     }
 
@@ -384,34 +446,74 @@ public sealed partial class NativeVideoPlayerOverlay
         return string.IsNullOrEmpty(episode.Title) ? code : $"{code} - {episode.Title}";
     }
 
-    private void StartNextEpisodeCountdown(int seconds)
+    private async Task LoadNepStillsAsync(string? currentStillUrl, string? nextStillUrl)
     {
-        _nepCountdownDuration = seconds;
-        _nepCountdownSeconds = seconds;
-        _nepCountdownActive = true;
-        _nepAutoplayFooter.IsVisible = true;
-        UpdateNepCountdownUi();
-        StopNepCountdownTimer();
-        _nepCountdownTimer = new System.Timers.Timer(1000) { AutoReset = true };
-        _nepCountdownTimer.Elapsed += (_, _) => MainThread.BeginInvokeOnMainThread(OnNepCountdownTick);
-        _nepCountdownTimer.Start();
+        var epoch = _nepOfferEpoch;
+        try
+        {
+            await MainThread.InvokeOnMainThreadAsync(() =>
+            {
+                if (epoch != _nepOfferEpoch || !IsNextEpisodeVisible)
+                    return;
+
+                if (!string.IsNullOrEmpty(currentStillUrl))
+                    _nepCurrentStill.Source = currentStillUrl;
+                if (!string.IsNullOrEmpty(nextStillUrl))
+                    _nepNextStill.Source = nextStillUrl;
+            });
+        }
+        catch
+        {
+            // Best-effort artwork.
+        }
     }
 
-    private void OnNepCountdownTick()
+    /// <summary>
+    /// Show N, wait 1s, show N-1. Never derive the label from wall-clock elapsed time:
+    /// Android UI stalls used to skip straight to ~10 before the first paint of 15.
+    /// </summary>
+    private async Task RunNepCountdownAsync(int seconds)
     {
-        if (!_nepCountdownActive)
-            return;
+        var epoch = ++_nepOfferEpoch;
+        _nepCountdownDuration = seconds;
 
-        _nepCountdownSeconds--;
-        if (_nepCountdownSeconds <= 0)
+        try
         {
-            StopNepCountdownTimer();
-            _nepCountdownActive = false;
-            _ = PlayNextEpisodeAsync();
-            return;
-        }
+            for (var left = seconds; left >= 1; left--)
+            {
+                if (epoch != _nepOfferEpoch)
+                    return;
 
-        UpdateNepCountdownUi();
+                await MainThread.InvokeOnMainThreadAsync(() =>
+                {
+                    if (epoch != _nepOfferEpoch || !IsNextEpisodeVisible)
+                        return;
+
+                    _nepCountdownSeconds = left;
+                    _nepAutoplayFooter.IsVisible = true;
+                    UpdateNepCountdownUi();
+                });
+
+                await Task.Delay(1000).ConfigureAwait(false);
+            }
+
+            if (epoch != _nepOfferEpoch)
+                return;
+
+            await MainThread.InvokeOnMainThreadAsync(() =>
+            {
+                if (epoch != _nepOfferEpoch || !IsNextEpisodeVisible)
+                    return;
+
+                _nepCountdownSeconds = 0;
+                UpdateNepCountdownUi();
+                _ = PlayNextEpisodeAsync();
+            });
+        }
+        catch
+        {
+            // Epoch bump / dismiss cancels the loop.
+        }
     }
 
     private void UpdateNepCountdownUi()
@@ -433,9 +535,14 @@ public sealed partial class NativeVideoPlayerOverlay
 
     private async Task PlayNextEpisodeAsync()
     {
-        if (_nextEpisode is null || _mediaService is null || _featureAccess is null || _progressTracker is null)
+        if (_advancingToNextEpisode
+            || _nextEpisode is null
+            || _mediaService is null
+            || _featureAccess is null
+            || _progressTracker is null)
             return;
 
+        _advancingToNextEpisode = true;
         PauseNextEpisodeCountdown();
         var nextEpisodeId = _nextEpisode.Id;
         var serieId = _progressTracker.CurrentSerieId;
@@ -443,37 +550,48 @@ public sealed partial class NativeVideoPlayerOverlay
 
         _progressTracker.StopTracking();
 
-        var episodeMedia = await _mediaService.GetMediaAsync(nextEpisodeId);
-        if (episodeMedia is not SerieEpisodeDto episodeDto)
-            return;
+        try
+        {
+            var episodeMedia = await _mediaService.GetMediaAsync(nextEpisodeId);
+            if (episodeMedia is not SerieEpisodeDto episodeDto)
+                return;
 
-        var indexedFile = episodeDto.IndexedFiles?.FirstOrDefault();
-        if (indexedFile is null)
-            return;
+            var indexedFile = episodeDto.IndexedFiles?.FirstOrDefault();
+            if (indexedFile is null)
+                return;
 
-        if (indexedFile.FileMetadata is not VideoFileMetadataDto videoMetadata)
-            return;
+            if (indexedFile.FileMetadata is not VideoFileMetadataDto videoMetadata)
+                return;
 
-        _progressTracker.StartTracking(
-            nextEpisodeId,
-            await _featureAccess.HasCapabilityAsync(Capability.CanReportPlaybackProgress),
-            serieId,
-            indexedFile.Id);
+            _progressTracker.StartTracking(
+                nextEpisodeId,
+                await _featureAccess.HasCapabilityAsync(Capability.CanReportPlaybackProgress),
+                serieId,
+                indexedFile.Id);
 
-        await _player.PlayIndexedFileAsync(
-            indexedFile.Id,
-            videoMetadata.AudioTracks ?? [],
-            videoMetadata.SubtitleTracks,
-            PlaybackTrackContinuity.MatchAudioIndex(videoMetadata.AudioTracks, _player.SelectedAudioTrack),
-            PlaybackTrackContinuity.MatchSubtitleIndex(videoMetadata.SubtitleTracks, _player.SelectedSubtitleTrack),
-            videoMetadata.VideoResolution,
-            videoMetadata.Thumbnails?.Uri?.ToString(),
-            nextEpisodeId,
-            VideoPlayerTitleHelper.FormatEpisode(episodeDto),
-            chapters: videoMetadata.Chapters,
-            durationSeconds: videoMetadata.Duration.TotalSeconds,
-            libraryId: indexedFile.LibraryId,
-            filePath: indexedFile.Path);
+            await _player.PlayIndexedFileAsync(
+                indexedFile.Id,
+                videoMetadata.AudioTracks ?? [],
+                videoMetadata.SubtitleTracks,
+                PlaybackTrackContinuity.MatchAudioIndex(videoMetadata.AudioTracks, _player.SelectedAudioTrack),
+                PlaybackTrackContinuity.MatchSubtitleIndex(videoMetadata.SubtitleTracks, _player.SelectedSubtitleTrack),
+                videoMetadata.VideoResolution,
+                videoMetadata.Thumbnails?.Uri?.ToString(),
+                nextEpisodeId,
+                VideoPlayerTitleHelper.FormatEpisode(episodeDto),
+                chapters: videoMetadata.Chapters,
+                durationSeconds: videoMetadata.Duration.TotalSeconds,
+                libraryId: indexedFile.LibraryId,
+                filePath: indexedFile.Path);
+        }
+        finally
+        {
+            // Keep the latch until Playing/Idle once tracking moved to the successor.
+            // Clearing when state is still Ended (Buffering after Ended is ignored) would
+            // let a late Exo Ended reopen NEP on top of ep2.
+            if (_progressTracker.CurrentMediaId != nextEpisodeId)
+                _advancingToNextEpisode = false;
+        }
     }
 
     /// <summary>Internal reset (playback resumed elsewhere) - hides the overlay without closing
@@ -483,12 +601,22 @@ public sealed partial class NativeVideoPlayerOverlay
         _nextEpisodeOverlay.IsVisible = false;
         _nextEpisode = null;
         _nepCurrentEpisode = null;
+        _endedEpisodeIdForOffer = null;
+        _pendingPlaybackEndedAfterScrub = false;
         _nepAutoplayFooter.IsVisible = false;
         StopNepCountdownTimer();
-        _nepCountdownActive = false;
         _nepCountdownSeconds = 0;
         _nepCountdownDuration = 0;
+        ApplyNepCardFocus(_nepReplayCard, focused: false);
+        ApplyNepCardFocus(_nepPlayCard, focused: false);
+        if (_nepDismissButton is not null)
+        {
+            _nepDismissButton.StrokeThickness = 2;
+            _nepDismissButton.BackgroundColor = NativeOverlayTheme.OnMediaAction;
+            _nepDismissButton.Stroke = NativeOverlayTheme.OnMediaActionBorder;
+        }
         SetInputModalActive(false);
+        SyncTvSurfaceComposition();
         NativeVideoDebug.Log("NextEpisode modal closed");
     }
 

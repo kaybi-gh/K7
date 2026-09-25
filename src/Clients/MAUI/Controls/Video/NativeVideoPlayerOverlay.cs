@@ -169,6 +169,11 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
     private bool _showChapterTicks = true;
     private Guid? _segmentsMediaId;
     private bool _handlingPlaybackEnded;
+    /// <summary>
+    /// Seek-bar commit calls <c>Seek(EOF)</c> before DragChanged(false). Defer NEP until scrub
+    /// fully ends so the autoplay countdown does not tick while the user still sees the seek UI.
+    /// </summary>
+    private bool _pendingPlaybackEndedAfterScrub;
 
     private static readonly TimeSpan OverlayTimeoutDesktop = TimeSpan.FromSeconds(3);
     private static readonly TimeSpan OverlayTimeoutTv = TimeSpan.FromSeconds(5);
@@ -350,7 +355,7 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
 
     private bool _awaitingFirstFrame = true;
     private bool _seekSpinnerActive;
-#if WINDOWS
+#if LIBVLC_DESKTOP
     private bool _seekSawBuffering;
 #endif
     private bool _userPaused;
@@ -431,7 +436,7 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
                 return;
 
             _seekSpinnerActive = true;
-#if WINDOWS
+#if LIBVLC_DESKTOP
             _seekSawBuffering = false;
 #endif
             _loadingVeil.IsVisible = false;
@@ -449,7 +454,7 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
                 return;
 
             _seekSpinnerActive = false;
-#if WINDOWS
+#if LIBVLC_DESKTOP
             _seekSawBuffering = false;
 #endif
             if (_awaitingFirstFrame)
@@ -1472,7 +1477,7 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
 #if ANDROID
         K7.Clients.MAUI.Platforms.Android.AndroidSubtitleStyle.SetSettings(_videoSettings);
         TryApplyAndroidSubtitleStyle();
-#elif WINDOWS
+#elif LIBVLC_DESKTOP
         VlcSubtitleStyle.SetSettings(_videoSettings);
         TryApplyWindowsSubtitleStyle();
 #endif
@@ -1499,7 +1504,7 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
 
     private bool DecoderOwnsFirstFrame()
     {
-#if WINDOWS
+#if LIBVLC_DESKTOP
         return WindowsVideoPlayback.ShouldUseLibVlc(_player.Source?.MimeType, _player.Source?.Url);
 #else
         return true;
@@ -1521,7 +1526,7 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
                     decoderOwnsFirstFrame: DecoderOwnsFirstFrame()))
                 NotifyFirstFrameReady();
 
-#if WINDOWS
+#if LIBVLC_DESKTOP
             if (state == PlaybackState.Buffering && _seekSpinnerActive)
                 _seekSawBuffering = true;
 
@@ -1548,9 +1553,22 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
 
             UpdateTransport();
             if (state == PlaybackState.Ended)
+            {
+                if (_advancingToNextEpisode)
+                    return;
+
                 OnPlaybackEnded();
-            else if (state == PlaybackState.Playing && IsNextEpisodeVisible)
-                DismissNextEpisode();
+            }
+            else if (state == PlaybackState.Playing)
+            {
+                _advancingToNextEpisode = false;
+                if (IsNextEpisodeVisible)
+                    DismissNextEpisode();
+            }
+            else if (state == PlaybackState.Idle)
+            {
+                _advancingToNextEpisode = false;
+            }
         });
 
     private void OnMutedChanged(bool _) => MainThread.BeginInvokeOnMainThread(UpdateTransport);
@@ -1625,6 +1643,13 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
         else
             ResetHideTimer();
         UpdateChromeVisibility();
+
+        if (!dragging && _pendingPlaybackEndedAfterScrub)
+        {
+            _pendingPlaybackEndedAfterScrub = false;
+            if (_player.PlaybackState == PlaybackState.Ended && !IsNextEpisodeVisible)
+                OnPlaybackEnded();
+        }
     }
 
     private void OnSeekPreviewMoved(object? sender, double time)
@@ -1852,6 +1877,11 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
     private void MaybeRunTvDecodeResync()
     {
 #if ANDROID
+        // Ended → NEP: skip the settings prewarm pulse. It contends with the offer countdown
+        // on Amlogic (Exo stays parked at EOF; no Stop/teardown runs here).
+        if (_handlingPlaybackEnded || IsNextEpisodeVisible || _inputModalActive)
+            return;
+
         if (!_tvResyncPending || _awaitingFirstFrame || _settings.IsOpen)
             return;
 
@@ -1862,7 +1892,7 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
 
         Dispatcher.DispatchDelayed(TimeSpan.FromMilliseconds(1200), () =>
         {
-            if (_settings.IsOpen)
+            if (_settings.IsOpen || IsNextEpisodeVisible || _inputModalActive)
                 return;
 
             _settings.PrewarmNativeLayout();
@@ -2190,7 +2220,7 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
         {
             StopCursorIdle();
 #if WINDOWS
-            Platforms.Windows.WindowsIdleCursor.Show();
+        Platforms.Windows.WindowsIdleCursor.Show();
 #endif
         }
     }
@@ -2401,7 +2431,7 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
             if (!IsVisible || !_player.IsFullScreen)
                 return;
 #if WINDOWS
-            Platforms.Windows.WindowsIdleCursor.Hide();
+        Platforms.Windows.WindowsIdleCursor.Hide();
 #endif
         });
         _cursorIdleTimer.Start();
@@ -2434,6 +2464,15 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
         if (_handlingPlaybackEnded)
             return;
 
+        // CommitEdit seeks EOF before DragChanged(false). Starting NEP mid-scrub lets the
+        // autoplay timer run while the seek chrome is still on screen (lands on ~10s).
+        if (_seekScrubbing || _seekBar.IsDragging)
+        {
+            _pendingPlaybackEndedAfterScrub = true;
+            return;
+        }
+
+        _pendingPlaybackEndedAfterScrub = false;
         _handlingPlaybackEnded = true;
         // Hide transport so TV/remote focus moves to the next-episode offer (Blazor SpatialNav
         // layer parity). Force-hide even if seek-scrub was still armed at Ended.
@@ -2445,6 +2484,7 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
     private async Task HandlePlaybackEndedAsync()
     {
         var mediaId = _player.Source?.MediaId;
+        _endedEpisodeIdForOffer = _progressTracker?.CurrentMediaId ?? mediaId;
         try
         {
             var offered = await TryLoadNextEpisodeOfferAsync();
@@ -2478,7 +2518,7 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
 #if ANDROID
             K7.Clients.MAUI.Platforms.Android.AndroidSubtitleStyle.SetSettings(_videoSettings);
             TryApplyAndroidSubtitleStyle();
-#elif WINDOWS
+#elif LIBVLC_DESKTOP
             VlcSubtitleStyle.SetSettings(_videoSettings);
             TryApplyWindowsSubtitleStyle();
 #endif
@@ -2506,14 +2546,14 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
         }
     }
 
-#if ANDROID || WINDOWS
+#if ANDROID || LIBVLC_DESKTOP
 #if ANDROID
     private void TryApplyAndroidSubtitleStyle()
     {
         MainThread.BeginInvokeOnMainThread(() => FindBlazorPage()?.ApplyPendingAndroidSubtitleStyle());
     }
 #endif
-#if WINDOWS
+#if LIBVLC_DESKTOP
     private void TryApplyWindowsSubtitleStyle()
     {
         MainThread.BeginInvokeOnMainThread(() => FindBlazorPage()?.ApplyPendingWindowsSubtitleStyle());
