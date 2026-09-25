@@ -355,7 +355,7 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
 
     private bool _awaitingFirstFrame = true;
     private bool _seekSpinnerActive;
-#if LIBVLC_DESKTOP
+#if WINDOWS
     private bool _seekSawBuffering;
 #endif
     private bool _userPaused;
@@ -436,7 +436,7 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
                 return;
 
             _seekSpinnerActive = true;
-#if LIBVLC_DESKTOP
+#if WINDOWS
             _seekSawBuffering = false;
 #endif
             _loadingVeil.IsVisible = false;
@@ -454,7 +454,7 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
                 return;
 
             _seekSpinnerActive = false;
-#if LIBVLC_DESKTOP
+#if WINDOWS
             _seekSawBuffering = false;
 #endif
             if (_awaitingFirstFrame)
@@ -1477,7 +1477,7 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
 #if ANDROID
         K7.Clients.MAUI.Platforms.Android.AndroidSubtitleStyle.SetSettings(_videoSettings);
         TryApplyAndroidSubtitleStyle();
-#elif LIBVLC_DESKTOP
+#elif WINDOWS
         VlcSubtitleStyle.SetSettings(_videoSettings);
         TryApplyWindowsSubtitleStyle();
 #endif
@@ -1504,7 +1504,7 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
 
     private bool DecoderOwnsFirstFrame()
     {
-#if LIBVLC_DESKTOP
+#if WINDOWS
         return WindowsVideoPlayback.ShouldUseLibVlc(_player.Source?.MimeType, _player.Source?.Url);
 #else
         return true;
@@ -1526,7 +1526,7 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
                     decoderOwnsFirstFrame: DecoderOwnsFirstFrame()))
                 NotifyFirstFrameReady();
 
-#if LIBVLC_DESKTOP
+#if WINDOWS
             if (state == PlaybackState.Buffering && _seekSpinnerActive)
                 _seekSawBuffering = true;
 
@@ -2518,7 +2518,7 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
 #if ANDROID
             K7.Clients.MAUI.Platforms.Android.AndroidSubtitleStyle.SetSettings(_videoSettings);
             TryApplyAndroidSubtitleStyle();
-#elif LIBVLC_DESKTOP
+#elif WINDOWS
             VlcSubtitleStyle.SetSettings(_videoSettings);
             TryApplyWindowsSubtitleStyle();
 #endif
@@ -2546,14 +2546,14 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
         }
     }
 
-#if ANDROID || LIBVLC_DESKTOP
+#if ANDROID || WINDOWS
 #if ANDROID
     private void TryApplyAndroidSubtitleStyle()
     {
         MainThread.BeginInvokeOnMainThread(() => FindBlazorPage()?.ApplyPendingAndroidSubtitleStyle());
     }
 #endif
-#if LIBVLC_DESKTOP
+#if WINDOWS
     private void TryApplyWindowsSubtitleStyle()
     {
         MainThread.BeginInvokeOnMainThread(() => FindBlazorPage()?.ApplyPendingWindowsSubtitleStyle());
