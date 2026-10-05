@@ -32,9 +32,10 @@
     display: flex;
 }
 
-.my-space-select-item:focus-visible ::deep .media-card-progress-bar,
-.my-space-select-item:focus-within ::deep .media-card-progress-bar {
-    display: none;
+.my-space-select-item:focus-visible ::deep .media-card-container,
+.my-space-select-item:focus-within ::deep .media-card-container {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
 }
 
 .my-space-select-item:focus-visible ::deep .media-card-title,

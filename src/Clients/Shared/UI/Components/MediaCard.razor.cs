@@ -115,8 +115,6 @@ public partial class MediaCard : IDisposable
         var classes = new List<string>();
         if (_menuOpen)
             classes.Add("media-card--menu-open");
-        if (OverlayEnabled && !ExcludeMenuEnabled)
-            classes.Add("media-card--play-only");
         if (Selected)
             classes.Add("media-card--selected");
         return string.Join(" ", classes);
