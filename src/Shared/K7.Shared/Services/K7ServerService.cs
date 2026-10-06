@@ -1929,6 +1929,19 @@ public partial class K7ServerService : IK7ServerService, IMediaService, ILibrary
         response.EnsureSuccessStatusCode();
     }
 
+    public async Task UpsertLastVideoTrackSelectionAsync(
+        Guid mediaId,
+        LastVideoTrackSelectionDto selection,
+        CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PutAsJsonAsync(
+            $"api/users/me/last-video-track-selection/{mediaId}",
+            selection,
+            _serializerOptions,
+            cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
     public async Task<bool> UserSettingExistsAsync(string key, CancellationToken cancellationToken = default)
     {
         var url = $"api/users/me/settings/exists?key={Uri.EscapeDataString(key)}";

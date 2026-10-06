@@ -23,4 +23,10 @@ public sealed record VideoPlayerSettingsDto
 
     /// <summary>Short-press fast-forward duration for video (keyboard / TV remote), in seconds.</summary>
     public int SkipForwardSeconds { get; set; } = 10;
+
+    /// <summary>
+    /// When true (default), remember the last audio/subtitle choice per movie or series
+    /// and reuse it on the next play.
+    /// </summary>
+    public bool? RememberTrackSelection { get; set; }
 }

@@ -39,4 +39,6 @@
   <data name="SaveSuccess" xml:space="preserve"><value>Préférences serveur enregistrées</value></data>
   <data name="ResetSuccess" xml:space="preserve"><value>Préférences serveur réinitialisées</value></data>
   <data name="OriginalLanguage" xml:space="preserve"><value>Langue originale</value></data>
+  <data name="RememberTrackSelection" xml:space="preserve"><value>Mémoriser les pistes audio et sous-titres</value></data>
+  <data name="RememberTrackSelectionHint" xml:space="preserve"><value>Conserve le dernier choix par film ou par série (tous les épisodes) et le réapplique à la prochaine lecture. Désactivez pour toujours utiliser les préférences ci-dessus.</value></data>
 </root>

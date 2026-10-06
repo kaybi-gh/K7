@@ -80,6 +80,14 @@ else
                     <K7LanguageSelect Label="@Lt["SubtitleLanguageWhenOtherAudio"]"
                                       @bind-Value="_preferences.SubtitleLanguageWhenOtherAudio" />
                 }
+
+                @if (_settings is not null)
+                {
+                    <K7Switch Label="@Lt["RememberTrackSelection"]"
+                              Value="_settings.RememberTrackSelection != false"
+                              ValueChanged="OnRememberTrackSelectionChanged" />
+                    <span class="text-caption video-playback-hint">@Lt["RememberTrackSelectionHint"]</span>
+                }
             }
         </section>
 

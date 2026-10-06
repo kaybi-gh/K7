@@ -7,12 +7,14 @@ using K7.Shared;
 using K7.Shared.Dtos;
 using K7.Shared.Dtos.Entities.Metadatas.Files;
 using K7.Shared.Dtos.Entities.Metadatas.Files.Tracks;
+using K7.Shared.Interfaces;
 
 namespace K7.Clients.Web.Services;
 
 public class PlayerService(
     IStreamUriService streamUriService,
-    IDeviceStorageService deviceStorageService) : IPlayerService
+    IDeviceStorageService deviceStorageService,
+    IUserPreferencesService userPreferencesService) : IPlayerService
 {
     public event Func<Task>? PlayRequested;
     public event Func<Task>? PauseRequested;
@@ -453,6 +455,7 @@ public class PlayerService(
 
         SelectedAudioTrack = matched;
         AudioTrackChanged?.Invoke(matched);
+        PersistLastTrackSelection();
 
         if (!StreamingSourceKind.IsHls(Source.MimeType, _baseManifestUrl))
         {
@@ -499,6 +502,7 @@ public class PlayerService(
 
         SelectedSubtitleTrack = track;
         SubtitleTrackChanged?.Invoke(track);
+        PersistLastTrackSelection();
 
         if (!RequiresManifestReloadForSubtitleChange(track))
         {
@@ -536,6 +540,27 @@ public class PlayerService(
         Source.ApplyStreamDecision(current.StreamDecision, SelectedQuality?.IsOriginal ?? true);
 
         return Task.CompletedTask;
+    }
+
+    private void PersistLastTrackSelection()
+    {
+        if (Source?.MediaId is not Guid mediaId)
+            return;
+
+        var selection = LastVideoTrackSelectionDto.FromTracks(SelectedAudioTrack, SelectedSubtitleTrack);
+        _ = PersistLastTrackSelectionSafeAsync(mediaId, selection);
+    }
+
+    private async Task PersistLastTrackSelectionSafeAsync(Guid mediaId, LastVideoTrackSelectionDto selection)
+    {
+        try
+        {
+            await userPreferencesService.UpsertLastVideoTrackSelectionAsync(mediaId, selection);
+        }
+        catch
+        {
+            // Best-effort: track memory must not interrupt playback.
+        }
     }
 
     /// <summary>

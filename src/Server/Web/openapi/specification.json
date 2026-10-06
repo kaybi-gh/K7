@@ -1746,6 +1746,40 @@
         }
       }
     },
+    "/api/users/me/last-video-track-selection/{mediaId}": {
+      "put": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "UpsertLastVideoTrackSelection",
+        "parameters": [
+          {
+            "name": "mediaId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LastVideoTrackSelectionDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/users/me/two-factor/verify": {
       "post": {
         "tags": [
@@ -14886,6 +14920,32 @@
           }
         }
       },
+      "LastVideoTrackSelectionDto": {
+        "type": "object",
+        "properties": {
+          "audioLanguage": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "subtitleLanguage": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "subtitlesOff": {
+            "type": "boolean"
+          },
+          "isForced": {
+            "type": "boolean"
+          },
+          "isHearingImpaired": {
+            "type": "boolean"
+          }
+        }
+      },
       "LeaveSharedProfileRequest": {
         "type": "object",
         "properties": {
@@ -23873,6 +23933,12 @@
               "string"
             ],
             "format": "int32"
+          },
+          "rememberTrackSelection": {
+            "type": [
+              "null",
+              "boolean"
+            ]
           }
         }
       },

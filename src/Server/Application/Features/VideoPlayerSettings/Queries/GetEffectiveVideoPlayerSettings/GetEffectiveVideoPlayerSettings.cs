@@ -19,13 +19,20 @@ public class GetEffectiveVideoPlayerSettingsQueryHandler(
         {
             var userJson = await userSettingsService.GetAsync(userId, UserSettingKeys.VideoPlayerSettings, cancellationToken);
             if (userJson is not null)
-                return JsonSerializer.Deserialize<VideoPlayerSettingsDto>(userJson) ?? new VideoPlayerSettingsDto();
+                return Normalize(JsonSerializer.Deserialize<VideoPlayerSettingsDto>(userJson));
         }
 
         var serverJson = await serverSettingsService.GetAsync(ServerSettingKeys.VideoPlayerSettings, cancellationToken);
         if (serverJson is not null)
-            return JsonSerializer.Deserialize<VideoPlayerSettingsDto>(serverJson) ?? new VideoPlayerSettingsDto();
+            return Normalize(JsonSerializer.Deserialize<VideoPlayerSettingsDto>(serverJson));
 
-        return new VideoPlayerSettingsDto();
+        return Normalize(null);
+    }
+
+    private static VideoPlayerSettingsDto Normalize(VideoPlayerSettingsDto? settings)
+    {
+        settings ??= new VideoPlayerSettingsDto();
+        settings.RememberTrackSelection ??= true;
+        return settings;
     }
 }

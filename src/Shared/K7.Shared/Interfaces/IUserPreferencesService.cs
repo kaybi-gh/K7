@@ -34,6 +34,7 @@ public interface IUserPreferencesService
     Task<TrackSelectionPreferencesDto> GetEffectiveTrackSelectionPreferencesAsync(Guid? libraryId = null, CancellationToken cancellationToken = default);
     Task UpdateUserTrackSelectionPreferencesAsync(TrackSelectionPreferencesDto preferences, Guid? libraryId = null, CancellationToken cancellationToken = default);
     Task ResetUserTrackSelectionPreferencesAsync(Guid? libraryId = null, CancellationToken cancellationToken = default);
+    Task UpsertLastVideoTrackSelectionAsync(Guid mediaId, LastVideoTrackSelectionDto selection, CancellationToken cancellationToken = default);
     Task<VideoPlaybackPolicySettingsDto> GetEffectiveVideoPlaybackPolicySettingsAsync(CancellationToken cancellationToken = default);
     Task UpdateUserVideoPlaybackPolicySettingsAsync(VideoPlaybackPolicySettingsDto settings, CancellationToken cancellationToken = default);
     Task ResetUserVideoPlaybackPolicySettingsAsync(CancellationToken cancellationToken = default);

@@ -966,6 +966,7 @@ public sealed class MockUserPreferencesService : IUserPreferencesService
     public Task<K7.Shared.Dtos.TrackSelectionPreferencesDto> GetEffectiveTrackSelectionPreferencesAsync(Guid? libraryId = null, CancellationToken cancellationToken = default) => Task.FromResult(new K7.Shared.Dtos.TrackSelectionPreferencesDto());
     public Task UpdateUserTrackSelectionPreferencesAsync(K7.Shared.Dtos.TrackSelectionPreferencesDto preferences, Guid? libraryId = null, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task ResetUserTrackSelectionPreferencesAsync(Guid? libraryId = null, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task UpsertLastVideoTrackSelectionAsync(Guid mediaId, K7.Shared.Dtos.LastVideoTrackSelectionDto selection, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task<VideoPlaybackPolicySettingsDto> GetEffectiveVideoPlaybackPolicySettingsAsync(CancellationToken cancellationToken = default) => Task.FromResult(new VideoPlaybackPolicySettingsDto());
     public Task UpdateUserVideoPlaybackPolicySettingsAsync(VideoPlaybackPolicySettingsDto settings, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task ResetUserVideoPlaybackPolicySettingsAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;

@@ -94,6 +94,15 @@ public partial class AdminVideoPlaybackPanel
         StateHasChanged();
     }
 
+    private void OnRememberTrackSelectionChanged(bool value)
+    {
+        if (_settings is null)
+            return;
+
+        _settings.RememberTrackSelection = value;
+        StateHasChanged();
+    }
+
     private void OnSubtitleBackgroundOpacityChanged(double value)
     {
         if (_settings is null)

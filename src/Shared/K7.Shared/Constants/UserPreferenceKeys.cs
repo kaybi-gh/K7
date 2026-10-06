@@ -13,4 +13,10 @@ public static class UserPreferenceKeys
 
     public static string TrackSelectionForLibrary(Guid libraryId) =>
         $"TrackSelectionPreferences:Library:{libraryId}";
+
+    public static string LastVideoTrackSelectionForMovie(Guid mediaId) =>
+        $"LastVideoTrackSelection:Movie:{mediaId}";
+
+    public static string LastVideoTrackSelectionForSerie(Guid serieId) =>
+        $"LastVideoTrackSelection:Serie:{serieId}";
 }

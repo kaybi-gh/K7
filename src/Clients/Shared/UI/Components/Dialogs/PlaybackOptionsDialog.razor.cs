@@ -165,6 +165,8 @@ public partial class PlaybackOptionsDialog
 
     private void Play()
     {
+        PersistLastTrackSelection();
+
         var result = new PlaybackOptionsResult
         {
             SelectedFile = SelectedRelease?.File,
@@ -173,6 +175,24 @@ public partial class PlaybackOptionsDialog
             SubtitleTrack = SelectedSubtitleTrack
         };
         Dialog.Close(K7DialogResult.Ok(result));
+    }
+
+    private void PersistLastTrackSelection()
+    {
+        var selection = LastVideoTrackSelectionDto.FromTracks(SelectedAudioTrack, SelectedSubtitleTrack);
+        _ = PersistLastTrackSelectionSafeAsync(Movie.Id, selection);
+    }
+
+    private async Task PersistLastTrackSelectionSafeAsync(Guid mediaId, LastVideoTrackSelectionDto selection)
+    {
+        try
+        {
+            await UserPreferencesService.UpsertLastVideoTrackSelectionAsync(mediaId, selection);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Failed to remember track selection for media {MediaId}", mediaId);
+        }
     }
 
     private string GetReleaseLabel(PlaybackReleaseOption? release)

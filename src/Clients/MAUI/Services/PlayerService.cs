@@ -8,12 +8,14 @@ using K7.Shared;
 using K7.Shared.Dtos;
 using K7.Shared.Dtos.Entities.Metadatas.Files;
 using K7.Shared.Dtos.Entities.Metadatas.Files.Tracks;
+using K7.Shared.Interfaces;
 
 namespace K7.Clients.MAUI.Services;
 
 internal class PlayerService(
     IStreamUriService streamUriService,
     IDeviceStorageService deviceStorageService,
+    IUserPreferencesService userPreferencesService,
     IWindowsMpcPlaybackHost? mpcPlaybackHost = null,
     ISyncPlayService? syncPlayService = null,
     IRemoteControlService? remoteControlService = null,
@@ -494,6 +496,7 @@ internal class PlayerService(
 
         _selectedAudioTrack = matched;
         AudioTrackChanged?.Invoke(matched);
+        PersistLastTrackSelection();
 
         if (!StreamingSourceKind.IsHls(Source.MimeType, Source.Url))
         {
@@ -544,6 +547,7 @@ internal class PlayerService(
     {
         _selectedSubtitleTrack = track;
         SubtitleTrackChanged?.Invoke(track);
+        PersistLastTrackSelection();
 
         if (!RequiresManifestReloadForSubtitleChange(track))
         {
@@ -585,6 +589,27 @@ internal class PlayerService(
             SetPlaybackRate(_playbackRate);
 
         return Task.CompletedTask;
+    }
+
+    private void PersistLastTrackSelection()
+    {
+        if (Source?.MediaId is not Guid mediaId)
+            return;
+
+        var selection = LastVideoTrackSelectionDto.FromTracks(_selectedAudioTrack, _selectedSubtitleTrack);
+        _ = PersistLastTrackSelectionSafeAsync(mediaId, selection);
+    }
+
+    private async Task PersistLastTrackSelectionSafeAsync(Guid mediaId, LastVideoTrackSelectionDto selection)
+    {
+        try
+        {
+            await userPreferencesService.UpsertLastVideoTrackSelectionAsync(mediaId, selection);
+        }
+        catch
+        {
+            // Best-effort: track memory must not interrupt playback.
+        }
     }
 
     /// <summary>

@@ -6,7 +6,10 @@ using K7.Server.Application.Common.Models;
 using K7.Server.Application.Features.IndexedFiles.Queries.GetHlsAudioStreamSegment;
 using K7.Server.Application.Features.IndexedFiles.Queries.GetHlsVideoStreamSegment;
 using K7.Server.Application.Features.IndexedFiles.Queries.GetStreamUri;
+using K7.Server.Application.Features.LastVideoTrackSelection;
+using K7.Server.Application.Features.LastVideoTrackSelection.Queries.GetLastVideoTrackSelection;
 using K7.Server.Application.Features.TrackSelectionPreferences.Queries.GetEffectiveTrackSelectionPreferences;
+using K7.Server.Application.Features.VideoPlayerSettings.Queries.GetEffectiveVideoPlayerSettings;
 using K7.Server.Application.Helpers;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities;
@@ -86,16 +89,35 @@ public sealed class StreamPlaybackService(
         var subtitleTrackIndex = query.SubtitleTrackIndex;
         if (query.AudioTrackIndex is null)
         {
-            var preferences = await sender.Send(
-                new GetEffectiveTrackSelectionPreferencesQuery { LibraryId = indexedFile.LibraryId },
-                cancellationToken);
             var audioDtos = videoFileMetadata.AudioTracks.OrderBy(t => t.Index).Select(t => t.ToAudioFileTrackDto()).ToList();
             var subtitleDtos = videoFileMetadata.SubtitleTracks.OrderBy(t => t.Index).Select(t => t.ToSubtitleFileTrackDto()).ToList();
-            var originalLanguage = await MediaOriginalLanguage.ResolveAsync(
-                context,
-                indexedFile.MediaId,
-                cancellationToken);
-            var selection = TrackSelector.SelectTracks(preferences, audioDtos, subtitleDtos, originalLanguage);
+            TrackSelector.TrackSelectionResult? selection = null;
+
+            if (indexedFile.MediaId is Guid mediaId)
+            {
+                var videoSettings = await sender.Send(new GetEffectiveVideoPlayerSettingsQuery(), cancellationToken);
+                if (videoSettings.RememberTrackSelection != false)
+                {
+                    var remembered = await sender.Send(
+                        new GetLastVideoTrackSelectionQuery { MediaId = mediaId },
+                        cancellationToken);
+                    if (remembered is not null)
+                        selection = LastVideoTrackSelectionMatcher.TryMatch(remembered, audioDtos, subtitleDtos);
+                }
+            }
+
+            if (selection is null)
+            {
+                var preferences = await sender.Send(
+                    new GetEffectiveTrackSelectionPreferencesQuery { LibraryId = indexedFile.LibraryId },
+                    cancellationToken);
+                var originalLanguage = await LastVideoTrackSelectionScope.ResolveOriginalLanguageAsync(
+                    context,
+                    indexedFile.MediaId,
+                    cancellationToken);
+                selection = TrackSelector.SelectTracks(preferences, audioDtos, subtitleDtos, originalLanguage);
+            }
+
             query.AudioTrackIndex = selection.AudioTrackIndex;
             subtitleTrackIndex ??= selection.SubtitleTrackIndex;
         }
