@@ -4,6 +4,7 @@ using K7.Server.Domain.Enums;
 using K7.Shared;
 using K7.Shared.Dtos;
 using K7.Shared.Dtos.Entities.Metadatas.Files.Tracks;
+using K7.Shared.Interfaces;
 
 namespace K7.Clients.ComponentTests.Services;
 
@@ -28,7 +29,10 @@ public class PlayerServicePlaybackRecoveryTests
         _storage.Get(Arg.Any<PreferenceKey<string?>>(), Arg.Any<string?>())
             .Returns(ci => ci.ArgAt<string?>(1));
 
-        _sut = new PlayerService(_streamUri, _storage);
+        _sut = new PlayerService(
+            _streamUri,
+            _storage,
+            Substitute.For<IUserPreferencesService>());
     }
 
     [Test]
@@ -78,7 +82,42 @@ public class PlayerServicePlaybackRecoveryTests
         _sut.SelectedQuality!.IsOriginal.Should().BeTrue();
     }
 
-    private async Task StartPlaybackAsync()
+    [Test]
+    public async Task TryRecoverHlsAudioRemuxAsync_ShouldReloadWithAacTranscode_WhenAudioAppendFails()
+    {
+        await StartPlaybackAsync(audioTrackIndex: 1);
+
+        var recovered = await _sut.TryRecoverHlsAudioRemuxAsync(
+            "audio append of 288925b failed for segment #8 in playlist 0");
+
+        recovered.Should().BeTrue();
+        _sut.Source.Url.Should().Contain("AudioTrackTranscodings=1%3Aaac");
+        _sut.SelectedQuality!.IsOriginal.Should().BeTrue();
+    }
+
+    [Test]
+    public async Task TryRecoverHlsAudioRemuxAsync_ShouldRetryOnce()
+    {
+        await StartPlaybackAsync(audioTrackIndex: 0);
+
+        (await _sut.TryRecoverHlsAudioRemuxAsync("audio append failed")).Should().BeTrue();
+        var url = _sut.Source.Url;
+        (await _sut.TryRecoverHlsAudioRemuxAsync("audio append failed")).Should().BeFalse();
+        _sut.Source.Url.Should().Be(url);
+    }
+
+    [Test]
+    public async Task TryRecoverHlsAudioRemuxAsync_ShouldIgnoreUnrelatedErrors()
+    {
+        await StartPlaybackAsync(audioTrackIndex: 0);
+
+        var recovered = await _sut.TryRecoverHlsAudioRemuxAsync("network error");
+
+        recovered.Should().BeFalse();
+        _sut.Source.Url.Should().NotContain("AudioTrackTranscodings");
+    }
+
+    private async Task StartPlaybackAsync(int? audioTrackIndex = null)
     {
         var sessionId = Guid.NewGuid();
         var fileId = Guid.NewGuid();
@@ -100,9 +139,14 @@ public class PlayerServicePlaybackRecoveryTests
                 }
             });
 
+        var audioTracks = audioTrackIndex is int index
+            ? new[] { new AudioFileTrackDto { Index = index, Codec = "aac", Channels = 2, IsDefault = true } }
+            : Array.Empty<AudioFileTrackDto>();
+
         await _sut.PlayIndexedFileAsync(
             fileId,
-            Array.Empty<AudioFileTrackDto>(),
+            audioTracks,
+            audioTrackIndex: audioTrackIndex,
             videoResolution: VideoResolutionIdentifier._1080p);
     }
 }

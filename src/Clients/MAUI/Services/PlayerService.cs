@@ -282,6 +282,7 @@ internal class PlayerService(
     private int _remuxReloadsDone;
     private const int MaxPlaybackStartRecoveryAttempts = 4;
     private DateTime _lastQualityFallbackUtc = DateTime.MinValue;
+    private bool _hlsAudioRemuxFallbackAttempted;
     private readonly SemaphoreSlim _playbackStartRecoveryLock = new(1, 1);
 
     public void ApplyExternalClock(double positionSeconds, double? durationSeconds, PlaybackState state)
@@ -367,6 +368,7 @@ internal class PlayerService(
         _playbackStartRecoveryAttempts = 0;
         _remuxReloadsDone = 0;
         _lastQualityFallbackUtc = DateTime.MinValue;
+        _hlsAudioRemuxFallbackAttempted = false;
         PlaybackStartFailureMessageKey = null;
 
         var manifestUrl = BuildManifestUrlWithQuality(_baseManifestUrl, _selectedQuality);
@@ -449,6 +451,7 @@ internal class PlayerService(
         _playbackStartRecoveryAttempts = 0;
         _remuxReloadsDone = 0;
         _lastQualityFallbackUtc = DateTime.MinValue;
+        _hlsAudioRemuxFallbackAttempted = false;
         PlaybackStartFailureMessageKey = null;
 
         var manifestUrl = BuildManifestUrlWithQuality(_baseManifestUrl, _selectedQuality);
@@ -683,6 +686,67 @@ internal class PlayerService(
         ResumeWebPlaybackIfNeeded();
 
         return Task.CompletedTask;
+    }
+
+    public async Task<bool> TryRecoverHlsAudioRemuxAsync(string? errorMessage, CancellationToken cancellationToken = default)
+    {
+        if (_hlsAudioRemuxFallbackAttempted
+            || !HlsAudioRemuxRecovery.IsRemuxAudioAppendFailure(errorMessage))
+        {
+            return false;
+        }
+
+        if (!WindowsVideoPlayback.ShouldUseWebVideoPlayer(Source?.MimeType, Source?.Url)
+            || !IsVisible
+            || Source?.StreamSessionId is null
+            || _selectedAudioTrack is null
+            || _selectedQuality?.IsOriginal == false
+            || !StreamingSourceKind.IsHls(Source.MimeType, Source.Url))
+        {
+            return false;
+        }
+
+        await _playbackStartRecoveryLock.WaitAsync(cancellationToken);
+        try
+        {
+            if (_hlsAudioRemuxFallbackAttempted)
+                return false;
+
+            _hlsAudioRemuxFallbackAttempted = true;
+            _baseManifestUrl = HlsManifestUrl.WithAudioTrackTranscodings(
+                _baseManifestUrl!,
+                new Dictionary<int, string> { [_selectedAudioTrack.Index] = "aac" });
+
+            var seekTime = CaptureResumeTime();
+            var current = Source;
+            var newUrl = BuildManifestUrlWithQuality(_baseManifestUrl, _selectedQuality);
+            newUrl = BuildManifestUrlWithSubtitleSettings(newUrl, _selectedSubtitleTrack);
+            newUrl = BuildManifestUrlWithAudioTrack(newUrl, _selectedAudioTrack.Index);
+
+            Source = new PlayerSource
+            {
+                MediaId = current.MediaId,
+                StreamSessionId = current.StreamSessionId,
+                IndexedFileId = current.IndexedFileId,
+                OriginalLanguage = current.OriginalLanguage ?? _originalLanguage,
+                Url = BuildManifestUrlWithStartPosition(newUrl, seekTime),
+                MimeType = current.MimeType ?? "application/vnd.apple.mpegurl",
+                ThumbnailsUrl = current.ThumbnailsUrl,
+                Chapters = current.Chapters,
+                Title = current.Title,
+                CoverUrl = current.CoverUrl,
+                PendingSeekTime = seekTime > 0 ? seekTime : null
+            };
+            Source.CopyVideoTimingFrom(current);
+            Source.ApplyStreamDecision(current.StreamDecision, _selectedQuality?.IsOriginal ?? true);
+
+            ResumeWebPlaybackIfNeeded();
+            return true;
+        }
+        finally
+        {
+            _playbackStartRecoveryLock.Release();
+        }
     }
 
     public async Task<bool> TryRecoverPlaybackStartAsync(bool allowQualityLadder = false, CancellationToken cancellationToken = default)

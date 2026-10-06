@@ -112,6 +112,11 @@ public interface IPlayerService
     Task<bool> TryRecoverPlaybackStartAsync(bool allowQualityLadder = false, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// After an HLS remux audio MSE append failure, reload the master with AudioTrackTranscodings AAC.
+    /// </summary>
+    Task<bool> TryRecoverHlsAudioRemuxAsync(string? errorMessage, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Stops playback, hides the player, and raises <see cref="PlaybackStartFailed"/>.
     /// </summary>
     /// <param name="messageKey">

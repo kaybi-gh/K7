@@ -145,6 +145,9 @@ public sealed class DemoPlayerService : IPlayerService
     public Task<bool> TryRecoverPlaybackStartAsync(bool allowQualityLadder = false, CancellationToken cancellationToken = default) =>
         Task.FromResult(false);
 
+    public Task<bool> TryRecoverHlsAudioRemuxAsync(string? errorMessage, CancellationToken cancellationToken = default) =>
+        Task.FromResult(false);
+
     public Task AbortPlaybackStartAsync(string? messageKey = null, CancellationToken cancellationToken = default)
     {
         PlaybackStartFailureMessageKey = messageKey ?? "StreamPlaybackFailed";

@@ -5,6 +5,7 @@ using K7.Server.Domain.Enums;
 using K7.Shared;
 using K7.Shared.Dtos;
 using K7.Shared.Enums;
+using K7.Shared.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.JSInterop;
 using Microsoft.JSInterop.Infrastructure;
@@ -38,7 +39,10 @@ public class VideoPlayerUxSettingsSyncTests
         _storage.Get(Arg.Any<PreferenceKey<string?>>(), Arg.Any<string?>())
             .Returns(ci => ci.ArgAt<string?>(1));
 
-        _player = new PlayerService(_streamUri, _storage);
+        _player = new PlayerService(
+            _streamUri,
+            _storage,
+            Substitute.For<IUserPreferencesService>());
         _device = Substitute.For<IDeviceService>();
         _device.CachedDeviceType.Returns(DeviceType.Desktop);
         _js = Substitute.For<IJSRuntime>();

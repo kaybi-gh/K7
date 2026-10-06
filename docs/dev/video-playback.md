@@ -192,6 +192,11 @@ WebVTT layer on `RootGrid`. A non-Original quality step still promotes the sessi
 iOS/Mac do not advertise `matroska` (AVPlayer). Do not promote Direct Play to HLS burn-in just
 to show PGS.
 
+Web Video.js: when remuxed fMP4 audio from MPEG-TS fails in MSE (`audio append`
+from Video.js), the client reloads the same HLS master with `AudioTrackTranscodings={index}:aac`
+on the manifest URL (same query param as `GetHlsStreamManifest` already supports). Video stays
+remux copy. One retry per play.
+
 Web Video.js never gets video Direct Play. A muxed file would lock the first
 audio/sub: Video.js hands native playback to the browser, and Chromium does not expose
 in-container `audioTracks` (Safari is the exception for MP4). Maintainers recommend HLS

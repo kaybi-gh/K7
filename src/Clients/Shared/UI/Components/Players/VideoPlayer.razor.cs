@@ -1026,7 +1026,16 @@ public partial class VideoPlayer : IAsyncDisposable
     [JSInvokable]
     public void OnPlayerError(int code, string message)
     {
-        if (!PlayerService.IsVisible || PlayerService.PlaybackState is PlaybackState.Playing)
+        if (!PlayerService.IsVisible)
+            return;
+
+        if (HlsAudioRemuxRecovery.IsRemuxAudioAppendFailure(message))
+        {
+            OnHlsAudioRemuxFailureAsync(code, message).FireAndForget();
+            return;
+        }
+
+        if (PlayerService.PlaybackState is PlaybackState.Playing)
             return;
 
         var isDecode = code == MediaErrDecode;
@@ -1093,6 +1102,25 @@ public partial class VideoPlayer : IAsyncDisposable
         catch
         {
             // Best-effort reporting.
+        }
+    }
+
+    private async Task OnHlsAudioRemuxFailureAsync(int code, string message)
+    {
+        try
+        {
+            ReportHardVideoJsErrorToServer(code, message);
+            var recovered = await PlayerService.TryRecoverHlsAudioRemuxAsync(message);
+            if (recovered)
+                return;
+
+            await OnHardPlayerErrorAsync();
+        }
+        catch (ObjectDisposedException)
+        {
+        }
+        catch (OperationCanceledException)
+        {
         }
     }
 

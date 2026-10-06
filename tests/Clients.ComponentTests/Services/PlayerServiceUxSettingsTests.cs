@@ -5,6 +5,7 @@ using K7.Server.Domain.Enums;
 using K7.Shared;
 using K7.Shared.Dtos;
 using K7.Shared.Enums;
+using K7.Shared.Interfaces;
 
 namespace K7.Clients.ComponentTests.Services;
 
@@ -29,7 +30,10 @@ public class PlayerServiceUxSettingsTests
         _storage.Get(Arg.Any<PreferenceKey<string?>>(), Arg.Any<string?>())
             .Returns(ci => ci.ArgAt<string?>(1));
 
-        _sut = new PlayerService(_streamUri, _storage);
+        _sut = new PlayerService(
+            _streamUri,
+            _storage,
+            Substitute.For<IUserPreferencesService>());
     }
 
     [Test]
