@@ -91,7 +91,11 @@ public sealed class StreamPlaybackService(
                 cancellationToken);
             var audioDtos = videoFileMetadata.AudioTracks.OrderBy(t => t.Index).Select(t => t.ToAudioFileTrackDto()).ToList();
             var subtitleDtos = videoFileMetadata.SubtitleTracks.OrderBy(t => t.Index).Select(t => t.ToSubtitleFileTrackDto()).ToList();
-            var selection = TrackSelector.SelectTracks(preferences, audioDtos, subtitleDtos);
+            var originalLanguage = await MediaOriginalLanguage.ResolveAsync(
+                context,
+                indexedFile.MediaId,
+                cancellationToken);
+            var selection = TrackSelector.SelectTracks(preferences, audioDtos, subtitleDtos, originalLanguage);
             query.AudioTrackIndex = selection.AudioTrackIndex;
             subtitleTrackIndex ??= selection.SubtitleTrackIndex;
         }

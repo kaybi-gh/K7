@@ -4,18 +4,29 @@
 
 <K7Select TValue="string" Value="@Value" ValueChanged="@ValueChanged" Label="@Label" Variant="@Variant" Class="@Class" Style="@Style" Disabled="Disabled">
     <SelectedContent>
-        @{ var selected = Languages.FirstOrDefault(l => l.Code == Value); }
+        @{ var selected = DisplayLanguages.FirstOrDefault(l => l.Code == Value); }
         @if (selected is not null)
         {
-            <span class="fi fi-@selected.CountryCode"></span>
+            @if (selected.Code != TrackSelectionLanguages.Original)
+            {
+                <span class="fi fi-@selected.CountryCode"></span>
+            }
             @GetDisplayText(selected)
+        }
+        else if (Value == TrackSelectionLanguages.Original)
+        {
+            @OriginalLanguageLabel
         }
     </SelectedContent>
     <ChildContent>
-        @foreach (var lang in Languages)
+        @foreach (var lang in DisplayLanguages)
         {
             <K7SelectItem TValue="string" Value="@lang.Code" Text="@GetDisplayText(lang)">
-                <span class="fi fi-@lang.CountryCode"></span> @GetDisplayText(lang)
+                @if (lang.Code != TrackSelectionLanguages.Original)
+                {
+                    <span class="fi fi-@lang.CountryCode"></span>
+                }
+                @GetDisplayText(lang)
             </K7SelectItem>
         }
     </ChildContent>

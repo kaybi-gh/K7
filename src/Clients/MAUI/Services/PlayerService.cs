@@ -291,11 +291,14 @@ internal class PlayerService(
         PlaybackState = state;
     }
 
-    public async Task PlayIndexedFileAsync(Guid indexedFileId, IEnumerable<AudioFileTrackDto> audioTracks, IEnumerable<SubtitleFileTrackDto>? subtitleTracks = null, int? audioTrackIndex = null, int? subtitleTrackIndex = null, VideoResolutionIdentifier? videoResolution = null, string? thumbnailsUrl = null, Guid? mediaId = null, string? title = null, string? coverUrl = null, double? startPosition = null, IReadOnlyList<ChapterMarkerDto>? chapters = null, double? durationSeconds = null, Guid? libraryId = null, string? filePath = null, CancellationToken cancellationToken = default)
+    private string? _originalLanguage;
+
+    public async Task PlayIndexedFileAsync(Guid indexedFileId, IEnumerable<AudioFileTrackDto> audioTracks, IEnumerable<SubtitleFileTrackDto>? subtitleTracks = null, int? audioTrackIndex = null, int? subtitleTrackIndex = null, VideoResolutionIdentifier? videoResolution = null, string? thumbnailsUrl = null, Guid? mediaId = null, string? title = null, string? coverUrl = null, double? startPosition = null, IReadOnlyList<ChapterMarkerDto>? chapters = null, double? durationSeconds = null, Guid? libraryId = null, string? filePath = null, string? originalLanguage = null, CancellationToken cancellationToken = default)
     {
         if (mpcPlaybackHost is not null)
             await mpcPlaybackHost.StopAsync(cancellationToken);
 
+        _originalLanguage = originalLanguage;
         _currentIndexedFileId = indexedFileId;
         _lastKnownPlaybackTime = startPosition is > 1 ? startPosition.Value : 0;
         _audioTracks = audioTracks.ToList();
@@ -372,6 +375,7 @@ internal class PlayerService(
             MediaId = mediaId,
             StreamSessionId = session.Id,
             IndexedFileId = indexedFileId,
+            OriginalLanguage = _originalLanguage,
             Url = BuildManifestUrlWithStartPosition(manifestUrl, startPosition),
             MimeType = session.Source.MimeType,
             ThumbnailsUrl = thumbnailsUrl,
@@ -392,8 +396,9 @@ internal class PlayerService(
         QualityChanged?.Invoke(_selectedQuality);
     }
 
-    public async Task PlayRemoteIndexedFileAsync(Guid remoteFileId, IEnumerable<AudioFileTrackDto> audioTracks, IEnumerable<SubtitleFileTrackDto>? subtitleTracks = null, int? audioTrackIndex = null, int? subtitleTrackIndex = null, VideoResolutionIdentifier? videoResolution = null, string? thumbnailsUrl = null, Guid? mediaId = null, string? title = null, string? coverUrl = null, double? startPosition = null, CancellationToken cancellationToken = default)
+    public async Task PlayRemoteIndexedFileAsync(Guid remoteFileId, IEnumerable<AudioFileTrackDto> audioTracks, IEnumerable<SubtitleFileTrackDto>? subtitleTracks = null, int? audioTrackIndex = null, int? subtitleTrackIndex = null, VideoResolutionIdentifier? videoResolution = null, string? thumbnailsUrl = null, Guid? mediaId = null, string? title = null, string? coverUrl = null, double? startPosition = null, string? originalLanguage = null, CancellationToken cancellationToken = default)
     {
+        _originalLanguage = originalLanguage;
         _currentIndexedFileId = null;
         _lastKnownPlaybackTime = startPosition is > 1 ? startPosition.Value : 0;
         _audioTracks = audioTracks.ToList();
@@ -450,6 +455,7 @@ internal class PlayerService(
         {
             MediaId = mediaId,
             StreamSessionId = session.Id,
+            OriginalLanguage = _originalLanguage,
             Url = BuildManifestUrlWithStartPosition(manifestUrl, startPosition),
             MimeType = session.Source.MimeType,
             Title = title,
@@ -806,6 +812,7 @@ internal class PlayerService(
             MediaId = previous.MediaId,
             StreamSessionId = previous.StreamSessionId,
             IndexedFileId = previous.IndexedFileId,
+            OriginalLanguage = previous.OriginalLanguage ?? _originalLanguage,
             Url = url,
             MimeType = StreamingSourceKind.IsHls(mimeType: null, url)
                 ? "application/vnd.apple.mpegurl"

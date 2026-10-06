@@ -342,7 +342,8 @@ public partial class Serie : IAsyncDisposable
             FeatureAccess,
             FederationService,
             apiClient,
-            fromBeginning: fromBeginning);
+            fromBeginning: fromBeginning,
+            originalLanguage: _serie?.OriginalLanguage);
 
         if (result == EpisodePlaybackResult.AwaitingProbe)
         {

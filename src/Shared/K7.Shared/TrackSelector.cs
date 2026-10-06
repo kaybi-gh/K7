@@ -11,22 +11,31 @@ public static class TrackSelector
     public static TrackSelectionResult SelectTracks(
         TrackSelectionPreferencesDto preferences,
         IReadOnlyList<AudioFileTrackDto> audioTracks,
-        IReadOnlyList<SubtitleFileTrackDto> subtitleTracks)
+        IReadOnlyList<SubtitleFileTrackDto> subtitleTracks,
+        string? originalLanguage = null)
     {
         if (audioTracks.Count == 0)
             throw new InvalidOperationException("No audio tracks available.");
 
-        var selectedAudio = FindAudioTrack(audioTracks, preferences.PreferredAudioLanguage)
-            ?? (preferences.FallbackAudioLanguage is not null
-                ? FindAudioTrack(audioTracks, preferences.FallbackAudioLanguage)
+        var preferredLanguage = ResolveLanguage(preferences.PreferredAudioLanguage, originalLanguage);
+        var fallbackLanguage = preferences.FallbackAudioLanguage is not null
+            ? ResolveLanguage(preferences.FallbackAudioLanguage, originalLanguage)
+            : null;
+
+        var selectedAudio = (preferredLanguage is not null
+                ? FindAudioTrack(audioTracks, preferredLanguage)
+                : null)
+            ?? (fallbackLanguage is not null
+                ? FindAudioTrack(audioTracks, fallbackLanguage)
                 : null)
             ?? audioTracks.FirstOrDefault(t => t.IsDefault)
             ?? audioTracks[0];
 
-        var audioMatchesPreferred = string.Equals(
-            selectedAudio.Language,
-            preferences.PreferredAudioLanguage,
-            StringComparison.OrdinalIgnoreCase);
+        var audioMatchesPreferred = preferredLanguage is not null
+            && string.Equals(
+                selectedAudio.Language,
+                preferredLanguage,
+                StringComparison.OrdinalIgnoreCase);
 
         var subtitleMode = audioMatchesPreferred
             ? preferences.SubtitleWhenPreferredAudio
@@ -39,6 +48,14 @@ public static class TrackSelector
         var selectedSubtitle = FindSubtitleTrack(subtitleTracks, subtitleLanguage, subtitleMode);
 
         return new TrackSelectionResult(selectedAudio.Index, selectedSubtitle?.Index);
+    }
+
+    private static string? ResolveLanguage(string? language, string? originalLanguage)
+    {
+        if (TrackSelectionLanguages.IsOriginal(language))
+            return string.IsNullOrWhiteSpace(originalLanguage) ? null : originalLanguage;
+
+        return language;
     }
 
     private static AudioFileTrackDto? FindAudioTrack(IReadOnlyList<AudioFileTrackDto> tracks, string language)

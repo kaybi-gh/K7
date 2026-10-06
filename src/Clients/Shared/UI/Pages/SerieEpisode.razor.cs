@@ -24,6 +24,7 @@ public partial class SerieEpisode : IAsyncDisposable
     [Parameter] public int EpisodeNumber { get; set; }
 
     private SerieEpisodeDto? _episode;
+    private string? _serieOriginalLanguage;
     private IndexedFileDto? _indexedFile;
     private string? _stillUrl;
     private int? _stillSourceWidth;
@@ -185,6 +186,8 @@ public partial class SerieEpisode : IAsyncDisposable
             return;
         }
 
+        _serieOriginalLanguage = serie.OriginalLanguage;
+
         await ThemeSongPlaybackHelper.TryStartAsync(
             serie.Id,
             serie.HasThemeSong,
@@ -331,7 +334,8 @@ public partial class SerieEpisode : IAsyncDisposable
             chapters: videoMetadata.Chapters,
             durationSeconds: videoMetadata.Duration.TotalSeconds,
             libraryId: _indexedFile.LibraryId,
-            filePath: _indexedFile.Path);
+            filePath: _indexedFile.Path,
+            originalLanguage: _serieOriginalLanguage);
     }
 
     private bool CanResumePlayback =>

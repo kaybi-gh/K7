@@ -71,6 +71,25 @@ public class AudioTrackDisplayHelperTests
     }
 
     [Test]
+    public void FormatLabel_ShouldAppendOriginalLanguageMarker_WhenTrackMatches()
+    {
+        var en = AudioTrackDisplayHelper.FormatLabel(Track(1, "en", "eng"), "en", "original language");
+        var fr = AudioTrackDisplayHelper.FormatLabel(Track(2, "fr", "fra"), "en", "original language");
+
+        en.Should().EndWith("(original language)");
+        fr.Should().NotContain("original language");
+    }
+
+    [Test]
+    public void MatchesOriginalLanguage_ShouldNormalizeIsoCodes()
+    {
+        AudioTrackDisplayHelper.MatchesOriginalLanguage("eng", "en").Should().BeTrue();
+        AudioTrackDisplayHelper.MatchesOriginalLanguage("fr", "en").Should().BeFalse();
+        AudioTrackDisplayHelper.MatchesOriginalLanguage("und", "en").Should().BeFalse();
+        AudioTrackDisplayHelper.MatchesOriginalLanguage("en", null).Should().BeFalse();
+    }
+
+    [Test]
     public void FormatHlsName_ShouldKeepVariantsUnique()
     {
         var used = new HashSet<string>(StringComparer.OrdinalIgnoreCase);

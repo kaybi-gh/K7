@@ -42,6 +42,7 @@ internal static class NativeStrings
     public static string Close => IsFrench ? "Fermer" : "Close";
     public static string PlaybackSettings => IsFrench ? "Paramètres de lecture" : "Playback settings";
     public static string Audio => "Audio";
+    public static string OriginalLanguage => IsFrench ? "langue originale" : "original language";
     public static string Subtitles => IsFrench ? "Sous-titres" : "Subtitles";
     public static string SubtitlesOff => IsFrench ? "Désactivés" : "Off";
     public static string SubtitleTypeFull => IsFrench ? "Complet" : "Full";

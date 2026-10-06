@@ -19,6 +19,29 @@ public partial class K7LanguageSelect
     /// </summary>
     [Parameter] public IReadOnlyList<LanguageOption> Languages { get; set; } = SupportedLanguages.Metadata;
 
+    /// <summary>
+    /// When true, prepends a "original language" sentinel option (code <c>original</c>).
+    /// </summary>
+    [Parameter] public bool IncludeOriginalLanguage { get; set; }
+
+    [Parameter] public string OriginalLanguageLabel { get; set; } = "Original language";
+
+    private IEnumerable<LanguageOption> DisplayLanguages
+    {
+        get
+        {
+            if (!IncludeOriginalLanguage)
+                return Languages;
+
+            return Languages.Prepend(new LanguageOption(
+                TrackSelectionLanguages.Original,
+                OriginalLanguageLabel,
+                "un"));
+        }
+    }
+
     private static string GetDisplayText(LanguageOption lang) =>
-        SupportedLanguages.FormatSelectLabel(lang);
+        lang.Code == TrackSelectionLanguages.Original
+            ? lang.NativeLabel
+            : SupportedLanguages.FormatSelectLabel(lang);
 }

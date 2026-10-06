@@ -543,10 +543,11 @@ public sealed class NativePlaybackSettingsPanel : Border
         NativeOverlayHover.ApplyHandCursor(button);
     }
 
-    private static string FormatAudio(AudioFileTrackDto track)
-    {
-        return AudioTrackDisplayHelper.FormatLabel(track);
-    }
+    private string FormatAudio(AudioFileTrackDto track) =>
+        AudioTrackDisplayHelper.FormatLabel(
+            track,
+            _player.Source.OriginalLanguage,
+            NativeStrings.OriginalLanguage);
 
     private static string FormatSubtitle(SubtitleFileTrackDto track)
     {

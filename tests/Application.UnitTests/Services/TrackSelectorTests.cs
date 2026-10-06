@@ -351,4 +351,50 @@ public class TrackSelectorTests
         // Assert
         result.SubtitleTrackIndex.Should().Be(3);
     }
+
+    [Test]
+    public void SelectTracks_OriginalLanguage_Available_SelectsIt()
+    {
+        var prefs = DefaultPreferences();
+        prefs.PreferredAudioLanguage = TrackSelectionLanguages.Original;
+        prefs.SubtitleWhenPreferredAudio = SubtitlePreference.Full;
+        prefs.SubtitleLanguageWhenPreferredAudio = "fr";
+        var audio = new List<AudioFileTrackDto> { Audio(0, "en", true), Audio(1, "ja") };
+        var subs = new List<SubtitleFileTrackDto> { Subtitle(2, "fr") };
+
+        var result = TrackSelector.SelectTracks(prefs, audio, subs, originalLanguage: "ja");
+
+        result.AudioTrackIndex.Should().Be(1);
+        result.SubtitleTrackIndex.Should().Be(2);
+    }
+
+    [Test]
+    public void SelectTracks_OriginalLanguage_Missing_FallsBack()
+    {
+        var prefs = DefaultPreferences();
+        prefs.PreferredAudioLanguage = TrackSelectionLanguages.Original;
+        prefs.FallbackAudioLanguage = "en";
+        var audio = new List<AudioFileTrackDto> { Audio(0, "de", true), Audio(1, "en") };
+        var subs = new List<SubtitleFileTrackDto> { Subtitle(2, "fr") };
+
+        var result = TrackSelector.SelectTracks(prefs, audio, subs, originalLanguage: null);
+
+        result.AudioTrackIndex.Should().Be(1);
+        result.SubtitleTrackIndex.Should().Be(2);
+    }
+
+    [Test]
+    public void SelectTracks_OriginalLanguage_NotOnTracks_UsesFallback()
+    {
+        var prefs = DefaultPreferences();
+        prefs.PreferredAudioLanguage = TrackSelectionLanguages.Original;
+        prefs.FallbackAudioLanguage = "fr";
+        var audio = new List<AudioFileTrackDto> { Audio(0, "en", true), Audio(1, "fr") };
+        var subs = new List<SubtitleFileTrackDto> { Subtitle(2, "fr") };
+
+        var result = TrackSelector.SelectTracks(prefs, audio, subs, originalLanguage: "ja");
+
+        result.AudioTrackIndex.Should().Be(1);
+        result.SubtitleTrackIndex.Should().Be(2);
+    }
 }

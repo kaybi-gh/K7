@@ -318,7 +318,7 @@ public partial class Movie : IAsyncDisposable
 
         try
         {
-            await PlayerService.PlayIndexedFileAsync(indexedFileId, audioTracks ?? [], subtitleTracks, audioTrackIndex, subtitleTrackIndex, videoResolution, thumbnailsUrl, _movie.Id, VideoPlayerTitleHelper.FormatMovie(_movie), coverUrl, startPosition, videoMetadata.Chapters, videoMetadata.Duration.TotalSeconds, _selectedFile.LibraryId, _selectedFile.Path);
+            await PlayerService.PlayIndexedFileAsync(indexedFileId, audioTracks ?? [], subtitleTracks, audioTrackIndex, subtitleTrackIndex, videoResolution, thumbnailsUrl, _movie.Id, VideoPlayerTitleHelper.FormatMovie(_movie), coverUrl, startPosition, videoMetadata.Chapters, videoMetadata.Duration.TotalSeconds, _selectedFile.LibraryId, _selectedFile.Path, _movie.OriginalLanguage);
         }
         catch (Exception ex) when (PlaybackErrorHelper.IsMediaNotReady(ex))
         {
@@ -402,7 +402,8 @@ public partial class Movie : IAsyncDisposable
             _movie.Id,
             VideoPlayerTitleHelper.FormatMovie(_movie),
             coverUrl,
-            startPosition);
+            startPosition,
+            originalLanguage: _movie.OriginalLanguage);
     }
 
     private async Task OpenPlaybackOptionsAsync()

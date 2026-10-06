@@ -115,7 +115,11 @@ public partial class PlaybackOptionsDialog
 
         if (_preferences is not null)
         {
-            var selection = TrackSelector.SelectTracks(_preferences, audio, subs);
+            var selection = TrackSelector.SelectTracks(
+                _preferences,
+                audio,
+                subs,
+                Movie.OriginalLanguage);
             SelectedAudioTrack = audio.FirstOrDefault(t => t.Index == selection.AudioTrackIndex);
             SelectedSubtitleTrack = selection.SubtitleTrackIndex is int subIdx
                 ? subs.FirstOrDefault(t => t.Index == subIdx)
@@ -182,8 +186,8 @@ public partial class PlaybackOptionsDialog
         return PlaybackReleaseLabelHelper.Format(release.File, release.Remote, source);
     }
 
-    private static string GetAudioTrackLabel(AudioFileTrackDto? track) =>
-        AudioTrackDisplayHelper.FormatLabel(track);
+    private string GetAudioTrackLabel(AudioFileTrackDto? track) =>
+        AudioTrackDisplayHelper.FormatLabel(track, Movie.OriginalLanguage, L["OriginalLanguage"]);
 
     private static string GetSubtitleTrackLabel(SubtitleFileTrackDto? track)
     {

@@ -582,7 +582,8 @@ public sealed partial class NativeVideoPlayerOverlay
                 chapters: videoMetadata.Chapters,
                 durationSeconds: videoMetadata.Duration.TotalSeconds,
                 libraryId: indexedFile.LibraryId,
-                filePath: indexedFile.Path);
+                filePath: indexedFile.Path,
+                originalLanguage: _player.Source.OriginalLanguage);
         }
         finally
         {

@@ -26,6 +26,7 @@ public partial class SerieSeason : IAsyncDisposable
     public int SeasonNumber { get; set; }
 
     private SerieSeasonDto? _season;
+    private string? _serieOriginalLanguage;
     private string? _backdropUrl;
     private string? _backdropHighResUrl;
     private string? _dominantColor;
@@ -139,6 +140,8 @@ public partial class SerieSeason : IAsyncDisposable
             _loading = false;
             return;
         }
+
+        _serieOriginalLanguage = serie.OriginalLanguage;
 
         await ThemeSongPlaybackHelper.TryStartAsync(
             serie.Id,
@@ -501,7 +504,8 @@ public partial class SerieSeason : IAsyncDisposable
                     chapters: videoMetadata.Chapters,
                     durationSeconds: videoMetadata.Duration.TotalSeconds,
                     libraryId: indexedFile.LibraryId,
-                    filePath: indexedFile.Path);
+                    filePath: indexedFile.Path,
+                    originalLanguage: _serieOriginalLanguage);
             }
             catch (Exception ex) when (PlaybackErrorHelper.IsMediaNotReady(ex))
             {
@@ -539,7 +543,8 @@ public partial class SerieSeason : IAsyncDisposable
             mediaId: episode.Id,
             title: epTitle,
             coverUrl: cover,
-            startPosition: startPosition);
+            startPosition: startPosition,
+            originalLanguage: _serieOriginalLanguage);
     }
 
     private void GoToPreviousSeason()

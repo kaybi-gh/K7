@@ -39,9 +39,13 @@ else
                 <span class="text-caption video-playback-hint">@Lt["Description"]</span>
 
                 <K7LanguageSelect Label="@Lt["PreferredAudioLanguage"]"
+                                  IncludeOriginalLanguage="true"
+                                  OriginalLanguageLabel="@Lt["OriginalLanguage"]"
                                   @bind-Value="_preferences.PreferredAudioLanguage" />
 
                 <K7LanguageSelect Label="@Lt["FallbackAudioLanguage"]"
+                                  IncludeOriginalLanguage="true"
+                                  OriginalLanguageLabel="@Lt["OriginalLanguage"]"
                                   @bind-Value="_preferences.FallbackAudioLanguage" />
 
                 <K7Select Label="@Lt["SubtitleWhenPreferredAudio"]"

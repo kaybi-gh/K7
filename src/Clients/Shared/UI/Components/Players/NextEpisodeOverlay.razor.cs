@@ -272,7 +272,8 @@ public partial class NextEpisodeOverlay : IDisposable
             chapters: videoMetadata.Chapters,
             durationSeconds: videoMetadata.Duration.TotalSeconds,
             libraryId: indexedFile.LibraryId,
-            filePath: indexedFile.Path);
+            filePath: indexedFile.Path,
+            originalLanguage: PlayerService.Source.OriginalLanguage);
 
         StateHasChanged();
     }

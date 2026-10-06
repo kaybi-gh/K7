@@ -8,6 +8,8 @@ public class PlayerSource
     public Guid? MediaId { get; set; }
     public Guid? StreamSessionId { get; set; }
     public Guid? IndexedFileId { get; set; }
+    /// <summary>ISO language of the movie/serie (for original-language track labels).</summary>
+    public string? OriginalLanguage { get; set; }
     public string? Url { get; set; }
     public string? MimeType { get; set; }
     public double? PendingSeekTime { get; set; }

@@ -406,19 +406,25 @@ public partial class PlaybackSettingsMenu : IDisposable
         await PlayerService.ChangeQualityAsync(quality);
     }
 
-    private static string GetAudioTrackLabel(AudioFileTrackDto track) =>
-        AudioTrackDisplayHelper.FormatLabel(track);
+    private string GetAudioTrackLabel(AudioFileTrackDto track) =>
+        AudioTrackDisplayHelper.FormatLabel(
+            track,
+            PlayerService.Source.OriginalLanguage,
+            L["OriginalLanguage"]);
 
     private string GetRemoteAudioTrackLabel(RemoteTrackInfoDto track) =>
-        AudioTrackDisplayHelper.FormatLabel(new AudioFileTrackDto
-        {
-            Index = track.Index,
-            Name = track.Name,
-            Language = track.Language,
-            Codec = track.Codec,
-            Channels = 0,
-            ChannelLayout = track.ChannelLayout
-        });
+        AudioTrackDisplayHelper.FormatLabel(
+            new AudioFileTrackDto
+            {
+                Index = track.Index,
+                Name = track.Name,
+                Language = track.Language,
+                Codec = track.Codec,
+                Channels = 0,
+                ChannelLayout = track.ChannelLayout
+            },
+            PlayerService.Source.OriginalLanguage,
+            L["OriginalLanguage"]);
 
     private string GetSubtitleTrackLabel(SubtitleFileTrackDto track)
     {

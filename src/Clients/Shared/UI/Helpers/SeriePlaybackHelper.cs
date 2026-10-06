@@ -64,6 +64,7 @@ internal static class SeriePlaybackHelper
         IFederationService federationService,
         IK7ServerService apiClient,
         bool fromBeginning = false,
+        string? originalLanguage = null,
         CancellationToken cancellationToken = default)
     {
         var episodeMedia = await mediaService.GetMediaAsync(episode.Id, cancellationToken, bypassCache: true);
@@ -113,7 +114,8 @@ internal static class SeriePlaybackHelper
                     chapters: videoMetadata.Chapters,
                     durationSeconds: videoMetadata.Duration.TotalSeconds,
                     libraryId: indexedFile.LibraryId,
-                    filePath: indexedFile.Path);
+                    filePath: indexedFile.Path,
+                    originalLanguage: originalLanguage);
             }
             catch (Exception ex) when (PlaybackErrorHelper.IsMediaNotReady(ex))
             {
@@ -148,7 +150,8 @@ internal static class SeriePlaybackHelper
             mediaId: episode.Id,
             title: epTitle,
             coverUrl: cover,
-            startPosition: startPosition);
+            startPosition: startPosition,
+            originalLanguage: originalLanguage);
 
         return EpisodePlaybackResult.Started;
     }

@@ -20,6 +20,7 @@
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
   <data name="Audio" xml:space="preserve"><value>Audio</value></data>
+  <data name="OriginalLanguage" xml:space="preserve"><value>original language</value></data>
   <data name="Subtitles" xml:space="preserve"><value>Subtitles</value></data>
   <data name="SubtitlesOff" xml:space="preserve"><value>Off</value></data>
   <data name="SubtitleTypeFull" xml:space="preserve"><value>Full</value></data>

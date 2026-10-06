@@ -58,6 +58,39 @@ public static class AudioTrackDisplayHelper
     }
 
     /// <summary>
+    /// Same as <see cref="FormatLabel(AudioFileTrackDto?)"/>, with an optional localized
+    /// original-language marker when the track language matches media metadata.
+    /// </summary>
+    public static string FormatLabel(
+        AudioFileTrackDto? track,
+        string? originalLanguage,
+        string? originalLanguageMarker)
+    {
+        var label = FormatLabel(track);
+        if (string.IsNullOrWhiteSpace(originalLanguageMarker)
+            || !MatchesOriginalLanguage(track?.Language, originalLanguage))
+        {
+            return label;
+        }
+
+        return $"{label} ({originalLanguageMarker})";
+    }
+
+    public static bool MatchesOriginalLanguage(string? trackLanguage, string? originalLanguage)
+    {
+        if (string.IsNullOrWhiteSpace(originalLanguage)
+            || string.IsNullOrWhiteSpace(trackLanguage)
+            || LanguageNormalizer.IsUndetermined(trackLanguage))
+        {
+            return false;
+        }
+
+        var original = LanguageNormalizer.NormalizeToIso6391(originalLanguage) ?? originalLanguage;
+        var track = LanguageNormalizer.NormalizeToIso6391(trackLanguage) ?? trackLanguage;
+        return string.Equals(original, track, StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
     /// Subtitle-menu label: normalized language, original name in parentheses, type, codec.
     /// Pass a localized <paramref name="typeLabel"/> (Full / Forced / SDH).
     /// </summary>

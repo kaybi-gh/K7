@@ -10,7 +10,9 @@ using K7.Shared.Dtos.Entities.Metadatas.Files.Tracks;
 
 namespace K7.Clients.Web.Services;
 
-public class PlayerService(IStreamUriService streamUriService, IDeviceStorageService deviceStorageService) : IPlayerService
+public class PlayerService(
+    IStreamUriService streamUriService,
+    IDeviceStorageService deviceStorageService) : IPlayerService
 {
     public event Func<Task>? PlayRequested;
     public event Func<Task>? PauseRequested;
@@ -221,7 +223,9 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
     private DateTime _lastRemuxRetryUtc = DateTime.MinValue;
     private readonly SemaphoreSlim _playbackStartRecoveryLock = new(1, 1);
 
-    public async Task PlayIndexedFileAsync(Guid indexedFileId, IEnumerable<AudioFileTrackDto> audioTracks, IEnumerable<SubtitleFileTrackDto>? subtitleTracks = null, int? audioTrackIndex = null, int? subtitleTrackIndex = null, VideoResolutionIdentifier? videoResolution = null, string? thumbnailsUrl = null, Guid? mediaId = null, string? title = null, string? coverUrl = null, double? startPosition = null, IReadOnlyList<ChapterMarkerDto>? chapters = null, double? durationSeconds = null, Guid? libraryId = null, string? filePath = null, CancellationToken cancellationToken = default)
+    private string? _originalLanguage;
+
+    public async Task PlayIndexedFileAsync(Guid indexedFileId, IEnumerable<AudioFileTrackDto> audioTracks, IEnumerable<SubtitleFileTrackDto>? subtitleTracks = null, int? audioTrackIndex = null, int? subtitleTrackIndex = null, VideoResolutionIdentifier? videoResolution = null, string? thumbnailsUrl = null, Guid? mediaId = null, string? title = null, string? coverUrl = null, double? startPosition = null, IReadOnlyList<ChapterMarkerDto>? chapters = null, double? durationSeconds = null, Guid? libraryId = null, string? filePath = null, string? originalLanguage = null, CancellationToken cancellationToken = default)
     {
         var generation = Interlocked.Increment(ref _playGeneration);
         _playCts?.Cancel();
@@ -229,6 +233,7 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
         _playCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         var playToken = _playCts.Token;
 
+        _originalLanguage = originalLanguage;
         _currentIndexedFileId = indexedFileId;
         _playbackStartRecoveryAttempts = 0;
         _remuxReloadsDone = 0;
@@ -295,6 +300,7 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
                 MediaId = mediaId,
                 StreamSessionId = session.Id,
                 IndexedFileId = indexedFileId,
+                OriginalLanguage = _originalLanguage,
                 Url = BuildManifestUrlWithStartPosition(_baseManifestUrl, startPosition),
                 MimeType = session.Source.MimeType,
                 ThumbnailsUrl = thumbnailsUrl,
@@ -324,7 +330,7 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
         }
     }
 
-    public async Task PlayRemoteIndexedFileAsync(Guid remoteFileId, IEnumerable<AudioFileTrackDto> audioTracks, IEnumerable<SubtitleFileTrackDto>? subtitleTracks = null, int? audioTrackIndex = null, int? subtitleTrackIndex = null, VideoResolutionIdentifier? videoResolution = null, string? thumbnailsUrl = null, Guid? mediaId = null, string? title = null, string? coverUrl = null, double? startPosition = null, CancellationToken cancellationToken = default)
+    public async Task PlayRemoteIndexedFileAsync(Guid remoteFileId, IEnumerable<AudioFileTrackDto> audioTracks, IEnumerable<SubtitleFileTrackDto>? subtitleTracks = null, int? audioTrackIndex = null, int? subtitleTrackIndex = null, VideoResolutionIdentifier? videoResolution = null, string? thumbnailsUrl = null, Guid? mediaId = null, string? title = null, string? coverUrl = null, double? startPosition = null, string? originalLanguage = null, CancellationToken cancellationToken = default)
     {
         var generation = Interlocked.Increment(ref _playGeneration);
         _playCts?.Cancel();
@@ -332,6 +338,7 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
         _playCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         var playToken = _playCts.Token;
 
+        _originalLanguage = originalLanguage;
         _currentIndexedFileId = null;
         _playbackStartRecoveryAttempts = 0;
         _remuxReloadsDone = 0;
@@ -397,6 +404,7 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
             {
                 MediaId = mediaId,
                 StreamSessionId = session.Id,
+                OriginalLanguage = _originalLanguage,
                 Url = BuildManifestUrlWithStartPosition(_baseManifestUrl, startPosition),
                 MimeType = session.Source.MimeType,
                 Title = title,
@@ -469,6 +477,7 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
             MediaId = current.MediaId,
             StreamSessionId = current.StreamSessionId,
             IndexedFileId = current.IndexedFileId,
+            OriginalLanguage = current.OriginalLanguage ?? _originalLanguage,
             Url = BuildManifestUrlWithStartPosition(newUrl, seekTime),
             MimeType = current.MimeType ?? "application/vnd.apple.mpegurl",
             ThumbnailsUrl = current.ThumbnailsUrl,
@@ -514,6 +523,7 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
             MediaId = current.MediaId,
             StreamSessionId = current.StreamSessionId,
             IndexedFileId = current.IndexedFileId,
+            OriginalLanguage = current.OriginalLanguage ?? _originalLanguage,
             Url = BuildManifestUrlWithStartPosition(newUrl, seekTime),
             MimeType = current.MimeType ?? "application/vnd.apple.mpegurl",
             ThumbnailsUrl = current.ThumbnailsUrl,
@@ -562,6 +572,7 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
             MediaId = current.MediaId,
             StreamSessionId = current.StreamSessionId,
             IndexedFileId = current.IndexedFileId,
+            OriginalLanguage = current.OriginalLanguage ?? _originalLanguage,
             Url = BuildManifestUrlWithStartPosition(newUrl, seekTime),
             MimeType = current.MimeType ?? "application/vnd.apple.mpegurl",
             ThumbnailsUrl = current.ThumbnailsUrl,

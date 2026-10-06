@@ -38,4 +38,5 @@
   <data name="Reset" xml:space="preserve"><value>Reset</value></data>
   <data name="SaveSuccess" xml:space="preserve"><value>Server preferences saved</value></data>
   <data name="ResetSuccess" xml:space="preserve"><value>Server preferences reset</value></data>
+  <data name="OriginalLanguage" xml:space="preserve"><value>Original language</value></data>
 </root>
