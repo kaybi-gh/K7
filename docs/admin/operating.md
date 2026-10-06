@@ -328,7 +328,7 @@ Admin Dashboard still shows a short health overview and active streams (encoder 
 
 ### Server defaults vs user overrides
 
-Almost all personalization has server defaults (e.g. `/admin/video-playback`) and per-user overrides under `/settings/...`. Users can reset to defaults from the settings action bar. Video playback defaults include track selection (preferred / fallback audio, including Original language) and **Remember audio and subtitle tracks** (on by default): last audio/subtitle choice is stored per movie or per series and reused on the next play unless the user opts out.
+Almost all personalization has server defaults (e.g. `/admin/video-playback`) and per-user overrides under `/settings/...`. Users can reset to defaults from the settings action bar. Video playback defaults include track selection (preferred / fallback audio, including Original language) and **Remember audio and subtitle tracks** (on by default): last audio/subtitle choice is stored per movie or per series and reused on the next play unless the user opts out. While a shared profile is active, that memory is stored on the profile (shared by members), and the remember toggle follows the host's video playback setting.
 
 ### Background tasks
 
