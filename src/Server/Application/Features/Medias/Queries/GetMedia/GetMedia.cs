@@ -135,6 +135,9 @@ public class GetMediaQueryHandler(
 
         Guard.Against.NotFound(request.Id, entity);
 
+        if (userId is { } exclusionUserId)
+            await MediaGraphExclusionFilter.ApplyAsync(context, entity, exclusionUserId, cancellationToken);
+
         if (sharedProfileId is { } profileId && userId is { } actingUserId)
         {
             await SharedProfileUserStateOverlay.ApplyAsync(

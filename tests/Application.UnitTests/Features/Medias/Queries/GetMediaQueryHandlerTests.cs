@@ -112,4 +112,35 @@ public class GetMediaQueryHandlerTests
         var dto = (SerieEpisodeDto)result.Media.ToMediaDto(result.ItemBookmarks);
         dto.UserState!.LastPlaybackPosition.Should().Be(333);
     }
+
+    [Test]
+    public async Task Handle_ShouldOmitSelfExcludedEpisode_WhenLoadingSeason()
+    {
+        var season = _context.Medias.OfType<SerieSeason>().AsNoTracking()
+            .Select(s => new { s.Id, s.SerieId })
+            .Single();
+        var keptId = Guid.NewGuid();
+        _context.Medias.Add(new SerieEpisode
+        {
+            Id = keptId,
+            SerieId = season.SerieId,
+            SeasonId = season.Id,
+            EpisodeNumber = 2,
+            Title = "E2",
+            SortTitle = "E2"
+        });
+        _context.UserMediaExclusions.Add(new UserMediaExclusion
+        {
+            Id = Guid.NewGuid(),
+            UserId = _userId,
+            MediaId = _episodeId,
+            IsSelfExcluded = true
+        });
+        await _context.SaveChangesAsync();
+
+        var result = await _handler.Handle(new GetMediaQuery(season.Id), CancellationToken.None);
+
+        var loaded = (SerieSeason)result.Media;
+        loaded.Episodes.Select(e => e.Id).Should().Equal(keptId);
+    }
 }
