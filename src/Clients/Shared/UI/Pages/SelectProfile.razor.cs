@@ -63,6 +63,10 @@ public partial class SelectProfile
 
         _users = LocalUserService.GetAll();
         _singleUserMode = LocalUserService.IsSingleUserMode;
+        // Same path as local users: device storage only, before the first await,
+        // so a pinned shared profile is in the first paint.
+        ReloadPinnedGroups();
+        ComputeInitialFocusTarget();
         _deviceType = await DeviceService.GetDeviceTypeAsync();
         _isTv = _deviceType == DeviceType.TV;
 
@@ -85,31 +89,7 @@ public partial class SelectProfile
             }
         }
 
-        // Paint from local cache first so AppReadySignal (and Android Lottie dismiss)
-        // is not blocked on SharedProfiles network. Refresh afterward.
-        ReloadPinnedGroups();
-        ComputeInitialFocusTarget();
         K7.Clients.Shared.Services.AppReadySignal.Signal();
-
-        if (Connectivity.IsOnline)
-            _ = RefreshPinnedGroupsInBackgroundAsync();
-    }
-
-    private async Task RefreshPinnedGroupsInBackgroundAsync()
-    {
-        try
-        {
-            await SharedProfileCache.RefreshAsync();
-        }
-        catch
-        {
-            // Keep cached groups
-            return;
-        }
-
-        ReloadPinnedGroups();
-        ComputeInitialFocusTarget();
-        await InvokeAsync(StateHasChanged);
     }
 
     private void ReloadPinnedGroups()
