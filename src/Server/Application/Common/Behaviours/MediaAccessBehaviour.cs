@@ -8,6 +8,14 @@ public interface IMediaScopedRequest
     Guid MediaId { get; }
 }
 
+/// <summary>
+/// Media-scoped command that must still run when the media is hidden for the current user.
+/// Used by unhide, which would otherwise be rejected as not found.
+/// </summary>
+public interface IAllowsExcludedMediaAccess
+{
+}
+
 public class MediaAccessBehaviour<TRequest, TResponse>(IMediaAccessGuard accessGuard)
     : IPipelineBehavior<TRequest, TResponse>
     where TRequest : notnull
@@ -18,7 +26,12 @@ public class MediaAccessBehaviour<TRequest, TResponse>(IMediaAccessGuard accessG
         CancellationToken cancellationToken)
     {
         if (request is IMediaScopedRequest mediaRequest)
-            await accessGuard.EnsureAccessAsync(mediaRequest.MediaId, cancellationToken);
+        {
+            if (request is IAllowsExcludedMediaAccess)
+                await accessGuard.EnsureAccessIgnoringMediaExclusionAsync(mediaRequest.MediaId, cancellationToken);
+            else
+                await accessGuard.EnsureAccessAsync(mediaRequest.MediaId, cancellationToken);
+        }
 
         return await next();
     }

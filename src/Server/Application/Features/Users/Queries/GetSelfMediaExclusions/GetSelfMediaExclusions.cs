@@ -1,23 +1,30 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Mappings;
+using K7.Server.Domain.Constants;
 using K7.Shared.Dtos.Entities.Medias;
 
 namespace K7.Server.Application.Features.Users.Queries.GetSelfMediaExclusions;
 
-public record GetSelfMediaExclusionsQuery : IRequest<IReadOnlyList<LiteMediaDto>>
-{
-    public bool IncludeAdminExcluded { get; init; }
-}
+public record GetSelfMediaExclusionsQuery : IRequest<IReadOnlyList<LiteMediaDto>>;
 
-public class GetSelfMediaExclusionsQueryHandler(IApplicationDbContext context, IUser currentUser)
+public class GetSelfMediaExclusionsQueryHandler(
+    IApplicationDbContext context,
+    IUser currentUser,
+    IIdentityService identityService)
     : IRequestHandler<GetSelfMediaExclusionsQuery, IReadOnlyList<LiteMediaDto>>
 {
     public async Task<IReadOnlyList<LiteMediaDto>> Handle(GetSelfMediaExclusionsQuery request, CancellationToken cancellationToken)
     {
         var userId = Guard.Against.Null(currentUser.Id);
+        var isAdmin = currentUser.IdentityId is not null
+            && await identityService.IsInRoleAsync(currentUser.IdentityId, Roles.Administrator);
 
-        var mediaIds = await context.UserMediaExclusions
-            .Where(e => e.UserId == userId && e.IsSelfExcluded && (!e.IsAdminExcluded || request.IncludeAdminExcluded))
+        var exclusions = context.UserMediaExclusions.Where(e => e.UserId == userId);
+        exclusions = isAdmin
+            ? exclusions.Where(e => e.IsSelfExcluded || e.IsAdminExcluded)
+            : exclusions.Where(e => e.IsSelfExcluded && !e.IsAdminExcluded);
+
+        var mediaIds = await exclusions
             .Select(e => e.MediaId)
             .ToListAsync(cancellationToken);
 

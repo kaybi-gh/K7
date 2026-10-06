@@ -41,6 +41,19 @@ public class MediaAccessBehaviourTests
     }
 
     [Test]
+    public async Task Handle_ShouldIgnoreMediaExclusion_WhenRequestAllowsExcludedMedia()
+    {
+        var mediaId = Guid.NewGuid();
+        var behaviour = new MediaAccessBehaviour<ExcludedMediaScopedRequest, Unit>(_accessGuard);
+
+        await behaviour.Handle(new ExcludedMediaScopedRequest(mediaId), Next, CancellationToken.None);
+
+        await _accessGuard.Received(1).EnsureAccessIgnoringMediaExclusionAsync(mediaId, Arg.Any<CancellationToken>());
+        await _accessGuard.DidNotReceive().EnsureAccessAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
+        _nextCalled.Should().BeTrue();
+    }
+
+    [Test]
     public async Task Handle_ShouldNotCallNext_WhenAccessGuardThrows()
     {
         var mediaId = Guid.NewGuid();
@@ -64,4 +77,6 @@ public class MediaAccessBehaviourTests
     private sealed class PlainRequest;
 
     private sealed record MediaScopedRequest(Guid MediaId) : IMediaScopedRequest;
+
+    private sealed record ExcludedMediaScopedRequest(Guid MediaId) : IMediaScopedRequest, IAllowsExcludedMediaAccess;
 }

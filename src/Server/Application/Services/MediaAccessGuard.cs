@@ -9,6 +9,12 @@ namespace K7.Server.Application.Services;
 public interface IMediaAccessGuard
 {
     Task EnsureAccessAsync(Guid mediaId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Same gates as <see cref="EnsureAccessAsync"/> except a user media exclusion.
+    /// Unhide must reach the handler while the row is still excluded.
+    /// </summary>
+    Task EnsureAccessIgnoringMediaExclusionAsync(Guid mediaId, CancellationToken cancellationToken = default);
     Task EnsureAccessByIndexedFileAsync(Guid indexedFileId, CancellationToken cancellationToken = default);
     Task<bool> CanAccessAsync(Guid mediaId, Guid userId, CancellationToken cancellationToken = default);
 }
@@ -16,16 +22,29 @@ public interface IMediaAccessGuard
 public class MediaAccessGuard(IApplicationDbContext context, IUser currentUser, MediaAccessFilter mediaAccessFilter)
     : IMediaAccessGuard
 {
-    public async Task EnsureAccessAsync(Guid mediaId, CancellationToken cancellationToken = default)
+    public Task EnsureAccessAsync(Guid mediaId, CancellationToken cancellationToken = default) =>
+        EnsureAccessCoreAsync(mediaId, ignoreMediaExclusion: false, cancellationToken);
+
+    public Task EnsureAccessIgnoringMediaExclusionAsync(Guid mediaId, CancellationToken cancellationToken = default) =>
+        EnsureAccessCoreAsync(mediaId, ignoreMediaExclusion: true, cancellationToken);
+
+    public Task<bool> CanAccessAsync(Guid mediaId, Guid userId, CancellationToken cancellationToken = default) =>
+        CanAccessCoreAsync(mediaId, userId, ignoreMediaExclusion: false, cancellationToken);
+
+    private async Task EnsureAccessCoreAsync(Guid mediaId, bool ignoreMediaExclusion, CancellationToken cancellationToken)
     {
         if (currentUser.Id is not { } userId)
             return;
 
-        if (!await CanAccessAsync(mediaId, userId, cancellationToken))
+        if (!await CanAccessCoreAsync(mediaId, userId, ignoreMediaExclusion, cancellationToken))
             throw new NotFoundException(mediaId.ToString(), nameof(BaseMedia));
     }
 
-    public async Task<bool> CanAccessAsync(Guid mediaId, Guid userId, CancellationToken cancellationToken = default)
+    private async Task<bool> CanAccessCoreAsync(
+        Guid mediaId,
+        Guid userId,
+        bool ignoreMediaExclusion,
+        CancellationToken cancellationToken)
     {
         var check = await context.Medias
             .AsNoTracking()
@@ -43,7 +62,7 @@ public class MediaAccessGuard(IApplicationDbContext context, IUser currentUser, 
         if (check is null)
             return false;
 
-        if (check.IsMediaExcluded || !check.HasNonExcludedFile)
+        if ((!ignoreMediaExclusion && check.IsMediaExcluded) || !check.HasNonExcludedFile)
             return false;
 
         var sharedProfileId = await currentUser.GetSharedProfileIdAsync(cancellationToken);

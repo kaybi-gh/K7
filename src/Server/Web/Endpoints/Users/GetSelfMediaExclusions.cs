@@ -12,12 +12,10 @@ public class GetSelfMediaExclusions : IEndpoint
         var groupName = type.Namespace!.Split('.').Last();
 
         endpointRouteBuilder.MapGet("/api/users/me/media-exclusions", async (
-            HttpContext httpContext,
             [FromServices] ISender sender,
             CancellationToken cancellationToken) =>
         {
-            var isAdmin = httpContext.User.IsInRole(Roles.Administrator);
-            var result = await sender.Send(new GetSelfMediaExclusionsQuery { IncludeAdminExcluded = isAdmin }, cancellationToken);
+            var result = await sender.Send(new GetSelfMediaExclusionsQuery(), cancellationToken);
             return Results.Ok(result);
         })
         .RequireAuthorization(Policies.GuestOrAbove)

@@ -118,6 +118,22 @@ public class MediaAccessGuardTests
     }
 
     [Test]
+    public async Task EnsureAccessIgnoringMediaExclusionAsync_ShouldAllowSelfExcludedMedia()
+    {
+        var act = () => _guard.EnsureAccessIgnoringMediaExclusionAsync(_excludedMediaId);
+
+        await act.Should().NotThrowAsync();
+    }
+
+    [Test]
+    public async Task EnsureAccessIgnoringMediaExclusionAsync_ShouldThrowNotFound_WhenMediaDoesNotExist()
+    {
+        var act = () => _guard.EnsureAccessIgnoringMediaExclusionAsync(Guid.NewGuid());
+
+        await act.Should().ThrowAsync<NotFoundException>();
+    }
+
+    [Test]
     public async Task EnsureAccessAsync_ShouldNoOp_WhenCurrentUserHasNoId()
     {
         _currentUser.Id.Returns((Guid?)null);
