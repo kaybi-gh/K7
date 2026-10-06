@@ -1530,8 +1530,56 @@ public partial class LibraryGroupView : IDisposable
 
     private async Task ExcludeForSelf(MediaCardViewModel item)
     {
-        if (await MediaCardExcludeActions.ExcludeForSelfAsync(item, UserAdminService, Snackbar, S))
-            await RefreshBrowseAsync();
+        if (!await MediaCardExcludeActions.ExcludeForSelfAsync(item, UserAdminService, Snackbar, S))
+            return;
+
+        RemoveFromCurrentResults(item);
+        await RefreshBrowseAsync();
+    }
+
+    private async Task OnWatchStateChangedAsync(MediaCardViewModel item)
+    {
+        if (!ShouldLeaveBrowse(item))
+        {
+            await InvokeAsync(StateHasChanged);
+            return;
+        }
+
+        RemoveFromCurrentResults(item);
+        await RefreshBrowseAsync();
+    }
+
+    private bool ShouldLeaveBrowse(MediaCardViewModel item) =>
+        (MediaBrowseFilterPresets.IsUnwatched(_filter) && item.Watched)
+        || (MediaBrowseFilterPresets.IsInProgress(_filter) && item.Progress is <= 0 or >= 100);
+
+    private void RemoveFromCurrentResults(MediaCardViewModel item)
+    {
+        if (!Guid.TryParse(item.Id, out var id))
+            return;
+
+        _viewModelCache.Remove(id);
+
+        if (_intelligentSearch is null)
+            return;
+
+        _intelligentSearchResults.RemoveAll(media => IsHiddenWith(media, id));
+        _totalCount = _intelligentSearchResults.Count;
+        _totalCountKnown = true;
+    }
+
+    private static bool IsHiddenWith(LiteMediaDto media, Guid hiddenId)
+    {
+        if (media.Id == hiddenId)
+            return true;
+
+        return media switch
+        {
+            LiteSerieEpisodeDto episode => episode.SerieId == hiddenId,
+            LiteSerieSeasonDto season => season.SerieId == hiddenId,
+            LiteMusicTrackDto track => track.AlbumId == hiddenId,
+            _ => false
+        };
     }
 
     private async Task ExcludeForOthers(MediaCardViewModel item)

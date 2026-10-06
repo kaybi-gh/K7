@@ -124,10 +124,15 @@
                        OverlayEnabled="true"
                        ProgressEnabled="true"
                        WatchedStatusEnabled="true"
+                       ExcludeMenuEnabled="_canExclude"
                        WatchStateMenuEnabled="_canSetWatchState"
+                       IsAdmin="_isAdmin"
                        FooterVisible="true"
                        ImageLoading="lazy"
                        PlaceholderIcon="@GetGridPlaceholderIcon(item)"
+                       OnExcludeForSelf="() => ExcludeForSelf(vm)"
+                       OnExcludeForOthers="() => ExcludeForOthers(vm)"
+                       OnWatchStateChanged="() => OnWatchStateChangedAsync(vm)"
                        OnFocused="@CreateSilentCardFocusCallback(item)" />
         }
     </GridTemplate>
@@ -200,7 +205,7 @@
                                                       IsAdmin="_isAdmin"
                                                       OnExcludeForSelf="() => ExcludeForSelf(vm)"
                                                       OnExcludeForOthers="() => ExcludeForOthers(vm)"
-                                                      OnWatchStateChanged="StateHasChanged" />
+                                                      OnWatchStateChanged="() => OnWatchStateChangedAsync(vm)" />
                         </div>
                     }
                 </CellTemplate>
@@ -241,7 +246,7 @@
                                                   IsAdmin="_isAdmin"
                                                   OnExcludeForSelf="() => ExcludeForSelf(vm)"
                                                   OnExcludeForOthers="() => ExcludeForOthers(vm)"
-                                                  OnWatchStateChanged="StateHasChanged" />
+                                                  OnWatchStateChanged="() => OnWatchStateChangedAsync(vm)" />
                     }
                 </Actions>
             </LibraryListItem>
