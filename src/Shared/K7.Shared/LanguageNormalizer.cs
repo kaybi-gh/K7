@@ -75,7 +75,14 @@ public static class LanguageNormalizer
     /// <summary>
     /// Normalizes a container language tag, inferring from the track title when missing.
     /// </summary>
-    public static string ResolveSubtitleLanguage(string? containerLanguage, string? trackTitle)
+    public static string ResolveSubtitleLanguage(string? containerLanguage, string? trackTitle) =>
+        ResolveTrackLanguage(containerLanguage, trackTitle);
+
+    /// <summary>
+    /// ISO 639-1 for an audio or subtitle track. Falls back to words in the title
+    /// when the container language is missing or undetermined.
+    /// </summary>
+    public static string ResolveTrackLanguage(string? containerLanguage, string? trackTitle)
     {
         var language = NormalizeOrPassthrough(containerLanguage);
         if (IsUndetermined(language) && InferFromTrackTitle(trackTitle) is { } inferred)
@@ -540,7 +547,8 @@ public static class LanguageNormalizer
         ["quebec"] = "VFQ",
         ["québec"] = "VFQ",
         ["quebecois"] = "VFQ",
-        ["québécois"] = "VFQ"
+        ["québécois"] = "VFQ",
+        ["vo"] = "VO"
     };
 
     private static readonly (string Alias, string Label)[] VariantScanAliases =

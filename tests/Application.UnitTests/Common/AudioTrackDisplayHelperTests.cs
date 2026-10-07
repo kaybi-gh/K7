@@ -71,6 +71,41 @@ public class AudioTrackDisplayHelperTests
     }
 
     [Test]
+    public void FormatLabel_ShouldInferLanguageFromTechnicalTitle_WhenContainerLanguageIsUnd()
+    {
+        var vff = AudioTrackDisplayHelper.FormatLabel(Track(2, "und", "Français VFF AC3 5.1 6 Canaux 448kbps"));
+        var aac = AudioTrackDisplayHelper.FormatLabel(new AudioFileTrackDto
+        {
+            Index = 3,
+            Language = "und",
+            Name = "Français VFF AAC-LC Stéréo 2 Canaux 192kbps",
+            Codec = "aac",
+            Channels = 2,
+            ChannelLayout = "stereo"
+        });
+        var vo = AudioTrackDisplayHelper.FormatLabel(Track(1, "und", "Anglais VO AC3 5.1 6 Canaux 448kbps"));
+
+        vff.Should().Contain("(VFF)");
+        vff.Should().NotContain("und");
+        aac.Should().Contain("(VFF)");
+        aac.Should().Contain("aac");
+        vo.Should().Contain("(VO)");
+        vo.Should().NotContain("und");
+        vff.Should().NotBe(vo);
+    }
+
+    [Test]
+    public void GetDistinctiveName_ShouldKeepVariant_WhenTitleAlsoContainsCodec()
+    {
+        AudioTrackDisplayHelper
+            .GetDistinctiveName("Français VFF AC3 5.1 6 Canaux 448kbps", "und", "ac3")
+            .Should().Be("VFF");
+        AudioTrackDisplayHelper
+            .GetDistinctiveName("Anglais VO AC3 5.1 6 Canaux 448kbps", "und", "ac3")
+            .Should().Be("VO");
+    }
+
+    [Test]
     public void FormatLabel_ShouldAppendOriginalLanguageMarker_WhenTrackMatches()
     {
         var en = AudioTrackDisplayHelper.FormatLabel(Track(1, "en", "eng"), "en", "original language");

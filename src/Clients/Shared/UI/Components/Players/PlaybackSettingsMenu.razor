@@ -65,7 +65,7 @@
                                     {
                                         <K7MenuItem @key="track.Index" OnClick="@(() => OnRemoteAudioSelected(track.Index))"
                                                     Icon="@(Remote.SelectedAudioTrackIndex == track.Index ? "check-circle" : null)">
-                                            @{ var remoteAudioLang = SupportedLanguages.FindByCode(track.Language ?? ""); }
+                                            @{ var remoteAudioLang = SupportedLanguages.FindByCode(AudioLanguageCode(track.Language, track.Name)); }
                                             @if (remoteAudioLang is not null)
                                             {
                                                 <span class="fi fi-@remoteAudioLang.CountryCode"></span>
@@ -80,7 +80,7 @@
                                     {
                                         <K7MenuItem @key="track.Index" OnClick="@(() => OnAudioTrackSelected(track))"
                                                     Icon="@(PlayerService.SelectedAudioTrack?.Index == track.Index ? "check-circle" : null)">
-                                            @{ var audioLang = SupportedLanguages.FindByCode(track.Language ?? ""); }
+                                            @{ var audioLang = SupportedLanguages.FindByCode(AudioLanguageCode(track.Language, track.Name)); }
                                             @if (audioLang is not null)
                                             {
                                                 <span class="fi fi-@audioLang.CountryCode"></span>

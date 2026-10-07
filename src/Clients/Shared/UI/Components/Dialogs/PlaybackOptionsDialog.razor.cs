@@ -206,6 +206,9 @@ public partial class PlaybackOptionsDialog
         return PlaybackReleaseLabelHelper.Format(release.File, release.Remote, source);
     }
 
+    private static string AudioLanguageCode(string? language, string? name) =>
+        LanguageNormalizer.ResolveTrackLanguage(language, name);
+
     private string GetAudioTrackLabel(AudioFileTrackDto? track) =>
         AudioTrackDisplayHelper.FormatLabel(track, Movie.OriginalLanguage, L["OriginalLanguage"]);
 

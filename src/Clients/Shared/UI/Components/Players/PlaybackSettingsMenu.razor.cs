@@ -406,6 +406,9 @@ public partial class PlaybackSettingsMenu : IDisposable
         await PlayerService.ChangeQualityAsync(quality);
     }
 
+    private static string AudioLanguageCode(string? language, string? name) =>
+        LanguageNormalizer.ResolveTrackLanguage(language, name);
+
     private string GetAudioTrackLabel(AudioFileTrackDto track) =>
         AudioTrackDisplayHelper.FormatLabel(
             track,

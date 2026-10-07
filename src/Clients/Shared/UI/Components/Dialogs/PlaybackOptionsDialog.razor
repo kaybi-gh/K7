@@ -26,7 +26,7 @@
                         @foreach (var track in videoMetadata.AudioTracks)
                         {
                             <K7SelectItem Value="@track" Text="@GetAudioTrackLabel(track)">
-                                @{ var audioLang = SupportedLanguages.FindByCode(track.Language ?? ""); }
+                                @{ var audioLang = SupportedLanguages.FindByCode(AudioLanguageCode(track.Language, track.Name)); }
                                 @if (audioLang is not null)
                                 {
                                     <span class="fi fi-@audioLang.CountryCode"></span>

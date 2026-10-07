@@ -278,10 +278,12 @@ public class MediaAnalysisService : IMediaAnalysisService
         {
             Index = x.Index,
             IsDefault = IsDefaultTrack(hasDefaultAudio, x.Disposition, x.Index),
-            Language = LanguageNormalizer.NormalizeOrPassthrough(x.Language),
+            Language = LanguageNormalizer.ResolveTrackLanguage(
+                FirstNonEmpty(x.Language, TagValue(x.Tags, "language")),
+                TagValue(x.Tags, "title")),
             Name = AudioTrackDisplayHelper.ResolveStoredName(
-                x.Tags?.FirstOrDefault(t => t.Key == "title").Value,
-                x.Language),
+                TagValue(x.Tags, "title"),
+                FirstNonEmpty(x.Language, TagValue(x.Tags, "language"))),
             Codec = x.CodecName ?? string.Empty,
             Channels = x.Channels,
             ChannelLayout = x.ChannelLayout,
@@ -378,6 +380,26 @@ public class MediaAnalysisService : IMediaAnalysisService
 
         return ContainsToken(title, "sdh")
             || ContainsToken(title, "hearing impaired");
+    }
+
+    private static string? FirstNonEmpty(string? primary, string? fallback) =>
+        string.IsNullOrWhiteSpace(primary) ? fallback : primary;
+
+    private static string? TagValue(IEnumerable<KeyValuePair<string, string>>? tags, string key)
+    {
+        if (tags is null)
+            return null;
+
+        foreach (var pair in tags)
+        {
+            if (string.Equals(pair.Key, key, StringComparison.OrdinalIgnoreCase)
+                && !string.IsNullOrWhiteSpace(pair.Value))
+            {
+                return pair.Value;
+            }
+        }
+
+        return null;
     }
 
     private static bool ContainsToken(string value, string token)
