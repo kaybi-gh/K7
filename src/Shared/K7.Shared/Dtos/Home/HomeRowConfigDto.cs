@@ -10,6 +10,7 @@ public sealed record HomeRowConfigDto
     public required string Title { get; init; }
     public required HomeRowDisplayType DisplayType { get; init; }
     public IReadOnlyList<Guid>? LibraryIds { get; init; }
+    public IReadOnlyList<Guid>? LibraryGroupIds { get; init; }
     public IReadOnlyList<MediaType>? MediaTypes { get; init; }
     public IReadOnlyList<MediaOrderingOption>? OrderBy { get; init; }
     public required int PageSize { get; init; } = 20;

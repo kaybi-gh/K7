@@ -7,7 +7,9 @@ namespace K7.Server.Application.Features.LibraryGroups.Commands.DeleteLibraryGro
 [Authorize(Roles = Roles.Administrator)]
 public record DeleteLibraryGroupCommand(Guid Id) : IRequest;
 
-public class DeleteLibraryGroupCommandHandler(IApplicationDbContext context) : IRequestHandler<DeleteLibraryGroupCommand>
+public class DeleteLibraryGroupCommandHandler(
+    IApplicationDbContext context,
+    IHomeLayoutMaintenanceService homeLayoutMaintenanceService) : IRequestHandler<DeleteLibraryGroupCommand>
 {
     public async Task Handle(DeleteLibraryGroupCommand request, CancellationToken cancellationToken)
     {
@@ -19,6 +21,8 @@ public class DeleteLibraryGroupCommandHandler(IApplicationDbContext context) : I
 
         if (group.Libraries.Count > 0)
             throw new InvalidOperationException("Cannot delete a library group that still contains libraries.");
+
+        await homeLayoutMaintenanceService.RemoveLibraryGroupReferencesAsync(request.Id, cancellationToken);
 
         context.LibraryGroups.Remove(group);
         await context.SaveChangesAsync(cancellationToken);

@@ -6,5 +6,7 @@ public interface IHomeLayoutMaintenanceService
 {
     Task RemoveLibraryReferencesAsync(Guid deletedLibraryId, CancellationToken cancellationToken = default);
 
+    Task RemoveLibraryGroupReferencesAsync(Guid deletedLibraryGroupId, CancellationToken cancellationToken = default);
+
     Task<HomeLayoutDto> SanitizeAsync(HomeLayoutDto layout, CancellationToken cancellationToken = default);
 }

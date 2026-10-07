@@ -3,6 +3,7 @@ using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Home;
 using K7.Shared.Dtos.Requests;
 using K7.Shared.Enums;
+using K7.Shared.Home;
 
 namespace K7.Server.Application.UnitTests.Features.Home.Services;
 
@@ -12,6 +13,7 @@ public class HomeLayoutSanitizerTests
     private static readonly Guid LibraryA = Guid.Parse("11111111-1111-1111-1111-111111111111");
     private static readonly Guid LibraryB = Guid.Parse("22222222-2222-2222-2222-222222222222");
     private static readonly Guid LibraryC = Guid.Parse("33333333-3333-3333-3333-333333333333");
+    private static readonly Guid GroupSeries = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
 
     [Test]
     public void Sanitize_ShouldRemoveRow_WhenAllReferencedLibrariesAreMissing()
@@ -25,7 +27,7 @@ public class HomeLayoutSanitizerTests
             ]
         };
 
-        var result = HomeLayoutSanitizer.Sanitize(layout, new HashSet<Guid> { LibraryB });
+        var result = HomeLayoutSanitizer.Sanitize(layout, new HashSet<Guid> { LibraryB }, new HashSet<Guid>());
 
         result.Rows.Should().ContainSingle();
         result.Rows[0].Title.Should().Be("ContinueWatching");
@@ -42,10 +44,14 @@ public class HomeLayoutSanitizerTests
             ]
         };
 
-        var result = HomeLayoutSanitizer.Sanitize(layout, new HashSet<Guid> { LibraryB, LibraryC });
+        var result = HomeLayoutSanitizer.Sanitize(
+            layout,
+            new HashSet<Guid> { LibraryB, LibraryC },
+            new HashSet<Guid>());
 
         result.Rows.Should().ContainSingle();
         result.Rows[0].LibraryIds.Should().Equal(LibraryB);
+        result.Rows[0].LibraryGroupIds.Should().BeNull();
     }
 
     [Test]
@@ -59,7 +65,7 @@ public class HomeLayoutSanitizerTests
             ]
         };
 
-        var result = HomeLayoutSanitizer.Sanitize(layout, new HashSet<Guid>());
+        var result = HomeLayoutSanitizer.Sanitize(layout, new HashSet<Guid>(), new HashSet<Guid>());
 
         result.Rows.Should().ContainSingle();
         result.Rows[0].Title.Should().Be("AllMovies");
@@ -78,7 +84,7 @@ public class HomeLayoutSanitizerTests
             ]
         };
 
-        var result = HomeLayoutSanitizer.Sanitize(layout, new HashSet<Guid> { LibraryB });
+        var result = HomeLayoutSanitizer.Sanitize(layout, new HashSet<Guid> { LibraryB }, new HashSet<Guid>());
 
         result.Rows.Should().HaveCount(2);
         result.Rows[0].Order.Should().Be(0);
@@ -86,11 +92,100 @@ public class HomeLayoutSanitizerTests
         result.Rows[1].Title.Should().Be("Movies");
     }
 
+    [Test]
+    public void Sanitize_ShouldPreferLibraryGroupScope_AndClearLibraryIds()
+    {
+        var layout = new HomeLayoutDto
+        {
+            Rows =
+            [
+                CreateRow(
+                    GroupSeries,
+                    HomeLayoutRowTitles.NewlyAddedIn("Series"),
+                    libraryIds: [LibraryA],
+                    libraryGroupIds: [GroupSeries],
+                    order: 0)
+            ]
+        };
+
+        var result = HomeLayoutSanitizer.Sanitize(
+            layout,
+            new HashSet<Guid> { LibraryA, LibraryB },
+            new HashSet<Guid> { GroupSeries });
+
+        result.Rows.Should().ContainSingle();
+        result.Rows[0].LibraryGroupIds.Should().Equal(GroupSeries);
+        result.Rows[0].LibraryIds.Should().BeNull();
+    }
+
+    [Test]
+    public void Sanitize_ShouldPromoteLegacyNewlyAddedRow_ToLibraryGroupScope()
+    {
+        var layout = new HomeLayoutDto
+        {
+            Rows =
+            [
+                CreateRow(
+                    GroupSeries,
+                    HomeLayoutRowTitles.NewlyAddedIn("Series"),
+                    libraryIds: [LibraryA],
+                    order: 0)
+            ]
+        };
+
+        var result = HomeLayoutSanitizer.Sanitize(
+            layout,
+            new HashSet<Guid> { LibraryA },
+            new HashSet<Guid> { GroupSeries });
+
+        result.Rows.Should().ContainSingle();
+        result.Rows[0].LibraryGroupIds.Should().Equal(GroupSeries);
+        result.Rows[0].LibraryIds.Should().BeNull();
+    }
+
+    [Test]
+    public void Sanitize_ShouldRemoveRow_WhenAllReferencedLibraryGroupsAreMissing()
+    {
+        var layout = new HomeLayoutDto
+        {
+            Rows =
+            [
+                CreateRow(Guid.NewGuid(), "Series", libraryGroupIds: [GroupSeries], order: 0)
+            ]
+        };
+
+        var result = HomeLayoutSanitizer.Sanitize(layout, new HashSet<Guid> { LibraryA }, new HashSet<Guid>());
+
+        result.Rows.Should().BeEmpty();
+    }
+
+    [Test]
+    public void Sanitize_ShouldNotPromoteCustomLibraryRow_WhenIdIsNotNewlyAddedTitle()
+    {
+        var layout = new HomeLayoutDto
+        {
+            Rows =
+            [
+                CreateRow(GroupSeries, "Custom subset", libraryIds: [LibraryA], order: 0)
+            ]
+        };
+
+        var result = HomeLayoutSanitizer.Sanitize(
+            layout,
+            new HashSet<Guid> { LibraryA },
+            new HashSet<Guid> { GroupSeries });
+
+        result.Rows.Should().ContainSingle();
+        result.Rows[0].LibraryIds.Should().Equal(LibraryA);
+        result.Rows[0].LibraryGroupIds.Should().BeNull();
+    }
+
     private static HomeRowConfigDto CreateRow(
         Guid id,
         string title,
         bool continueWatching = false,
         IReadOnlyList<Guid>? libraryIds = null,
+        IReadOnlyList<Guid>? libraryGroupIds = null,
         IReadOnlyList<MediaType>? mediaTypes = null,
         int order = 0) =>
         new()
@@ -100,6 +195,7 @@ public class HomeLayoutSanitizerTests
             DisplayType = HomeRowDisplayType.Carousel,
             ContinueWatching = continueWatching,
             LibraryIds = libraryIds,
+            LibraryGroupIds = libraryGroupIds,
             MediaTypes = mediaTypes,
             OrderBy = [MediaOrderingOption.CreatedDesc],
             PageSize = 20,

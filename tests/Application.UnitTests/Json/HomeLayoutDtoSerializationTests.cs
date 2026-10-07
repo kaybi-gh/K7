@@ -24,6 +24,7 @@ public class HomeLayoutDtoSerializationTests
                     Title = "Continue Watching",
                     DisplayType = HomeRowDisplayType.Carousel,
                     LibraryIds = [Guid.NewGuid(), Guid.NewGuid()],
+                    LibraryGroupIds = [Guid.NewGuid()],
                     MediaTypes = [MediaType.Movie, MediaType.Serie],
                     OrderBy = [MediaOrderingOption.CreatedDesc, MediaOrderingOption.LocalRatingDesc],
                     PageSize = 15,
@@ -37,6 +38,7 @@ public class HomeLayoutDtoSerializationTests
                     Title = "Recently Added",
                     DisplayType = HomeRowDisplayType.Carousel,
                     LibraryIds = null,
+                    LibraryGroupIds = null,
                     MediaTypes = null,
                     OrderBy = null,
                     PageSize = 20,
@@ -58,6 +60,7 @@ public class HomeLayoutDtoSerializationTests
         firstRow.Title.Should().Be("Continue Watching");
         firstRow.DisplayType.Should().Be(HomeRowDisplayType.Carousel);
         firstRow.LibraryIds.Should().BeEquivalentTo(layout.Rows[0].LibraryIds);
+        firstRow.LibraryGroupIds.Should().BeEquivalentTo(layout.Rows[0].LibraryGroupIds);
         firstRow.MediaTypes.Should().BeEquivalentTo([MediaType.Movie, MediaType.Serie]);
         firstRow.OrderBy.Should().BeEquivalentTo([MediaOrderingOption.CreatedDesc, MediaOrderingOption.LocalRatingDesc]);
         firstRow.PageSize.Should().Be(15);
@@ -66,6 +69,7 @@ public class HomeLayoutDtoSerializationTests
 
         var secondRow = deserialized.Rows[1];
         secondRow.LibraryIds.Should().BeNull();
+        secondRow.LibraryGroupIds.Should().BeNull();
         secondRow.MediaTypes.Should().BeNull();
         secondRow.OrderBy.Should().BeNull();
         secondRow.ContinueWatching.Should().BeFalse();

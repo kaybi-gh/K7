@@ -42,10 +42,12 @@ public partial class HomeLayoutPreview
 
     private async Task LoadRowAsync(HomeRowConfigDto config, List<MediaCardViewModel> target)
     {
+        var libraryGroupIds = config.LibraryGroupIds is { Count: > 0 } groups ? groups.ToArray() : null;
         var query = new GetHomeFeedQuery
         {
             ContinueWatching = config.ContinueWatching ? true : null,
-            LibraryIds = config.LibraryIds?.ToArray(),
+            LibraryIds = libraryGroupIds is not null ? null : config.LibraryIds?.ToArray(),
+            LibraryGroupIds = libraryGroupIds,
             MediaTypes = config.MediaTypes is { Count: > 0 } mt ? mt.ToHashSet() : null,
             OrderBy = config.OrderBy is { Count: > 0 } ob ? ob.ToHashSet() : null,
             PageNumber = 1,

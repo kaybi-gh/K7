@@ -14628,6 +14628,16 @@
               "format": "uuid"
             }
           },
+          "libraryGroupIds": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
           "mediaTypes": {
             "type": [
               "null",

@@ -8,7 +8,28 @@
 
         @if (!_continueWatching)
         {
-            @if (Libraries.Count > 0)
+            <K7Select TValue="CatalogScope" Value="_catalogScope" ValueChanged="OnCatalogScopeChanged"
+                      Label="@L["CatalogScope"]" Variant="outlined">
+                @foreach (var scope in Enum.GetValues<CatalogScope>())
+                {
+                    <K7SelectItem Value="@scope" Text="@GetCatalogScopeLabel(scope)">@GetCatalogScopeLabel(scope)</K7SelectItem>
+                }
+            </K7Select>
+
+            @if (_catalogScope == CatalogScope.LibraryGroups && LibraryGroups.Count > 0)
+            {
+                <div>
+                    <p class="text-sm mb-1">@L["LibraryGroups"]</p>
+                    <K7CheckboxList TItem="LibraryGroupDto"
+                                      Items="LibraryGroups"
+                                      IsChecked="@(group => _libraryGroupIds.Contains(group.Id))"
+                                      CheckedChanged="@(e => ToggleLibraryGroup(e.Item.Id, e.Checked))"
+                                      ItemLabel="@(group => group.Title)" />
+                    <p class="text-xs mt-1 field-hint">@L["LibraryGroupsHint"]</p>
+                </div>
+            }
+
+            @if (_catalogScope == CatalogScope.Libraries && Libraries.Count > 0)
             {
                 <div>
                     <p class="text-sm mb-1">@L["Libraries"]</p>
@@ -17,6 +38,7 @@
                                       IsChecked="@(lib => _libraryIds.Contains(lib.Id))"
                                       CheckedChanged="@(e => ToggleLibrary(e.Item.Id, e.Checked))"
                                       ItemLabel="@(lib => lib.Title)" />
+                    <p class="text-xs mt-1 field-hint">@L["LibrariesHint"]</p>
                 </div>
             }
 

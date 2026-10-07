@@ -4,7 +4,14 @@
   <resheader name="version"><value>2.0</value></resheader>
   <data name="Title" xml:space="preserve"><value>Title</value></data>
   <data name="ContinueWatching" xml:space="preserve"><value>Continue watching</value></data>
+  <data name="CatalogScope" xml:space="preserve"><value>Catalog scope</value></data>
+  <data name="ScopeAll" xml:space="preserve"><value>Entire catalog</value></data>
+  <data name="ScopeLibraryGroups" xml:space="preserve"><value>Library groups</value></data>
+  <data name="ScopeLibraries" xml:space="preserve"><value>Libraries</value></data>
+  <data name="LibraryGroups" xml:space="preserve"><value>Library groups</value></data>
+  <data name="LibraryGroupsHint" xml:space="preserve"><value>Follows group membership. A new library in the group appears automatically.</value></data>
   <data name="Libraries" xml:space="preserve"><value>Libraries</value></data>
+  <data name="LibrariesHint" xml:space="preserve"><value>Fixed folder list. New libraries are not added automatically.</value></data>
   <data name="MediaTypes" xml:space="preserve"><value>Media types</value></data>
   <data name="MediaTypesHint" xml:space="preserve"><value>Leave empty to show all types.</value></data>
   <data name="Sort" xml:space="preserve"><value>Sort</value></data>

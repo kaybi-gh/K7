@@ -97,6 +97,53 @@ public class HomeFeedStoreTests
             .Which.Id.Should().Be(id.ToString());
     }
 
+    [Test]
+    public void BuildFeedQuery_ShouldPreferLibraryGroupIds_OverLibraryIds()
+    {
+        var groupId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+        var snapshotLibraryId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+
+        var query = HomeFeedStore.BuildFeedQuery(new HomeRowConfigDto
+        {
+            Id = groupId,
+            Title = "NewlyAddedIn|Series",
+            DisplayType = HomeRowDisplayType.Carousel,
+            LibraryGroupIds = [groupId],
+            LibraryIds = [snapshotLibraryId],
+            OrderBy = [MediaOrderingOption.CreatedDesc],
+            PageSize = 20,
+            ContinueWatching = false,
+            IsVisible = true,
+            Order = 0
+        });
+
+        query.LibraryGroupIds.Should().Equal(groupId);
+        query.LibraryIds.Should().BeNull();
+        query.OrderBy.Should().Contain(MediaOrderingOption.CreatedDesc);
+    }
+
+    [Test]
+    public void BuildFeedQuery_ShouldKeepLibraryIds_WhenNoLibraryGroups()
+    {
+        var libraryId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+
+        var query = HomeFeedStore.BuildFeedQuery(new HomeRowConfigDto
+        {
+            Id = Guid.NewGuid(),
+            Title = "Custom",
+            DisplayType = HomeRowDisplayType.Carousel,
+            LibraryIds = [libraryId],
+            OrderBy = [MediaOrderingOption.CreatedDesc],
+            PageSize = 20,
+            ContinueWatching = false,
+            IsVisible = true,
+            Order = 0
+        });
+
+        query.LibraryIds.Should().Equal(libraryId);
+        query.LibraryGroupIds.Should().BeNull();
+    }
+
     private static HomeFeedStore CreateStore(
         IMediaService media,
         IUserPreferencesService? prefs = null)

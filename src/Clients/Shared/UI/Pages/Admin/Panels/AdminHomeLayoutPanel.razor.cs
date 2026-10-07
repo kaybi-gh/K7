@@ -24,6 +24,7 @@ public partial class AdminHomeLayoutPanel
 
     private List<HomeRowEditModel> _rows = [];
     private List<LibraryDto> _libraries = [];
+    private List<LibraryGroupDto> _libraryGroups = [];
     private bool _isLoading = true;
     private bool _saving;
     private HomeLayoutPreview? _preview;
@@ -37,8 +38,10 @@ public partial class AdminHomeLayoutPanel
     protected override async Task OnInitializedAsync()
     {
         var librariesTask = LibraryService.GetLibrariesAsync();
+        var groupsTask = LibraryService.GetLibraryGroupsAsync();
         await LoadLayoutAsync();
         _libraries = await librariesTask;
+        _libraryGroups = await groupsTask;
     }
 
     private async Task LoadLayoutAsync()
@@ -79,6 +82,7 @@ public partial class AdminHomeLayoutPanel
     {
         var parameters = new K7DialogParameters<AdminHomeRowDialog>();
         parameters.Add(d => d.Libraries, _libraries);
+        parameters.Add(d => d.LibraryGroups, _libraryGroups);
         var dialog = await DialogService.ShowAsync<AdminHomeRowDialog>(L["AddRow"], parameters);
         var result = await dialog.Result;
         if (result.Canceled)
@@ -93,6 +97,7 @@ public partial class AdminHomeLayoutPanel
     {
         var parameters = new K7DialogParameters<AdminHomeRowDialog>();
         parameters.Add(d => d.Libraries, _libraries);
+        parameters.Add(d => d.LibraryGroups, _libraryGroups);
         parameters.Add(d => d.InitialModel, row);
         var dialog = await DialogService.ShowAsync<AdminHomeRowDialog>(L["EditRow"], parameters);
         var result = await dialog.Result;

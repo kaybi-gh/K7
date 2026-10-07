@@ -38,9 +38,9 @@ public class GetEffectiveServerHomeLayoutQueryHandler(
     private async Task<HomeLayoutDto> BuildDynamicDefaultAsync(CancellationToken cancellationToken)
     {
         var groups = await context.LibraryGroups
-            .Include(g => g.Libraries)
+            .AsNoTracking()
             .OrderBy(g => g.Title)
-            .Select(g => new { g.Id, g.Title, LibraryIds = g.Libraries.Select(l => l.Id).ToList() })
+            .Select(g => new { g.Id, g.Title })
             .ToListAsync(cancellationToken);
 
         var rows = new List<HomeRowConfigDto>
@@ -67,7 +67,7 @@ public class GetEffectiveServerHomeLayoutQueryHandler(
                 Title = HomeLayoutRowTitles.NewlyAddedIn(group.Title),
                 DisplayType = HomeRowDisplayType.Carousel,
                 ContinueWatching = false,
-                LibraryIds = group.LibraryIds,
+                LibraryGroupIds = [group.Id],
                 OrderBy = [MediaOrderingOption.CreatedDesc],
                 PageSize = PagingDefaults.ItemsPageSize,
                 IsVisible = true,

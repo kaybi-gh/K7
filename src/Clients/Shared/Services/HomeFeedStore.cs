@@ -723,23 +723,31 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
     }
 
     /// <summary>
-    /// True when a loaded row is scoped to this library. Global rows (null/empty LibraryIds) do not
-    /// count: they refresh for every library without representing a new library-specific feed.
+    /// True when a loaded row is scoped to this library (or to a library group that follows membership).
+    /// Global rows (no library / group filter) do not count: they refresh for every library without
+    /// representing a new library-specific feed.
     /// </summary>
     private bool HasRowTargetingLibrary(Guid libraryId) =>
-        GetRowsSnapshot().Any(r => r.Config.LibraryIds is { Count: > 0 } ids && ids.Contains(libraryId));
+        GetRowsSnapshot().Any(r =>
+            (r.Config.LibraryIds is { Count: > 0 } ids && ids.Contains(libraryId))
+            || r.Config.LibraryGroupIds is { Count: > 0 });
 
     private bool RowMightBeAffectedByLibrary(Guid libraryId) =>
-        GetRowsSnapshot().Any(r => r.Config.LibraryIds is null or { Count: 0 }
+        GetRowsSnapshot().Any(r =>
+            r.Config.LibraryGroupIds is { Count: > 0 }
+            || r.Config.LibraryIds is null or { Count: 0 }
             || r.Config.LibraryIds.Contains(libraryId));
 
     private static bool RowMightBeAffectedByBatch(HomeFeedRow row, IReadOnlyList<MediaBatchItem> items)
     {
-        var libraryIds = row.Config.LibraryIds is { Count: > 0 } ids ? ids.ToArray() : null;
+        var libraryGroupIds = row.Config.LibraryGroupIds is { Count: > 0 } groups ? groups.ToArray() : null;
+        var libraryIds = libraryGroupIds is null && row.Config.LibraryIds is { Count: > 0 } ids
+            ? ids.ToArray()
+            : null;
         var mediaTypes = row.Config.MediaTypes is { Count: > 0 } types ? types : null;
         return MediaBrowseCarouselRefreshScope.IsBatchAffected(
             libraryIds,
-            libraryGroupIds: null,
+            libraryGroupIds,
             mediaTypes,
             items);
     }
@@ -976,20 +984,32 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
         return await action(scope.ServiceProvider);
     }
 
-    private GetHomeFeedQuery BuildQuery(HomeRowConfigDto config) => new()
+    private GetHomeFeedQuery BuildQuery(HomeRowConfigDto config) =>
+        BuildFeedQuery(config, detailed: _isTv);
+
+    /// <summary>
+    /// Builds the home-feed API query for a layout row. Library-group scope wins over library ids.
+    /// </summary>
+    internal static GetHomeFeedQuery BuildFeedQuery(HomeRowConfigDto config, bool detailed = false)
     {
-        ContinueWatching = config.ContinueWatching ? true : null,
-        LibraryIds = config.LibraryIds?.ToArray(),
-        MediaTypes = config.MediaTypes is { Count: > 0 } mt ? mt.ToHashSet() : null,
-        // Continue Watching membership is ordered server-side; do not send LastInteractedDesc
-        // (or any OrderBy) so InferStrategy cannot be confused by leftover layout options.
-        OrderBy = config.ContinueWatching
-            ? null
-            : config.OrderBy is { Count: > 0 } ob ? ob.ToHashSet() : null,
-        Detailed = _isTv,
-        PageNumber = 1,
-        PageSize = config.PageSize > 0 ? config.PageSize : 20
-    };
+        var libraryGroupIds = config.LibraryGroupIds is { Count: > 0 } groups ? groups.ToArray() : null;
+        return new GetHomeFeedQuery
+        {
+            ContinueWatching = config.ContinueWatching ? true : null,
+            // Prefer library-group scope so membership stays live when libraries are added.
+            LibraryIds = libraryGroupIds is not null ? null : config.LibraryIds?.ToArray(),
+            LibraryGroupIds = libraryGroupIds,
+            MediaTypes = config.MediaTypes is { Count: > 0 } mt ? mt.ToHashSet() : null,
+            // Continue Watching membership is ordered server-side; do not send LastInteractedDesc
+            // (or any OrderBy) so InferStrategy cannot be confused by leftover layout options.
+            OrderBy = config.ContinueWatching
+                ? null
+                : config.OrderBy is { Count: > 0 } ob ? ob.ToHashSet() : null,
+            Detailed = detailed,
+            PageNumber = 1,
+            PageSize = config.PageSize > 0 ? config.PageSize : 20
+        };
+    }
 
     internal static string BuildFeedCacheKey(
         string? identityUserId,

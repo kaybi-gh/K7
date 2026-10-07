@@ -12,6 +12,7 @@ public sealed class HomeRowEditModel
     public HomeRowDisplayType DisplayType { get; set; } = HomeRowDisplayType.Carousel;
     public bool ContinueWatching { get; set; }
     public List<Guid> LibraryIds { get; set; } = [];
+    public List<Guid> LibraryGroupIds { get; set; } = [];
     public List<MediaType> MediaTypes { get; set; } = [];
     public MediaOrderingOption OrderBy { get; set; } = MediaOrderingOption.CreatedDesc;
     public int PageSize { get; set; } = 20;
@@ -25,6 +26,7 @@ public sealed class HomeRowEditModel
         DisplayType = dto.DisplayType,
         ContinueWatching = dto.ContinueWatching,
         LibraryIds = dto.LibraryIds?.ToList() ?? [],
+        LibraryGroupIds = dto.LibraryGroupIds?.ToList() ?? [],
         MediaTypes = dto.MediaTypes?.ToList() ?? [],
         OrderBy = dto.OrderBy?.FirstOrDefault() ?? MediaOrderingOption.CreatedDesc,
         PageSize = dto.PageSize,
@@ -32,17 +34,32 @@ public sealed class HomeRowEditModel
         Order = dto.Order
     };
 
-    public HomeRowConfigDto ToDto() => new()
+    public HomeRowConfigDto ToDto()
     {
-        Id = Id,
-        Title = Title,
-        DisplayType = DisplayType,
-        ContinueWatching = ContinueWatching,
-        LibraryIds = ContinueWatching ? null : (LibraryIds.Count > 0 ? LibraryIds.AsReadOnly() : null),
-        MediaTypes = ContinueWatching ? null : (MediaTypes.Count > 0 ? MediaTypes.AsReadOnly() : null),
-        OrderBy = ContinueWatching ? null : [OrderBy],
-        PageSize = PageSize,
-        IsVisible = IsVisible,
-        Order = Order
-    };
+        IReadOnlyList<Guid>? libraryGroupIds = null;
+        IReadOnlyList<Guid>? libraryIds = null;
+
+        if (!ContinueWatching)
+        {
+            if (LibraryGroupIds.Count > 0)
+                libraryGroupIds = LibraryGroupIds.AsReadOnly();
+            else if (LibraryIds.Count > 0)
+                libraryIds = LibraryIds.AsReadOnly();
+        }
+
+        return new HomeRowConfigDto
+        {
+            Id = Id,
+            Title = Title,
+            DisplayType = DisplayType,
+            ContinueWatching = ContinueWatching,
+            LibraryIds = libraryIds,
+            LibraryGroupIds = libraryGroupIds,
+            MediaTypes = ContinueWatching ? null : (MediaTypes.Count > 0 ? MediaTypes.AsReadOnly() : null),
+            OrderBy = ContinueWatching ? null : [OrderBy],
+            PageSize = PageSize,
+            IsVisible = IsVisible,
+            Order = Order
+        };
+    }
 }
