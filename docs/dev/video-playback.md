@@ -252,6 +252,7 @@ LibVLC demuxed HLS on Windows also failed reliably (adaptive never joined AUDIO,
 
 - **Direct Play** (muxed `/direct-stream`, offline `file://`): **LibVLC 4** + native XAML chrome (`WindowsVlcVideoPlayer`, loopback `VlcAuthProxy`). Real codecs (matroska, HEVC, EAC3) are preserved.
 - **HLS** (encoded quality, burn-in, files that cannot Direct Play): **Video.js** in WebView2, same as Web WASM. The server never returns HLS **remux** for **native** Windows (`ClientType.Native` + `OperatingSystem.Windows`). `GetStreamUri` always **transcodes** to h264/aac so MSE/VHS stays reliable (`VideoCodecsOnly=true` on the master). A web browser on Windows remuxes like any other web client.
+- The native settings panel (Windows and Android TV) sizes to the longest audio or subtitle label, up to the free width above the transport bar. Audio flags use the language inferred from the track title when the container tag is `und`.
 
 LibVLC Direct Play uses D3D11 callbacks bound after `VideoView.Initialized` (LibVLC 4 dropped `--winrt-d3dcontext`). Direct Play seeks reopen with `:start-time` when HTTP `SetTime` is ignored. The loading veil stays until the first frame. Keyboard goes to the overlay via window `PreviewKeyDown`/`PreviewKeyUp`. Fullscreen uses `AppWindowPresenterKind.FullScreen`. The BlazorWebView is hidden only during LibVLC play. For Video.js HLS it stays visible under native XAML chrome (`InputTransparent`) so frames paint while the overlay owns input.
 

@@ -286,12 +286,31 @@
     right: calc(100% + 0.5rem);
     top: calc(var(--playback-settings-header-h) + var(--section-index, 0) * var(--playback-settings-row-h));
     margin-top: 0;
-    max-height: none;
+    width: max-content;
+    min-width: 12.5rem;
+    /* Grow with the longest label. Cap before the panel leaves the viewport
+       (root menu sits on the right). Overflow-x stays hidden so a cap ellipsizes
+       instead of adding a horizontal scrollbar. */
+    max-width: min(42rem, calc(100vw - 15rem));
+    max-height: min(70vh, 28rem);
+    overflow-x: hidden;
     overflow-y: auto;
   }
 
   .playback-settings-panel--detail .playback-settings-body {
     max-height: none;
+    overflow-x: hidden;
+  }
+
+  .playback-settings-panel--detail .playback-settings-body ::deep .k7-menu-item {
+    width: auto;
+    min-width: calc(100% - var(--space-1) * 2);
+    max-width: 100%;
+  }
+
+  .playback-settings-panel--detail .playback-settings-body ::deep .k7-menu-item-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .playback-settings-menu:not(.playback-settings-menu--detail) .playback-settings-panel--detail {

@@ -1428,6 +1428,8 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
 
         var available = Height - _settings.Margin.Top - bottomReserve;
         _settings.SetAvailableHeight(available);
+        var availableWidth = Width - _settings.Margin.Left - _settings.Margin.Right;
+        _settings.SetAvailableWidth(availableWidth);
     }
 
     private void SubscribePlayer()

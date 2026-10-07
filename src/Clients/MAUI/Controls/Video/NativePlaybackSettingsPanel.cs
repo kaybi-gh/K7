@@ -24,6 +24,9 @@ public enum NativeSettingsPage
 /// </summary>
 public sealed class NativePlaybackSettingsPanel : Border
 {
+    private const double MinPanelWidth = 200;
+    private const double MaxPanelWidth = 672;
+
     private readonly IPlayerService _player;
     private readonly VerticalStackLayout _list = new() { Spacing = 0 };
     private readonly ScrollView _scroll;
@@ -34,6 +37,7 @@ public sealed class NativePlaybackSettingsPanel : Border
     private NativeSettingsPage _page = NativeSettingsPage.Root;
     private NativeSettingsPage? _builtPage;
     private int _focusedIndex = -1;
+    private double _availableWidth;
 
     public event EventHandler? Closed;
     public event EventHandler? OpenedChanged;
@@ -52,7 +56,9 @@ public sealed class NativePlaybackSettingsPanel : Border
         StrokeThickness = 1;
         StrokeShape = new RoundRectangle { CornerRadius = 10 };
         Padding = 0;
-        WidthRequest = 280;
+        MinimumWidthRequest = MinPanelWidth;
+        MaximumWidthRequest = MaxPanelWidth;
+        WidthRequest = MinPanelWidth;
         // Height hugs content; MaximumHeightRequest is set by the overlay to
         // (screen - bottom chrome) so long lists scroll instead of growing forever.
 
@@ -141,6 +147,40 @@ public sealed class NativePlaybackSettingsPanel : Border
         MaximumHeightRequest = availableHeight;
         // Clear any forced height so short menus do not leave empty space.
         HeightRequest = -1;
+    }
+
+    /// <summary>
+    /// Caps the panel to the free width above the transport bar. The panel then
+    /// grows to the longest label instead of staying on a fixed 280px column.
+    /// </summary>
+    public void SetAvailableWidth(double availableWidth)
+    {
+        if (availableWidth <= 0)
+            return;
+
+        _availableWidth = availableWidth;
+        MaximumWidthRequest = Math.Max(MinPanelWidth, Math.Min(availableWidth, MaxPanelWidth));
+        ApplyContentWidth();
+    }
+
+    private void ApplyContentWidth()
+    {
+        var longest = _titleLabel.Text?.Length ?? 0;
+        foreach (var row in _rows)
+        {
+            if (row.Label.Length > longest)
+                longest = row.Label.Length;
+        }
+
+        // Open Sans at 15px is about 8px per Latin character. Accented titles need slack.
+        var textWidth = longest * 9.0;
+        var chrome = 8 + 24 + 22 + 8 + 20 + 8 + 24;
+        var desired = textWidth + chrome;
+        var cap = _availableWidth > 0
+            ? Math.Min(_availableWidth, MaxPanelWidth)
+            : MaxPanelWidth;
+        cap = Math.Max(MinPanelWidth, cap);
+        WidthRequest = Math.Clamp(desired, MinPanelWidth, cap);
     }
 
     public void Open()
@@ -273,6 +313,7 @@ public sealed class NativePlaybackSettingsPanel : Border
         }
 
         _builtPage = _page;
+        ApplyContentWidth();
         SetFocusedIndex(_rows.Count > 0 ? 0 : -1);
     }
 
@@ -334,7 +375,7 @@ public sealed class NativePlaybackSettingsPanel : Border
                 FormatAudio(track),
                 selected,
                 () => _ = _player.ChangeAudioTrackAsync(track),
-                NativeLanguageFlags.CreateFlagView(track.Language));
+                NativeLanguageFlags.CreateFlagView(track.Language, track.Name));
         }
     }
 
@@ -348,7 +389,7 @@ public sealed class NativePlaybackSettingsPanel : Border
                 FormatSubtitle(track),
                 selected,
                 () => _ = _player.ChangeSubtitleTrackAsync(track),
-                NativeLanguageFlags.CreateFlagView(track.Language));
+                NativeLanguageFlags.CreateFlagView(track.Language, track.Name));
         }
     }
 
@@ -615,9 +656,10 @@ public static class NativeLanguageFlags
     /// WinUI does not render regional-indicator flag emoji. Use the same flag-icons
     /// PNGs as the web via flagcdn (session is already online for playback).
     /// </summary>
-    public static View? CreateFlagView(string? languageCode)
+    public static View? CreateFlagView(string? languageCode, string? trackTitle = null)
     {
-        var country = GetCountryCode(languageCode);
+        var resolved = LanguageNormalizer.ResolveTrackLanguage(languageCode, trackTitle);
+        var country = GetCountryCode(resolved);
         if (country is null)
             return null;
 
