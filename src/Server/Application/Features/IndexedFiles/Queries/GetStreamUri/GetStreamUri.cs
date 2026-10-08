@@ -241,8 +241,7 @@ public class GetStreamUriQueryHandler(
         // Device output cap (Web: AudioContext maxChannelCount). A 5.1 AC3 encoded to AAC
         // for a stereo browser is delivered as 2ch, not 6ch (Firefox MSE multichannel AAC
         // is unreliable and the master must advertise what is delivered).
-        var deviceMaxAudioChannels = AudioOutputChannelTokens.TryReadMaxChannels(
-            device.PlaybackCapabilities.SupportedMediaFormatIds);
+        var deviceMaxAudioChannels = ResolveHlsDeviceMaxAudioChannels(device);
         int? streamAudioChannels = selectedAudioNeedsTranscode
             ? HlsAudioChannelPolicy.Resolve(selectedAudioTrack.Channels, deviceMaxAudioChannels)
             : null;
@@ -332,6 +331,21 @@ public class GetStreamUriQueryHandler(
     internal static bool ForcesWindowsHlsEncode(Device device) =>
         device.ClientType == ClientType.Native
         && device.OperatingSystem == OperatingSystem.Windows;
+
+    /// <summary>
+    /// WebView2 MSE rejects multichannel AAC appends (Video.js "audio append failed").
+    /// Native Windows HLS is that player, so cap the encode at stereo. Direct Play
+    /// never reads this and keeps 5.1 in LibVLC. A lower device token still wins.
+    /// </summary>
+    internal static int? ResolveHlsDeviceMaxAudioChannels(Device device)
+    {
+        var max = AudioOutputChannelTokens.TryReadMaxChannels(
+            device.PlaybackCapabilities.SupportedMediaFormatIds);
+        if (ForcesWindowsHlsEncode(device) && (max is null || max > 2))
+            return 2;
+
+        return max;
+    }
 
     /// <summary>
     /// Video.js VHS calls MediaSource.isTypeSupported on the master CODECS tag.
@@ -476,8 +490,7 @@ public class GetStreamUriQueryHandler(
         var fallbackFormat = GetDeviceBestSupportedAudioMediaFormat(
             [.. device.PlaybackCapabilities.SupportedMediaFormats.Where(x => x.Type == MediaFormatType.Audio)]);
 
-        var audioFileDeviceMaxChannels = AudioOutputChannelTokens.TryReadMaxChannels(
-            device.PlaybackCapabilities.SupportedMediaFormatIds);
+        var audioFileDeviceMaxChannels = ResolveHlsDeviceMaxAudioChannels(device);
 
         var transcodeDecision = new StreamDecisionDto
         {

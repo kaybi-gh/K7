@@ -842,6 +842,31 @@ public class GetStreamUriDecisionTests
     }
 
     [Test]
+    public void GetVideoFileStreamUri_ShouldCapAacToStereo_WhenNativeWindowsHasNoOutputToken()
+    {
+        var device = CreateDevice(
+            ["audio-mp4-aac", "video-mp4-aac-h264"],
+            ClientType.Native,
+            OperatingSystem.Windows);
+        var (indexedFile, metadata) = CreateVideoFile("matroska", "h264", "ac3");
+        metadata.AudioTracks.First().Channels = 6;
+        var request = new GetStreamUriQuery
+        {
+            Id = indexedFile.Id,
+            StreamSessionId = Guid.NewGuid(),
+            AudioTrackIndex = 0
+        };
+
+        var (uri, decision) = GetStreamUriQueryHandler.GetVideoFileStreamUri(
+            device, indexedFile, metadata, request, hlsSegmentsAvailable: true, subtitleTrackIndex: null);
+
+        decision.Mode.Should().Be(PlaybackMode.Transcode);
+        decision.StreamAudioCodec.Should().Be("aac");
+        decision.StreamAudioChannels.Should().Be(2);
+        uri.Uri.ToString().Should().Contain("MaxAudioChannels=2");
+    }
+
+    [Test]
     public void GetVideoFileStreamUri_ShouldKeepSourceAacChannels_WhenDeviceHasNoOutputToken()
     {
         var device = CreateDevice(["audio-mp4-aac", "video-mp4-aac-h264"], ClientType.Web, OperatingSystem.Windows);

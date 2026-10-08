@@ -251,7 +251,7 @@ K7 HLS playlists are **fMP4** and emit `#EXT-X-MAP` (init segment). WinUI / Medi
 LibVLC demuxed HLS on Windows also failed reliably (adaptive never joined AUDIO, sample rate 0 on DDP). Windows MAUI therefore uses a **split pipeline**:
 
 - **Direct Play** (muxed `/direct-stream`, offline `file://`): **LibVLC 4** + native XAML chrome (`WindowsVlcVideoPlayer`, loopback `VlcAuthProxy`). Real codecs (matroska, HEVC, EAC3) are preserved.
-- **HLS** (encoded quality, burn-in, files that cannot Direct Play): **Video.js** in WebView2, same as Web WASM. The server never returns HLS **remux** for **native** Windows (`ClientType.Native` + `OperatingSystem.Windows`). `GetStreamUri` always **transcodes** to h264/aac so MSE/VHS stays reliable (`VideoCodecsOnly=true` on the master). A web browser on Windows remuxes like any other web client.
+- **HLS** (encoded quality, burn-in, files that cannot Direct Play): **Video.js** in WebView2, same as Web WASM. The server never returns HLS **remux** for **native** Windows (`ClientType.Native` + `OperatingSystem.Windows`). `GetStreamUri` always **transcodes** to h264/aac so MSE/VHS stays reliable (`VideoCodecsOnly=true` on the master). Encoded audio is stereo: WebView2 rejects a 5.1 AAC append (`audio append failed`). Direct Play still carries the source layout. A web browser on Windows remuxes like any other web client.
 - The native settings panel (Windows and Android TV) sizes to the longest audio or subtitle label, up to the free width above the transport bar. Audio flags use the language inferred from the track title when the container tag is `und`.
 
 LibVLC Direct Play uses D3D11 callbacks bound after `VideoView.Initialized` (LibVLC 4 dropped `--winrt-d3dcontext`). Direct Play seeks reopen with `:start-time` when HTTP `SetTime` is ignored. The loading veil stays until the first frame. Keyboard goes to the overlay via window `PreviewKeyDown`/`PreviewKeyUp`. Fullscreen uses `AppWindowPresenterKind.FullScreen`. The BlazorWebView is hidden only during LibVLC play. For Video.js HLS it stays visible under native XAML chrome (`InputTransparent`) so frames paint while the overlay owns input.
@@ -547,6 +547,12 @@ not past mid-GOP. Do not micro-rebase **audio copy** onto `#EXTINF`.
   When both the query and the decision omit the index, the paired audio kick
   does not start. Mapping stream 0 (often the video) as audio makes ffmpeg exit
   immediately, and a wiped-cache reset then restarts the empty remux head on every GET
+- a Direct Play decision that later opens HLS must not pass the source codec
+  (AC3) to the audio encoder. Quality downscale sets Mode to Transcode but
+  keeps that copy codec. AC3 copy into the fMP4 segment muxer fails the header
+  write, so the video-encode pair becomes AAC stereo. AAC asked without a
+  channel count on a copy decision is stereo, because WebView2 rejects a 5.1
+  AAC append
 - a stopped remux head that still has `head-*` staging is not a wiped cache
 - local remux copy keeps cooperative heads to EOF. Piece-cache remux (federated
   `EnsureInputCoverage`) stays on a buffer window: Target is pinned to that head

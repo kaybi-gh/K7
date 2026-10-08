@@ -943,8 +943,9 @@ public sealed class FederatedRequesterHlsService(
     }
 
     /// <summary>
-    /// HLS audio codec and channel count from the query, then the stream decision.
-    /// A copy decision stays a copy.
+    /// HLS audio codec and channel count. A copy decision must not be passed to ffmpeg
+    /// as an encode (segment muxer has no AC3 encoder). Direct Play then switched to
+    /// HLS asks for AAC without a channel cap, and 5.1 AAC is what WebView2 rejects.
     /// </summary>
     internal static (string? Codec, int? Channels) ResolveFederatedHlsAudio(
         StreamDecisionDto? decision,
@@ -962,14 +963,45 @@ public sealed class FederatedRequesterHlsService(
         if (channels is null && decision?.StreamAudioChannels is > 0)
             channels = decision.StreamAudioChannels;
 
+        // Quality downscale rewrites Mode to Transcode but leaves the source codec,
+        // so a Direct-only check misses the Windows HLS switch. AAC with no channel
+        // count on a copy decision is the Video.js rewrite, which must be stereo.
+        if (string.Equals(codec, "aac", StringComparison.OrdinalIgnoreCase)
+            && channels is null
+            && !NeedsAudioTranscode(decision))
+        {
+            channels = 2;
+        }
+
         return (codec, channels);
     }
 
     /// <summary>
-    /// Audio job paired with a video encode. Uses the same codec rules as the audio playlist.
+    /// Audio job paired with a video encode. AC3 copy into the fMP4 segment muxer
+    /// fails the header write, so that path encodes AAC stereo instead.
     /// </summary>
-    internal static (string? Codec, int? Channels) ResolvePairedVideoEncodeAudio(StreamDecisionDto? decision) =>
-        ResolveFederatedHlsAudio(decision, queryCodec: null, queryChannels: null);
+    internal static (string? Codec, int? Channels) ResolvePairedVideoEncodeAudio(StreamDecisionDto? decision)
+    {
+        var resolved = ResolveFederatedHlsAudio(decision, queryCodec: null, queryChannels: null);
+        if (!string.IsNullOrEmpty(resolved.Codec))
+            return resolved;
+
+        if (RequiresAacForFmp4(decision?.SourceAudioCodec ?? decision?.StreamAudioCodec))
+            return ("aac", 2);
+
+        return resolved;
+    }
+
+    internal static bool RequiresAacForFmp4(string? codec)
+    {
+        if (string.IsNullOrEmpty(codec))
+            return false;
+
+        return codec.Equals("ac3", StringComparison.OrdinalIgnoreCase)
+            || codec.Equals("eac3", StringComparison.OrdinalIgnoreCase)
+            || codec.Equals("truehd", StringComparison.OrdinalIgnoreCase)
+            || codec.StartsWith("dts", StringComparison.OrdinalIgnoreCase);
+    }
 
     private static bool NeedsAudioTranscode(StreamDecisionDto? decision) =>
         decision?.SourceAudioCodec is not null

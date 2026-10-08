@@ -29,6 +29,55 @@ public class FederatedRequesterHlsMasterCodecsTests
     }
 
     [Test]
+    public void ResolveFederatedHlsAudio_ShouldDownmixAacToStereo_WhenDirectPlaySwitchesToHls()
+    {
+        var (codec, channels) = FederatedRequesterHlsService.ResolveFederatedHlsAudio(
+            new K7.Shared.Dtos.StreamDecisionDto
+            {
+                Mode = PlaybackMode.Direct,
+                SourceAudioCodec = "ac3",
+                StreamAudioCodec = "ac3"
+            },
+            queryCodec: "aac",
+            queryChannels: null);
+
+        codec.Should().Be("aac");
+        channels.Should().Be(2);
+    }
+
+    [Test]
+    public void ResolveFederatedHlsAudio_ShouldDownmixAacToStereo_WhenQualityDownscaleKeepsCopyCodec()
+    {
+        var (codec, channels) = FederatedRequesterHlsService.ResolveFederatedHlsAudio(
+            new K7.Shared.Dtos.StreamDecisionDto
+            {
+                Mode = PlaybackMode.Transcode,
+                SourceAudioCodec = "ac3",
+                StreamAudioCodec = "ac3"
+            },
+            queryCodec: "aac",
+            queryChannels: null);
+
+        codec.Should().Be("aac");
+        channels.Should().Be(2);
+    }
+
+    [Test]
+    public void ResolvePairedVideoEncodeAudio_ShouldEncodeAacStereo_WhenCopyWouldBeAc3()
+    {
+        var (codec, channels) = FederatedRequesterHlsService.ResolvePairedVideoEncodeAudio(
+            new K7.Shared.Dtos.StreamDecisionDto
+            {
+                Mode = PlaybackMode.Transcode,
+                SourceAudioCodec = "ac3",
+                StreamAudioCodec = "ac3"
+            });
+
+        codec.Should().Be("aac");
+        channels.Should().Be(2);
+    }
+
+    [Test]
     public void ResolveAudioTrackIndex_ShouldPreferRequestedIndex_WhenDecisionIsMissing()
     {
         FederatedRequesterHlsService.ResolveAudioTrackIndex(
