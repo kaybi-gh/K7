@@ -65,6 +65,26 @@ public static class NativeSeekSpinnerPolicy
     public static bool ShouldHideAfterWindowsInstantSeek(PlaybackState stateAfterDelay) =>
         stateAfterDelay == PlaybackState.Playing;
 
+    /// <summary>
+    /// Windows Video.js often stays on waiting after frames and audio have started.
+    /// A small forward clock step is playback. A resume seek jump is not.
+    /// </summary>
+    public static bool IsForwardPlaybackStep(double? previousClock, double currentClock)
+    {
+        if (previousClock is not double previous)
+            return false;
+
+        var delta = currentClock - previous;
+        return delta >= 0.2 && delta <= 1.5;
+    }
+
+    public static bool ShouldPromoteWebBufferingToPlaying(
+        double? previousClock,
+        double currentClock,
+        PlaybackState state) =>
+        state is PlaybackState.Buffering or PlaybackState.Idle
+        && IsForwardPlaybackStep(previousClock, currentClock);
+
     public static bool ShouldAcceptSeekFirstFrame(double decoderPositionSeconds, double seekTargetSeconds)
     {
         if (seekTargetSeconds < 0)

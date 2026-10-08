@@ -38,6 +38,8 @@ public partial class VideoPlayer : IAsyncDisposable
     private const int MediaErrSrcNotSupported = 4;
     private DateTime _lastHardPlayerErrorReportUtc = DateTime.MinValue;
     private string? _lastHardPlayerErrorReportKey;
+    private double? _webPlaybackClock;
+    private DateTime _webClockAdvancedUtc = DateTime.MinValue;
     private static readonly TimeSpan HardPlayerErrorReportDedupeWindow = TimeSpan.FromSeconds(30);
     
     [Parameter] public string SourceUri { get; set; } = string.Empty;
@@ -516,6 +518,8 @@ public partial class VideoPlayer : IAsyncDisposable
             ThumbnailsSource = playerSource.ThumbnailsUrl;
         }
 
+        _webPlaybackClock = null;
+        _webClockAdvancedUtc = DateTime.MinValue;
         UpdateWebVideoControlSubscription();
         await HandleWebPipelineTransitionAsync();
 
@@ -693,7 +697,7 @@ public partial class VideoPlayer : IAsyncDisposable
 
                             var currentTime = await GetCurrentTimeAsync();
                             if (IsFinitePositive(currentTime) && currentTime > PlayerService.CurrentTime)
-                                PlayerService.CurrentTime = currentTime;
+                                ApplyWebPlaybackClock(currentTime);
 
                             // Buffer without Playing often means autoplay was blocked; nudge play().
                             // Not while Paused: the user (or overlay tap) owns that state.
@@ -935,7 +939,8 @@ public partial class VideoPlayer : IAsyncDisposable
 
             // Fires when the browser is trying to get media data, but data is not available.
             case "stalled":
-                PlayerService.PlaybackState = PlaybackState.Buffering;
+                if (!WebClockRecentlyAdvanced())
+                    PlayerService.PlaybackState = PlaybackState.Buffering;
                 break;
 
             // Called when the player is being disposed of.
@@ -967,7 +972,8 @@ public partial class VideoPlayer : IAsyncDisposable
 
             // Triggered whenever a play event happens. Indicates that playback has started or resumed
             case "play":
-                PlayerService.PlaybackState = PlaybackState.Buffering;
+                if (!WebClockRecentlyAdvanced())
+                    PlayerService.PlaybackState = PlaybackState.Buffering;
                 break;
 
             // Fired whenever the media has been paused
@@ -988,7 +994,8 @@ public partial class VideoPlayer : IAsyncDisposable
 
             // A readyState change on the DOM element has caused playback to stop.
             case "waiting":
-                PlayerService.PlaybackState = PlaybackState.Buffering;
+                if (!WebClockRecentlyAdvanced())
+                    PlayerService.PlaybackState = PlaybackState.Buffering;
                 break;
 
             // Fired whenever the player is jumping to a new time
@@ -1151,8 +1158,32 @@ public partial class VideoPlayer : IAsyncDisposable
     public void OnTimeUpdated(double? time)
     {
         if (time is { } value && !double.IsNaN(value) && !double.IsInfinity(value) && value >= 0)
-            PlayerService.CurrentTime = value;
+            ApplyWebPlaybackClock(value);
     }
+
+    /// <summary>
+    /// Video.js waiting can be the last event while HLS is already playing.
+    /// A short forward step marks Playing so the Windows spinner drops.
+    /// </summary>
+    private void ApplyWebPlaybackClock(double value)
+    {
+        var state = PlayerService.PlaybackState;
+        if (UsesWindowsWebHlsPlayer()
+            && state is PlaybackState.Buffering or PlaybackState.Idle or PlaybackState.Playing
+            && NativeSeekSpinnerPolicy.IsForwardPlaybackStep(_webPlaybackClock, value))
+        {
+            _webClockAdvancedUtc = DateTime.UtcNow;
+            if (state is PlaybackState.Buffering or PlaybackState.Idle)
+                PlayerService.PlaybackState = PlaybackState.Playing;
+        }
+
+        _webPlaybackClock = value;
+        PlayerService.CurrentTime = value;
+    }
+
+    private bool WebClockRecentlyAdvanced() =>
+        UsesWindowsWebHlsPlayer()
+        && DateTime.UtcNow - _webClockAdvancedUtc < TimeSpan.FromSeconds(1.5);
 
     [JSInvokable]
     public void OnBufferedUpdated(double? time)

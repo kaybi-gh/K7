@@ -164,4 +164,24 @@ public class NativeSeekSpinnerPolicyTests
         NativeSeekSpinnerPolicy.ShouldHideAfterWindowsInstantSeek(PlaybackState.Paused)
             .Should().BeFalse();
     }
+
+    [Test]
+    public void IsForwardPlaybackStep_ShouldIgnoreResumeJump_AndAcceptTick()
+    {
+        NativeSeekSpinnerPolicy.IsForwardPlaybackStep(null, 1772).Should().BeFalse();
+        NativeSeekSpinnerPolicy.IsForwardPlaybackStep(0, 1772).Should().BeFalse();
+        NativeSeekSpinnerPolicy.IsForwardPlaybackStep(1772, 1772.3).Should().BeTrue();
+        NativeSeekSpinnerPolicy.IsForwardPlaybackStep(1772.3, 1772.3).Should().BeFalse();
+    }
+
+    [Test]
+    public void ShouldPromoteWebBufferingToPlaying_ShouldRequireBufferingAndATick()
+    {
+        NativeSeekSpinnerPolicy.ShouldPromoteWebBufferingToPlaying(1772, 1772.3, PlaybackState.Buffering)
+            .Should().BeTrue();
+        NativeSeekSpinnerPolicy.ShouldPromoteWebBufferingToPlaying(1772, 1772.3, PlaybackState.Playing)
+            .Should().BeFalse();
+        NativeSeekSpinnerPolicy.ShouldPromoteWebBufferingToPlaying(1772, 1772.3, PlaybackState.Paused)
+            .Should().BeFalse();
+    }
 }
