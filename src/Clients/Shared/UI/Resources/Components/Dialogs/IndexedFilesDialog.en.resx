@@ -33,5 +33,7 @@
   <data name="Default" xml:space="preserve"><value>Default</value></data>
   <data name="Forced" xml:space="preserve"><value>Forced</value></data>
   <data name="Federated" xml:space="preserve"><value>Federated</value></data>
+  <data name="FederatedFromPeer" xml:space="preserve"><value>Federation: {0}</value></data>
+  <data name="UnknownPeer" xml:space="preserve"><value>unknown peer</value></data>
   <data name="LoadingDetails" xml:space="preserve"><value>Loading details...</value></data>
 </root>

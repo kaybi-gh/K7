@@ -6,6 +6,7 @@ public sealed record RemoteIndexedFileDto
 {
     public required Guid Id { get; init; }
     public required Guid PeerServerId { get; init; }
+    public string? PeerServerName { get; init; }
     public required Guid RemoteFileId { get; init; }
     public required string Name { get; init; }
     public required string Extension { get; init; }

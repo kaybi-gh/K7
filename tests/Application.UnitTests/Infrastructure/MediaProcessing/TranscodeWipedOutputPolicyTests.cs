@@ -74,6 +74,23 @@ public class TranscodeWipedOutputPolicyTests
     }
 
     [Test]
+    public void NeedsReset_ShouldBeFalse_WhenStoppedRemuxStillHasStaging()
+    {
+        TranscodeWipedOutputPolicy.NeedsReset(
+                outputDirectoryExists: true,
+                isFfmpegRunning: false,
+                isCopyRemux: true,
+                hasRemuxStaging: true,
+                hasObservedReadyOutput: false,
+                lastRequestedSegmentIndex: 328,
+                targetSegmentIndex: 358,
+                windowStartIndex: -1,
+                generatingFromSegmentIndex: 328,
+                bufferSize: 30)
+            .Should().BeFalse();
+    }
+
+    [Test]
     public void NeedsReset_ShouldBeTrue_WhenRemuxStoppedAndClientLandingLeftOnEmptyCache()
     {
         TranscodeWipedOutputPolicy.NeedsReset(
@@ -156,5 +173,23 @@ public class TranscodeWipedOutputPolicyTests
                 generatingFromSegmentIndex: 0,
                 bufferSize: 10)
             .Should().BeTrue();
+    }
+
+    [Test]
+    public void NeedsReset_ShouldBeFalse_WhenEncodeColdStartRaceBeforeFfmpegRunning()
+    {
+        // EnsureSegment advertises LastClient/Target before IsFfmpegRunning flips true.
+        TranscodeWipedOutputPolicy.NeedsReset(
+                outputDirectoryExists: true,
+                isFfmpegRunning: false,
+                isCopyRemux: false,
+                hasRemuxStaging: false,
+                hasObservedReadyOutput: false,
+                lastRequestedSegmentIndex: 0,
+                targetSegmentIndex: 10,
+                windowStartIndex: -1,
+                generatingFromSegmentIndex: -1,
+                bufferSize: 10)
+            .Should().BeFalse();
     }
 }

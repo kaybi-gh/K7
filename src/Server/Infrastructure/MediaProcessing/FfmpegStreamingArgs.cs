@@ -194,6 +194,31 @@ internal static class FfmpegStreamingArgs
     }
 
     /// <summary>
+    /// Source-timeline cut times for -force_key_frames. -copyts leaves the encoder
+    /// clock on absolute PTS while -start_at_zero only zeros the muxer, so
+    /// -segment_times stay relative and these cuts must stay absolute. Relative
+    /// times are already in the past after a mid-file -ss and never fire.
+    /// </summary>
+    public static List<double> BuildAbsoluteSplitTimes(
+        IReadOnlyList<HlsSegment> allSegments,
+        int startSegmentIndex,
+        int endSegmentIndex)
+    {
+        var splits = new List<double>();
+        var lastCutExclusive = endSegmentIndex < allSegments.Count
+            ? endSegmentIndex + 1
+            : endSegmentIndex;
+        for (var i = startSegmentIndex + 1; i < lastCutExclusive && i < allSegments.Count; i++)
+        {
+            var absoluteSeconds = allSegments[i].StartTimestamp / 1000.0;
+            if (absoluteSeconds > 0.001)
+                splits.Add(absoluteSeconds);
+        }
+
+        return splits;
+    }
+
+    /// <summary>
     /// Playlist index of the throwaway .m4s opened by the exclusive-end closer cut.
     /// </summary>
     public static int? ResolveCloserSegmentIndex(int endSegmentIndexExclusive, int segmentCount) =>
@@ -230,6 +255,7 @@ internal static class FfmpegStreamingArgs
         }
 
         args.Add("-fflags +genpts");
+
         return args;
     }
 
@@ -382,6 +408,11 @@ internal static class FfmpegStreamingArgs
     /// force_key_frames source follows input keyframes; relative times miss on AMF/NVENC
     /// and pack 2x GOP into one .m4s. Encode windows seek exactly to the deliver
     /// keyframe (no remux pad), so source keyframes align with -segment_times.
+    /// When <paramref name="filtersStripSourceKeyframes"/> is set (PGS burn-in,
+    /// scale/tonemap), source flags are gone. -force_key_frames must use absolute
+    /// source timestamps (encoder clock stays on -copyts). Relative times never
+    /// fire after a mid-file -ss, -g 72 cuts every 3s, and serve rebase then
+    /// stamps playlist starts onto oversized files (A/V rollback).
     /// </summary>
     public static IReadOnlyList<string> BuildKeyframeAlignedEncodeArguments(
         IReadOnlyList<HlsSegment> allSegments,
@@ -389,21 +420,34 @@ internal static class FfmpegStreamingArgs
         int endSegmentIndex,
         TimeSpan timelineOrigin,
         string logicalCodec,
-        string? encoderName)
+        string? encoderName,
+        bool filtersStripSourceKeyframes = false)
     {
-        _ = allSegments;
-        _ = startSegmentIndex;
-        _ = endSegmentIndex;
-        _ = timelineOrigin;
-
         var args = new List<string>
         {
-            "-force_key_frames source",
             // Software and hardware HLS encode: B-frames add CTS delay that rebase
             // cannot see, so ExoPlayer treats frames as late and dumps them.
             "-bf 0",
             "-strict -2"
         };
+
+        if (filtersStripSourceKeyframes)
+        {
+            _ = timelineOrigin;
+            var splits = BuildAbsoluteSplitTimes(
+                allSegments,
+                startSegmentIndex,
+                endSegmentIndex);
+            args.Insert(
+                0,
+                splits.Count > 0
+                    ? $"-force_key_frames {string.Join(",", splits.Select(t => t.ToString("F6", CultureInfo.InvariantCulture)))}"
+                    : "-force_key_frames source");
+        }
+        else
+        {
+            args.Insert(0, "-force_key_frames source");
+        }
 
         // libx264 private options; AMF/NVENC/QSV ignore or warn on them.
         if (string.IsNullOrEmpty(encoderName)
@@ -426,11 +470,15 @@ internal static class FfmpegStreamingArgs
         // each -segment_times cut, -f segment waits for the GOP and packs 2x playlist
         // duration into one .m4s (Web MSE overlap / backwards frames). Cap GOP and
         // force IDR so cuts land on the shared keyframe grid like remux.
-        if (IsHardwareEncoder(encoderName))
+        // Burn-in and scale also need a capped GOP: source keyframe flags do not
+        // survive the filter, so a missed force_key_frames falls back to this GOP.
+        if (IsHardwareEncoder(encoderName) || filtersStripSourceKeyframes)
         {
-            args.Insert(0, "-g 72");
+            if (!args.Contains("-g 72"))
+                args.Insert(0, "-g 72");
             if (encoderName is not null
-                && encoderName.Contains("nvenc", StringComparison.OrdinalIgnoreCase))
+                && encoderName.Contains("nvenc", StringComparison.OrdinalIgnoreCase)
+                && !args.Contains("-forced-idr 1"))
             {
                 args.Insert(1, "-forced-idr 1");
             }

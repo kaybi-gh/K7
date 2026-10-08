@@ -41,4 +41,9 @@
   <data name="ClientExternal" xml:space="preserve"><value>External</value></data>
   <data name="ClientNative" xml:space="preserve"><value>Native</value></data>
   <data name="ClientWeb" xml:space="preserve"><value>Browser</value></data>
+  <data name="Federation" xml:space="preserve"><value>Federation</value></data>
+  <data name="Peer" xml:space="preserve"><value>peer</value></data>
+  <data name="ExecutionHere" xml:space="preserve"><value>Compute: here</value></data>
+  <data name="ExecutionOnPeer" xml:space="preserve"><value>Compute: {0}</value></data>
+  <data name="ExecutionOnOrigin" xml:space="preserve"><value>Compute: origin</value></data>
 </root>

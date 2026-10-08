@@ -156,7 +156,7 @@ public class CreateFederationStreamSessionCommandHandlerTests
     }
 
     [Test]
-    public async Task Handle_ShouldQueueHlsSegments_WhenVideoFileHasNoSegments()
+    public async Task Handle_ShouldComputeHlsSegmentsInline_WhenPeerExecutionAndVideoHasNoSegments()
     {
         var videoFileId = Guid.NewGuid();
         var videoMetadataId = Guid.NewGuid();
@@ -225,13 +225,94 @@ public class CreateFederationStreamSessionCommandHandlerTests
             }), CancellationToken.None);
 
         result.Session.Source.Should().NotBeNull();
-        result.Session.Source!.MimeType.Should().Be("application/vnd.apple.mpegurl");
+        // Peer: origin exposes direct-stream only. Requester caches pieces + runs local HLS.
+        result.Session.FederatedPlaybackExecution.Should().Be(FederatedPlaybackExecution.Peer);
+        result.Session.Source!.Uri.OriginalString.Should().Contain("direct-stream");
+        result.Session.Source.Uri.OriginalString.Should().NotContain("hls-stream");
+        result.Session.StreamDecision.Should().NotBeNull();
         result.Session.SourceFrameRate.Should().BeApproximately(23.976f, 0.001f);
 
+        var persisted = await _context.StreamSessions.SingleAsync(s => s.Id == result.Session.Id);
+        persisted.FederatedPlaybackExecution.Should().Be(FederatedPlaybackExecution.Peer);
+
+        var active = _streamTracker.GetStreamInfo(result.Session.Id);
+        active.Should().NotBeNull();
+        active!.FederatedPlaybackExecution.Should().Be(FederatedPlaybackExecution.Peer);
+        active.DeviceType.Should().Be("Federation");
+
         await _sender.Received(1).Send(Arg.Any<BackfillVideoFrameRateCommand>(), Arg.Any<CancellationToken>());
+        // Peer path must not start on equal-length fallback: wait for keyframe grid on origin.
+        await _sender.Received(1).Send(Arg.Any<ComputeHlsSegmentsCommand>(), Arg.Any<CancellationToken>());
+        await _sender.DidNotReceive().Send(Arg.Any<CreateBackgroundTaskCommand>(), Arg.Any<CancellationToken>());
+    }
+
+    [Test]
+    public async Task Handle_ShouldReturnOriginHls_WhenOwnerOptsOutToOrigin()
+    {
+        var peer = await _context.PeerServers.SingleAsync(p => p.Id == _peerId);
+        peer.FederatedPlaybackExecution = FederatedPlaybackExecution.Origin;
+        await _context.SaveChangesAsync();
+
+        var videoFileId = Guid.NewGuid();
+        var videoMetadataId = Guid.NewGuid();
+        _context.IndexedFiles.Add(new IndexedFile
+        {
+            Id = videoFileId,
+            LibraryId = _libraryId,
+            Name = "movie",
+            Extension = ".mkv",
+            Path = "/media/movie.mkv",
+            Hash = 3,
+            Size = 1,
+            FileMetadata = new VideoFileMetadata
+            {
+                Id = videoMetadataId,
+                Container = "matroska",
+                VideoBitrate = 5_000_000,
+                VideoResolution = VideoResolutionIdentifier._1080p,
+                Duration = TimeSpan.FromHours(2),
+                AudioTracks =
+                [
+                    new AudioFileTrack
+                    {
+                        Index = 0,
+                        Codec = "aac",
+                        Channels = 2,
+                        IsDefault = true
+                    }
+                ],
+                VideoTracks =
+                [
+                    new VideoFileTrack
+                    {
+                        Index = 0,
+                        Codec = "h264",
+                        Width = 1920,
+                        Height = 1080,
+                        Profile = "high",
+                        Level = 40,
+                        FrameRate = 24f
+                    }
+                ]
+            }
+        });
+        await _context.SaveChangesAsync();
+
+        var result = await _handler.Handle(new CreateFederationStreamSessionCommand(
+            InboundClientId,
+            new CreateFederationStreamSessionRequest
+            {
+                IndexedFileId = videoFileId,
+                DeviceCapabilities = CreateCapabilities(["audio-mp4-aac", "video-mp4-aac-h264"]),
+                AudioTrackIndex = 0
+            }), CancellationToken.None);
+
+        result.Session.FederatedPlaybackExecution.Should().Be(FederatedPlaybackExecution.Origin);
+        result.Session.Source!.MimeType.Should().Be("application/vnd.apple.mpegurl");
         await _sender.Received(1).Send(
             Arg.Is<CreateBackgroundTaskCommand>(c => c.Request.GetType() == typeof(ComputeHlsSegmentsCommand)),
             Arg.Any<CancellationToken>());
+        await _sender.DidNotReceive().Send(Arg.Any<ComputeHlsSegmentsCommand>(), Arg.Any<CancellationToken>());
     }
 
     private static DevicePlaybackCapabilitiesDto CreateCapabilities(IEnumerable<string> formatIds) => new()

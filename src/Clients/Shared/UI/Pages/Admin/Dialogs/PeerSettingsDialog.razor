@@ -23,6 +23,19 @@
 
     @if (Peer?.IsProvider == true)
     {
+    <div class="peer-settings__field">
+        <K7Select Label="@L["PlaybackExecutionLabel"]"
+                  TValue="FederatedPlaybackExecution"
+                  @bind-Value="_playbackExecution">
+            <K7SelectItem TValue="FederatedPlaybackExecution" Value="FederatedPlaybackExecution.Peer" Text="@L["PlaybackExecutionPeer"]">@L["PlaybackExecutionPeer"]</K7SelectItem>
+            <K7SelectItem TValue="FederatedPlaybackExecution" Value="FederatedPlaybackExecution.Origin" Text="@L["PlaybackExecutionOrigin"]">@L["PlaybackExecutionOrigin"]</K7SelectItem>
+        </K7Select>
+        <span class="peer-settings__hint">@L["PlaybackExecutionHint"]</span>
+    </div>
+    }
+
+    @if (Peer?.IsProvider == true)
+    {
     <div class="peer-settings__section">
         <span class="peer-settings__label">@L["SharedLibrariesLabel"]</span>
         @if (_isLoading)

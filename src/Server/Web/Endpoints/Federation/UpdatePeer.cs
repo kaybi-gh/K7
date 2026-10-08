@@ -26,6 +26,7 @@ public class UpdatePeerEndpoint : IEndpoint
                 EnabledInboundAgreementIds = request.EnabledInboundAgreementIds,
                 MaxConcurrentStreams = request.MaxConcurrentStreams,
                 AutoAddNewLibraries = request.AutoAddNewLibraries,
+                FederatedPlaybackExecution = request.FederatedPlaybackExecution,
                 SocialAgreements = request.SocialAgreements
             }, cancellationToken);
 

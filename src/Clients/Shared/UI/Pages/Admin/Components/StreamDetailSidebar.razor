@@ -105,6 +105,13 @@
                     <span class="detail-sidebar__label">@L["Mode"]</span>
                     <span class="detail-sidebar__badge detail-sidebar__badge--@Model.ModeBadgeVariant">@Model.ModeLabel</span>
                 </div>
+                @if (Model.ExecutionLabel is not null)
+                {
+                    <div class="detail-sidebar__row">
+                        <span class="detail-sidebar__label">@L["Execution"]</span>
+                        <span class="detail-sidebar__value">@Model.ExecutionLabel</span>
+                    </div>
+                }
 
                 @if (Model.VideoDecision is not null)
                 {

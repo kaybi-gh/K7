@@ -1,11 +1,14 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Features.Federation.Queries.GetFederationStream;
+using K7.Server.Domain.Enums;
 
 namespace K7.Server.Application.Features.Federation.Queries.GetFederationStreamContent;
 
 public record GetFederationStreamSessionQuery(string? ClientId, Guid SessionId) : IRequest<FederationStreamSessionResult>;
 
-public record FederationStreamSessionResult(Guid IndexedFileId);
+public record FederationStreamSessionResult(
+    Guid IndexedFileId,
+    FederatedPlaybackExecution? FederatedPlaybackExecution);
 
 public class GetFederationStreamSessionQueryHandler(
     IPeerAuthorizationService peerAuthorization,
@@ -24,7 +27,9 @@ public class GetFederationStreamSessionQueryHandler(
         if (session?.IndexedFileId is null)
             throw new NotFoundException(request.SessionId.ToString(), "StreamSession");
 
-        return new FederationStreamSessionResult(session.IndexedFileId.Value);
+        return new FederationStreamSessionResult(
+            session.IndexedFileId.Value,
+            session.FederatedPlaybackExecution);
     }
 }
 

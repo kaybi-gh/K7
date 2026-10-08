@@ -56,17 +56,19 @@ internal static class HlsSegmentFileWaiter
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            if (job.FfmpegTask is { IsFaulted: true } failedTask)
-                return failedTask.Exception?.GetBaseException()
-                    ?? new InvalidOperationException("FFmpeg exited without generating the requested segment.");
-
+            // Do not fail the GET on a single faulted window - Peer encode often needs a
+            // re-kick / far-seek after a sparse-cache death. Surface the fault only if we
+            // still have no file when the absolute deadline elapses.
             foreach (var head in job.RemuxHeads.Values)
             {
-                if (head.Task is not { IsFaulted: true } faultedHead)
+                if (head.Task is not { IsFaulted: true })
                     continue;
 
-                return faultedHead.Exception?.GetBaseException()
-                    ?? new InvalidOperationException("FFmpeg remux head exited without generating the requested segment.");
+                if ((DateTime.UtcNow - lastKick).TotalSeconds >= 1.5)
+                {
+                    lastKick = DateTime.UtcNow;
+                    await ensureGenerationAsync(CancellationToken.None);
+                }
             }
 
             var ffmpegRunning = job.IsFfmpegRunning;

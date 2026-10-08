@@ -518,7 +518,13 @@ scene-cut IDRs make `-f segment` cut off the shared keyframe timeline.
 Encode cuts use exact keyframe `-ss` (accurate seek) on the **deliver** segment (no
 remux pad). `-segment_times` and `force_key_frames source` follow source keyframes
 (playlist grid). Hardware encoders also need `-g` capped and IDR forcing
-(`-forced_idr` on AMF, `-forced-idr` on NVENC). Do not add output `-t` on encode
+(`-forced_idr` on AMF, `-forced-idr` on NVENC). PGS burn-in `filter_complex` strips
+source keyframe flags: use absolute `force_key_frames` (source PTS, because
+`-copyts` keeps the encoder clock there) plus `-g 72`. Relative times are already
+past after a mid-file `-ss` and never fire, so `-g 72` cuts every 3s. Serve rebase
+then stamps playlist starts onto those oversized files and the next segment
+overlaps (rollback). `-segment_times` stays relative to the keyframe because
+`-start_at_zero` zeros the muxer only. Do not add output `-t` on encode
 (`-copyts` + `-f segment` yields zero frames). Remux **seek** still uses a short past-IDR
 `-ss` + `-noaccurate_seek` with one-segment pads. Sequential remux continue (previous
 playlist index already ready) skips the before-pad but keeps that past-IDR seek: an
@@ -534,9 +540,24 @@ not past mid-GOP. Do not micro-rebase **audio copy** onto `#EXTINF`.
 - remux continue after a ready `N-1.m4s` must not rewrite `N-1` as a seek pad (that forced
   1-2 segment windows and video micro-freezes). It must still past-IDR seek: accurate remux
   `-ss` replays the previous GOP (rewind). Seek windows still pad
-- remux copy keeps cooperative heads to EOF. Seek never purges ready shared `.m4s`.
-  Missing far targets spawn another head. Near targets wait on an existing tip
-  (~60s). Ready segments stay immutable across clients
+- federated master burn-in follows `SubtitleBurnInStreamIndex` on the manifest query.
+  PGS is not a sidecar VTT. A playback URL that omits the index turns burn-in off.
+  The video playlist then carries the index so the encode overlays that stream
+- federated master audio follows `DefaultAudioTrackIndex` from the manifest query.
+  When both the query and the decision omit the index, the paired audio kick
+  does not start. Mapping stream 0 (often the video) as audio makes ffmpeg exit
+  immediately, and a wiped-cache reset then restarts the empty remux head on every GET
+- a stopped remux head that still has `head-*` staging is not a wiped cache
+- local remux copy keeps cooperative heads to EOF. Piece-cache remux (federated
+  `EnsureInputCoverage`) stays on a buffer window: Target is pinned to that head
+  and must not inherit an EOF advertise, or ffmpeg reads sparse holes (video
+  segments twice as long as audio, audio gaps, rollback). Seek never purges ready
+  shared remux `.m4s`. Missing far targets spawn another head. Near targets wait
+  on an existing tip (~60s). Ready remux segments stay immutable across clients
+- encode seek that keeps the cache must delete `.m4s` from the new anchor forward.
+  Leaving those files next to a re-anchored window overlaps PTS (rollback) even
+  when each file's first sample matches audio. Segments before the anchor stay
+  for seek-back
 - a remux head started because `init.m4s` is missing must keep running until shared
   init is promoted. Stopping just because `From` and `From+1` are already cached
   (resume mid-movie, cache kept) spawned heads 77+ that died before ffmpeg wrote
@@ -583,9 +604,12 @@ not past mid-GOP. Do not micro-rebase **audio copy** onto `#EXTINF`.
   blank surfaces themselves (`blankK7VideoSurfaces` from BlazorPage), not via `hideVideoJs`
 
 - encode keeps `EncoderThrottleBufferSegments` (`requested + BufferSize` windows)
-- encode seek no longer purges ready `.m4s`. Far-forward and seek-back both re-anchor the
-  window (`TranscodeJob.WindowStartIndex`) and keep existing segments, so a seek back into an
-  already-encoded range serves instantly instead of re-encoding. `GetCurrentSegmentIndex`
+- encode seek no longer purges ready `.m4s`. A real seek (more than 3 minutes past the
+  ready tip) re-anchors the window (`TranscodeJob.WindowStartIndex`) and keeps existing
+  segments, so a seek back into an already-encoded range serves instantly instead of
+  re-encoding. A closer forward request, including a quality switch, extends the same
+  window. Re-anchoring that lookahead made the playhead segment 404 and the player jump
+  ahead. `GetCurrentSegmentIndex`
   reports the contiguous ready run from `WindowStartIndex` (not the lowest index on disk), so
   far-away kept segments cannot fool the scan. Remux jobs leave `WindowStartIndex` at -1 and
   keep the disk scan
@@ -610,6 +634,8 @@ not past mid-GOP. Do not micro-rebase **audio copy** onto `#EXTINF`.
   `GET /api/indexed-files/{id}/subtitles/{index}.vtt` (`loadSidecarSubtitleTrack`), parse cues,
   and inject them on a remote text track **without** `src` (`manualCleanup` so quality/encode
   `src` swaps do not auto-drop the track). Pending sidecar is re-applied on `loadedmetadata`.
+  A remote file id is not a local path. That request is proxied to the origin
+  federation session `subtitles/{index}.vtt`, which extracts from the real file.
   A `blob:` `src` fails when the media element uses credentials (`ProgressEvent` status 0).
   Segmented HLS subtitle playlists are not used. Android Exo uses HLS VTT segments but
   never selects a text rendition until the sidecar VTT is ready: playback starts with text

@@ -4,9 +4,11 @@ using K7.Server.Application.Features.IndexedFiles.Queries.GetHlsAudioStreamSegme
 using K7.Server.Application.Features.IndexedFiles.Queries.GetHlsStreamManifest;
 using K7.Server.Application.Features.IndexedFiles.Queries.GetHlsSubtitleStreamIndex;
 using K7.Server.Application.Features.IndexedFiles.Queries.GetHlsSubtitleStreamSegment;
+using K7.Server.Application.Features.IndexedFiles.Queries.GetSubtitleVtt;
 using K7.Server.Application.Features.IndexedFiles.Queries.GetHlsStream;
 using K7.Server.Application.Features.IndexedFiles.Queries.GetHlsVideoStreamSegment;
 using K7.Server.Domain.Constants;
+using K7.Server.Domain.Enums;
 using K7.Server.Web.Infrastructure;
 using Microsoft.AspNetCore.Mvc;
 
@@ -30,10 +32,29 @@ public class GetFederationStreamContent : IEndpoint
             var session = await sender.Send(new GetFederationStreamSessionQuery(clientId, sessionId), cancellationToken);
             var indexedFileId = session.IndexedFileId;
 
+            // Full sidecar WebVTT. The requester proxies this for remote file ids
+            // because Windows Video.js and the XAML loader call indexed-files, not HLS segments.
+            if (path.StartsWith("subtitles/", StringComparison.OrdinalIgnoreCase)
+                && path.EndsWith(".vtt", StringComparison.OrdinalIgnoreCase)
+                && int.TryParse(Path.GetFileNameWithoutExtension(path), out var sidecarTrackIndex))
+            {
+                return (await sender.Send(
+                    new GetSubtitleVttQuery(indexedFileId, sidecarTrackIndex),
+                    cancellationToken)).ToIResult();
+            }
+
             if (path == "direct-stream")
             {
                 var stream = await sender.Send(new GetFederationDirectStreamQuery(indexedFileId), cancellationToken);
                 return MediaStreamHttp.File(stream.Path, stream.MimeType);
+            }
+
+            // Peer sessions: HLS runs on the requester (piece cache + local ffmpeg).
+            if (session.FederatedPlaybackExecution == FederatedPlaybackExecution.Peer
+                && path.StartsWith("hls-stream/", StringComparison.OrdinalIgnoreCase))
+            {
+                return Results.Conflict(
+                    "Peer execution sessions expose direct-stream only. HLS is produced on the requester.");
             }
 
             if (path == "hls-stream/manifest.m3u8")

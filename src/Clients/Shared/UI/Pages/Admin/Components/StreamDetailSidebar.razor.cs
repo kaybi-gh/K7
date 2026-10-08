@@ -60,6 +60,7 @@ public sealed record StreamDetailModel
     public bool HasStreamDetails { get; init; }
     public string? ModeLabel { get; init; }
     public string? ModeBadgeVariant { get; init; }
+    public string? ExecutionLabel { get; init; }
     public string? VideoDecision { get; init; }
     public string? AudioDecision { get; init; }
     public string? SourceVideoCodec { get; init; }

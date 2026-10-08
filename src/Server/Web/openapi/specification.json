@@ -7938,6 +7938,30 @@
         }
       }
     },
+    "/api/federation/stream-sessions/{sessionId}/hls-segments": {
+      "get": {
+        "tags": [
+          "Federation"
+        ],
+        "operationId": "GetFederationHlsSegments",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/federation/indexed-files/{fileId}": {
       "get": {
         "tags": [
@@ -11547,6 +11571,16 @@
               }
             ]
           },
+          "federatedPlaybackExecution": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/FederatedPlaybackExecution"
+              }
+            ]
+          },
           "startedAt": {
             "type": "string",
             "format": "date-time"
@@ -13135,6 +13169,12 @@
               "string"
             ],
             "format": "int32"
+          },
+          "clientType": {
+            "$ref": "#/components/schemas/ClientType"
+          },
+          "operatingSystem": {
+            "$ref": "#/components/schemas/OperatingSystem"
           }
         }
       },
@@ -14247,6 +14287,9 @@
             "type": "string"
           }
         }
+      },
+      "FederatedPlaybackExecution": {
+        "type": "integer"
       },
       "FederationContentType": {
         "type": "integer"
@@ -21123,6 +21166,12 @@
             "type": "string",
             "format": "uuid"
           },
+          "peerServerName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
           "remoteFileId": {
             "type": "string",
             "format": "uuid"
@@ -23121,6 +23170,16 @@
             "type": [
               "null",
               "boolean"
+            ]
+          },
+          "federatedPlaybackExecution": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/FederatedPlaybackExecution"
+              }
             ]
           },
           "socialAgreements": {

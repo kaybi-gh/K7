@@ -119,7 +119,9 @@ public class GetSubtitleVttQueryHandlerTests
             _accessGuard,
             _transcoder,
             NullLogger<GetSubtitleVttQueryHandler>.Instance,
-            Options.Create(new PathsConfiguration { Transcoding = _transcodeDir }));
+            Options.Create(new PathsConfiguration { Transcoding = _transcodeDir }),
+            Substitute.For<IPeerAuthorizationService>(),
+            Substitute.For<IPeerClient>());
     }
 
     [TearDown]

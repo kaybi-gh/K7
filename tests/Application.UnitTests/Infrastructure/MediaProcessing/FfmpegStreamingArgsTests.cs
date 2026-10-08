@@ -148,6 +148,40 @@ public class FfmpegStreamingArgsTests
     }
 
     [Test]
+    public void BuildKeyframeAlignedInputArguments_ShouldIncludeGenpts_ForEncode()
+    {
+        var segments = BuildSegments((0, 2000), (2000, 2000), (4000, 2000));
+        var args = FfmpegStreamingArgs.BuildKeyframeAlignedInputArguments(
+            segments,
+            startSegmentIndex: 1,
+            endSegmentIndex: 3,
+            seekTime: TimeSpan.FromSeconds(2),
+            copyAudio: false,
+            noAccurateSeek: false);
+
+        args.Should().Contain("-ss 2.000000");
+        args.Should().Contain("-to 6.000000");
+        args.Should().Contain("-fflags +genpts");
+        args.Should().NotContain("-noaccurate_seek");
+    }
+
+    [Test]
+    public void BuildKeyframeAlignedInputArguments_ShouldIncludeGenpts_ForAudioCopy()
+    {
+        var segments = BuildSegments((0, 2000), (2000, 2000));
+        var args = FfmpegStreamingArgs.BuildKeyframeAlignedInputArguments(
+            segments,
+            startSegmentIndex: 1,
+            endSegmentIndex: 2,
+            seekTime: TimeSpan.FromSeconds(2),
+            copyAudio: true);
+
+        args.Should().Contain("-ss 2.000000");
+        args.Should().NotContain(a => a.StartsWith("-to ", StringComparison.Ordinal));
+        args.Should().Contain("-fflags +genpts");
+    }
+
+    [Test]
     public void ResolveInputEndTime_ShouldDemuxPastCloserKeyframe_WithoutSeekPad()
     {
         var segments = BuildSegments((0, 2000), (2000, 2000), (4000, 2000), (6000, 2000));
@@ -342,6 +376,52 @@ public class FfmpegStreamingArgsTests
             timelineOrigin: TimeSpan.FromSeconds(2),
             endTime: TimeSpan.FromSeconds(8));
         segmentArgs.Should().Contain("-segment_times 2.000000,4.000000");
+    }
+
+    [Test]
+    public void BuildKeyframeAlignedEncodeArguments_ShouldUseRelativeForceKeyFrames_WhenFiltersStripSourceKeyframes()
+    {
+        var segments = BuildSegments(
+            (0, 10000),
+            (10000, 10000),
+            (20000, 10000),
+            (30000, 10000));
+
+        var args = FfmpegStreamingArgs.BuildKeyframeAlignedEncodeArguments(
+            segments,
+            startSegmentIndex: 0,
+            endSegmentIndex: 3,
+            timelineOrigin: TimeSpan.Zero,
+            logicalCodec: "h264",
+            encoderName: "libx264",
+            filtersStripSourceKeyframes: true);
+
+        // Window starts at 0, so absolute source times match the relative muxer cuts.
+        args.Should().Contain("-force_key_frames 10.000000,20.000000,30.000000");
+        args.Should().NotContain("-force_key_frames source");
+        args.Should().Contain("-g 72");
+    }
+
+    [Test]
+    public void BuildKeyframeAlignedEncodeArguments_ShouldUseAbsoluteForceKeyFrames_WhenWindowStartsMidFile()
+    {
+        var segments = BuildSegments(
+            (385916, 9959),
+            (395875, 1000),
+            (396875, 1250),
+            (398125, 2000));
+
+        var args = FfmpegStreamingArgs.BuildKeyframeAlignedEncodeArguments(
+            segments,
+            startSegmentIndex: 0,
+            endSegmentIndex: 3,
+            timelineOrigin: TimeSpan.FromMilliseconds(385916),
+            logicalCodec: "h264",
+            encoderName: "libx264",
+            filtersStripSourceKeyframes: true);
+
+        args.Should().Contain("-force_key_frames 395.875000,396.875000,398.125000");
+        args.Should().NotContain(a => a.Contains("9.959000", StringComparison.Ordinal));
     }
 
     [Test]

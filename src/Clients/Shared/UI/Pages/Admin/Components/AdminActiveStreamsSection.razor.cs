@@ -90,40 +90,46 @@ public partial class AdminActiveStreamsSection : IDisposable
     {
         var sd = stream.StreamDecision;
         var hasStream = sd is not null;
+        var isFederationOriginSide = string.Equals(stream.DeviceType, "Federation", StringComparison.Ordinal);
+        var isLocalCompute = stream.FederatedPlaybackExecution switch
+        {
+            null => true,
+            FederatedPlaybackExecution.Peer => !isFederationOriginSide,
+            FederatedPlaybackExecution.Origin => isFederationOriginSide,
+            _ => true
+        };
 
-        var isSubtitleBurnIn = sd is { IsSubtitleBurnIn: true }
-            || sd?.Reason.HasFlag(TranscodeReason.SubtitlesBurnIn) == true;
+        var isSubtitleBurnIn = isLocalCompute
+            && (sd is { IsSubtitleBurnIn: true }
+                || sd?.Reason.HasFlag(TranscodeReason.SubtitlesBurnIn) == true);
 
-        var videoIsTranscoded = isSubtitleBurnIn
-            || sd?.Mode == PlaybackMode.Transcode
-            || sd?.Reason.HasFlag(TranscodeReason.ResolutionNotSupported) == true
-            || sd?.Reason.HasFlag(TranscodeReason.QualityDownscale) == true
-            || HasResolutionDownscale(sd)
-            || (sd?.SourceVideoCodec is not null
-                && sd.StreamVideoCodec is not null
-                && !string.Equals(sd.SourceVideoCodec, sd.StreamVideoCodec, StringComparison.OrdinalIgnoreCase));
-        var audioIsTranscoded = sd?.SourceAudioCodec is not null
-            && sd!.StreamAudioCodec is not null
+        var videoIsTranscoded = isLocalCompute
+            && (isSubtitleBurnIn
+                || sd?.Mode == PlaybackMode.Transcode
+                || sd?.Reason.HasFlag(TranscodeReason.ResolutionNotSupported) == true
+                || sd?.Reason.HasFlag(TranscodeReason.QualityDownscale) == true
+                || HasResolutionDownscale(sd)
+                || (sd?.SourceVideoCodec is not null
+                    && sd.StreamVideoCodec is not null
+                    && !string.Equals(sd.SourceVideoCodec, sd.StreamVideoCodec, StringComparison.OrdinalIgnoreCase)));
+        var audioIsTranscoded = isLocalCompute
+            && sd?.SourceAudioCodec is not null
+            && sd.StreamAudioCodec is not null
             && !string.Equals(sd.SourceAudioCodec, sd.StreamAudioCodec, StringComparison.OrdinalIgnoreCase);
 
         string? modeLabel = null;
         string? modeBadgeVariant = null;
         if (hasStream)
         {
-            if (videoIsTranscoded || audioIsTranscoded)
-            {
-                modeLabel = "Transcode";
-                modeBadgeVariant = "transcode";
-            }
-            else if (sd!.Mode == PlaybackMode.Transcode)
-            {
-                modeLabel = "Transcode";
-                modeBadgeVariant = "transcode";
-            }
-            else if (sd.Mode == PlaybackMode.Direct)
+            if (!isLocalCompute || sd!.Mode == PlaybackMode.Direct)
             {
                 modeLabel = "Direct";
                 modeBadgeVariant = "direct";
+            }
+            else if (videoIsTranscoded || audioIsTranscoded || sd.Mode == PlaybackMode.Transcode)
+            {
+                modeLabel = "Transcode";
+                modeBadgeVariant = "transcode";
             }
             else
             {
@@ -131,6 +137,16 @@ public partial class AdminActiveStreamsSection : IDisposable
                 modeBadgeVariant = "transmux";
             }
         }
+
+        string? executionLabel = stream.FederatedPlaybackExecution switch
+        {
+            FederatedPlaybackExecution.Peer when isFederationOriginSide =>
+                string.Format(L["ExecutionOnPeer"].Value, stream.DeviceName ?? L["Peer"].Value),
+            FederatedPlaybackExecution.Peer => L["ExecutionHere"].Value,
+            FederatedPlaybackExecution.Origin when isFederationOriginSide => L["ExecutionHere"].Value,
+            FederatedPlaybackExecution.Origin => L["ExecutionOnOrigin"].Value,
+            _ => null
+        };
 
         string? stateLabel = stream.State switch
         {
@@ -165,6 +181,7 @@ public partial class AdminActiveStreamsSection : IDisposable
             HasStreamDetails = hasStream,
             ModeLabel = modeLabel,
             ModeBadgeVariant = modeBadgeVariant,
+            ExecutionLabel = executionLabel,
             VideoDecision = videoIsTranscoded ? "Transcode" : "Direct",
             AudioDecision = audioIsTranscoded ? "Transcode" : "Direct",
             SourceVideoCodec = sd?.SourceVideoCodec,
@@ -178,9 +195,9 @@ public partial class AdminActiveStreamsSection : IDisposable
                 : sd?.StreamResolution ?? sd?.SourceResolution,
             TranscodeReason = sd?.Reason is not null and not TranscodeReason.None ? FormatReason(sd.Reason) : null,
             Bitrate = sd?.Bitrate is > 0 ? FormatBitrate(sd.Bitrate.Value) : null,
-            VideoEncoder = sd?.VideoEncoder,
-            IsHardwareAccelerated = sd?.IsHardwareAccelerated,
-            AudioEncoder = sd?.AudioEncoder,
+            VideoEncoder = isLocalCompute ? sd?.VideoEncoder : null,
+            IsHardwareAccelerated = isLocalCompute ? sd?.IsHardwareAccelerated : null,
+            AudioEncoder = isLocalCompute ? sd?.AudioEncoder : null,
             AudioTrackLanguage = sd?.AudioTrackLanguage,
             AudioTrackTitle = sd?.AudioTrackTitle,
             AudioChannelLayout = sd?.AudioChannelLayout,

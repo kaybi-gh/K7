@@ -1,5 +1,7 @@
 using K7.Server.Application.Features.Federation.Queries.GetRemoteStreamContent;
+using K7.Server.Application.Features.Federation.Queries.TryServeLocalFederatedHls;
 using K7.Server.Domain.Constants;
+using K7.Server.Web.Infrastructure;
 using Microsoft.AspNetCore.Mvc;
 
 namespace K7.Server.Web.Endpoints.StreamSessions;
@@ -19,10 +21,23 @@ public class GetRemoteStreamContent : IEndpoint
             CancellationToken cancellationToken) =>
         {
             var queryString = httpContext.Request.QueryString.Value ?? "";
+
+            // Peer execution serves HLS locally. Origin (and Direct) still proxy.
+            var localHls = await sender.Send(
+                new TryServeLocalFederatedHlsQuery(sessionId, path, queryString),
+                cancellationToken);
+            if (localHls is not null)
+                return localHls.ToIResult();
+
+            var rangeHeader = httpContext.Request.Headers.Range.ToString();
+            if (string.IsNullOrEmpty(rangeHeader))
+                rangeHeader = null;
+
             var result = await sender.Send(
-                new GetRemoteStreamContentQuery(sessionId, path, queryString),
+                new GetRemoteStreamContentQuery(sessionId, path, queryString, rangeHeader),
                 cancellationToken);
 
+            // 206 Partial Content is a success for Range requests.
             if (result.StatusCode is < 200 or >= 300)
                 return Results.StatusCode(result.StatusCode);
 

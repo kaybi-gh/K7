@@ -21,6 +21,10 @@
   <resheader name="version"><value>2.0</value></resheader>
   <data name="BaseUrlLabel" xml:space="preserve"><value>URL du serveur pair</value></data>
   <data name="AutoAddNewLibraries" xml:space="preserve"><value>Ajouter automatiquement les nouvelles biblioth&#232;ques partag&#233;es</value></data>
+  <data name="PlaybackExecutionLabel" xml:space="preserve"><value>Ex&#233;cution remux / transcode</value></data>
+  <data name="PlaybackExecutionPeer" xml:space="preserve"><value>Serveur demandeur (recommand&#233;)</value></data>
+  <data name="PlaybackExecutionOrigin" xml:space="preserve"><value>Ce serveur (origine)</value></data>
+  <data name="PlaybackExecutionHint" xml:space="preserve"><value>Par d&#233;faut le pair qui lit fait le calcul. Choisissez l'origine si votre d&#233;bit montant ne peut pas porter le fichier brut.</value></data>
   <data name="SharedLibrariesLabel" xml:space="preserve"><value>Biblioth&#232;ques partag&#233;es avec ce pair</value></data>
   <data name="NoLibraries" xml:space="preserve"><value>Aucune biblioth&#232;que disponible</value></data>
   <data name="IntegratedLibrariesLabel" xml:space="preserve"><value>Biblioth&#232;ques a int&#233;grer localement</value></data>

@@ -577,6 +577,13 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Property<string>("CreatedBy")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("FederatedPlaybackExecution")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT")
+                        .HasDefaultValue("Peer");
+
                     b.Property<string>("FederationAssertionSecret")
                         .HasMaxLength(256)
                         .HasColumnType("TEXT");
@@ -2185,6 +2192,10 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("EndedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("FederatedPlaybackExecution")
+                        .HasMaxLength(50)
                         .HasColumnType("TEXT");
 
                     b.Property<Guid?>("IndexedFileId")

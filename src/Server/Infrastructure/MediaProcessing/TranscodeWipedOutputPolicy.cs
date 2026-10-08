@@ -45,6 +45,21 @@ internal static class TranscodeWipedOutputPolicy
             return !hasRemuxStaging;
         }
 
+        // Encode cold start races: EnsureSegment advertises Target / LastClient before
+        // ffmpeg is marked running. An empty dir there is normal, not a wipe. Only reset
+        // when no client landing exists and Target looks like a stale EOF leftover.
+        if (!isCopyRemux)
+        {
+            return lastRequestedSegmentIndex < 0
+                && targetSegmentIndex > bufferSize;
+        }
+
+        // Stopped head that still has staging has not promoted. That is a failed or
+        // in-flight copy, not a wiped shared cache. Resetting it cleared the landing
+        // and started a new empty head on every GET.
+        if (hasRemuxStaging)
+            return false;
+
         return lastRequestedSegmentIndex >= 0
             || windowStartIndex > 0
             || generatingFromSegmentIndex > bufferSize

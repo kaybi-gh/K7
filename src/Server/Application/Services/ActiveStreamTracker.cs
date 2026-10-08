@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using K7.Server.Application.Common.Interfaces;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos;
 using K7.Shared.Enums;
@@ -27,6 +28,10 @@ public sealed record ActiveStreamInfo
     public string? DeviceType { get; set; }
     public string? ThumbnailUrl { get; set; }
     public StreamDecisionDto? StreamDecision { get; set; }
+    /// <summary>
+    /// Who runs remux/transcode for a federated session. Null for local-only playback.
+    /// </summary>
+    public FederatedPlaybackExecution? FederatedPlaybackExecution { get; set; }
     public DateTime StartedAt { get; init; }
     public double Position { get; set; }
     public double Duration { get; set; }
@@ -77,6 +82,12 @@ public class ActiveStreamTracker : IActiveStreamTracker
     private readonly ConcurrentDictionary<Guid, StreamDecisionDto> _pendingDecisions = new();
     private readonly ConcurrentDictionary<Guid, ActiveStreamInfo> _openSubsonicPending = new();
     private readonly ConcurrentDictionary<(Guid SessionId, Guid MediaId), int> _openSubsonicTransfers = new();
+    private readonly IFederatedPlaybackSessionStore? _federatedPlaybackSessionStore;
+
+    public ActiveStreamTracker(IFederatedPlaybackSessionStore? federatedPlaybackSessionStore = null)
+    {
+        _federatedPlaybackSessionStore = federatedPlaybackSessionStore;
+    }
 
     public void Upsert(Guid sessionId, ActiveStreamInfo info)
     {
@@ -85,6 +96,7 @@ public class ActiveStreamTracker : IActiveStreamTracker
         if (_streams.TryGetValue(sessionId, out var existing))
         {
             info.DeviceType ??= existing.DeviceType;
+            info.FederatedPlaybackExecution ??= existing.FederatedPlaybackExecution;
 
             if (existing.MediaId == info.MediaId)
             {
@@ -242,6 +254,8 @@ public class ActiveStreamTracker : IActiveStreamTracker
 
         foreach (var key in _openSubsonicTransfers.Keys.Where(k => k.SessionId == sessionId).ToList())
             _openSubsonicTransfers.TryRemove(key, out _);
+
+        _federatedPlaybackSessionStore?.Remove(sessionId);
     }
 
     public ActiveStreamInfo? GetStreamInfo(Guid sessionId)

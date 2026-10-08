@@ -8,6 +8,12 @@ namespace K7.Server.Infrastructure.MediaProcessing;
 internal static class FfmpegWindowAutoContinue
 {
     /// <summary>
+    /// A playlist request this far past the ready tip is a real seek. Closer than this,
+    /// the encode window stays put so a quality switch cannot skip the playhead.
+    /// </summary>
+    public const double EncodeForwardReanchorMinGapSeconds = 180;
+
+    /// <summary>
     /// True when ready segments lag the sliding-window Target and more playlist entries remain.
     /// </summary>
     public static bool ShouldContinueTowardClientTarget(
@@ -22,6 +28,26 @@ internal static class FfmpegWindowAutoContinue
             return false;
 
         return targetSegmentIndex > currentSegmentIndex;
+    }
+
+    /// <summary>
+    /// Move the encode window start forward only for a real seek. A quality-switch
+    /// prefetch a couple of minutes ahead must keep the playhead anchor, otherwise
+    /// earlier segments 404 and the player jumps.
+    /// </summary>
+    public static bool ShouldReanchorEncodeAhead(
+        int windowStartIndex,
+        int proposedStartIndex,
+        int readyTipIndex,
+        double gapFromReadyTipSeconds)
+    {
+        if (windowStartIndex < 0 || proposedStartIndex <= windowStartIndex)
+            return true;
+
+        if (readyTipIndex < windowStartIndex)
+            return false;
+
+        return gapFromReadyTipSeconds > EncodeForwardReanchorMinGapSeconds;
     }
 
     /// <summary>

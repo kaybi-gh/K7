@@ -15,6 +15,7 @@ public static class FederationMappings
             Status = domain.Status,
             IsProvider = domain.InboundApplicationId is not null,
             AutoAddNewLibraries = domain.AutoAddNewLibraries,
+            FederatedPlaybackExecution = domain.FederatedPlaybackExecution,
             LastSeen = domain.LastSeen,
             LastTestSucceeded = domain.LastTestSucceeded,
             Created = domain.Created,

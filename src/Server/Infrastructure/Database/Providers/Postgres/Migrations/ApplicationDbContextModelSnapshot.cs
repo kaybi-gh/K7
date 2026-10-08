@@ -565,6 +565,13 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.Property<string>("CreatedBy")
                         .HasColumnType("text");
 
+                    b.Property<string>("FederatedPlaybackExecution")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasDefaultValue("Peer");
+
                     b.Property<string>("FederationAssertionSecret")
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
@@ -2136,6 +2143,10 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
 
                     b.Property<DateTimeOffset?>("EndedAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("FederatedPlaybackExecution")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
 
                     b.Property<Guid?>("IndexedFileId")
                         .HasColumnType("uuid");

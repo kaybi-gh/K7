@@ -21,6 +21,12 @@ public class StreamingSessionDto
     public StreamDecisionDto? StreamDecision { get; set; }
 
     /// <summary>
+    /// Who executes remux/transcode for this federated session. Assigned by the source.
+    /// Null for local-only sessions.
+    /// </summary>
+    public FederatedPlaybackExecution? FederatedPlaybackExecution { get; set; }
+
+    /// <summary>
     /// Initial stream URL and MIME type selected for this session
     /// (e.g. direct-play or HLS manifest in MP4/HEVC).
     /// </summary>

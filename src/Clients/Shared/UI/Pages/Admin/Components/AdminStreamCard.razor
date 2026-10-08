@@ -32,6 +32,10 @@
             {
                 <span class="stream-card__mode-badge @OverallModeBadgeClass">@OverallModeLabel</span>
             }
+            @if (ShowExecutionBadge)
+            {
+                <span class="stream-card__execution-badge" title="@ExecutionBadgeLabel">@ExecutionBadgeLabel</span>
+            }
             @if (ShowEncoderBadge)
             {
                 <span class="stream-card__encoder-badge @(IsHardwareEncoder ? "stream-card__encoder-badge--hw" : "stream-card__encoder-badge--sw")">
@@ -71,7 +75,7 @@
                         <span class="stream-card__track-decision @(IsVideoTranscoded ? "stream-card__track-decision--transcode" : "stream-card__track-decision--direct")">
                             @(IsVideoTranscoded ? L["Transcode"] : L["DirectPlay"])
                         </span>
-                        @if (decision.VideoEncoder is { } encoder)
+                        @if (IsLocalCompute && decision.VideoEncoder is { } encoder)
                         {
                             <span class="stream-card__encoder">@encoder (@(decision.IsHardwareAccelerated == true ? L["Hardware"] : L["Software"]))</span>
                         }
@@ -94,7 +98,7 @@
                         <span class="stream-card__track-decision @(IsAudioTranscoded ? "stream-card__track-decision--transcode" : "stream-card__track-decision--direct")">
                             @(IsAudioTranscoded ? L["Transcode"] : L["DirectPlay"])
                         </span>
-                        @if (decision.AudioEncoder is { } audioEncoder)
+                        @if (IsLocalCompute && decision.AudioEncoder is { } audioEncoder)
                         {
                             <span class="stream-card__encoder">@audioEncoder (@L["Software"])</span>
                         }

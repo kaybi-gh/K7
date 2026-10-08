@@ -318,6 +318,38 @@ public class ActiveStreamTrackerTests
         tracker.GetStreamInfo(sessionId)!.IndexedFileId.Should().Be(fileId);
     }
 
+    [Test]
+    public void Upsert_ShouldKeepFederatedPlaybackExecution_WhenLaterUpdateOmitsIt()
+    {
+        var tracker = new ActiveStreamTracker();
+        var sessionId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        var mediaId = Guid.NewGuid();
+        var deviceId = Guid.NewGuid();
+
+        tracker.Upsert(sessionId, new ActiveStreamInfo
+        {
+            SessionId = sessionId,
+            IdentityUserId = "user-1",
+            UserId = userId,
+            DeviceId = deviceId,
+            DeviceName = "Browser",
+            DeviceType = nameof(ClientType.Web),
+            FederatedPlaybackExecution = FederatedPlaybackExecution.Peer,
+            StartedAt = DateTime.UtcNow,
+            Position = 0,
+            Duration = 100,
+            State = (int)PlaybackState.Playing
+        });
+
+        // Progress updates often fill MediaId later and omit federation fields.
+        tracker.Upsert(sessionId, CreateStream(sessionId, userId, mediaId, deviceId, "Browser"));
+
+        var info = tracker.GetStreamInfo(sessionId)!;
+        info.FederatedPlaybackExecution.Should().Be(FederatedPlaybackExecution.Peer);
+        info.MediaId.Should().Be(mediaId);
+    }
+
     private static ActiveStreamInfo CreateStream(
         Guid sessionId,
         Guid userId,

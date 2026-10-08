@@ -10,6 +10,7 @@ public sealed record PeerServerDto
     public required PeerStatus Status { get; init; }
     public bool IsProvider { get; init; }
     public bool AutoAddNewLibraries { get; init; }
+    public FederatedPlaybackExecution FederatedPlaybackExecution { get; init; } = FederatedPlaybackExecution.Peer;
     public DateTimeOffset? LastSeen { get; init; }
     public bool? LastTestSucceeded { get; init; }
     public DateTimeOffset Created { get; init; }

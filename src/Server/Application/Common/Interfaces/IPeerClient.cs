@@ -1,6 +1,7 @@
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos;
 using K7.Shared.Dtos.Entities;
+using K7.Shared.Dtos.Federation;
 using K7.Shared.Dtos.Federation.Social;
 using K7.Shared.Dtos.Requests;
 
@@ -18,7 +19,8 @@ public interface IPeerClient
     Task<IndexedFileDto?> GetRemoteFileDetailsAsync(string baseUrl, string accessToken, Guid fileId, CancellationToken cancellationToken = default);
     Task<HttpResponseMessage> GetRemoteMetadataPictureAsync(string baseUrl, string accessToken, Guid pictureId, MetadataPictureSize? size = null, CancellationToken cancellationToken = default);
     Task<StreamingSessionDto?> CreateRemoteStreamSessionAsync(string baseUrl, string accessToken, CreateFederationStreamSessionRequest request, CancellationToken cancellationToken = default);
-    Task<HttpResponseMessage> ProxyStreamContentAsync(string baseUrl, string accessToken, Guid sessionId, string path, CancellationToken cancellationToken = default);
+    Task<HttpResponseMessage> ProxyStreamContentAsync(string baseUrl, string accessToken, Guid sessionId, string path, CancellationToken cancellationToken = default, string? rangeHeader = null);
+    Task<IReadOnlyList<HlsSegmentDto>> GetRemoteHlsSegmentsAsync(string baseUrl, string accessToken, Guid sessionId, CancellationToken cancellationToken = default);
     Task NotifyMediaAsync(string baseUrl, string accessToken, Guid libraryId, Guid mediaId, PeerMediaNotificationType type, CancellationToken cancellationToken = default);
     Task NotifyRevocationAsync(string baseUrl, string accessToken, CancellationToken cancellationToken = default);
     Task NotifyProviderRevocationAsync(string requesterUrl, string providerUrl, CancellationToken cancellationToken = default);

@@ -36,6 +36,7 @@
   <data name="Client" xml:space="preserve"><value>Client</value></data>
   <data name="StreamDetails" xml:space="preserve"><value>Détails du flux</value></data>
   <data name="Mode" xml:space="preserve"><value>Mode</value></data>
+  <data name="Execution" xml:space="preserve"><value>Ex&#233;cution</value></data>
   <data name="VideoDecision" xml:space="preserve"><value>Decision video</value></data>
   <data name="VideoEncoder" xml:space="preserve"><value>Encodeur vid&#233;o</value></data>
   <data name="AudioEncoder" xml:space="preserve"><value>Encodeur audio</value></data>

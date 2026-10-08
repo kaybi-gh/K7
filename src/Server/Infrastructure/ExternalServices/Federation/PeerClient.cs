@@ -7,6 +7,7 @@ using K7.Server.Application.Common.Interfaces;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos;
 using K7.Shared.Dtos.Entities;
+using K7.Shared.Dtos.Federation;
 using K7.Shared.Dtos.Federation.Social;
 using K7.Shared.Dtos.Requests;
 using Microsoft.Extensions.Http;
@@ -148,16 +149,48 @@ public class PeerClient(
         return await response.Content.ReadFromJsonAsync<StreamingSessionDto>(_jsonOptions, cancellationToken);
     }
 
-    public async Task<HttpResponseMessage> ProxyStreamContentAsync(string baseUrl, string accessToken, Guid sessionId, string path, CancellationToken cancellationToken = default)
+    public async Task<HttpResponseMessage> ProxyStreamContentAsync(
+        string baseUrl,
+        string accessToken,
+        Guid sessionId,
+        string path,
+        CancellationToken cancellationToken = default,
+        string? rangeHeader = null)
     {
         peerUrlGuard.EnsureAllowedOutgoingUrl(baseUrl);
         var url = $"{baseUrl.TrimEnd('/')}/api/federation/stream-sessions/{sessionId}/{path}";
         using var httpRequest = new HttpRequestMessage(HttpMethod.Get, url);
         httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        if (!string.IsNullOrEmpty(rangeHeader))
+            httpRequest.Headers.TryAddWithoutValidation("Range", rangeHeader);
 
         var streamClient = httpClientFactory.CreateClient(
             K7.Server.Infrastructure.ExternalServices.DependencyInjection.PeerStreamHttpClient);
         return await streamClient.SendAsync(httpRequest, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<HlsSegmentDto>> GetRemoteHlsSegmentsAsync(
+        string baseUrl,
+        string accessToken,
+        Guid sessionId,
+        CancellationToken cancellationToken = default)
+    {
+        peerUrlGuard.EnsureAllowedOutgoingUrl(baseUrl);
+        var url = $"{baseUrl.TrimEnd('/')}/api/federation/stream-sessions/{sessionId}/hls-segments";
+        using var request = new HttpRequestMessage(HttpMethod.Get, url);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+        var response = await httpClient.SendAsync(request, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            logger.LogWarning(
+                "GetRemoteHlsSegmentsAsync failed with {StatusCode} for session {SessionId}",
+                (int)response.StatusCode,
+                sessionId);
+            return [];
+        }
+
+        return await response.Content.ReadFromJsonAsync<List<HlsSegmentDto>>(_jsonOptions, cancellationToken) ?? [];
     }
 
     public async Task<PeerFullMediaMetadataDto?> GetRemoteMediaMetadataAsync(string baseUrl, string accessToken, Guid mediaId, CancellationToken cancellationToken = default)

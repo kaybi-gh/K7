@@ -21,7 +21,8 @@ public interface ITranscodeJobManager
         Guid streamSessionId,
         CancellationToken cancellationToken = default,
         int? subtitleBurnInStreamIndex = null,
-        int? audioChannels = null);
+        int? audioChannels = null,
+        Func<TimeSpan, TimeSpan, CancellationToken, Task>? ensureInputCoverageAsync = null);
 
     /// <summary>
     /// Signals that a session is still actively using this job.
@@ -84,6 +85,18 @@ public class TranscodeJob
     public int? SubtitleBurnInStreamIndex { get; init; }
     public required string OutputDirectory { get; init; }
     public required string InputFilePath { get; init; }
+
+    /// <summary>
+    /// Optional hook (Peer federated piece cache) to ensure local bytes cover a time window
+    /// before ffmpeg starts a remux/encode window.
+    /// </summary>
+    public Func<TimeSpan, TimeSpan, CancellationToken, Task>? EnsureInputCoverageAsync { get; set; }
+
+    /// <summary>
+    /// Playlist grid passed by the caller (required when IndexedFileId is a
+    /// RemoteIndexedFile id with no local HlsSegments rows).
+    /// </summary>
+    public List<HlsSegment>? StreamingSegments { get; set; }
 
     public CancellationTokenSource? FfmpegCancellation { get; set; }
     public Task? FfmpegTask { get; set; }

@@ -6,6 +6,39 @@ namespace K7.Server.Application.UnitTests.Infrastructure.MediaProcessing;
 public class FfmpegWindowAutoContinueTests
 {
     [Test]
+    public void ShouldReanchorEncodeAhead_ShouldKeepAnchor_WhenLookaheadPassesUnreadyWindow()
+    {
+        FfmpegWindowAutoContinue.ShouldReanchorEncodeAhead(
+                windowStartIndex: 100,
+                proposedStartIndex: 136,
+                readyTipIndex: 99,
+                gapFromReadyTipSeconds: 160)
+            .Should().BeFalse();
+    }
+
+    [Test]
+    public void ShouldReanchorEncodeAhead_ShouldKeepAnchor_WhenGapIsUnderThreeMinutes()
+    {
+        FfmpegWindowAutoContinue.ShouldReanchorEncodeAhead(
+                windowStartIndex: 63,
+                proposedStartIndex: 136,
+                readyTipIndex: 111,
+                gapFromReadyTipSeconds: 153)
+            .Should().BeFalse();
+    }
+
+    [Test]
+    public void ShouldReanchorEncodeAhead_ShouldMoveWindow_WhenSeekIsPastThreeMinutes()
+    {
+        FfmpegWindowAutoContinue.ShouldReanchorEncodeAhead(
+                windowStartIndex: 63,
+                proposedStartIndex: 400,
+                readyTipIndex: 111,
+                gapFromReadyTipSeconds: 600)
+            .Should().BeTrue();
+    }
+
+    [Test]
     public void ShouldContinueTowardClientTarget_ShouldBeTrue_WhenTargetPastReadySegments()
     {
         FfmpegWindowAutoContinue.ShouldContinueTowardClientTarget(
@@ -136,5 +169,31 @@ public class FfmpegWindowAutoContinueTests
                 segmentCount: 200,
                 remuxToEnd: false)
             .Should().Be(22);
+    }
+
+    [Test]
+    public void ResolveAdvertisedTarget_ShouldStayOnBufferWindow_WhenPieceCacheRemux()
+    {
+        // Federated remux must not jump to EOF when EnsureInputCoverage is set
+        // (remuxToEnd=false). Max with a stale EOF Target is a separate SpawnRemuxHead pin.
+        FfmpegWindowAutoContinue.ResolveAdvertisedTarget(
+                requestedSegmentIndex: 0,
+                currentTargetSegmentIndex: 0,
+                bufferSize: 30,
+                segmentCount: 1565,
+                remuxToEnd: false)
+            .Should().Be(30);
+    }
+
+    [Test]
+    public void ResolveAdvertisedTarget_ShouldKeepLargerTarget_WhenWindowedAndClientAhead()
+    {
+        FfmpegWindowAutoContinue.ResolveAdvertisedTarget(
+                requestedSegmentIndex: 12,
+                currentTargetSegmentIndex: 80,
+                bufferSize: 30,
+                segmentCount: 200,
+                remuxToEnd: false)
+            .Should().Be(80);
     }
 }

@@ -1,3 +1,5 @@
+using K7.Server.Domain.Enums;
+
 namespace K7.Shared.Dtos;
 
 public sealed record ActiveStreamDto
@@ -16,6 +18,10 @@ public sealed record ActiveStreamDto
     public string? DeviceType { get; init; }
     public string? ThumbnailUrl { get; init; }
     public StreamDecisionDto? StreamDecision { get; init; }
+    /// <summary>
+    /// Who runs remux/transcode for a federated session. Null for local-only playback.
+    /// </summary>
+    public FederatedPlaybackExecution? FederatedPlaybackExecution { get; init; }
     public DateTime StartedAt { get; init; }
     public double Position { get; init; }
     public double Duration { get; init; }

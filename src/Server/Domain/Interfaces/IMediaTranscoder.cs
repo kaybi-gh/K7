@@ -34,7 +34,8 @@ public interface IMediaTranscoder
         CancellationToken cancellationToken,
         string? videoCodec = null,
         string? videoResolutionIdentifier = null,
-        int? subtitleBurnInStreamIndex = null);
+        int? subtitleBurnInStreamIndex = null,
+        FfmpegMediaInput? input = null);
 
     /// <summary>
     /// Starts an audio-only streaming transcode job.
@@ -49,7 +50,8 @@ public interface IMediaTranscoder
         CancellationToken cancellationToken,
         int audioTrackIndex,
         string? audioCodec = null,
-        int? audioChannels = null);
+        int? audioChannels = null,
+        FfmpegMediaInput? input = null);
 
     /// <summary>
     /// Extracts a subtitle track from the input file and converts it to WebVTT format.

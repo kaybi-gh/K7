@@ -9,15 +9,18 @@ using K7.Server.Application.Features.IndexedFiles.Queries.GetStreamUri;
 using K7.Server.Application.Helpers;
 using K7.Server.Application.Services;
 using K7.Server.Domain.Common;
+using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Devices;
 using K7.Server.Domain.Entities.MediaFormats;
 using K7.Server.Domain.Entities.Metadatas.Files;
 using K7.Server.Domain.Enums;
+using OperatingSystem = K7.Server.Domain.Enums.OperatingSystem;
 using K7.Shared.Dtos;
 using K7.Shared.Dtos.Devices;
 using K7.Shared.Dtos.Entities.Medias;
 using K7.Shared.Dtos.Requests;
+using K7.Shared.QueryBuilders;
 
 namespace K7.Server.Application.Features.Federation.Commands.CreateFederationStreamSession;
 
@@ -48,15 +51,21 @@ public class CreateFederationStreamSessionCommandHandler(
         var virtualDevice = new Device
         {
             Id = Guid.NewGuid(),
-            ClientType = ClientType.Web,
+            ClientType = command.Request.ClientType == ClientType.Unknown
+                ? ClientType.Web
+                : command.Request.ClientType,
+            OperatingSystem = command.Request.OperatingSystem,
             PlaybackCapabilities = deviceCapabilities
         };
+
+        var assignedExecution = peer.FederatedPlaybackExecution;
 
         var session = new StreamSession
         {
             Id = Guid.NewGuid(),
             IndexedFileId = indexedFile.Id,
             PeerServerId = peer.Id,
+            FederatedPlaybackExecution = assignedExecution,
             State = PlaybackState.Idle,
             Position = 0,
             PlaybackSettingsJson = "{}"
@@ -97,20 +106,36 @@ public class CreateFederationStreamSessionCommandHandler(
 
             if (!hlsSegmentsAvailable)
             {
-                await sender.Send(new CreateBackgroundTaskCommand
+                // Peer execution remux/transcode on the requester needs the origin keyframe
+                // grid immediately. Equal-length fallback causes A/V desync and reverse seeks.
+                // Compute inline (local ffprobe) before returning the session.
+                if (assignedExecution == FederatedPlaybackExecution.Peer)
                 {
-                    Request = new ComputeHlsSegmentsCommand
+                    await sender.Send(new ComputeHlsSegmentsCommand
                     {
                         Id = indexedFile.Id,
                         SegmentsDuration = TimeSpan.FromMilliseconds(HlsSegmentHelper.TargetSegmentDurationMs)
-                    },
-                    TargetEntityId = indexedFile.Id,
-                    TargetEntityTypeName = nameof(IndexedFile),
-                    Lane = BackgroundTaskLane.FfmpegPrepare,
-                    WorkClass = BackgroundTaskWorkClass.Prepare,
-                    TriggeredBy = BackgroundTaskTriggeredBy.Federation,
-                    MaxAttempts = 5
-                }, cancellationToken);
+                    }, cancellationToken);
+                    hlsSegmentsAvailable = await context.HlsSegments
+                        .AnyAsync(s => s.IndexedFileId == indexedFile.Id, cancellationToken);
+                }
+                else
+                {
+                    await sender.Send(new CreateBackgroundTaskCommand
+                    {
+                        Request = new ComputeHlsSegmentsCommand
+                        {
+                            Id = indexedFile.Id,
+                            SegmentsDuration = TimeSpan.FromMilliseconds(HlsSegmentHelper.TargetSegmentDurationMs)
+                        },
+                        TargetEntityId = indexedFile.Id,
+                        TargetEntityTypeName = nameof(IndexedFile),
+                        Lane = BackgroundTaskLane.FfmpegPrepare,
+                        WorkClass = BackgroundTaskWorkClass.Prepare,
+                        TriggeredBy = BackgroundTaskTriggeredBy.Federation,
+                        MaxAttempts = 5
+                    }, cancellationToken);
+                }
             }
 
             var query = new GetStreamUriQuery
@@ -133,6 +158,28 @@ public class CreateFederationStreamSessionCommandHandler(
             throw new UnprocessableEntityException("Unsupported file metadata type.");
         }
 
+        // Peer: origin only serves direct-stream (+ keyframe grid). Requester runs ffmpeg.
+        if (assignedExecution == FederatedPlaybackExecution.Peer)
+        {
+            var container = indexedFile.FileMetadata switch
+            {
+                VideoFileMetadata v => v.Container,
+                AudioFileMetadata a => a.Container,
+                _ => null
+            };
+            var mimeType = container is not null
+                && Constants.ContainerMimeTypeMapping.TryGetValue(container, out var mime)
+                    ? mime
+                    : "application/octet-stream";
+
+            streamUri = new IndexedFileStreamUri
+            {
+                Uri = new Uri(GetIndexedFileDirectStreamQueryUriBuilder.Build(indexedFile.Id), UriKind.Relative),
+                MimeType = mimeType,
+                StreamDecision = streamDecision
+            };
+        }
+
         var media = await context.Medias
             .AsNoTracking()
             .FirstOrDefaultAsync(m => m.IndexedFiles.Any(f => f.Id == indexedFile.Id), cancellationToken);
@@ -148,6 +195,7 @@ public class CreateFederationStreamSessionCommandHandler(
             DeviceName = peer.Name,
             DeviceType = "Federation",
             StreamDecision = streamDecision,
+            FederatedPlaybackExecution = assignedExecution,
             Duration = duration,
             StartedAt = DateTime.UtcNow
         });
@@ -170,7 +218,8 @@ public class CreateFederationStreamSessionCommandHandler(
             Source = streamUri with { StreamDecision = streamDecision },
             AudioTracks = playbackTracks?.Audio ?? [],
             SubtitleTracks = playbackTracks?.Subtitles ?? [],
-            StreamDecision = streamDecision
+            StreamDecision = streamDecision,
+            FederatedPlaybackExecution = assignedExecution
         };
         if (indexedFile.FileMetadata is VideoFileMetadata videoTiming)
         {

@@ -139,8 +139,12 @@ public class MediaTranscoder : IMediaTranscoder
         CancellationToken cancellationToken,
         string? videoCodec = null,
         string? videoResolutionIdentifier = null,
-        int? subtitleBurnInStreamIndex = null)
+        int? subtitleBurnInStreamIndex = null,
+        FfmpegMediaInput? input = null)
     {
+        input ??= FfmpegMediaInput.FromFile(inputFilePath);
+        inputFilePath = input.PathOrUrl;
+
         _ = ValidateAndComputeTimeRange(allSegments, startSegmentIndex, endSegmentIndex);
         outputDirectory = FfmpegStreamingArgs.NormalizeOutputDirectory(outputDirectory);
         Directory.CreateDirectory(outputDirectory);
@@ -157,9 +161,7 @@ public class MediaTranscoder : IMediaTranscoder
             && HlsSegmentFileWaiter.IsSegmentReadyOnDisk(outputDirectory, startSegmentIndex - 1);
         if (needsTranscode)
         {
-            // Encode seeks exactly to the deliver keyframe. Remux pads one segment
-            // before/after for past-IDR -ss. Pads leave ~6s window-relative PTS that
-            // serve rebase must fix and AMF still overruns segment duration.
+            // Local encode seeks exactly to the deliver keyframe.
             ffmpegStartIndex = startSegmentIndex;
             ffmpegEndIndex = endSegmentIndex;
         }
@@ -282,8 +284,7 @@ public class MediaTranscoder : IMediaTranscoder
         // -f segment writes %d.m4s + init via segment_header_filename (not HLS playlist).
         // Pattern is absolute so a relative Paths:Transcoding does not nest under cwd.
         var segmentPattern = Path.Combine(outputDirectory, "%d.m4s");
-        var ffmpegTask = FFMpegArguments
-            .FromFileInput(inputFilePath, verifyExists: true, options =>
+        var ffmpegTask = FfmpegStreamingInput.Create(input, options =>
             {
                 if (hasBurnIn)
                 {
@@ -330,7 +331,7 @@ public class MediaTranscoder : IMediaTranscoder
                              ffmpegEndIndex,
                              seekTime,
                              copyAudio: false,
-                             noAccurateSeek: !needsTranscode && ffmpegStartIndex > 0))
+                             noAccurateSeek: !accurateSeek && ffmpegStartIndex > 0))
                 {
                     options.WithCustomArgument(arg);
                 }
@@ -376,6 +377,16 @@ public class MediaTranscoder : IMediaTranscoder
 
                         ApplyQualityBitrate(options, videoResolutionIdentifier);
 
+                        // Scale / tonemap / hw upload strip source keyframe flags the same way
+                        // burn-in filter_complex does.
+                        var videoFilterWillRun = !hasBurnIn && (
+                            scaleHeight is not null
+                            || !string.IsNullOrWhiteSpace(hdrTonemapFilter)
+                            || !string.IsNullOrWhiteSpace(resolvedEncoder?.VideoFilter));
+                        var useRelativeForceKeyFrames = ShouldUseRelativeForceKeyFrames(
+                            hasBurnIn,
+                            videoFilterWillRun);
+
                         ApplyKeyframeAlignedEncodeFlags(
                             options,
                             allSegments,
@@ -383,7 +394,8 @@ public class MediaTranscoder : IMediaTranscoder
                             ffmpegEndIndex,
                             cutOrigin,
                             effectiveCodec,
-                            resolvedEncoder?.EncoderName);
+                            resolvedEncoder?.EncoderName,
+                            filtersStripSourceKeyframes: useRelativeForceKeyFrames);
                     }
 
                     if (!hasBurnIn)
@@ -567,8 +579,12 @@ public class MediaTranscoder : IMediaTranscoder
         CancellationToken cancellationToken,
         int audioTrackIndex,
         string? audioCodec = null,
-        int? audioChannels = null)
+        int? audioChannels = null,
+        FfmpegMediaInput? input = null)
     {
+        input ??= FfmpegMediaInput.FromFile(inputFilePath);
+        inputFilePath = input.PathOrUrl;
+
         _ = ValidateAndComputeTimeRange(allSegments, startSegmentIndex, endSegmentIndex);
         outputDirectory = FfmpegStreamingArgs.NormalizeOutputDirectory(outputDirectory);
         Directory.CreateDirectory(outputDirectory);
@@ -645,8 +661,8 @@ public class MediaTranscoder : IMediaTranscoder
         }
 
         var segmentPattern = Path.Combine(outputDirectory, "%d.m4s");
-        var ffmpegTask = FFMpegArguments
-            .FromFileInput(inputFilePath, verifyExists: true, options =>
+        var stderrLines = new List<string>();
+        var ffmpegTask = FfmpegStreamingInput.Create(input, options =>
             {
                 // Bitstream copy must not use Auto hwaccel (empty/corrupt fMP4 segments).
                 if (needsTranscode)
@@ -681,6 +697,11 @@ public class MediaTranscoder : IMediaTranscoder
                     {
                         options.WithCustomArgument("-c:a libopus");
                     }
+                    else
+                    {
+                        throw new InvalidOperationException(
+                            $"No fMP4 audio encoder is configured for codec '{audioCodec}'.");
+                    }
 
                     ConfigureKeyframeAlignedSegmentOutput(
                         options,
@@ -707,6 +728,7 @@ public class MediaTranscoder : IMediaTranscoder
             })
             .Configure(options => options.WorkingDirectory = outputDirectory)
             .Configure(options => options.TemporaryFilesFolder = outputDirectory)
+            .NotifyOnError(stderrLines.Add)
             .CancellableThrough(cancellationToken);
 
         var result = await RunStreamingFfmpegWithTfdtFinalizeAsync(
@@ -724,11 +746,16 @@ public class MediaTranscoder : IMediaTranscoder
 
         if (!result && !cancellationToken.IsCancellationRequested)
         {
+            var stderr = string.Join(Environment.NewLine, stderrLines);
+            if (stderr.Length > 1500)
+                stderr = stderr[^1500..];
+
             _logger.LogError(
-                "FFmpeg audio transcode failed for {Input}, track={Track}. Success={Success}",
+                "FFmpeg audio transcode failed for {Input}, track={Track}. Success={Success}. Stderr={Stderr}",
                 inputFilePath,
                 audioTrackIndex,
-                result);
+                result,
+                stderr);
         }
     }
 
@@ -867,6 +894,14 @@ public class MediaTranscoder : IMediaTranscoder
     }
 
     /// <summary>
+    /// Relative force_key_frames when source IDR flags will not survive to the encoder.
+    /// </summary>
+    internal static bool ShouldUseRelativeForceKeyFrames(
+        bool hasBurnIn,
+        bool videoFilterWillRun) =>
+        hasBurnIn || videoFilterWillRun;
+
+    /// <summary>
     /// Force IDR frames at relative cut times (same as -segment_times).
     /// </summary>
     private static void ApplyKeyframeAlignedEncodeFlags(
@@ -876,7 +911,8 @@ public class MediaTranscoder : IMediaTranscoder
         int endSegmentIndex,
         TimeSpan timelineOrigin,
         string logicalCodec,
-        string? encoderName)
+        string? encoderName,
+        bool filtersStripSourceKeyframes = false)
     {
         foreach (var arg in FfmpegStreamingArgs.BuildKeyframeAlignedEncodeArguments(
                      allSegments,
@@ -884,7 +920,8 @@ public class MediaTranscoder : IMediaTranscoder
                      endSegmentIndex,
                      timelineOrigin,
                      logicalCodec,
-                     encoderName))
+                     encoderName,
+                     filtersStripSourceKeyframes))
         {
             options.WithCustomArgument(arg);
         }
@@ -1072,6 +1109,17 @@ public class AutoScaleArgument : IVideoFilterArgument
     {
         Height = height;
     }
+}
+
+internal static class FfmpegStreamingInput
+{
+    /// <summary>
+    /// Builds FFMpegArguments for a local file. Seek args must appear before -i.
+    /// </summary>
+    public static FFMpegArguments Create(
+        FfmpegMediaInput input,
+        Action<FFMpegArgumentOptions> configure) =>
+        FFMpegArguments.FromFileInput(input.PathOrUrl, verifyExists: true, configure);
 }
 
 internal static class FFMpegArgumentsExtensions

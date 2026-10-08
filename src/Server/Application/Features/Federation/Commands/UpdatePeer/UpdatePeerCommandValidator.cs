@@ -17,6 +17,10 @@ public class UpdatePeerCommandValidator : AbstractValidator<UpdatePeerCommand>
             .GreaterThan(0)
             .When(v => v.MaxConcurrentStreams is not null);
 
+        RuleFor(v => v.FederatedPlaybackExecution)
+            .IsInEnum()
+            .When(v => v.FederatedPlaybackExecution is not null);
+
         RuleForEach(v => v.SharedLibraryIds)
             .NotEmpty()
             .When(v => v.SharedLibraryIds is not null);

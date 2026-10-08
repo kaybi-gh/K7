@@ -46,6 +46,7 @@ public static class IndexedFileMappings
         {
             Id = domain.Id,
             PeerServerId = domain.PeerServerId,
+            PeerServerName = domain.PeerServer?.Name,
             RemoteFileId = domain.RemoteFileId,
             Name = domain.Name,
             Extension = domain.Extension,

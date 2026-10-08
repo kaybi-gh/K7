@@ -19,8 +19,34 @@ public partial class AdminStreamCard
 
     private string PlaceholderIcon => IsMusic ? Phosphor.MusicNote : Phosphor.FilmSlate;
 
-    private bool IsSubtitleBurnIn => Stream.StreamDecision is { IsSubtitleBurnIn: true }
-        || Stream.StreamDecision?.Reason.HasFlag(TranscodeReason.SubtitlesBurnIn) == true;
+    /// <summary>Origin side of a federation pull (device type set by CreateFederationStreamSession).</summary>
+    private bool IsFederationOriginSide =>
+        string.Equals(Stream.DeviceType, "Federation", StringComparison.Ordinal);
+
+    /// <summary>This server runs remux/transcode ffmpeg for the session.</summary>
+    private bool IsLocalCompute => Stream.FederatedPlaybackExecution switch
+    {
+        null => true,
+        FederatedPlaybackExecution.Peer => !IsFederationOriginSide,
+        FederatedPlaybackExecution.Origin => IsFederationOriginSide,
+        _ => true
+    };
+
+    private bool ShowExecutionBadge => Stream.FederatedPlaybackExecution is not null;
+
+    private string ExecutionBadgeLabel => Stream.FederatedPlaybackExecution switch
+    {
+        FederatedPlaybackExecution.Peer when IsFederationOriginSide =>
+            string.Format(L["ExecutionOnPeer"].Value, Stream.DeviceName ?? L["Peer"].Value),
+        FederatedPlaybackExecution.Peer => L["ExecutionHere"].Value,
+        FederatedPlaybackExecution.Origin when IsFederationOriginSide => L["ExecutionHere"].Value,
+        FederatedPlaybackExecution.Origin => L["ExecutionOnOrigin"].Value,
+        _ => L["Federation"].Value
+    };
+
+    private bool IsSubtitleBurnIn => IsLocalCompute
+        && (Stream.StreamDecision is { IsSubtitleBurnIn: true }
+            || Stream.StreamDecision?.Reason.HasFlag(TranscodeReason.SubtitlesBurnIn) == true);
 
     private bool HasSubtitleTrack => Stream.StreamDecision is { } d
         && (IsSubtitleBurnIn
@@ -28,7 +54,8 @@ public partial class AdminStreamCard
             || d.SubtitleTrackTitle is not null
             || d.SubtitleCodec is not null);
 
-    private bool IsVideoTranscoded => Stream.StreamDecision is { } d
+    private bool IsVideoTranscoded => IsLocalCompute
+        && Stream.StreamDecision is { } d
         && (d.Mode == PlaybackMode.Transcode
             || IsSubtitleBurnIn
             || d.Reason.HasFlag(TranscodeReason.ResolutionNotSupported)
@@ -54,7 +81,8 @@ public partial class AdminStreamCard
 
     private bool IsHardwareEncoder => Stream.StreamDecision?.IsHardwareAccelerated == true;
 
-    private bool IsAudioTranscoded => Stream.StreamDecision is { } d
+    private bool IsAudioTranscoded => IsLocalCompute
+        && Stream.StreamDecision is { } d
         && d.SourceAudioCodec is not null
         && d.StreamAudioCodec is not null
         && !string.Equals(d.SourceAudioCodec, d.StreamAudioCodec, StringComparison.OrdinalIgnoreCase);
@@ -63,6 +91,7 @@ public partial class AdminStreamCard
     {
         get
         {
+            if (!IsLocalCompute) return "Direct";
             if (IsVideoTranscoded || IsAudioTranscoded) return "Transcode";
             return Stream.StreamDecision?.Mode switch
             {
@@ -77,6 +106,7 @@ public partial class AdminStreamCard
     {
         get
         {
+            if (!IsLocalCompute) return "stream-card__mode-badge--direct";
             if (IsVideoTranscoded || IsAudioTranscoded) return "stream-card__mode-badge--transcode";
             return Stream.StreamDecision?.Mode switch
             {

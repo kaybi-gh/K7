@@ -21,6 +21,10 @@
   <resheader name="version"><value>2.0</value></resheader>
   <data name="BaseUrlLabel" xml:space="preserve"><value>Peer server URL</value></data>
   <data name="AutoAddNewLibraries" xml:space="preserve"><value>Automatically add new shared libraries</value></data>
+  <data name="PlaybackExecutionLabel" xml:space="preserve"><value>Remux / transcode execution</value></data>
+  <data name="PlaybackExecutionPeer" xml:space="preserve"><value>Requester server (recommended)</value></data>
+  <data name="PlaybackExecutionOrigin" xml:space="preserve"><value>This server (origin)</value></data>
+  <data name="PlaybackExecutionHint" xml:space="preserve"><value>By default the peer that plays runs the compute. Choose origin if your uplink cannot carry the raw file.</value></data>
   <data name="SharedLibrariesLabel" xml:space="preserve"><value>Libraries shared with this peer</value></data>
   <data name="NoLibraries" xml:space="preserve"><value>No libraries available</value></data>
   <data name="IntegratedLibrariesLabel" xml:space="preserve"><value>Libraries to integrate locally</value></data>

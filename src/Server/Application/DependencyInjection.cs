@@ -81,6 +81,9 @@ public static class DependencyInjection
         services.AddHostedService(sp => sp.GetRequiredService<LibraryFolderWatcherService>());
         services.AddSingleton<ActiveStreamTracker>();
         services.AddSingleton<IActiveStreamTracker>(sp => sp.GetRequiredService<ActiveStreamTracker>());
+        services.AddSingleton<IFederatedPlaybackSessionStore, FederatedPlaybackSessionStore>();
+        services.AddSingleton<IFederatedMediaCache, FederatedMediaCache>();
+        services.AddScoped<IFederatedRequesterHlsService, FederatedRequesterHlsService>();
         services.AddScoped<IActiveStreamsSnapshotService, ActiveStreamsSnapshotService>();
         services.AddSingleton<HubPresenceTracker>();
         services.AddSingleton<IHubPresenceTracker>(sp => sp.GetRequiredService<HubPresenceTracker>());

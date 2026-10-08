@@ -1,10 +1,15 @@
 using K7.Server.Application.Common.Exceptions;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Mappings;
+using K7.Server.Application.Services;
+using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos;
 using K7.Shared.Dtos.Requests;
+using K7.Shared.Enums;
+using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.Extensions.Logging;
 
 namespace K7.Server.Application.Features.Federation.Commands.CreateRemoteStreamSession;
 
@@ -17,7 +22,11 @@ public record CreateRemoteStreamSessionResult(StreamingSessionDto Session, strin
 public class CreateRemoteStreamSessionCommandHandler(
     IApplicationDbContext context,
     IPeerAuthorizationService peerAuthorization,
-    IPeerClient peerClient)
+    IPeerClient peerClient,
+    IFederatedPlaybackSessionStore federatedSessionStore,
+    IFederatedMediaCache federatedMediaCache,
+    IActiveStreamTracker activeStreamTracker,
+    ILogger<CreateRemoteStreamSessionCommandHandler> logger)
     : IRequestHandler<CreateRemoteStreamSessionCommand, CreateRemoteStreamSessionResult>
 {
     public async Task<CreateRemoteStreamSessionResult> Handle(
@@ -58,7 +67,9 @@ public class CreateRemoteStreamSessionCommandHandler(
             IndexedFileId = remoteFile.RemoteFileId,
             DeviceCapabilities = capabilitiesDto,
             AudioTrackIndex = request.AudioTrackIndex,
-            SubtitleTrackIndex = request.SubtitleTrackIndex
+            SubtitleTrackIndex = request.SubtitleTrackIndex,
+            ClientType = device.ClientType,
+            OperatingSystem = device.OperatingSystem
         };
 
         var remoteSession = await peerClient.CreateRemoteStreamSessionAsync(
@@ -66,6 +77,8 @@ public class CreateRemoteStreamSessionCommandHandler(
 
         if (remoteSession is null)
             throw new HttpRequestException("Failed to create stream session on peer.");
+
+        var assignedExecution = remoteSession.FederatedPlaybackExecution ?? FederatedPlaybackExecution.Origin;
 
         var localSession = new StreamSession
         {
@@ -75,6 +88,7 @@ public class CreateRemoteStreamSessionCommandHandler(
             UserId = command.UserId,
             PeerServerId = peer.Id,
             RemoteSessionId = remoteSession.Id,
+            FederatedPlaybackExecution = assignedExecution,
             State = PlaybackState.Idle,
             Position = 0,
             PlaybackSettingsJson = "{}"
@@ -83,8 +97,32 @@ public class CreateRemoteStreamSessionCommandHandler(
         context.StreamSessions.Add(localSession);
         await context.SaveChangesAsync(cancellationToken);
 
+        var streamDecision = remoteSession.StreamDecision;
         IndexedFileStreamUri? localSource = null;
-        if (remoteSession.Source is not null)
+
+        // Peer HLS is remux and encode only. Direct Play stays a Range proxy of the
+        // origin file so LibVLC can play the muxed container.
+        if (streamDecision is not null && ShouldServePeerHls(assignedExecution, streamDecision))
+        {
+            var originDirectUrl =
+                $"{peer.BaseUrl.TrimEnd('/')}/api/federation/stream-sessions/{remoteSession.Id}/direct-stream";
+
+            var playbackState = new FederatedPlaybackSessionState
+            {
+                LocalSessionId = localSession.Id,
+                RemoteSessionId = remoteSession.Id,
+                PeerServerId = peer.Id,
+                RemoteIndexedFileId = remoteFile.Id,
+                OriginDirectStreamUrl = originDirectUrl,
+                StreamDecision = streamDecision,
+                Duration = remoteFile.Duration
+            };
+            federatedSessionStore.Set(playbackState);
+            WarmFederatedMediaCache(playbackState);
+
+            localSource = BuildLocalHlsSource(localSession.Id, streamDecision);
+        }
+        else if (remoteSession.Source is not null)
         {
             var remotePath = remoteSession.Source.Uri.IsAbsoluteUri
                 ? remoteSession.Source.Uri.PathAndQuery
@@ -106,9 +144,25 @@ public class CreateRemoteStreamSessionCommandHandler(
             localSource = new IndexedFileStreamUri
             {
                 Uri = new Uri(proxyPath, UriKind.Relative),
-                MimeType = remoteSession.Source.MimeType
+                MimeType = remoteSession.Source.MimeType,
+                StreamDecision = streamDecision
             };
         }
+
+        activeStreamTracker.Upsert(localSession.Id, new ActiveStreamInfo
+        {
+            SessionId = localSession.Id,
+            UserId = command.UserId,
+            IdentityUserId = command.UserId.ToString(),
+            DeviceId = device.Id,
+            DeviceName = device.DeviceName,
+            DeviceType = device.ClientType.ToString(),
+            IndexedFileId = remoteFile.Id,
+            StreamDecision = streamDecision,
+            FederatedPlaybackExecution = assignedExecution,
+            Duration = remoteFile.Duration?.TotalSeconds ?? 0,
+            StartedAt = DateTime.UtcNow
+        });
 
         var result = new StreamingSessionDto
         {
@@ -122,9 +176,88 @@ public class CreateRemoteStreamSessionCommandHandler(
             SubtitleTracks = remoteSession.SubtitleTracks,
             SourceFrameRate = remoteSession.SourceFrameRate,
             SourceVideoWidth = remoteSession.SourceVideoWidth,
-            SourceVideoHeight = remoteSession.SourceVideoHeight
+            SourceVideoHeight = remoteSession.SourceVideoHeight,
+            StreamDecision = streamDecision,
+            FederatedPlaybackExecution = assignedExecution
         };
 
         return new CreateRemoteStreamSessionResult(result, $"/api/remote-stream-sessions/{localSession.Id}");
+    }
+
+    private void WarmFederatedMediaCache(FederatedPlaybackSessionState state)
+    {
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                var entry = await federatedMediaCache.EnsureOpenedAsync(
+                    state.RemoteIndexedFileId,
+                    state.PeerServerId,
+                    state.RemoteSessionId,
+                    state.OriginDirectStreamUrl);
+                await federatedMediaCache.EnsureHeaderAndCuesAsync(entry);
+                state.LocalMediaPath = entry.LocalPath;
+                federatedSessionStore.Set(state);
+            }
+            catch (Exception ex)
+            {
+                logger.LogDebug(
+                    ex,
+                    "Federated media cache warm-up failed for session {SessionId}",
+                    state.LocalSessionId);
+            }
+        });
+    }
+
+    internal static bool ShouldServePeerHls(
+        FederatedPlaybackExecution execution,
+        StreamDecisionDto? decision) =>
+        execution == FederatedPlaybackExecution.Peer
+        && decision is not null
+        && decision.Mode != PlaybackMode.Direct;
+
+    internal static IndexedFileStreamUri BuildLocalHlsSource(Guid localSessionId, StreamDecisionDto decision)
+    {
+        var query = new Dictionary<string, string?>
+        {
+            ["StreamSessionId"] = localSessionId.ToString(),
+            ["TranscodingVideoCodec"] = decision.Mode == PlaybackMode.Transcode
+                || decision.Reason.HasFlag(TranscodeReason.HlsSegmentsUnavailable)
+                    ? decision.StreamVideoCodec
+                    : null,
+            ["DefaultAudioTrackIndex"] = decision.SelectedAudioTrackIndex?.ToString(),
+            ["DefaultSubtitleTrackIndex"] = decision.IsSubtitleBurnIn
+                ? null
+                : decision.SelectedSubtitleTrackIndex?.ToString(),
+            ["SubtitleBurnInStreamIndex"] = decision.IsSubtitleBurnIn
+                ? decision.SelectedSubtitleTrackIndex?.ToString()
+                : null,
+            // Ladder Names only (720p). Never pass WxH StreamResolution - it skips encode.
+            ["Quality"] = decision.Reason.HasFlag(TranscodeReason.QualityDownscale)
+                ? Constants.VideoQualities.Values
+                    .FirstOrDefault(v =>
+                        decision.StreamResolution is { } sr
+                        && string.Equals($"{v.Width}x{v.Height}", sr, StringComparison.OrdinalIgnoreCase))
+                    ?.Name
+                : null,
+            ["MaxAudioChannels"] = decision.StreamAudioChannels?.ToString(),
+            ["VideoCodecsOnly"] = "true"
+        };
+
+        var filtered = query
+            .Where(kv => !string.IsNullOrEmpty(kv.Value))
+            .ToDictionary(kv => kv.Key, kv => (string?)kv.Value);
+
+        var path = $"/api/remote-stream-sessions/{localSessionId}/hls-stream/manifest.m3u8";
+        var uri = filtered.Count > 0
+            ? QueryHelpers.AddQueryString(path, filtered)
+            : path;
+
+        return new IndexedFileStreamUri
+        {
+            Uri = new Uri(uri, UriKind.Relative),
+            MimeType = "application/vnd.apple.mpegurl",
+            StreamDecision = decision
+        };
     }
 }

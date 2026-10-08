@@ -17,6 +17,7 @@ public record UpdatePeerCommand : IRequest
     public IReadOnlyList<Guid>? EnabledInboundAgreementIds { get; init; }
     public int? MaxConcurrentStreams { get; init; }
     public bool? AutoAddNewLibraries { get; init; }
+    public FederatedPlaybackExecution? FederatedPlaybackExecution { get; init; }
     public IReadOnlyList<PeerSocialAgreementDto>? SocialAgreements { get; init; }
 }
 
@@ -41,6 +42,11 @@ public class UpdatePeerCommandHandler(
         if (request.AutoAddNewLibraries.HasValue)
         {
             peer.AutoAddNewLibraries = request.AutoAddNewLibraries.Value;
+        }
+
+        if (request.FederatedPlaybackExecution.HasValue)
+        {
+            peer.FederatedPlaybackExecution = request.FederatedPlaybackExecution.Value;
         }
 
         var sharedLibrariesChanged = false;

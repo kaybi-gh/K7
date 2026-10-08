@@ -76,6 +76,7 @@ public sealed class ActiveStreamsSnapshotService(
                 DeviceType = s.DeviceType,
                 ThumbnailUrl = s.ThumbnailUrl,
                 StreamDecision = streamDecision,
+                FederatedPlaybackExecution = s.FederatedPlaybackExecution,
                 StartedAt = s.StartedAt,
                 Position = s.Position,
                 Duration = s.Duration,

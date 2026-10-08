@@ -264,7 +264,26 @@ Outbound share agreements control which local libraries a peer can list via `GET
 
 Back up `Paths:Config` - federation identity material lives with OpenIddict keys. User-level share/view scopes are separate - see [Using K7 - Privacy](../user/guide.md#privacy-and-visibility).
 
-Local testing: [`docker-compose.federation-test.yaml`](../../docker-compose.federation-test.yaml).
+### Federated playback execution
+
+The library owner (source) assigns who remuxes or transcodes for each consumer peer. The requester cannot claim the job.
+
+| Setting | Who runs ffmpeg |
+|---|---|
+| **Peer** (default) | Requester remux and encode. Origin serves `direct-stream` (HTTP Range) + the HLS keyframe grid. |
+| **Origin** | Source runs all remux/transcode. Requester proxies HLS or direct-stream. |
+
+Configure under Admin -> Federation -> peer settings (**Remux / transcode execution**), only when you are the provider for that peer. Existing peers migrate to Peer.
+
+With Peer, remux and encode cache the origin file in 4 MiB pieces under `Paths:Transcoding/federation-media`, then run the same local-file ffmpeg path as non-federated HLS. Origin does not remux or encode for that play. Direct Play is not rewritten to HLS: the requester proxies `direct-stream` with HTTP Range. The origin uses the real client type, so a Windows or Android native player can stay on LibVLC when the container and codecs match.
+
+When Peer HLS cannot start (cache or ffmpeg failure), playback falls back to origin proxy so the stream can still start.
+
+Admin -> Active streams shows the mode for **this** server (Direct when it only serves or proxies) plus a **Compute** badge for who runs remux/transcode.
+
+First Peer play of a title waits for the origin keyframe HLS grid (inline ffprobe) and for the MKV header plus cues before ffmpeg can seek. The playback window then blocks on a short byte runway (64 MiB). The rest of the file fills while ffmpeg runs. Starting without that grid used a 6s equal-length fallback that looks like A/V desync and reverse seeks in the browser even on LAN. VLC on the raw file is unaffected (Direct Play).
+
+Peer follows the same stream decision as local playback (do not force video encode when only AAC is required). Remux master playlists still advertise the source video codec.
 
 ## Administration UI
 

@@ -26,6 +26,11 @@ public class StreamSession : BaseAuditableEntity
 
     public Guid? RemoteSessionId { get; set; }
 
+    /// <summary>
+    /// Assigned execution location for federated playback. Null for local-only sessions.
+    /// </summary>
+    public FederatedPlaybackExecution? FederatedPlaybackExecution { get; set; }
+
     public PlaybackState State { get; set; } = PlaybackState.Idle;
     public double Position { get; set; }
     public DateTimeOffset? EndedAt { get; set; }

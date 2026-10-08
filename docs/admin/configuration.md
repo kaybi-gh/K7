@@ -21,7 +21,7 @@ Media title, overview, and poster are **on by default**. Turn them off under **A
 
 ## Database
 
-The sample [`docker-compose.yaml`](../../docker-compose.yaml) uses **Postgres** (recommended). Sqlite works for small trials but is less performant and not recommended for production. For Sqlite, set `Database__Provider=Sqlite` and `Database__Name` to a path under `/data` **without** a `.db` suffix (the server appends `.db`). See also [`docker-compose.federation-test.yaml`](../../docker-compose.federation-test.yaml) for a local multi-peer Sqlite example.
+The sample [`docker-compose.yaml`](../../docker-compose.yaml) uses **Postgres** (recommended). Sqlite works for small trials but is less performant and not recommended for production. For Sqlite, set `Database__Provider=Sqlite` and `Database__Name` to a path under `/data` **without** a `.db` suffix (the server appends `.db`).
 
 ### Docker secrets (`__File`)
 

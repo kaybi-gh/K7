@@ -26,6 +26,7 @@ public partial class PeerSettingsDialog
     private bool _isLoading = true;
     private string _baseUrl = string.Empty;
     private bool _autoAdd;
+    private FederatedPlaybackExecution _playbackExecution = FederatedPlaybackExecution.Peer;
     private List<LibraryDto> _libraries = [];
     private List<PeerShareAgreementDto> _inboundAgreements = [];
     private HashSet<Guid> _selectedIds = [];
@@ -39,6 +40,7 @@ public partial class PeerSettingsDialog
         {
             _baseUrl = Peer.BaseUrl;
             _autoAdd = Peer.AutoAddNewLibraries;
+            _playbackExecution = Peer.FederatedPlaybackExecution;
             _selectedIds = Peer.ShareAgreements
                 .Where(a => a.Direction == ShareDirection.Outbound)
                 .Select(a => a.LibraryId)
@@ -178,6 +180,7 @@ public partial class PeerSettingsDialog
             SharedLibraryIds = Peer?.IsProvider == true ? _selectedIds.ToList() : null,
             EnabledInboundAgreementIds = Peer?.IsProvider != true ? _enabledInboundIds.ToList() : null,
             AutoAddNewLibraries = _autoAdd,
+            FederatedPlaybackExecution = Peer?.IsProvider == true ? _playbackExecution : null,
             SocialAgreements = _socialAgreements.Values.ToList()
         };
         Dialog.Close(K7DialogResult.Ok(result));

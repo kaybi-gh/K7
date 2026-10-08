@@ -1,4 +1,5 @@
 using K7.Server.Domain.Entities.Federation;
+using K7.Server.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -34,6 +35,11 @@ public class PeerServerConfiguration : IEntityTypeConfiguration<PeerServer>
         builder.Property(p => p.Status)
             .HasConversion<string>()
             .HasMaxLength(50);
+
+        builder.Property(p => p.FederatedPlaybackExecution)
+            .HasConversion<string>()
+            .HasMaxLength(50)
+            .HasDefaultValue(FederatedPlaybackExecution.Peer);
 
         builder.HasMany(p => p.ShareAgreements)
             .WithOne(a => a.PeerServer)

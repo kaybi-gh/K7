@@ -142,6 +142,10 @@
                             <K7Chip Size="sm" Color="info" Variant="filled">@L["Federated"]</K7Chip>
                         </div>
 
+                        <span class="text-caption" Color="secondary" Style="word-break: break-all;">
+                            @string.Format(L["FederatedFromPeer"], file.PeerServerName ?? L["UnknownPeer"])
+                        </span>
+
                         <div class="d-flex">
                             <K7Chip Size="sm" Variant="outlined">@file.Extension</K7Chip>
                             <K7Chip Size="sm" Variant="outlined">@($"{file.Size / (1024 * 1024):N0} MB")</K7Chip>

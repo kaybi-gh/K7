@@ -116,6 +116,20 @@
     color: var(--color-error);
 }
 
+::deep .stream-card__execution-badge {
+    padding: 0.0625rem 0.375rem;
+    border-radius: var(--radius-sm);
+    font-size: var(--text-2xs);
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    background: color-mix(in srgb, var(--color-info) 15%, transparent);
+    color: var(--color-info);
+    max-width: 12rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 ::deep .stream-card__encoder-badge {
     padding: 0.0625rem 0.375rem;
     border-radius: var(--radius-sm);

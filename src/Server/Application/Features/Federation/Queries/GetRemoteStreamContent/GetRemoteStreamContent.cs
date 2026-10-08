@@ -4,7 +4,11 @@ using K7.Server.Domain.Enums;
 
 namespace K7.Server.Application.Features.Federation.Queries.GetRemoteStreamContent;
 
-public record GetRemoteStreamContentQuery(Guid SessionId, string Path, string QueryString) : IRequest<RemoteStreamProxyResult>;
+public record GetRemoteStreamContentQuery(
+    Guid SessionId,
+    string Path,
+    string QueryString,
+    string? RangeHeader = null) : IRequest<RemoteStreamProxyResult>;
 
 public record RemoteStreamProxyResult(
     int StatusCode,
@@ -40,10 +44,20 @@ public class GetRemoteStreamContentQueryHandler(
         var (peer, token) = auth.Value;
         var fullPath = $"{request.Path}{request.QueryString}";
 
-        var response = await peerClient.ProxyStreamContentAsync(
-            peer.BaseUrl, token, session.RemoteSessionId.Value, fullPath, cancellationToken);
+        // Peer execution only proxies direct-stream (with Range). HLS is served locally.
+        var rangeHeader = request.Path.Equals("direct-stream", StringComparison.OrdinalIgnoreCase)
+            ? request.RangeHeader
+            : null;
 
-        var forwardHeaders = new Dictionary<string, string[]>();
+        var response = await peerClient.ProxyStreamContentAsync(
+            peer.BaseUrl,
+            token,
+            session.RemoteSessionId.Value,
+            fullPath,
+            cancellationToken,
+            rangeHeader);
+
+        var forwardHeaders = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase);
         foreach (var header in response.Headers)
         {
             if (header.Key.Equals("Accept-Ranges", StringComparison.OrdinalIgnoreCase)
@@ -53,8 +67,18 @@ public class GetRemoteStreamContentQueryHandler(
             }
         }
 
+        foreach (var header in response.Content.Headers)
+        {
+            if (header.Key.Equals("Content-Range", StringComparison.OrdinalIgnoreCase)
+                || header.Key.Equals("Accept-Ranges", StringComparison.OrdinalIgnoreCase))
+            {
+                forwardHeaders[header.Key] = header.Value.ToArray();
+            }
+        }
+
         Stream? body = null;
-        if (response.IsSuccessStatusCode)
+        // 206 Partial Content is success for Range requests.
+        if (response.IsSuccessStatusCode || (int)response.StatusCode == 206)
             body = await response.Content.ReadAsStreamAsync(cancellationToken);
 
         return new RemoteStreamProxyResult(

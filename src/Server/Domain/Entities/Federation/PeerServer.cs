@@ -13,6 +13,13 @@ public class PeerServer : BaseAuditableEntity
     public string? InboundApplicationId { get; set; }
 
     public bool AutoAddNewLibraries { get; set; }
+
+    /// <summary>
+    /// Who executes remux/transcode when this peer consumes our libraries.
+    /// Default Peer so the library owner is not taxed.
+    /// </summary>
+    public FederatedPlaybackExecution FederatedPlaybackExecution { get; set; } = FederatedPlaybackExecution.Peer;
+
     public DateTimeOffset? LastSeen { get; set; }
     public bool? LastTestSucceeded { get; set; }
     public string? FederationAssertionSecret { get; set; }

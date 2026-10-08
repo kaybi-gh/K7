@@ -38,7 +38,8 @@ public class TranscodeJobManager(
         Guid streamSessionId,
         CancellationToken cancellationToken = default,
         int? subtitleBurnInStreamIndex = null,
-        int? audioChannels = null)
+        int? audioChannels = null,
+        Func<TimeSpan, TimeSpan, CancellationToken, Task>? ensureInputCoverageAsync = null)
     {
         var settings = await transcodeSettingsProvider.GetSettingsAsync(cancellationToken);
         EnsureTempQuotaAvailable(settings.TranscodeTempQuotaMb);
@@ -56,6 +57,8 @@ public class TranscodeJobManager(
         {
             existingJob.AttachedStreamSessions.TryAdd(streamSessionId, 0);
             existingJob.LastPingTime = DateTime.UtcNow;
+            if (ensureInputCoverageAsync is not null)
+                existingJob.EnsureInputCoverageAsync = ensureInputCoverageAsync;
             await RecoverWipedOutputIfNeededAsync(existingJob, cancellationToken);
             logger.LogDebug(
                 "Reusing existing transcode job {JobId} for session {SessionId}",
@@ -72,6 +75,8 @@ public class TranscodeJobManager(
             {
                 existingJob.AttachedStreamSessions.TryAdd(streamSessionId, 0);
                 existingJob.LastPingTime = DateTime.UtcNow;
+                if (ensureInputCoverageAsync is not null)
+                    existingJob.EnsureInputCoverageAsync = ensureInputCoverageAsync;
                 await RecoverWipedOutputIfNeededAsync(existingJob, cancellationToken);
                 return existingJob;
             }
@@ -131,6 +136,7 @@ public class TranscodeJobManager(
                 SubtitleBurnInStreamIndex = subtitleBurnInStreamIndex,
                 OutputDirectory = outputDir,
                 InputFilePath = inputFilePath,
+                EnsureInputCoverageAsync = ensureInputCoverageAsync,
                 TargetSegmentIndex = 0,
                 BufferSize = Math.Max(settings.EncoderThrottleBufferSegments, 1)
             };
@@ -175,6 +181,9 @@ public class TranscodeJobManager(
 
         await RecoverWipedOutputIfNeededAsync(job, cancellationToken);
 
+        if (allSegments.Count > 0)
+            job.StreamingSegments = allSegments;
+
         // init.m4s: never map to media segment 0 (that false-triggers seek-to-start on resume).
         if (requestedSegmentIndex < 0)
         {
@@ -197,12 +206,20 @@ public class TranscodeJobManager(
         }
 
         // Advertise the real target early so a racing init request does not assume cold start at 0.
+        // Remux-to-EOF only when the input is a complete local file. Piece-cache federation must
+        // stay on a BufferSize window (EOF remux reads sparse holes -> A/V desync).
+        var remuxToEnd = job.IsCopyRemux && job.EnsureInputCoverageAsync is null;
+        var advertisedBuffer = remuxToEnd
+            ? job.BufferSize
+            : job.IsCopyRemux
+                ? Math.Max(job.BufferSize, 30)
+                : job.BufferSize;
         job.TargetSegmentIndex = FfmpegWindowAutoContinue.ResolveAdvertisedTarget(
             requestedSegmentIndex,
             job.TargetSegmentIndex,
-            job.BufferSize,
+            advertisedBuffer,
             allSegments.Count,
-            job.IsCopyRemux);
+            remuxToEnd);
 
         if (job.IsCopyRemux)
         {
@@ -364,14 +381,21 @@ public class TranscodeJobManager(
                 return;
             }
 
-            if (gap > 30 || gapDuration.TotalSeconds > 60)
+            var proposedStart = Math.Clamp(requestedSegmentIndex - 5, 0, allSegments.Count - 1);
+            var farAhead = gap > 30 || gapDuration.TotalSeconds > 60;
+            var reanchorAhead = farAhead
+                && FfmpegWindowAutoContinue.ShouldReanchorEncodeAhead(
+                    job.WindowStartIndex,
+                    proposedStart,
+                    currentIndex,
+                    gapDuration.TotalSeconds);
+            if (reanchorAhead)
             {
                 // Far forward seek: re-anchor the window but keep already-encoded segments so a
                 // later seek back into them serves instantly instead of re-encoding.
-                var startSegmentIndex = Math.Clamp(requestedSegmentIndex - 5, 0, allSegments.Count - 1);
                 await RestartJobWithSeekAsync(
                     job,
-                    startSegmentIndex,
+                    proposedStart,
                     allSegments,
                     cancellationToken,
                     purgeExisting: false);
@@ -429,12 +453,31 @@ public class TranscodeJobManager(
         if (startSegmentIndex < 0 || startSegmentIndex >= allSegments.Count)
             return;
 
-        job.TargetSegmentIndex = FfmpegWindowAutoContinue.ResolveAdvertisedTarget(
-            startSegmentIndex,
-            job.TargetSegmentIndex,
-            job.BufferSize,
-            allSegments.Count,
-            remuxToEnd: true);
+        // Federated piece-cache inputs must not remux-to-EOF: ffmpeg would read sparse/zero
+        // holes past the ensured window and produce A/V desync segments.
+        // When windowed, pin Target to this head's start + buffer. Do not Max() with a stale
+        // EOF Target left by an earlier remux-to-end advertise (EnsureSegment used to pass
+        // IsCopyRemux as remuxToEnd unconditionally).
+        var remuxToEnd = job.EnsureInputCoverageAsync is null;
+        var remuxBuffer = remuxToEnd
+            ? job.BufferSize
+            : Math.Max(job.BufferSize, 30);
+        if (remuxToEnd)
+        {
+            job.TargetSegmentIndex = FfmpegWindowAutoContinue.ResolveAdvertisedTarget(
+                startSegmentIndex,
+                job.TargetSegmentIndex,
+                remuxBuffer,
+                allSegments.Count,
+                remuxToEnd: true);
+        }
+        else
+        {
+            var lastIndex = allSegments.Count - 1;
+            job.TargetSegmentIndex = Math.Min(
+                startSegmentIndex + remuxBuffer,
+                lastIndex);
+        }
 
         var endSegmentIndex = Math.Min(job.TargetSegmentIndex + 1, allSegments.Count);
         var untilInclusive = endSegmentIndex - 1;
@@ -468,6 +511,9 @@ public class TranscodeJobManager(
             var promoteTask = PromoteRemuxHeadLoopAsync(job, head, allSegments, cts.Token);
             try
             {
+                await EnsureInputCoverageForWindowAsync(
+                    job, allSegments, startSegmentIndex, endSegmentIndex, cts.Token);
+                var mediaInput = FfmpegMediaInput.FromFile(job.InputFilePath);
                 if (job.IsAudioOnly)
                 {
                     await mediaTranscoder.StartAudioStreamingTranscodeAsync(
@@ -479,7 +525,8 @@ public class TranscodeJobManager(
                         cts.Token,
                         job.AudioTrackIndex,
                         audioCodec,
-                        job.AudioChannels);
+                        job.AudioChannels,
+                        mediaInput);
                 }
                 else
                 {
@@ -492,7 +539,8 @@ public class TranscodeJobManager(
                         cts.Token,
                         videoCodec,
                         job.Quality,
-                        job.SubtitleBurnInStreamIndex);
+                        job.SubtitleBurnInStreamIndex,
+                        mediaInput);
                 }
             }
             finally
@@ -544,10 +592,16 @@ public class TranscodeJobManager(
                 {
                     _ = PublishTranscodeFailedAsync(
                         job.IndexedFileId,
-                        Path.GetFileName(job.InputFilePath),
+                        GetInputDisplayName(job),
                         fault.Message);
                 }
+
+                return;
             }
+
+            // Windowed federated remux: keep generating toward the client target.
+            if (job.EnsureInputCoverageAsync is not null)
+                _ = TryContinueAfterFfmpegWindowAsync(job, t);
         }, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default);
 
         logger.LogInformation(
@@ -565,9 +619,31 @@ public class TranscodeJobManager(
         List<HlsSegment> allSegments,
         CancellationToken cancellationToken)
     {
+        var lastCoveredTip = head.From - 1;
         while (!cancellationToken.IsCancellationRequested)
         {
             PromoteRemuxHeadOnce(job, head, ffmpegExited: false);
+
+            // Keep federated piece cache ahead of the remux tip (remux heads run to EOF).
+            if (job.EnsureInputCoverageAsync is not null
+                && head.TipIndex > lastCoveredTip)
+            {
+                lastCoveredTip = head.TipIndex;
+                var coverUntil = Math.Min(head.TipIndex + job.BufferSize + 5, allSegments.Count);
+                try
+                {
+                    await EnsureInputCoverageForWindowAsync(
+                        job, allSegments, head.TipIndex, coverUntil, cancellationToken);
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    logger.LogWarning(
+                        ex,
+                        "Job {JobId}: Federated input coverage failed near remux tip {Tip}",
+                        job.JobId,
+                        head.TipIndex);
+                }
+            }
 
             // Stop this head when the next shared segment is already ready, but only once
             // it has delivered its own landing segment. TipIndex starts at From before
@@ -1053,7 +1129,16 @@ public class TranscodeJobManager(
         await StopFfmpegAsync(job);
 
         if (purgeExisting)
+        {
             PurgeGeneratedSegments(job.OutputDirectory);
+        }
+        else if (!job.IsCopyRemux)
+        {
+            // Keep earlier segments for seek-back, but drop from the new anchor forward.
+            // Stale encode .m4s left beside a re-anchored window overlap in PTS (ExoPlayer
+            // rollback) even when first-sample times look aligned with audio.
+            PurgeGeneratedSegmentsFrom(job.OutputDirectory, startSegmentIndex);
+        }
 
         // Re-anchor the contiguous-ready scan at this window start. Preserved across
         // cooperative continues (which call StartFfmpegAsync directly, not this method), so a
@@ -1065,7 +1150,7 @@ public class TranscodeJobManager(
             purgeExisting ? 0 : job.TargetSegmentIndex,
             job.BufferSize,
             allSegments.Count,
-            job.IsCopyRemux);
+            job.IsCopyRemux && job.EnsureInputCoverageAsync is null);
 
         await StartFfmpegAsync(job, startSegmentIndex, allSegments, cancellationToken);
     }
@@ -1079,6 +1164,38 @@ public class TranscodeJobManager(
 
         foreach (var file in Directory.EnumerateFiles(outputDirectory, "*.m4s"))
         {
+            try
+            {
+                File.Delete(file);
+            }
+            catch (IOException ex)
+            {
+                logger.LogWarning(ex, "Failed to delete stale segment {File}", file);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Delete media segments with index &gt;= <paramref name="fromSegmentIndexInclusive"/>.
+    /// Keeps init.m4s and lower indices (seek-back cache).
+    /// </summary>
+    private void PurgeGeneratedSegmentsFrom(string outputDirectory, int fromSegmentIndexInclusive)
+    {
+        if (!Directory.Exists(outputDirectory) || fromSegmentIndexInclusive < 0)
+            return;
+
+        foreach (var file in Directory.EnumerateFiles(outputDirectory, "*.m4s"))
+        {
+            var name = Path.GetFileNameWithoutExtension(file);
+            if (string.Equals(name, "init", StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            if (!int.TryParse(name, NumberStyles.Integer, CultureInfo.InvariantCulture, out var index))
+                continue;
+
+            if (index < fromSegmentIndexInclusive)
+                continue;
+
             try
             {
                 File.Delete(file);
@@ -1148,12 +1265,18 @@ public class TranscodeJobManager(
 
         if (job.IsCopyRemux)
         {
-            job.TargetSegmentIndex = FfmpegWindowAutoContinue.ResolveAdvertisedTarget(
-                startIndex,
-                job.TargetSegmentIndex,
-                job.BufferSize,
-                allSegments.Count,
-                remuxToEnd: true);
+            // SpawnRemuxHeadAsync owns Target for windowed piece-cache remux (avoids Max with
+            // a stale EOF). Local remux-to-end still resolves here for the continue kick.
+            if (job.EnsureInputCoverageAsync is null)
+            {
+                job.TargetSegmentIndex = FfmpegWindowAutoContinue.ResolveAdvertisedTarget(
+                    startIndex,
+                    job.TargetSegmentIndex,
+                    job.BufferSize,
+                    allSegments.Count,
+                    remuxToEnd: true);
+            }
+
             await SpawnRemuxHeadAsync(job, startIndex, allSegments, cancellationToken);
             return;
         }
@@ -1257,31 +1380,66 @@ public class TranscodeJobManager(
             // Start ffmpeg in background, owned only by the job lifetime
             var ffmpegTask = Task.Run(async () =>
             {
-                if (job.IsAudioOnly)
+                await EnsureInputCoverageForWindowAsync(
+                    job, allSegments, startSegmentIndex, endSegmentIndex, ffmpegToken);
+
+                // Peer encode: keep Range cache ahead of the tip while ffmpeg runs.
+                // Remux heads already do this; encode used to ensure once then die on sparse holes.
+                using var coverageCts = CancellationTokenSource.CreateLinkedTokenSource(ffmpegToken);
+                var coveragePump = job.EnsureInputCoverageAsync is not null
+                    ? PumpFederatedEncodeCoverageAsync(
+                        job, allSegments, startSegmentIndex, endSegmentIndex, coverageCts.Token)
+                    : Task.CompletedTask;
+
+                try
                 {
-                    await mediaTranscoder.StartAudioStreamingTranscodeAsync(
-                        job.InputFilePath,
-                        job.OutputDirectory,
-                        allSegments,
-                        startSegmentIndex,
-                        endSegmentIndex,
-                        ffmpegToken,
-                        job.AudioTrackIndex,
-                        audioCodec,
-                        job.AudioChannels);
+                    var mediaInput = FfmpegMediaInput.FromFile(job.InputFilePath);
+                    if (job.IsAudioOnly)
+                    {
+                        await mediaTranscoder.StartAudioStreamingTranscodeAsync(
+                            job.InputFilePath,
+                            job.OutputDirectory,
+                            allSegments,
+                            startSegmentIndex,
+                            endSegmentIndex,
+                            ffmpegToken,
+                            job.AudioTrackIndex,
+                            audioCodec,
+                            job.AudioChannels,
+                            mediaInput);
+                    }
+                    else
+                    {
+                        await mediaTranscoder.StartVideoStreamingTranscodeAsync(
+                            job.InputFilePath,
+                            job.OutputDirectory,
+                            allSegments,
+                            startSegmentIndex,
+                            endSegmentIndex,
+                            ffmpegToken,
+                            videoCodec,
+                            job.Quality,
+                            job.SubtitleBurnInStreamIndex,
+                            mediaInput);
+                    }
                 }
-                else
+                finally
                 {
-                    await mediaTranscoder.StartVideoStreamingTranscodeAsync(
-                        job.InputFilePath,
-                        job.OutputDirectory,
-                        allSegments,
-                        startSegmentIndex,
-                        endSegmentIndex,
-                        ffmpegToken,
-                        videoCodec,
-                        job.Quality,
-                        job.SubtitleBurnInStreamIndex);
+                    try
+                    {
+                        await coverageCts.CancelAsync();
+                    }
+                    catch (ObjectDisposedException)
+                    {
+                    }
+
+                    try
+                    {
+                        await coveragePump;
+                    }
+                    catch (OperationCanceledException)
+                    {
+                    }
                 }
             }, CancellationToken.None);
 
@@ -1294,7 +1452,7 @@ public class TranscodeJobManager(
                     {
                         _ = PublishTranscodeFailedAsync(
                             job.IndexedFileId,
-                            Path.GetFileName(job.InputFilePath),
+                            GetInputDisplayName(job),
                             fault.Message);
                     }
 
@@ -1316,11 +1474,82 @@ public class TranscodeJobManager(
             logger.LogError(ex, "Job {JobId}: Failed to start ffmpeg task", job.JobId);
             await PublishTranscodeFailedAsync(
                 job.IndexedFileId,
-                Path.GetFileName(job.InputFilePath),
+                GetInputDisplayName(job),
                 ex.Message);
             throw;
         }
     }
+
+    private static async Task EnsureInputCoverageForWindowAsync(
+        TranscodeJob job,
+        List<HlsSegment> allSegments,
+        int startSegmentIndex,
+        int endSegmentIndexExclusive,
+        CancellationToken cancellationToken)
+    {
+        if (job.EnsureInputCoverageAsync is null || allSegments.Count == 0)
+            return;
+
+        var startIdx = Math.Clamp(startSegmentIndex, 0, allSegments.Count - 1);
+        var endIdx = Math.Clamp(endSegmentIndexExclusive - 1, startIdx, allSegments.Count - 1);
+        var windowStart = TimeSpan.FromMilliseconds(allSegments[startIdx].StartTimestamp);
+        var windowEnd = TimeSpan.FromMilliseconds(
+            allSegments[endIdx].StartTimestamp + allSegments[endIdx].Duration);
+        await job.EnsureInputCoverageAsync(windowStart, windowEnd, cancellationToken);
+    }
+
+    /// <summary>
+    /// While a Peer encode window runs, keep federated pieces ahead of the ready tip so
+    /// ffmpeg does not demux into sparse zeros (video holes + audio-only rollback).
+    /// </summary>
+    private async Task PumpFederatedEncodeCoverageAsync(
+        TranscodeJob job,
+        List<HlsSegment> allSegments,
+        int windowStartIndex,
+        int windowEndExclusive,
+        CancellationToken cancellationToken)
+    {
+        var lastCoveredTip = windowStartIndex - 1;
+        while (!cancellationToken.IsCancellationRequested)
+        {
+            var tip = job.GetCurrentSegmentIndex();
+            if (tip < windowStartIndex)
+                tip = windowStartIndex;
+
+            if (tip > lastCoveredTip)
+            {
+                lastCoveredTip = tip;
+                var coverUntil = Math.Min(
+                    tip + job.BufferSize + 5,
+                    Math.Max(windowEndExclusive, allSegments.Count));
+                try
+                {
+                    await EnsureInputCoverageForWindowAsync(
+                        job, allSegments, tip, coverUntil, cancellationToken);
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    logger.LogWarning(
+                        ex,
+                        "Job {JobId}: Federated encode coverage failed near tip {Tip}",
+                        job.JobId,
+                        tip);
+                }
+            }
+
+            try
+            {
+                await Task.Delay(200, cancellationToken);
+            }
+            catch (OperationCanceledException)
+            {
+                return;
+            }
+        }
+    }
+
+    private static string GetInputDisplayName(TranscodeJob job) =>
+        FfmpegMediaInput.FromFile(job.InputFilePath).DisplayName;
 
     private async Task TryContinueAfterFfmpegWindowAsync(TranscodeJob job, Task completedFfmpegTask)
     {
@@ -1341,7 +1570,9 @@ public class TranscodeJobManager(
             if (!ReferenceEquals(job.FfmpegTask, completedFfmpegTask))
                 return;
 
-            var allSegments = await LoadStreamingSegmentsForJobAsync(job.IndexedFileId);
+            var allSegments = ResolveStreamingSegmentsForJob(job);
+            if (allSegments.Count == 0)
+                allSegments = await LoadStreamingSegmentsForJobAsync(job.IndexedFileId);
             if (allSegments.Count == 0)
                 return;
 
@@ -1408,6 +1639,11 @@ public class TranscodeJobManager(
 
         await ContinueJobAsync(job, allSegments, cancellationToken);
     }
+
+    private static List<HlsSegment> ResolveStreamingSegmentsForJob(TranscodeJob job) =>
+        job.StreamingSegments is { Count: > 0 } cached
+            ? cached
+            : [];
 
     private async Task<List<HlsSegment>> LoadStreamingSegmentsForJobAsync(Guid indexedFileId)
     {

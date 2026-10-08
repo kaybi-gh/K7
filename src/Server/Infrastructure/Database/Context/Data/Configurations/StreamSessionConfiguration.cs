@@ -10,6 +10,10 @@ public class StreamSessionConfiguration : IEntityTypeConfiguration<StreamSession
     {
         builder.HasKey(x => x.Id);
 
+        builder.Property(x => x.FederatedPlaybackExecution)
+            .HasConversion<string>()
+            .HasMaxLength(50);
+
         builder.HasOne(x => x.IndexedFile)
             .WithMany()
             .HasForeignKey(x => x.IndexedFileId)

@@ -32,7 +32,8 @@ public class TranscodeJobManagerReleaseSessionTests
                 Arg.Any<CancellationToken>(),
                 Arg.Any<string?>(),
                 Arg.Any<string?>(),
-                Arg.Any<int?>())
+                Arg.Any<int?>(),
+                Arg.Any<FfmpegMediaInput?>())
             .Returns(call => Task.Delay(Timeout.Infinite, call.Arg<CancellationToken>()));
 
         var settingsProvider = Substitute.For<ITranscodeSettingsProvider>();
