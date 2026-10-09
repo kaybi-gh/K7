@@ -20,40 +20,41 @@
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
   <data name="PageTitle" xml:space="preserve"><value>Mon compte</value></data>
+  <data name="Subtitle" xml:space="preserve"><value>Profil, avatar et sécurité de votre compte.</value></data>
   <data name="Avatar" xml:space="preserve"><value>Avatar</value></data>
   <data name="UploadAvatar" xml:space="preserve"><value>Changer</value></data>
   <data name="RemoveAvatar" xml:space="preserve"><value>Supprimer</value></data>
-  <data name="AvatarTooLarge" xml:space="preserve"><value>L'image ne doit pas depasser 2 Mo.</value></data>
+  <data name="AvatarTooLarge" xml:space="preserve"><value>L'image ne doit pas dépasser 2 Mo.</value></data>
   <data name="DisplayName" xml:space="preserve"><value>Nom d'affichage</value></data>
-  <data name="ProfileSaved" xml:space="preserve"><value>Profil mis a jour.</value></data>
+  <data name="ProfileSaved" xml:space="preserve"><value>Profil mis à jour.</value></data>
   <data name="Email" xml:space="preserve"><value>Email</value></data>
   <data name="EmailOptional" xml:space="preserve"><value>Email (optionnel)</value></data>
-  <data name="EmailHelper" xml:space="preserve"><value>Laissez vide si non utilise</value></data>
+  <data name="EmailHelper" xml:space="preserve"><value>Laissez vide si non utilisé</value></data>
   <data name="EmailRequired" xml:space="preserve"><value>L'email est requis.</value></data>
   <data name="PasswordRequired" xml:space="preserve"><value>Le mot de passe est requis.</value></data>
-  <data name="EmailSaved" xml:space="preserve"><value>Email mis a jour.</value></data>
+  <data name="EmailSaved" xml:space="preserve"><value>Email mis à jour.</value></data>
   <data name="Password" xml:space="preserve"><value>Mot de passe</value></data>
   <data name="CurrentPassword" xml:space="preserve"><value>Mot de passe actuel</value></data>
   <data name="NewPassword" xml:space="preserve"><value>Nouveau mot de passe</value></data>
   <data name="ConfirmNewPassword" xml:space="preserve"><value>Confirmer le nouveau mot de passe</value></data>
   <data name="ChangePassword" xml:space="preserve"><value>Changer le mot de passe</value></data>
   <data name="RemovePassword" xml:space="preserve"><value>Retirer le mot de passe</value></data>
-  <data name="SetPassword" xml:space="preserve"><value>Definir un mot de passe</value></data>
+  <data name="SetPassword" xml:space="preserve"><value>Définir un mot de passe</value></data>
   <data name="NoPasswordSet" xml:space="preserve"><value>Aucun mot de passe défini. Vous pouvez en définir un pour vous connecter sans SSO.</value></data>
-  <data name="LocalSignInDisabledNoPassword" xml:space="preserve"><value>La connexion par mot de passe est desactivee sur ce serveur. Demandez a un administrateur de l'activer pour pouvoir definir un mot de passe local.</value></data>
+  <data name="LocalSignInDisabledNoPassword" xml:space="preserve"><value>La connexion par mot de passe est désactivée sur ce serveur. Demandez à un administrateur de l'activer pour pouvoir définir un mot de passe local.</value></data>
   <data name="PasswordFieldsRequired" xml:space="preserve"><value>Tous les champs mot de passe sont requis.</value></data>
   <data name="PasswordMismatch" xml:space="preserve"><value>Les mots de passe ne correspondent pas.</value></data>
-  <data name="PasswordChanged" xml:space="preserve"><value>Mot de passe modifie.</value></data>
-  <data name="PasswordSet" xml:space="preserve"><value>Mot de passe defini.</value></data>
-  <data name="PasswordRemoved" xml:space="preserve"><value>Mot de passe retire.</value></data>
+  <data name="PasswordChanged" xml:space="preserve"><value>Mot de passe modifié.</value></data>
+  <data name="PasswordSet" xml:space="preserve"><value>Mot de passe défini.</value></data>
+  <data name="PasswordRemoved" xml:space="preserve"><value>Mot de passe retiré.</value></data>
   <data name="ConfirmPassword" xml:space="preserve"><value>Confirmer le mot de passe</value></data>
   <data name="Pin" xml:space="preserve"><value>PIN</value></data>
   <data name="PinSet" xml:space="preserve"><value>Un PIN est défini sur votre compte.</value></data>
   <data name="ChangePin" xml:space="preserve"><value>Changer le PIN</value></data>
   <data name="RemovePin" xml:space="preserve"><value>Retirer le PIN</value></data>
   <data name="PinNotSet" xml:space="preserve"><value>Aucun PIN défini. Un PIN protège l'accès à votre compte sur les appareils partagés.</value></data>
-  <data name="SetPin" xml:space="preserve"><value>Definir un PIN</value></data>
-  <data name="SetPinDialogTitle" xml:space="preserve"><value>Definir un PIN</value></data>
+  <data name="SetPin" xml:space="preserve"><value>Définir un PIN</value></data>
+  <data name="SetPinDialogTitle" xml:space="preserve"><value>Définir un PIN</value></data>
   <data name="ConfirmPinDialogTitle" xml:space="preserve"><value>Confirmer le PIN</value></data>
   <data name="PinMismatch" xml:space="preserve"><value>Les PIN ne correspondent pas.</value></data>
   <data name="NewPinDialogTitle" xml:space="preserve"><value>Nouveau PIN</value></data>
@@ -62,18 +63,18 @@
   <data name="RemovePinConfirm" xml:space="preserve"><value>Êtes-vous sûr de vouloir retirer votre PIN ?</value></data>
   <data name="UserUnknown" xml:space="preserve"><value>Impossible d'identifier l'utilisateur actuel.</value></data>
   <data name="PinSetSuccess" xml:space="preserve"><value>PIN défini avec succès.</value></data>
-  <data name="PinRemovedSuccess" xml:space="preserve"><value>PIN retire.</value></data>
+  <data name="PinRemovedSuccess" xml:space="preserve"><value>PIN retiré.</value></data>
   <data name="Language" xml:space="preserve"><value>Langue</value></data>
   <data name="LoginMethods" xml:space="preserve"><value>Méthodes de connexion</value></data>
   <data name="Unlink" xml:space="preserve"><value>Dissocier</value></data>
-  <data name="NoExternalLogins" xml:space="preserve"><value>Aucun fournisseur externe lie.</value></data>
+  <data name="NoExternalLogins" xml:space="preserve"><value>Aucun fournisseur externe lié.</value></data>
   <data name="LinkOidc" xml:space="preserve"><value>Lier {0}</value></data>
-  <data name="OidcLinkSuccess" xml:space="preserve"><value>Identite OIDC rattachee a ce compte.</value></data>
-  <data name="OidcLinkAlreadyLinked" xml:space="preserve"><value>Identite OIDC deja rattachee a ce compte.</value></data>
-  <data name="OidcLinkConflictTitle" xml:space="preserve"><value>Identite OIDC indisponible</value></data>
-  <data name="OidcLinkConflictMessage" xml:space="preserve"><value>Identite OIDC deja rattachee a un autre compte utilisateur, veuillez contacter votre administrateur.</value></data>
-  <data name="OidcLinkDisabled" xml:space="preserve"><value>La connexion OIDC n'est pas activee sur ce serveur.</value></data>
-  <data name="OidcLinkError" xml:space="preserve"><value>Impossible de lier l'identite OIDC. Reessayez plus tard.</value></data>
+  <data name="OidcLinkSuccess" xml:space="preserve"><value>Identité OIDC rattachée à ce compte.</value></data>
+  <data name="OidcLinkAlreadyLinked" xml:space="preserve"><value>Identité OIDC déjà rattachée à ce compte.</value></data>
+  <data name="OidcLinkConflictTitle" xml:space="preserve"><value>Identité OIDC indisponible</value></data>
+  <data name="OidcLinkConflictMessage" xml:space="preserve"><value>Identité OIDC déjà rattachée à un autre compte utilisateur, veuillez contacter votre administrateur.</value></data>
+  <data name="OidcLinkDisabled" xml:space="preserve"><value>La connexion OIDC n'est pas activée sur ce serveur.</value></data>
+  <data name="OidcLinkError" xml:space="preserve"><value>Impossible de lier l'identité OIDC. Réessayez plus tard.</value></data>
   <data name="UnlinkLoginTitle" xml:space="preserve"><value>Dissocier le fournisseur</value></data>
   <data name="UnlinkLoginConfirm" xml:space="preserve"><value>Êtes-vous sûr de vouloir dissocier ce fournisseur de connexion ?</value></data>
   <data name="DangerZone" xml:space="preserve"><value>Zone de danger</value></data>
@@ -81,24 +82,24 @@
   <data name="DeleteAccount" xml:space="preserve"><value>Supprimer mon compte</value></data>
   <data name="DeleteAccountTitle" xml:space="preserve"><value>Supprimer le compte</value></data>
   <data name="DeleteAccountConfirm" xml:space="preserve"><value>Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible.</value></data>
-  <data name="TwoFactor" xml:space="preserve"><value>Authentification a deux facteurs</value></data>
-  <data name="TwoFactorEnabled" xml:space="preserve"><value>L'authentification a deux facteurs est activee.</value></data>
-  <data name="TwoFactorDisabled" xml:space="preserve"><value>L'authentification a deux facteurs n'est pas activee.</value></data>
-  <data name="EnableTwoFactor" xml:space="preserve"><value>Activer l'authentification a deux facteurs</value></data>
-  <data name="DisableTwoFactor" xml:space="preserve"><value>Desactiver</value></data>
-  <data name="TwoFactorSetupPrompt" xml:space="preserve"><value>Scannez le code QR avec votre application d'authentification, puis entrez le code de verification.</value></data>
-  <data name="SharedKey" xml:space="preserve"><value>Cle manuelle</value></data>
-  <data name="VerificationCode" xml:space="preserve"><value>Code de verification</value></data>
-  <data name="VerifyAndEnable" xml:space="preserve"><value>Verifier et activer</value></data>
-  <data name="VerificationCodeRequired" xml:space="preserve"><value>Le code de verification est requis.</value></data>
-  <data name="TwoFactorEnabledSuccess" xml:space="preserve"><value>Authentification a deux facteurs activee.</value></data>
-  <data name="TwoFactorDisabledSuccess" xml:space="preserve"><value>Authentification a deux facteurs desactivee.</value></data>
-  <data name="RecoveryCodesRemaining" xml:space="preserve"><value>{0} codes de recuperation restants.</value></data>
-  <data name="RegenerateRecoveryCodes" xml:space="preserve"><value>Regenerer les codes de recuperation</value></data>
-  <data name="RegenerateRecoveryCodesTitle" xml:space="preserve"><value>Regenerer les codes</value></data>
-  <data name="RegenerateRecoveryCodesConfirm" xml:space="preserve"><value>Les anciens codes de recuperation seront invalides. Continuer ?</value></data>
-  <data name="RecoveryCodesGenerated" xml:space="preserve"><value>Nouveaux codes de recuperation generes.</value></data>
-  <data name="SaveRecoveryCodes" xml:space="preserve"><value>Conservez ces codes de recuperation dans un endroit sur. Chaque code ne peut etre utilise qu'une fois.</value></data>
-  <data name="DisableTwoFactorTitle" xml:space="preserve"><value>Desactiver l'authentification a deux facteurs</value></data>
-  <data name="DisableTwoFactorConfirm" xml:space="preserve"><value>Êtes-vous sûr de vouloir desactiver l'authentification a deux facteurs ?</value></data>
+  <data name="TwoFactor" xml:space="preserve"><value>Authentification à deux facteurs</value></data>
+  <data name="TwoFactorEnabled" xml:space="preserve"><value>L'authentification à deux facteurs est activée.</value></data>
+  <data name="TwoFactorDisabled" xml:space="preserve"><value>L'authentification à deux facteurs n'est pas activée.</value></data>
+  <data name="EnableTwoFactor" xml:space="preserve"><value>Activer l'authentification à deux facteurs</value></data>
+  <data name="DisableTwoFactor" xml:space="preserve"><value>Désactiver</value></data>
+  <data name="TwoFactorSetupPrompt" xml:space="preserve"><value>Scannez le code QR avec votre application d'authentification, puis entrez le code de vérification.</value></data>
+  <data name="SharedKey" xml:space="preserve"><value>Clé manuelle</value></data>
+  <data name="VerificationCode" xml:space="preserve"><value>Code de vérification</value></data>
+  <data name="VerifyAndEnable" xml:space="preserve"><value>Vérifier et activer</value></data>
+  <data name="VerificationCodeRequired" xml:space="preserve"><value>Le code de vérification est requis.</value></data>
+  <data name="TwoFactorEnabledSuccess" xml:space="preserve"><value>Authentification à deux facteurs activée.</value></data>
+  <data name="TwoFactorDisabledSuccess" xml:space="preserve"><value>Authentification à deux facteurs désactivée.</value></data>
+  <data name="RecoveryCodesRemaining" xml:space="preserve"><value>{0} codes de récupération restants.</value></data>
+  <data name="RegenerateRecoveryCodes" xml:space="preserve"><value>Régénérer les codes de récupération</value></data>
+  <data name="RegenerateRecoveryCodesTitle" xml:space="preserve"><value>Régénérer les codes</value></data>
+  <data name="RegenerateRecoveryCodesConfirm" xml:space="preserve"><value>Les anciens codes de récupération seront invalides. Continuer ?</value></data>
+  <data name="RecoveryCodesGenerated" xml:space="preserve"><value>Nouveaux codes de récupération générés.</value></data>
+  <data name="SaveRecoveryCodes" xml:space="preserve"><value>Conservez ces codes de récupération dans un endroit sûr. Chaque code ne peut être utilisé qu'une fois.</value></data>
+  <data name="DisableTwoFactorTitle" xml:space="preserve"><value>Désactiver l'authentification à deux facteurs</value></data>
+  <data name="DisableTwoFactorConfirm" xml:space="preserve"><value>Êtes-vous sûr de vouloir désactiver l'authentification à deux facteurs ?</value></data>
 </root>

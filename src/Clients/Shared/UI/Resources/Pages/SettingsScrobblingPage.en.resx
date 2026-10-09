@@ -3,6 +3,7 @@
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
   <data name="PageTitle" xml:space="preserve"><value>Scrobbling</value></data>
+  <data name="Subtitle" xml:space="preserve"><value>Sends your plays to external services.</value></data>
   <data name="CreateTitle" xml:space="preserve"><value>Add account</value></data>
   <data name="EditTitle" xml:space="preserve"><value>Edit account</value></data>
   <data name="Intro" xml:space="preserve"><value>Send playback to Last.fm, ListenBrainz, Trakt, or a webhook (Yamtrack, Floppy, Ryot, BetaSeries). On a shared profile, each member scrobbles to their own accounts.</value></data>

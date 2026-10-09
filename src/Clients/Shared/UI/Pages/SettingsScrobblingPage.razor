@@ -12,6 +12,43 @@
 
 <PageTitle>@L["PageTitle"]</PageTitle>
 
+<div class="scrobbling-page">
+<div class="admin-page-intro">
+    <AdminPageHeader Title="@(_selectionMode ? string.Format(L["SelectedCount"], SelectedCount) : L["PageTitle"])" Subtitle="@L["Subtitle"]">
+        <Actions>
+            @if (_canScrobble && !_loading && _selectionMode)
+            {
+                <K7Button Variant="text" OnClick="ToggleSelectAll" Disabled="@(_accounts.Count == 0 || _deleting)">
+                    @(AllSelected ? L["DeselectAll"] : L["SelectAll"])
+                </K7Button>
+                <K7Button Variant="filled"
+                          Color="error"
+                          StartIcon="@Phosphor.Trash"
+                          OnClick="ConfirmDeleteSelectedAsync"
+                          Disabled="@(SelectedCount == 0 || _deleting)"
+                          AriaLabel="@L["DeleteSelected"]">
+                    @L["DeleteSelected"]
+                </K7Button>
+                <K7Button Variant="text" OnClick="ExitSelectionMode" Disabled="@_deleting" AriaLabel="@S["Cancel"]">
+                    @S["Cancel"]
+                </K7Button>
+            }
+            else if (_canScrobble && !_loading)
+            {
+                @if (_accounts.Count > 0)
+                {
+                    <K7IconButton Icon="@Phosphor.ListChecks"
+                                  OnClick="EnterSelectionMode"
+                                  AriaLabel="@L["Select"]" />
+                }
+                <K7Button StartIcon="@Phosphor.Plus" Variant="filled" Color="primary" OnClick="ShowCreateDialog">
+                    @S["Create"]
+                </K7Button>
+            }
+        </Actions>
+    </AdminPageHeader>
+</div>
+
 <div class="settings-form-page">
     <div class="settings-form-page__body pa-4 d-flex flex-col gap-4">
         @if (!_canScrobble)
@@ -24,44 +61,7 @@
         }
         else
         {
-            <div class="d-flex align-center justify-between gap-3 flex-wrap">
-                @if (_selectionMode)
-                {
-                    <h5>@string.Format(L["SelectedCount"], SelectedCount)</h5>
-                    <div class="d-flex align-center gap-2 flex-wrap">
-                        <K7Button Variant="text" OnClick="ToggleSelectAll" Disabled="@(_accounts.Count == 0 || _deleting)">
-                            @(AllSelected ? L["DeselectAll"] : L["SelectAll"])
-                        </K7Button>
-                        <K7Button Variant="filled"
-                                  Color="error"
-                                  StartIcon="@Phosphor.Trash"
-                                  OnClick="ConfirmDeleteSelectedAsync"
-                                  Disabled="@(SelectedCount == 0 || _deleting)"
-                                  AriaLabel="@L["DeleteSelected"]">
-                            @L["DeleteSelected"]
-                        </K7Button>
-                        <K7Button Variant="text" OnClick="ExitSelectionMode" Disabled="@_deleting" AriaLabel="@S["Cancel"]">
-                            @S["Cancel"]
-                        </K7Button>
-                    </div>
-                }
-                else
-                {
-                    <h5>@L["PageTitle"]</h5>
-                    <div class="d-flex align-center gap-2">
-                        @if (_accounts.Count > 0)
-                        {
-                            <K7IconButton Icon="@Phosphor.ListChecks"
-                                          OnClick="EnterSelectionMode"
-                                          AriaLabel="@L["Select"]" />
-                        }
-                        <K7Button StartIcon="@Phosphor.Plus" Variant="filled" Color="primary" OnClick="ShowCreateDialog">
-                            @S["Create"]
-                        </K7Button>
-                    </div>
-                }
-            </div>
-            <p class="text-body-2" style="color: var(--color-text-muted);">@L["Intro"]</p>
+            <p class="text-sm" style="color: var(--color-text-muted);">@L["Intro"]</p>
 
             @if (_accounts.Count == 0)
             {
@@ -80,7 +80,7 @@
                             <span class="scrobble-select-item__check" aria-hidden="true">
                                 <K7Icon Icon="@(selected ? Phosphor.Fill.CheckCircle : Phosphor.Circle)" IconSize="@K7IconSize.Md" />
                             </span>
-                            <K7Paper Outlined="true" Class="scrobble-select-item__paper">
+                            <K7Paper Outlined="true" Elevation="0" Class="admin-surface-card scrobble-select-item__paper">
                                 <div class="d-flex align-center justify-between gap-3">
                                     <div>
                                         <div class="text-bold">@(account.DisplayName ?? LocalizeProvider(account.Provider))</div>
@@ -92,17 +92,17 @@
                     }
                     else
                     {
-                        <K7Paper Outlined="true" Style="padding: var(--space-4);">
-                            <div class="d-flex align-center justify-between gap-3">
-                                <div>
-                                    <div class="text-bold">@(account.DisplayName ?? LocalizeProvider(account.Provider))</div>
-                                    <div class="text-caption" style="color: var(--color-text-muted);">@LocalizeProvider(account.Provider)</div>
+                        <K7Paper Outlined="true" Elevation="0" Class="admin-surface-card scrobble-account">
+                            <div class="scrobble-account__row">
+                                <div class="scrobble-account__identity">
+                                    <div class="scrobble-account__name">@(account.DisplayName ?? LocalizeProvider(account.Provider))</div>
+                                    <div class="scrobble-account__provider">@LocalizeProvider(account.Provider)</div>
                                 </div>
-                                <div class="d-flex align-center gap-2">
+                                <div class="scrobble-account__actions">
                                     <K7Switch Value="account.IsEnabled" ValueChanged="v => ToggleAsync(account, v)" />
                                     <K7Button Variant="outlined" Size="sm" OnClick="() => TestAsync(account)">@L["Test"]</K7Button>
                                     <K7IconButton Icon="@Phosphor.PencilSimple" AriaLabel="@L["EditTitle"]" OnClick="() => ShowEditDialog(account)" />
-                                    <K7IconButton Icon="@Phosphor.Trash" AriaLabel="@S["Delete"]" OnClick="() => ConfirmDeleteAsync(account)" />
+                                    <K7IconButton Icon="@Phosphor.Trash" Color="error" AriaLabel="@S["Delete"]" OnClick="() => ConfirmDeleteAsync(account)" />
                                 </div>
                             </div>
                         </K7Paper>
@@ -111,4 +111,5 @@
             }
         }
     </div>
+</div>
 </div>

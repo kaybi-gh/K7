@@ -20,6 +20,7 @@
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
   <data name="PageTitle" xml:space="preserve"><value>Hors-ligne</value></data>
+  <data name="Subtitle" xml:space="preserve"><value>Téléchargements, limites et cache sur cet appareil.</value></data>
   <data name="Title" xml:space="preserve"><value>Téléchargements et cache</value></data>
   <data name="Downloads" xml:space="preserve"><value>Téléchargements</value></data>
   <data name="Cache" xml:space="preserve"><value>Cache</value></data>
@@ -30,8 +31,8 @@
   <data name="AllowWifi" xml:space="preserve"><value>Autoriser le téléchargement en Wi-Fi</value></data>
   <data name="AllowMobileData" xml:space="preserve"><value>Autoriser le téléchargement en données mobiles</value></data>
   <data name="MusicCache" xml:space="preserve"><value>Cache musical</value></data>
-  <data name="LookaheadWifi" xml:space="preserve"><value>Titres a mettre en cache (Wi-Fi)</value></data>
-  <data name="LookaheadMobile" xml:space="preserve"><value>Titres a mettre en cache (mobile)</value></data>
+  <data name="LookaheadWifi" xml:space="preserve"><value>Titres à mettre en cache (Wi-Fi)</value></data>
+  <data name="LookaheadMobile" xml:space="preserve"><value>Titres à mettre en cache (mobile)</value></data>
   <data name="Disabled" xml:space="preserve"><value>Désactivé</value></data>
   <data name="DeviceStorageCapacity" xml:space="preserve"><value>Stockage total de l'appareil : {0}</value></data>
 </root>

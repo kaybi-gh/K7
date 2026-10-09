@@ -6,8 +6,8 @@
 @inject IDeviceStorageService DeviceStorage
 @inject IK7Snackbar Snackbar
 
-<div class="d-flex pa-4" style="width: 100%">
-    <h5>@L["Title"]</h5>
+<div class="admin-page-intro">
+    <AdminPageHeader Title="@L["Title"]" Subtitle="@L["Subtitle"]" />
 </div>
 
 @if (_loading)

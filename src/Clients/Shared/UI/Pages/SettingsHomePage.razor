@@ -5,7 +5,9 @@
 
 <PageTitle>@L["HomePageTitle"]</PageTitle>
 
-<h4 class="mb-4">@L["HomePageTitle"]</h4>
+<div class="admin-page-intro">
+    <AdminPageHeader Title="@L["HomePageTitle"]" Subtitle="@L["HomePageDescription"]" />
+</div>
 
 @if (_isLoading)
 {
@@ -14,9 +16,7 @@
 else
 {
     <div class="settings-form-page">
-        <div class="settings-form-page__body d-flex flex-col gap-4">
-            <p class="text-sm" Color="secondary">@L["HomePageDescription"]</p>
-
+        <div class="settings-form-page__body d-flex flex-col gap-4 pa-4">
             <K7SortableList TItem="HomeRowEditModel"
                             Items="_rows"
                             ItemKey="@(row => row.Id)"

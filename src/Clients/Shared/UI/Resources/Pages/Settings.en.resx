@@ -76,7 +76,8 @@
   <data name="HomeSaveSuccess" xml:space="preserve"><value>Layout saved.</value></data>
   <data name="PreviewTitle" xml:space="preserve"><value>Preview</value></data>
   <data name="PreviewRefresh" xml:space="preserve"><value>Refresh preview</value></data>
-  <data name="HiddenPageTitle" xml:space="preserve"><value>Hidden media</value></data>
+  <data name="HiddenPageTitle" xml:space="preserve"><value>Hidden</value></data>
+  <data name="HiddenPageSubtitle" xml:space="preserve"><value>Media you chose to hide.</value></data>
   <data name="HiddenPageEmpty" xml:space="preserve"><value>You haven't hidden any media.</value></data>
   <data name="Unhide" xml:space="preserve"><value>Unhide</value></data>
   <data name="SyncPlayEnabled" xml:space="preserve"><value>Enable SyncPlay invitations</value></data>

@@ -23,7 +23,7 @@
   <data name="PageDescription" xml:space="preserve"><value>SyncPlay and shared profiles for watching together on your devices.</value></data>
   <data name="SyncPlayPageDescription" xml:space="preserve"><value>Configure SyncPlay availability and invitations on this device.</value></data>
   <data name="SharedProfilesPageDescription" xml:space="preserve"><value>Manage your shared profiles and visibility on this device.</value></data>
-  <data name="SharedProfilesPageDescriptionWeb" xml:space="preserve"><value>Manage your shared profiles. To activate a shared profile, use a native app.</value></data>
+  <data name="SharedProfilesPageDescriptionWeb" xml:space="preserve"><value>Manage your shared profiles.</value></data>
   <data name="SyncPlayTitle" xml:space="preserve"><value>SyncPlay</value></data>
   <data name="SyncPlayDeviceEnabled" xml:space="preserve"><value>Receive invitations on this device</value></data>
   <data name="SyncPlayDeviceDescription" xml:space="preserve"><value>Shows your SyncPlay availability and lets others invite you from this device.</value></data>
@@ -34,9 +34,9 @@
   <data name="PrivacyDescription" xml:space="preserve"><value>By default, other users cannot add you to a new shared profile. Turn this off to allow invitations.</value></data>
   <data name="BlockNewMembership" xml:space="preserve"><value>Block new shared profile invitations</value></data>
   <data name="GroupsTitle" xml:space="preserve"><value>Your profiles</value></data>
-  <data name="GroupsDescription" xml:space="preserve"><value>Shared profiles group members who watch together. Members &amp; PIN: name, members, host, and PIN. Preferences: avatar, restrictions, and playlists. Playback thresholds are set in Settings once the profile is active. Pin profiles to show on this device.</value></data>
-  <data name="GroupsDescriptionWeb" xml:space="preserve"><value>Shared profiles group members who watch together. Members &amp; PIN: name, members, host, and PIN. Preferences: avatar, restrictions, and playlists. Activating shared-profile mode is available in native apps.</value></data>
-  <data name="ShowOnDevice" xml:space="preserve"><value>Show on this device</value></data>
+  <data name="GroupsDescription" xml:space="preserve"><value>Turn on "Show here" to use the profile on this device. Members and PIN sets the name, members, and code. Preferences sets the avatar, restrictions, and playlists.</value></data>
+  <data name="GroupsDescriptionWeb" xml:space="preserve"><value>To use a profile, open this page in a native app and turn on "Show here". Members and PIN sets the name, members, and code. Preferences sets the avatar, restrictions, and playlists.</value></data>
+  <data name="ShowOnDevice" xml:space="preserve"><value>Show here</value></data>
   <data name="CreateGroup" xml:space="preserve"><value>Create shared profile</value></data>
   <data name="EditGroup" xml:space="preserve"><value>Members &amp; PIN</value></data>
   <data name="GroupCreated" xml:space="preserve"><value>Shared profile created.</value></data>

@@ -6,8 +6,8 @@
 @inject IStringLocalizer<SettingsVideoPlayerPage> L
 @inject IStringLocalizer<SettingsTrackSelectionPage> Lt
 
-<div class="d-flex pa-4" style="width: 100%">
-    <h5>@L["PageTitle"]</h5>
+<div class="admin-page-intro">
+    <AdminPageHeader Title="@L["PageTitle"]" Subtitle="@L["Subtitle"]" />
 </div>
 
 @if (_loading)

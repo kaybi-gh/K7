@@ -8,14 +8,14 @@
 
 <PageTitle>@L["PageTitle"]</PageTitle>
 
-<div class="d-flex pa-4" style="width: 100%">
-    <h5>@L["Title"]</h5>
+<div class="admin-page-intro">
+    <AdminPageHeader Title="@L["PageTitle"]" Subtitle="@L["Subtitle"]" />
 </div>
 
 <div class="pa-4 d-flex flex-col gap-4">
     @if (_storageInfo is not null)
     {
-        <div class="storage-overview">
+        <K7Paper Outlined="true" Elevation="0" Class="admin-surface-card storage-overview">
             <div class="storage-overview-row">
                 <div class="d-flex justify-space-between align-center">
                     <span class="text-sm text-secondary">@L["Downloads"]</span>
@@ -23,14 +23,14 @@
                 </div>
                 <K7ProgressBar Value="@GetDownloadStoragePercent()" Class="mt-1" />
             </div>
-            <div class="storage-overview-row mt-3">
+            <div class="storage-overview-row">
                 <div class="d-flex justify-space-between align-center">
                     <span class="text-sm text-secondary">@L["Cache"]</span>
                     <span class="text-sm">@FormatBytes(_storageInfo.CacheBytes) / @FormatBytes(_maxCacheBytes)</span>
                 </div>
                 <K7ProgressBar Value="@GetCacheStoragePercent()" Class="mt-1" />
             </div>
-        </div>
+        </K7Paper>
 
         @if (_storageInfo.DeviceTotalBytes is { } deviceTotal)
         {

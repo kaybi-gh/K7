@@ -1,5 +1,5 @@
 .storage-overview {
-    padding: 16px;
-    border-radius: 12px;
-    background: var(--k7-surface-variant);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
 }

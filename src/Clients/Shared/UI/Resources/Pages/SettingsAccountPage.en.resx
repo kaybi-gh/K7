@@ -20,6 +20,7 @@
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
   <data name="PageTitle" xml:space="preserve"><value>Account</value></data>
+  <data name="Subtitle" xml:space="preserve"><value>Profile, avatar, and account security.</value></data>
   <data name="Avatar" xml:space="preserve"><value>Avatar</value></data>
   <data name="UploadAvatar" xml:space="preserve"><value>Change</value></data>
   <data name="RemoveAvatar" xml:space="preserve"><value>Remove</value></data>

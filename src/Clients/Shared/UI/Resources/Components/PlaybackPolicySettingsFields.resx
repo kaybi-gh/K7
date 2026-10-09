@@ -28,7 +28,7 @@
     <value>Durée minimum pour la reprise (secondes)</value>
   </data>
   <data name="MinResumeDurationHint" xml:space="preserve">
-    <value>Les medias dont la duree totale est inferieure a ce seuil n'apparaissent pas dans Reprendre (0 = desactive). Combine avec le seuil en % ci-dessus.</value>
+    <value>Les médias dont la durée totale est inférieure à ce seuil n'apparaissent pas dans Reprendre (0 = désactivé). Combiné avec le seuil en % ci-dessus.</value>
   </data>
   <data name="CompletedThresholdPercent" xml:space="preserve">
     <value>Seuil de terminé (%)</value>

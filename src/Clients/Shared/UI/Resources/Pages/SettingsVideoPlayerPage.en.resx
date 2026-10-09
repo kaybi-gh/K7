@@ -21,6 +21,7 @@
   <resheader name="version"><value>2.0</value></resheader>
   <data name="Title" xml:space="preserve"><value>Video player</value></data>
   <data name="PageTitle" xml:space="preserve"><value>Video playback</value></data>
+  <data name="Subtitle" xml:space="preserve"><value>Tracks, playback bar, and player options.</value></data>
   <data name="SeekbarSection" xml:space="preserve"><value>Seek bar</value></data>
   <data name="IntroSkipSection" xml:space="preserve"><value>Intro and outro</value></data>
   <data name="SubtitleSection" xml:space="preserve"><value>Subtitles</value></data>

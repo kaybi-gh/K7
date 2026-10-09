@@ -21,6 +21,7 @@
   <resheader name="version"><value>2.0</value></resheader>
   <data name="Title" xml:space="preserve"><value>Lecteur vidéo</value></data>
   <data name="PageTitle" xml:space="preserve"><value>Lecture vidéo</value></data>
+  <data name="Subtitle" xml:space="preserve"><value>Pistes, barre de lecture et options de votre lecteur.</value></data>
   <data name="SeekbarSection" xml:space="preserve"><value>Barre de progression</value></data>
   <data name="IntroSkipSection" xml:space="preserve"><value>Intro et outro</value></data>
   <data name="SubtitleSection" xml:space="preserve"><value>Sous-titres</value></data>
@@ -37,16 +38,16 @@
   <data name="ShowSeekbarThumbnails" xml:space="preserve"><value>Afficher les miniatures au survol de la barre de lecture</value></data>
   <data name="ShowSeekbarThumbnailsHint" xml:space="preserve"><value>Cette option n'a aucun effet si la génération des miniatures est désactivée sur le serveur.</value></data>
   <data name="ShowChapterTicks" xml:space="preserve"><value>Afficher les chapitres sur la barre de lecture</value></data>
-  <data name="ShowChapterTicksHint" xml:space="preserve"><value>Cette option n'a aucun effet si l'extraction des chapitres est desactivee pour la bibliotheque.</value></data>
+  <data name="ShowChapterTicksHint" xml:space="preserve"><value>Cette option n'a aucun effet si l'extraction des chapitres est désactivée pour la bibliothèque.</value></data>
   <data name="SkipSection" xml:space="preserve"><value>Avance et retour rapides</value></data>
   <data name="SkipBackDuration" xml:space="preserve"><value>Retour rapide</value></data>
   <data name="SkipForwardDuration" xml:space="preserve"><value>Avance rapide</value></data>
-  <data name="SkipDurationHint" xml:space="preserve"><value>Duree du saut court (clavier, telecommande TV, double tap). Le maintien sur la barre de lecture reste un scrub.</value></data>
+  <data name="SkipDurationHint" xml:space="preserve"><value>Durée du saut court (clavier, télécommande TV, double tap). Le maintien sur la barre de lecture reste un scrub.</value></data>
   <data name="IntroSkipBehavior" xml:space="preserve"><value>Comportement lors d'une intro</value></data>
   <data name="OutroSkipBehavior" xml:space="preserve"><value>Comportement lors d'un outro</value></data>
   <data name="TrailersSection" xml:space="preserve"><value>Bandes-annonces</value></data>
   <data name="OpenTrailersExternally" xml:space="preserve"><value>Ouvrir les bandes-annonces dans YouTube</value></data>
-  <data name="OpenTrailersExternallyHint" xml:space="preserve"><value>S'applique aux applis natives et a la TV. Peut quitter K7. Sur un appareil TV a une seule appli en memoire, le systeme peut tuer K7. Sans effet dans le navigateur (hors TV).</value></data>
+  <data name="OpenTrailersExternallyHint" xml:space="preserve"><value>S'applique aux applis natives et à la TV. Peut quitter K7. Sur un appareil TV à une seule appli en mémoire, le système peut tuer K7. Sans effet dans le navigateur (hors TV).</value></data>
   <data name="Small" xml:space="preserve"><value>Petit</value></data>
   <data name="Medium" xml:space="preserve"><value>Moyen</value></data>
   <data name="Large" xml:space="preserve"><value>Grand</value></data>
@@ -58,36 +59,36 @@
   <data name="SaveSuccess" xml:space="preserve"><value>Préférences enregistrées</value></data>
   <data name="ResetSuccess" xml:space="preserve"><value>Préférences réinitialisées</value></data>
   <data name="AdvancedSection" xml:space="preserve"><value>Avancé (cet appareil)</value></data>
-  <data name="AdvancedSectionHint" xml:space="preserve"><value>Ces options restent sur cet appareil. Elles ne sont pas poussees vers vos autres clients.</value></data>
+  <data name="AdvancedSectionHint" xml:space="preserve"><value>Ces options restent sur cet appareil. Elles ne sont pas poussées vers vos autres clients.</value></data>
   <data name="AudioPassthrough" xml:space="preserve"><value>Passthrough audio (AC3 / EAC3 / DTS)</value></data>
-  <data name="AudioPassthroughHint" xml:space="preserve"><value>Desactive, cet appareil ne Direct Play plus les pistes Dolby/DTS. Le serveur remuxe ou transcode en AAC au lieu du bitstream HDMI.</value></data>
+  <data name="AudioPassthroughHint" xml:space="preserve"><value>Désactivé, cet appareil ne Direct Play plus les pistes Dolby/DTS. Le serveur remuxe ou transcode en AAC au lieu du bitstream HDMI.</value></data>
   <data name="ExoBuffer" xml:space="preserve"><value>Tampon de lecture</value></data>
-  <data name="BufferAuto" xml:space="preserve"><value>Auto (defaut)</value></data>
-  <data name="BufferDefault" xml:space="preserve"><value>Defaut</value></data>
+  <data name="BufferAuto" xml:space="preserve"><value>Auto (défaut)</value></data>
+  <data name="BufferDefault" xml:space="preserve"><value>Défaut</value></data>
   <data name="BufferLarge" xml:space="preserve"><value>Large</value></data>
-  <data name="BufferExtraLarge" xml:space="preserve"><value>Tres large</value></data>
-  <data name="ExoBufferHint" xml:space="preserve"><value>Un tampon plus grand aide les coupures Wi-Fi ou NAS. Ca ne corrige pas le pulldown 23.976 fps sur un HDMI 60 Hz.</value></data>
+  <data name="BufferExtraLarge" xml:space="preserve"><value>Très large</value></data>
+  <data name="ExoBufferHint" xml:space="preserve"><value>Un tampon plus grand aide les coupures Wi-Fi ou NAS. Ça ne corrige pas le pulldown 23.976 fps sur un HDMI 60 Hz.</value></data>
   <data name="HdmiAfr" xml:space="preserve"><value>HDMI auto frame rate</value></data>
-  <data name="HdmiAfrDisabled" xml:space="preserve"><value>Desactive</value></data>
-  <data name="HdmiAfrScaleOnTv" xml:space="preserve"><value>Mise a l'echelle sur la TV</value></data>
-  <data name="HdmiAfrScaleOnDevice" xml:space="preserve"><value>Mise a l'echelle sur l'appareil</value></data>
-  <data name="HdmiAfrHint" xml:space="preserve"><value>Aligne le Hz HDMI sur le film (23.976 vers 23.98). Desactive: le televiseur reste en 59.94. Relancer la lecture apres un changement. Sur Amlogic (Nokia), desactive est le defaut.</value></data>
+  <data name="HdmiAfrDisabled" xml:space="preserve"><value>Désactivé</value></data>
+  <data name="HdmiAfrScaleOnTv" xml:space="preserve"><value>Mise à l'échelle sur la TV</value></data>
+  <data name="HdmiAfrScaleOnDevice" xml:space="preserve"><value>Mise à l'échelle sur l'appareil</value></data>
+  <data name="HdmiAfrHint" xml:space="preserve"><value>Aligne le Hz HDMI sur le film (23.976 vers 23.98). Désactivé : le téléviseur reste en 59.94. Relancer la lecture après un changement. Sur Amlogic (Nokia), désactivé est le défaut.</value></data>
   <data name="DolbyVision" xml:space="preserve"><value>Dolby Vision</value></data>
-  <data name="DolbyVisionNative" xml:space="preserve"><value>Natif (banniere DV)</value></data>
+  <data name="DolbyVisionNative" xml:space="preserve"><value>Natif (bannière DV)</value></data>
   <data name="DolbyVisionHevc" xml:space="preserve"><value>Lire en HDR10 (HEVC)</value></data>
-  <data name="DolbyVisionHint" xml:space="preserve"><value>Le Profile 8.1 a deja une couche HDR10. HEVC joue cette couche (la TV peut afficher HDR10). Natif garde video/dolby-vision (banniere DV). Relancer la lecture. Defaut TV: HDR10.</value></data>
+  <data name="DolbyVisionHint" xml:space="preserve"><value>Le Profile 8.1 a déjà une couche HDR10. HEVC joue cette couche (la TV peut afficher HDR10). Natif garde video/dolby-vision (bannière DV). Relancer la lecture. Défaut TV : HDR10.</value></data>
   <data name="MpcExternalPlayer" xml:space="preserve"><value>Lecteur externe MPC-HC / MPC-BE</value></data>
-  <data name="MpcExternalPlayerHint" xml:space="preserve"><value>Lance MPC pour la video (madVR, kaz, bitstream HDMI). Installez MPC. K7 demarre l'interface web via /webport. Fermez MPC s'il tourne deja. K7 garde la bibliotheque, les profils et la reprise.</value></data>
+  <data name="MpcExternalPlayerHint" xml:space="preserve"><value>Lance MPC pour la vidéo (madVR, kaz, bitstream HDMI). Installez MPC. K7 démarre l'interface web via /webport. Fermez MPC s'il tourne déjà. K7 garde la bibliothèque, les profils et la reprise.</value></data>
   <data name="MpcExePath" xml:space="preserve"><value>Chemin de mpc-hc64.exe / mpc-be64.exe</value></data>
-  <data name="MpcExePathHint" xml:space="preserve"><value>Laissez vide pour detecter Program Files. Cliquez l'icone pour choisir mpc-hc64.exe / mpc-be64.exe. La config kaz reste dans MPC, pas dans K7.</value></data>
+  <data name="MpcExePathHint" xml:space="preserve"><value>Laissez vide pour détecter Program Files. Cliquez l'icône pour choisir mpc-hc64.exe / mpc-be64.exe. La config kaz reste dans MPC, pas dans K7.</value></data>
   <data name="MpcExePathPlaceholder" xml:space="preserve"><value>Ex: C:\Program Files\MPC-HC\mpc-hc64.exe</value></data>
-  <data name="MpcWebHost" xml:space="preserve"><value>Hote interface web MPC</value></data>
+  <data name="MpcWebHost" xml:space="preserve"><value>Hôte interface web MPC</value></data>
   <data name="MpcWebPort" xml:space="preserve"><value>Port interface web MPC</value></data>
-  <data name="MpcWebHint" xml:space="preserve"><value>Defaut 127.0.0.1:13579. K7 passe /webport a MPC pour allumer l'interface et lire la position. Sans reponse, la reprise K7 vers MPC marche encore (/start).</value></data>
+  <data name="MpcWebHint" xml:space="preserve"><value>Défaut 127.0.0.1:13579. K7 passe /webport à MPC pour allumer l'interface et lire la position. Sans réponse, la reprise K7 vers MPC marche encore (/start).</value></data>
   <data name="MpcExtraArgs" xml:space="preserve"><value>Arguments MPC</value></data>
-  <data name="MpcExtraArgsHint" xml:space="preserve"><value>Defaut /fullscreen /close. K7 ajoute /webport et /start (millisecondes) pour la reprise.</value></data>
-  <data name="MpcLibraryPaths" xml:space="preserve"><value>Chemins locaux des bibliotheques</value></data>
-  <data name="MpcLibraryPathsFallback" xml:space="preserve"><value>Indiquez le dossier Windows (ou le partage SMB) qui correspond a la racine de chaque bibliotheque K7. MPC ouvre alors le fichier réel (titre, duree, madVR, bitstream). Sans mapping, ou si le fichier n'existe pas en local, K7 retombe sur le flux HTTP direct-stream: barre incomplete, nom « direct-stream », et echecs possibles sur les gros remux HDR / TrueHD. La reprise K7 reste suivie via l'interface web de MPC dans les deux cas.</value></data>
+  <data name="MpcExtraArgsHint" xml:space="preserve"><value>Défaut /fullscreen /close. K7 ajoute /webport et /start (millisecondes) pour la reprise.</value></data>
+  <data name="MpcLibraryPaths" xml:space="preserve"><value>Chemins locaux des bibliothèques</value></data>
+  <data name="MpcLibraryPathsFallback" xml:space="preserve"><value>Indiquez le dossier Windows (ou le partage SMB) qui correspond à la racine de chaque bibliothèque K7. MPC ouvre alors le fichier réel (titre, durée, madVR, bitstream). Sans mapping, ou si le fichier n'existe pas en local, K7 retombe sur le flux HTTP direct-stream : barre incomplète, nom « direct-stream », et échecs possibles sur les gros remux HDR / TrueHD. La reprise K7 reste suivie via l'interface web de MPC dans les deux cas.</value></data>
   <data name="MpcLibraryServerRoot" xml:space="preserve"><value>Racine serveur</value></data>
   <data name="MpcLibraryWindowsRoot" xml:space="preserve"><value>Dossier Windows</value></data>
   <data name="MpcLibraryWindowsPlaceholder" xml:space="preserve"><value>Ex: K:\movies, \\NAS\movies</value></data>

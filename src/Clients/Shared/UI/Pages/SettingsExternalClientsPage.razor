@@ -12,13 +12,17 @@
 
 <PageTitle>@L["PageTitle"]</PageTitle>
 
+<div class="admin-page-intro">
+    <AdminPageHeader Title="@L["PageTitle"]" Subtitle="@L["Subtitle"]" />
+</div>
+
 <div class="settings-form-page">
     <div class="settings-form-page__body pa-4 d-flex flex-col gap-4">
         <section class="settings-section d-flex flex-col gap-3">
-            <h5>@L["OpenSubsonicTitle"]</h5>
-            <p class="text-body-2 external-clients-muted">@L["OpenSubsonicDescription"]</p>
+            <h6>@L["OpenSubsonicTitle"]</h6>
+            <p class="text-sm external-clients-muted">@L["OpenSubsonicDescription"]</p>
 
-            <div class="external-clients-login">
+            <K7Paper Outlined="true" Elevation="0" Class="admin-surface-card external-clients-login">
                 <p class="external-clients-login__eyebrow">@L["ClientFormTitle"]</p>
 
                 @if (_createdPassword is not null)
@@ -69,15 +73,15 @@
                         <p class="text-caption external-clients-muted">@L["QrHint"]</p>
                     </div>
                 </div>
-            </div>
+            </K7Paper>
         </section>
 
         <section class="settings-section d-flex flex-col gap-3">
             <div class="d-flex align-center justify-between">
-                <h5>@L["AppPasswordsTitle"]</h5>
+                <h6>@L["AppPasswordsTitle"]</h6>
                 <K7Button StartIcon="@Phosphor.Plus" Variant="filled" Color="primary" OnClick="ShowCreateDialog">@L["CreatePassword"]</K7Button>
             </div>
-            <p class="text-body-2 external-clients-muted">@L["AppPasswordsDescription"]</p>
+            <p class="text-sm external-clients-muted">@L["AppPasswordsDescription"]</p>
 
             @if (_loading)
             {
@@ -91,7 +95,7 @@
             {
                 @foreach (var item in _passwords)
                 {
-                    <K7Paper Elevation="0" Class="external-clients-password-card">
+                    <K7Paper Outlined="true" Elevation="0" Class="admin-surface-card external-clients-password-card">
                         <div class="d-flex align-center justify-between">
                             <div class="d-flex flex-col">
                                 <span class="text-body-1 font-weight-medium">@item.Name</span>
@@ -103,7 +107,7 @@
                                     }
                                 </span>
                             </div>
-                            <K7Button OnClick="() => RevokePassword(item)" Variant="K7ButtonVariant.Text" Color="var(--color-error)">@L["Revoke"]</K7Button>
+                            <K7Button OnClick="() => RevokePassword(item)" Variant="text" Color="error">@L["Revoke"]</K7Button>
                         </div>
                     </K7Paper>
                 }

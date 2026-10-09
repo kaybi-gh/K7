@@ -5,7 +5,9 @@
 
 <PageTitle>@L["PageTitle"]</PageTitle>
 
-<h4 class="mb-4">@L["PageTitle"]</h4>
+<div class="admin-page-intro">
+    <AdminPageHeader Title="@L["PageTitle"]" Subtitle="@L["Description"]" />
+</div>
 
 @if (_isLoading)
 {
@@ -14,12 +16,12 @@
 else
 {
     <div class="settings-form-page">
-        <div class="settings-form-page__body d-flex flex-col gap-4">
+        <div class="settings-form-page__body d-flex flex-col gap-4 pa-4">
             <CustomNavLayoutFields Model="_model"
                                    Groups="_groups"
                                    Collections="CustomNavStore.Collections"
                                    Playlists="CustomNavStore.Playlists"
-                                   Description="@L["Description"]"
+                                   Description=""
                                    EnabledLabel="@L["Enabled"]"
                                    EnabledHint="@L["EnabledHint"]"
                                    ItemsEmpty="@L["ItemsEmpty"]"

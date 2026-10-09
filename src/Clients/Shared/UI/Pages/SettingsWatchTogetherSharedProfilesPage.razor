@@ -7,11 +7,12 @@
 
 <PageTitle>@L["SharedProfilesTitle"]</PageTitle>
 
-<h4 class="mb-2">@L["SharedProfilesTitle"]</h4>
-<p class="text-secondary mb-4">@(DeviceService.GetClientType() == ClientType.Web ? L["SharedProfilesPageDescriptionWeb"] : L["SharedProfilesPageDescription"])</p>
+<div class="admin-page-intro">
+    <AdminPageHeader Title="@L["SharedProfilesTitle"]" Subtitle="@(DeviceService.GetClientType() == ClientType.Web ? L["SharedProfilesPageDescriptionWeb"] : L["SharedProfilesPageDescription"])" />
+</div>
 
 <div class="pa-4 d-flex flex-col gap-4">
-    <K7Paper Outlined="true" Class="watch-together-panel">
+    <K7Paper Outlined="true" Elevation="0" Class="admin-surface-card watch-together-panel">
         <p class="text-secondary mb-3">@L["PrivacyDescription"]</p>
         <K7Switch Label="@L["BlockNewMembership"]"
                   Value="_preferences.BlockNewMembership"
@@ -19,14 +20,18 @@
                   Disabled="_savingPreference" />
     </K7Paper>
 
-    <K7Paper Outlined="true" Class="watch-together-panel">
-        <div class="shared-profiles-section-header mb-3">
-            <h6 class="mb-0">@L["GroupsTitle"]</h6>
+    <K7Paper Outlined="true" Elevation="0" Class="admin-surface-card watch-together-panel shared-profiles-groups">
+        <div class="shared-profiles-section-header">
+            <h6>@L["GroupsTitle"]</h6>
             <K7Button Variant="outlined" StartIcon="@Phosphor.Plus" OnClick="CreateGroupAsync" Disabled="_loading || _dialogOpen">
                 @L["CreateGroup"]
             </K7Button>
         </div>
-        <p class="text-secondary mb-3">@(DeviceService.GetClientType() == ClientType.Web ? L["GroupsDescriptionWeb"] : L["GroupsDescription"])</p>
+        <div class="shared-profiles-callout">
+            <K7Alert Severity="K7Severity.Info" Variant="outlined" NoIcon="true">
+                @(DeviceService.GetClientType() == ClientType.Web ? L["GroupsDescriptionWeb"] : L["GroupsDescription"])
+            </K7Alert>
+        </div>
 
         @if (_loading)
         {
@@ -59,13 +64,15 @@
                                                    Members="@(group.Members.Select(ToAvatarGroupItem).ToList())" />
                                 }
                                 <div class="shared-profiles-list__info">
-                                    <span class="shared-profiles-list__name">@group.Name</span>
-                                    <span class="shared-profiles-list__meta">
-                                        @string.Format(L["MemberCount"], group.Members.Count)
+                                    <span class="shared-profiles-list__title">
+                                        <span class="shared-profiles-list__name">@group.Name</span>
                                         @if (isHost)
                                         {
-                                            <span class="shared-profiles-list__badge">@L["HostBadge"]</span>
+                                            <K7Chip Size="sm" Variant="filled" Color="primary" Class="shared-profiles-list__host">@L["HostBadge"]</K7Chip>
                                         }
+                                    </span>
+                                    <span class="shared-profiles-list__meta">
+                                        @string.Format(L["MemberCount"], group.Members.Count)
                                         @if (group.HasPin)
                                         {
                                             <span class="shared-profiles-list__badge">@L["PinBadge"]</span>

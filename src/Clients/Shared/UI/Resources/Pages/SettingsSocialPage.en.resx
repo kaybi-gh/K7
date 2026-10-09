@@ -3,6 +3,7 @@
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
   <data name="Title" xml:space="preserve"><value>Social</value></data>
+  <data name="Subtitle" xml:space="preserve"><value>What you want to share and what you want to receive.</value></data>
   <data name="ReviewPreferences" xml:space="preserve"><value>Review preferences</value></data>
   <data name="BlurReviewsForUnwatchedMedia" xml:space="preserve"><value>Blur reviews until the media has been watched</value></data>
   <data name="ShareTitle" xml:space="preserve"><value>What I share</value></data>

@@ -16,17 +16,44 @@
     border: 1px solid var(--color-border-subtle);
     border-radius: var(--radius-md);
     background: var(--color-surface);
+    container-type: inline-size;
+    container-name: shared-profile;
+}
+
+.shared-profiles-groups {
+    display: flex;
+    flex-direction: column;
+    container-type: inline-size;
+    container-name: shared-profiles;
+}
+
+.shared-profiles-callout {
+    margin-bottom: var(--space-8);
 }
 
 .shared-profiles-section-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: var(--space-3);
+    gap: var(--space-4);
+    margin-bottom: var(--space-8);
+}
+
+.shared-profiles-section-header h6 {
+    margin: 0;
+    min-width: 0;
+}
+
+@container shared-profiles (max-width: 24rem) {
+    .shared-profiles-section-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
 }
 
 .shared-profiles-list__actions {
     display: flex;
+    align-items: center;
     flex-shrink: 0;
     gap: var(--space-1);
 }
@@ -46,8 +73,25 @@
     min-width: 0;
 }
 
+.shared-profiles-list__title {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-width: 0;
+}
+
 .shared-profiles-list__name {
     font-weight: var(--font-semibold);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+}
+
+.shared-profiles-list__host {
+    flex-shrink: 0;
+    width: auto;
+    max-width: none;
 }
 
 .shared-profiles-list__meta {
@@ -70,7 +114,26 @@
 
 .shared-profiles-list__row {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: space-between;
     gap: var(--space-3);
+    min-width: 0;
+}
+
+@container shared-profile (max-width: 36rem) {
+    .shared-profiles-list__row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .shared-profiles-list__actions {
+        flex-direction: column;
+        align-items: stretch;
+        flex-shrink: 1;
+    }
+
+    .shared-profiles-list__actions ::deep .k7-btn {
+        width: 100%;
+        justify-content: flex-start;
+    }
 }

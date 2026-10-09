@@ -17,7 +17,7 @@
   <data name="ScopeExplore" xml:space="preserve"><value>Explorer</value></data>
   <data name="ScopeMySpace" xml:space="preserve"><value>My Space</value></data>
   <data name="ScopeSettings" xml:space="preserve"><value>Paramètres et admin</value></data>
-  <data name="ScopeMedia" xml:space="preserve"><value>Pages media</value></data>
+  <data name="ScopeMedia" xml:space="preserve"><value>Pages média</value></data>
   <data name="BarShowIcons" xml:space="preserve"><value>Afficher les icônes</value></data>
   <data name="Devices" xml:space="preserve"><value>Appareils</value></data>
   <data name="DeviceDesktop" xml:space="preserve"><value>Ordinateur</value></data>

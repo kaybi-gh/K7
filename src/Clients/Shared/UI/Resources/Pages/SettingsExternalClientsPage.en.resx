@@ -20,6 +20,7 @@
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
   <data name="PageTitle" xml:space="preserve"><value>External clients</value></data>
+  <data name="Subtitle" xml:space="preserve"><value>OpenSubsonic credentials and app passwords.</value></data>
   <data name="OpenSubsonicTitle" xml:space="preserve"><value>OpenSubsonic</value></data>
   <data name="OpenSubsonicDescription" xml:space="preserve"><value>Connect an OpenSubsonic-compatible music client (Symfonium, Feishin, ...) to this K7 server.</value></data>
   <data name="ClientFormTitle" xml:space="preserve"><value>Enter in your app</value></data>

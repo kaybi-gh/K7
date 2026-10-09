@@ -4,7 +4,10 @@
 @inject IStringLocalizer<CustomNavStrings> NavL
 
 <div class="custom-nav-layout-fields d-flex flex-col gap-4">
-    <p class="text-sm" Color="secondary">@Description</p>
+    @if (!string.IsNullOrEmpty(Description))
+    {
+        <p class="text-sm" Color="secondary">@Description</p>
+    }
 
     <div>
         <K7Switch Value="@Model.Enabled" ValueChanged="OnEnabledChanged" Label="@EnabledLabel" Disabled="Disabled" />
@@ -116,7 +119,7 @@
                     <div class="d-flex align-center gap-1">
                         <K7IconButton Icon="@Phosphor.PencilSimple" Disabled="Disabled"
                                 OnClick="() => EditItemAsync(context)" AriaLabel="@L["EditItem"]" />
-                        <K7IconButton Icon="@Phosphor.Trash" Disabled="Disabled"
+                        <K7IconButton Icon="@Phosphor.Trash" Color="error" Disabled="Disabled"
                                 OnClick="() => DeleteItem(context)" AriaLabel="@L["DeleteItem"]" />
                     </div>
                 </K7SortableList>

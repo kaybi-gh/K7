@@ -76,7 +76,8 @@
   <data name="HomeSaveSuccess" xml:space="preserve"><value>Disposition enregistrée.</value></data>
   <data name="PreviewTitle" xml:space="preserve"><value>Aperçu</value></data>
   <data name="PreviewRefresh" xml:space="preserve"><value>Actualiser l'aperçu</value></data>
-  <data name="HiddenPageTitle" xml:space="preserve"><value>Médias masqués</value></data>
+  <data name="HiddenPageTitle" xml:space="preserve"><value>Masqués</value></data>
+  <data name="HiddenPageSubtitle" xml:space="preserve"><value>Médias que vous avez choisi de ne plus afficher.</value></data>
   <data name="HiddenPageEmpty" xml:space="preserve"><value>Vous n'avez masqué aucun média.</value></data>
   <data name="Unhide" xml:space="preserve"><value>Démasquer</value></data>
   <data name="SyncPlayEnabled" xml:space="preserve"><value>Activer les invitations SyncPlay</value></data>
