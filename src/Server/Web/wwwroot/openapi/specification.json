@@ -6254,6 +6254,30 @@
         }
       }
     },
+    "/api/libraries/{id}/refresh-metadata": {
+      "post": {
+        "tags": [
+          "Libraries"
+        ],
+        "operationId": "RefreshLibraryMetadata",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/libraries/{id}/rematch-media": {
       "post": {
         "tags": [

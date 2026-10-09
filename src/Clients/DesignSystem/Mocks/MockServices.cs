@@ -662,6 +662,7 @@ public sealed class MockLibraryService : ILibraryService
     public Task DeleteLibraryAsync(Guid id, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task IndexLibraryFilesAsync(Guid libraryId, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task RematchLibraryMediaAsync(Guid libraryId, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task<int> RefreshLibraryMetadataAsync(Guid libraryId, CancellationToken cancellationToken = default) => Task.FromResult(0);
     public Task<DirectoryContentDto?> GetDirectoriesAsync(string? path = null, CancellationToken cancellationToken = default) => Task.FromResult<DirectoryContentDto?>(null);
     public Task<List<MetadataProviderInfoDto>> GetMetadataProvidersAsync(LibraryMediaType? mediaType = null, CancellationToken cancellationToken = default) => Task.FromResult(new List<MetadataProviderInfoDto>());
     public Task<Guid> UploadLibraryGroupCoverAsync(Guid libraryGroupId, Stream stream, string fileName, CancellationToken cancellationToken = default) => Task.FromResult(Guid.Empty);

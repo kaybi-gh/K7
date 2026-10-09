@@ -532,6 +532,13 @@ public partial class K7ServerService : IK7ServerService, IMediaService, ILibrary
         response.EnsureSuccessStatusCode();
     }
 
+    public async Task<int> RefreshLibraryMetadataAsync(Guid libraryId, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PostAsync($"api/libraries/{libraryId}/refresh-metadata", null, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<int>(_serializerOptions, cancellationToken);
+    }
+
     public async Task UpdateLibraryAsync(Guid id, UpdateLibraryRequest request, CancellationToken cancellationToken = default)
     {
         var response = await HttpClient.PutAsJsonAsync($"api/libraries/{id}", request, _serializerOptions, cancellationToken);
