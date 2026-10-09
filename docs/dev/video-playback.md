@@ -212,7 +212,7 @@ session is created so Video.js is not waiting on a cold `init.m4s` after its pla
 waterfall. Web advertises video codecs from `MediaSource.isTypeSupported`
 on fMP4 strings (`hvc1...`), not `<video>.canPlayType` (progressive `hev1`). HEVC Main
 vs Main 10 are separate `vprofile:hevc:main` / `vprofile:hevc:main10` tokens: an 8-bit
-`hvc1` probe must not unlock Main 10 remux. Settings -> About lists those profiles
+`hvc1` probe must not unlock Main 10 remux. Settings -> My device lists those profiles
 (and AC3/EAC3 when MSE reports `ac-3` / `ec-3`), not a flat `hevc` flag. When Main 10
 MSE passes, HLS copies HEVC.
 Otherwise GetStreamUri encodes to H.264. Demuxed `CODECS` is video-only (`hvc1` without

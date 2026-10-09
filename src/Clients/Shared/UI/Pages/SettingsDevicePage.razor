@@ -1,0 +1,146 @@
+@page "/settings/device"
+@layout SettingsLayout
+@using K7.Clients.Shared.Helpers
+@using K7.Server.Domain.Enums
+@inject IStringLocalizer<SettingsDevicePage> L
+@inject IStringLocalizer<SharedResource> S
+
+<PageTitle>@L["PageTitle"]</PageTitle>
+
+<div class="admin-page-intro">
+    <AdminPageHeader Title="@L["PageTitle"]" Subtitle="@L["Subtitle"]" />
+</div>
+
+<div class="settings-form-page">
+    <div class="settings-form-page__body pa-4 d-flex flex-col gap-6">
+        <section class="d-flex flex-col gap-4">
+            <h6 class="device-section-title">@L["IdentitySection"]</h6>
+            @if (!_infoLoaded)
+            {
+                <K7Spinner />
+            }
+            else
+            {
+                <div class="device-facts">
+                    <span class="device-facts__label">@L["FormFactor"]</span>
+                    <span class="device-facts__value">@DeviceTypeDisplay</span>
+                    <span class="device-facts__label">@L["Hdr"]</span>
+                    <span class="device-facts__value">@HdrDisplay</span>
+                </div>
+            }
+        </section>
+
+        <K7Paper Outlined="true" Elevation="0" Class="admin-surface-card">
+            <div class="d-flex flex-col gap-4">
+                <h6 class="device-section-title">@L["SupportedCodecs"]</h6>
+                @if (_codecSummary is null)
+                {
+                    <p class="device-hint">@L["LoadingCodecs"]</p>
+                }
+                else
+                {
+                    <div class="device-codec-group">
+                        <p class="device-codec-group__title">@L["CodecContainers"]</p>
+                        <div class="device-codec-chips">
+                            @if (DeviceCodecDisplay.FormatContainers(_codecSummary) is { Count: > 0 } containers)
+                            {
+                                @foreach (var value in containers)
+                                {
+                                    <K7Chip Size="sm" Variant="outlined" Text="@value" />
+                                }
+                            }
+                            else
+                            {
+                                <span class="device-hint">@L["Unavailable"]</span>
+                            }
+                        </div>
+                    </div>
+                    <div class="device-codec-group">
+                        <p class="device-codec-group__title">@L["CodecVideo"]</p>
+                        <div class="device-codec-chips">
+                            @if (DeviceCodecDisplay.FormatVideo(_codecSummary) is { Count: > 0 } video)
+                            {
+                                @foreach (var value in video)
+                                {
+                                    <K7Chip Size="sm" Variant="outlined" Text="@value" />
+                                }
+                            }
+                            else
+                            {
+                                <span class="device-hint">@L["Unavailable"]</span>
+                            }
+                        </div>
+                    </div>
+                    <div class="device-codec-group">
+                        <p class="device-codec-group__title">@L["CodecAudio"]</p>
+                        <div class="device-codec-chips">
+                            @if (DeviceCodecDisplay.FormatAudio(_codecSummary) is { Count: > 0 } audio)
+                            {
+                                @foreach (var value in audio)
+                                {
+                                    <K7Chip Size="sm" Variant="outlined" Text="@value" />
+                                }
+                            }
+                            else
+                            {
+                                <span class="device-hint">@L["Unavailable"]</span>
+                            }
+                        </div>
+                    </div>
+                    <div class="device-codec-group">
+                        <p class="device-codec-group__title">@L["CodecSubtitles"]</p>
+                        <div class="device-codec-chips">
+                            @if (DeviceCodecDisplay.FormatSubtitles(_codecSummary) is { Count: > 0 } subtitles)
+                            {
+                                @foreach (var value in subtitles)
+                                {
+                                    <K7Chip Size="sm" Variant="outlined" Text="@value" />
+                                }
+                            }
+                            else
+                            {
+                                <span class="device-hint">@L["Unavailable"]</span>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </K7Paper>
+
+        <K7Divider />
+
+        <section class="d-flex flex-col gap-4">
+            <h6 class="device-section-title">@L["LocalDataSection"]</h6>
+            <div class="device-server">
+                @if (DeviceService.GetClientType() == ClientType.Web)
+                {
+                    <K7TextField Value="@_backendUrl"
+                                 Label="@L["ServerUrl"]"
+                                 ReadOnly="true"
+                                 Disabled="true"
+                                 Variant="text" />
+                }
+                else
+                {
+                    <K7TextField Value="@_backendUrl"
+                                 Label="@L["ServerUrl"]"
+                                 ReadOnly="true"
+                                 Variant="text"
+                                 Adornment="end"
+                                 AdornmentIcon="@Phosphor.Trash"
+                                 OnAdornmentClick="ChangeBackendUrl" />
+                }
+            </div>
+            <K7Divider />
+            <div class="d-flex flex-col gap-3">
+                <p class="device-hint">@L["LocalDataSectionHint"]</p>
+                <K7Button Variant="outlined"
+                          Color="error"
+                          Disabled="_clearingPreferences"
+                          OnClick="ClearAllPreferencesAsync">
+                    @L["ClearAllPreferences"]
+                </K7Button>
+            </div>
+        </section>
+    </div>
+</div>

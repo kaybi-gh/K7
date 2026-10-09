@@ -3,96 +3,73 @@
 @using K7.Clients.Shared.Models
 @using K7.Clients.Shared.Services.Resources
 @inject ThemeService ThemeService
-@inject IDeviceService DeviceService
 @inject IDeviceStorageService DeviceStorageService
 @inject IUserPreferencesService UserPreferencesService
 @inject IServerPreferencesService ServerPreferencesService
-@inject IK7ServerService ApiClient
 @inject IServerInfoService ServerInfoService
 @inject IStringLocalizer<Settings> L
 @inject IStringLocalizer<SharedResource> S
 @inject IK7DialogService DialogService
 @inject IK7Snackbar Snackbar
-@inject IServerConnectionService ServerConnectionService
 @inject IUserAdminService UserService
 @inject IJSRuntime JSRuntime
 @inject NavigationManager NavigationManager
 
 <PageTitle>@L["GeneralPageTitle"]</PageTitle>
 
-<h4 class="mb-4">@L["GeneralPageTitle"]</h4>
+<div class="admin-page-intro">
+    <AdminPageHeader Title="@L["GeneralPageTitle"]" Subtitle="@L["GeneralPageSubtitle"]" />
+</div>
 
-<div class="pa-4">
-    <K7Select TValue="ThemeDefinition"
-              Label="@L["Theme"]"
-              @bind-Value="@ThemeService.Theme"
-              ToStringFunc="@(t => t?.Name)">
-        @foreach (var theme in Themes.Collection)
-        {
-            <K7SelectItem Value="@theme" Text="@theme?.Name">@theme?.Name</K7SelectItem>
-        }
-    </K7Select>
+<div class="settings-form-page">
+    <div class="settings-form-page__body pa-4 d-flex flex-col gap-6">
+        <section class="d-flex flex-col gap-4">
+            <K7Select TValue="ThemeDefinition"
+                      Label="@L["Theme"]"
+                      @bind-Value="@ThemeService.Theme"
+                      ToStringFunc="@(t => t?.Name)">
+                @foreach (var theme in Themes.Collection)
+                {
+                    <K7SelectItem Value="@theme" Text="@theme?.Name">@theme?.Name</K7SelectItem>
+                }
+            </K7Select>
 
-    <K7LanguageSelect Value="@_currentCulture"
-                      ValueChanged="OnCultureChanged"
-                      Label="@L["Language"]"
-                      Languages="SupportedLanguages.Interface"
-                      Class="mt-4" />
+            <K7LanguageSelect Value="@_currentCulture"
+                              ValueChanged="OnCultureChanged"
+                              Label="@L["Language"]"
+                              Languages="SupportedLanguages.Interface" />
+        </section>
 
-    @if (DeviceService.GetClientType() == Server.Domain.Enums.ClientType.Web)
-    {
-        <K7TextField Value="@_backendUrl"
-                     Label="@L["ServerUrl"]"
-                     ReadOnly="true"
-                     Disabled="true"
-                     Variant="text"
-                     Class="mt-4" />
-    }
-    else
-    {
-        <K7TextField Value="@_backendUrl"
-                     Label="@L["ServerUrl"]"
-                     ReadOnly="true"
-                     Variant="text"
-                     Class="mt-4"
-                     Adornment="end"
-                     AdornmentIcon="@Phosphor.Trash"
-                     OnAdornmentClick="ChangeBackendUrl" />
-    }
+        <K7Divider />
 
-    <hr class="k7-divider my-6" />
-    <h6>@L["ThemeSongsSection"]</h6>
-    <div class="d-flex flex-col gap-2 mt-3">
-        <K7Switch Label="@L["PlayThemeSongs"]"
-                  Value="_playThemeSongs"
-                  ValueChanged="OnPlayThemeSongsChangedAsync"
-                  Disabled="_themeSongsSaving" />
-        <span class="text-caption" Color="secondary">@L["PlayThemeSongsHint"]</span>
-        <K7Switch Label="@L["DisableThemeSongsOnDevice"]"
-                  Value="_disableThemeSongsOnDevice"
-                  ValueChanged="OnDisableThemeSongsOnDeviceChanged"
-                  Disabled="!_playThemeSongs || _themeSongsSaving" />
-        <span class="text-caption" Color="secondary">@L["DisableThemeSongsOnDeviceHint"]</span>
+        <section class="d-flex flex-col gap-3">
+            <div>
+                <h6 class="mb-1">@L["ThemeSongsSection"]</h6>
+                <p class="text-sm" Color="secondary">@L["PlayThemeSongsHint"]</p>
+            </div>
+            <K7Switch Label="@L["PlayThemeSongs"]"
+                      Value="_playThemeSongs"
+                      ValueChanged="OnPlayThemeSongsChangedAsync"
+                      Disabled="_themeSongsSaving" />
+            <p class="text-sm" Color="secondary">@L["DisableThemeSongsOnDeviceHint"]</p>
+            <K7Switch Label="@L["DisableThemeSongsOnDevice"]"
+                      Value="_disableThemeSongsOnDevice"
+                      ValueChanged="OnDisableThemeSongsOnDeviceChanged"
+                      Disabled="!_playThemeSongs || _themeSongsSaving" />
+        </section>
+
+        <K7Divider />
+
+        <section class="d-flex flex-col gap-3">
+            <div>
+                <h6 class="mb-1">@L["ServerDefaultsSection"]</h6>
+                <p class="text-sm" Color="secondary">@L["ServerDefaultsHint"]</p>
+            </div>
+            <K7Button Variant="outlined"
+                      Disabled="IsOnDefaults || _resetting"
+                      OnClick="ResetToDefaultsAsync">
+                @L["ResetServerDefaults"]
+            </K7Button>
+        </section>
     </div>
-
-    <div class="mt-6">
-        <K7Button Variant="outlined"
-                  Color="secondary"
-                  Disabled="IsOnDefaults || _resetting"
-                  OnClick="ResetToDefaultsAsync">
-            @S["ResetToDefaults"]
-        </K7Button>
-    </div>
-
-    <hr class="k7-divider my-6" />
-    <section>
-        <h6 class="mb-2 text-error">@L["LocalDataSection"]</h6>
-        <p class="text-sm mb-3">@L["LocalDataSectionHint"]</p>
-        <K7Button Variant="outlined"
-                  Color="error"
-                  Disabled="_clearingPreferences"
-                  OnClick="ClearAllPreferencesAsync">
-            @L["ClearAllPreferences"]
-        </K7Button>
-    </section>
 </div>

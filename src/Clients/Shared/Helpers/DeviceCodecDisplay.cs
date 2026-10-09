@@ -5,7 +5,7 @@ using K7.Shared.Dtos.Devices;
 namespace K7.Clients.Shared.Helpers;
 
 /// <summary>
-/// Human-readable labels for Settings -> About codec probes.
+/// Human-readable labels for Settings -> My device codec probes.
 /// </summary>
 public static class DeviceCodecDisplay
 {

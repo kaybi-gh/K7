@@ -1,0 +1,46 @@
+.device-facts {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: var(--space-2) var(--space-4);
+    align-items: baseline;
+}
+
+.device-facts__label,
+.device-hint,
+.device-codec-group__title {
+    margin: 0;
+    font-size: var(--text-sm);
+    line-height: 1.4;
+    color: var(--color-text-secondary);
+}
+
+.device-facts__value {
+    font-size: var(--text-sm);
+    line-height: 1.4;
+}
+
+.device-section-title {
+    margin: 0;
+}
+
+.device-codec-group__title {
+    margin-bottom: var(--space-2);
+    font-weight: var(--font-semibold);
+}
+
+.device-codec-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}
+
+.device-server ::deep .k7-input-adornment,
+.device-server ::deep .k7-input-adornment:hover {
+    color: var(--color-error);
+}
+
+.device-codec-chips ::deep .k7-chip {
+    width: auto;
+    max-width: none;
+    flex-shrink: 0;
+}

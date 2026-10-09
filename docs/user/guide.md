@@ -69,7 +69,7 @@ Native builds: download from GitHub Releases when published (`K7-*-android.apk`,
 
 After that first setup, the app **closes** (or exits to the home screen). Open it again and sign in. This restart quirk is a **known limitation** of the native apps.
 
-Change server later: **Settings -> General** -> disconnect (trash), then enter a new address (same close-and-reopen behavior may apply). The web app always uses the server that hosts the page (address shown read-only in General).
+Change server later: **Settings -> My device** -> disconnect (trash), then enter a new address (same close-and-reopen behavior may apply). The web app always uses the server that hosts the page (address shown read-only in My device).
 
 ## Playback
 
@@ -160,7 +160,7 @@ Almost everything personal can be tuned under **Settings**. The administrator ma
 |---|---|---|
 | Profile | Settings -> Account | Avatar, display name (also password, email, PIN, 2FA for password accounts) |
 | Look and language | Settings -> General | Theme (light / dark), interface language, theme songs |
-| Device codecs | Settings -> About | Containers, video profiles (HEVC Main / Main 10), audio (including AC3/EAC3 when the browser reports them), and subtitles this device can play |
+| This device | Settings -> My device | Form factor, HDR, the K7 server URL (read-only on the web app, disconnect on native apps), and codecs this device can play (containers, video profiles such as HEVC Main / Main 10, audio including AC3/EAC3 when the browser reports them, and subtitles). Clear settings stored only on this device (player, sidebar, downloads, filters). The server URL and sign-in stay |
 | Home layout | Settings -> Home layout | Which rows appear on Home and in which order (drag the handle, with preview). Server defaults scope "newly added" rows by library group so new folders in that group show up automatically. Administrators can instead pin specific libraries when editing the server home layout |
 | Custom navigation | Settings -> Navigation | Opt-in shortcuts (library groups, collections, playlists, app pages). Administrators can also pin admin pages (dashboard, libraries, diagnostics, and the rest of the admin sidebar). Those pins are hidden for accounts without admin access. The Downloads page shortcut is native apps only. Desktop can show them as a Home row of small cards, or as a thin bar under the top menu. Shortcuts that do not fit the bar width stay in a More menu. Bar pages are Home, Explore, My Space, Settings (including admin), and/or media pages (movies, series, music, catalog, search). Never auth or the player. Optional Home row title (empty hides it). Row pages are Home and/or Explore group feeds (`/explore?library-group=`). The Explore group grid never shows it. Each layout chooses desktop, phone, and/or TV. On phones, only the Home row (never Explore feeds). On TV the bar stays under the top menu, and the Home row sits under the top menu above the hero (Home and Explore feeds) |
 | Libraries | Settings -> Libraries | Hide libraries you do not want to browse (among those the admin already allows); per-group tap action on Explore (suggestions vs browse) |

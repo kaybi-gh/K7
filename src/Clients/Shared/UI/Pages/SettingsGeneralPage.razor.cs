@@ -12,7 +12,6 @@ namespace K7.Clients.Shared.UI.Pages;
 
 public partial class SettingsGeneralPage : IDisposable
 {
-    private string? _backendUrl;
     private string _currentCulture = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
     private string _serverDefaultLanguage = "en";
     private string _serverDefaultThemeCss = "default-dark";
@@ -23,7 +22,6 @@ public partial class SettingsGeneralPage : IDisposable
     private bool _playThemeSongs = true;
     private bool _disableThemeSongsOnDevice;
     private bool _themeSongsSaving;
-    private bool _clearingPreferences;
 
     private bool IsOnDefaults =>
         !_hasLanguageOverride
@@ -39,8 +37,6 @@ public partial class SettingsGeneralPage : IDisposable
 
     protected override async Task OnInitializedAsync()
     {
-        _backendUrl = ResolveBackendUrlDisplay();
-
         try
         {
             var serverInfo = await ServerInfoService.GetServerInfoAsync();
@@ -137,9 +133,9 @@ public partial class SettingsGeneralPage : IDisposable
             return;
 
         var confirmed = await DialogService.ShowMessageBoxAsync(
-            S["ResetToDefaultsTitle"],
-            S["ResetToDefaultsMessage"],
-            yesText: S["ResetToDefaults"],
+            L["ResetServerDefaultsTitle"],
+            L["ResetServerDefaultsMessage"],
+            yesText: L["ResetServerDefaults"],
             cancelText: S["Cancel"]);
 
         if (confirmed is not true)
@@ -201,58 +197,4 @@ public partial class SettingsGeneralPage : IDisposable
         }
     }
 
-    private string? ResolveBackendUrlDisplay()
-    {
-        var storedUrl = DeviceStorageService.Get(PreferenceKeys.K7_SERVER_URL);
-        if (!string.IsNullOrEmpty(storedUrl))
-            return storedUrl;
-
-        return ApiClient.HttpClient.BaseAddress?.AbsoluteUri;
-    }
-
-    private async Task ChangeBackendUrl()
-    {
-        bool? result = await DialogService.ShowMessageBoxAsync(
-            L["WarningTitle"],
-            L["ChangeServerUrlWarning"],
-            yesText: S["Confirm"], cancelText: S["Cancel"]);
-
-        if (result == true)
-        {
-            ServerConnectionService.DisconnectAndReset();
-        }
-    }
-
-    private async Task ClearAllPreferencesAsync()
-    {
-        if (_clearingPreferences)
-            return;
-
-        var confirmed = await DialogService.ShowMessageBoxAsync(
-            L["ClearAllPreferencesTitle"],
-            L["ClearAllPreferencesMessage"],
-            yesText: L["ClearAllPreferences"],
-            cancelText: S["Cancel"]);
-
-        if (confirmed is not true)
-            return;
-
-        _clearingPreferences = true;
-        try
-        {
-            DeviceStorageService.ClearAllPreferences();
-            _backendUrl = ResolveBackendUrlDisplay();
-            await JSRuntime.InvokeVoidAsync("K7.clearSavedTheme");
-            Snackbar.Add(L["ClearPreferencesSuccess"], K7Severity.Success);
-            NavigationManager.NavigateTo(NavigationManager.Uri, forceLoad: true);
-        }
-        catch (Exception ex)
-        {
-            Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), K7Severity.Error);
-        }
-        finally
-        {
-            _clearingPreferences = false;
-        }
-    }
 }

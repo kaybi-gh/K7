@@ -21,22 +21,17 @@
   <resheader name="version"><value>2.0</value></resheader>
   <data name="PageTitle" xml:space="preserve"><value>Paramètres</value></data>
   <data name="GeneralPageTitle" xml:space="preserve"><value>Général</value></data>
+  <data name="GeneralPageSubtitle" xml:space="preserve"><value>Langue, thème et options de votre compte.</value></data>
   <data name="DarkMode" xml:space="preserve"><value>Mode sombre</value></data>
   <data name="Theme" xml:space="preserve"><value>Thème</value></data>
   <data name="Language" xml:space="preserve"><value>Langue</value></data>
   <data name="GeneralResetSuccess" xml:space="preserve"><value>Préférences rétablies aux valeurs par défaut du serveur.</value></data>
-  <data name="ServerUrl" xml:space="preserve"><value>URL du serveur K7</value></data>
-  <data name="FormFactor" xml:space="preserve"><value>Type d'appareil :</value></data>
-  <data name="Hdr" xml:space="preserve"><value>HDR :</value></data>
   <data name="Pin" xml:space="preserve"><value>PIN</value></data>
   <data name="PinSet" xml:space="preserve"><value>Un PIN est défini sur votre compte.</value></data>
   <data name="ChangePin" xml:space="preserve"><value>Changer le PIN</value></data>
   <data name="RemovePin" xml:space="preserve"><value>Retirer le PIN</value></data>
   <data name="PinNotSet" xml:space="preserve"><value>Aucun PIN défini. Un PIN protège l'accès à votre compte sur les appareils partagés.</value></data>
   <data name="SetPin" xml:space="preserve"><value>Définir un PIN</value></data>
-  <data name="SupportedCodecs" xml:space="preserve"><value>Codecs supportés</value></data>
-  <data name="WarningTitle" xml:space="preserve"><value>Attention</value></data>
-  <data name="ChangeServerUrlWarning" xml:space="preserve"><value>Changer l'URL du serveur K7 supprimera toutes les données locales liees au serveur actuel (statistiques, fichiers hors-ligne, préférences). Les données sur le serveur ne seront pas affectees.</value></data>
   <data name="SetPinDialogTitle" xml:space="preserve"><value>Définir un PIN</value></data>
   <data name="ConfirmPinDialogTitle" xml:space="preserve"><value>Confirmer le PIN</value></data>
   <data name="PinMismatch" xml:space="preserve"><value>Les PIN ne correspondent pas.</value></data>
@@ -86,11 +81,10 @@
   <data name="PlayThemeSongsHint" xml:space="preserve"><value>Joue le thème en fond sur la page série ou film lorsqu'un fichier thème est disponible.</value></data>
   <data name="DisableThemeSongsOnDevice" xml:space="preserve"><value>Désactiver sur ce périphérique</value></data>
   <data name="DisableThemeSongsOnDeviceHint" xml:space="preserve"><value>Coupe le thème uniquement sur cet appareil, même si le thème musical est activé pour votre compte.</value></data>
-  <data name="LocalDataSection" xml:space="preserve"><value>Personnalisations locales</value></data>
-  <data name="LocalDataSectionHint" xml:space="preserve"><value>Supprime les reglages locaux de cet appareil (lecteur, barre laterale, telechargements, filtres, etc.). L'URL du serveur et l'identifiant de l'appareil sont conserves. Vous restez connecte.</value></data>
-  <data name="ClearAllPreferences" xml:space="preserve"><value>Effacer les preferences</value></data>
-  <data name="ClearAllPreferencesTitle" xml:space="preserve"><value>Effacer les preferences</value></data>
-  <data name="ClearAllPreferencesMessage" xml:space="preserve"><value>Supprimer les personnalisations locales de cet appareil (lecteur, barre laterale, telechargements, filtres, etc.) ? L'URL du serveur et l'identifiant de l'appareil seront conserves. L'application sera rechargee.</value></data>
-  <data name="ClearPreferencesSuccess" xml:space="preserve"><value>Personnalisations locales effacees.</value></data>
+  <data name="ServerDefaultsSection" xml:space="preserve"><value>Valeurs du serveur</value></data>
+  <data name="ServerDefaultsHint" xml:space="preserve"><value>Langue, thème et thème musical reprennent les valeurs du serveur. Les réglages de cet appareil restent en place.</value></data>
+  <data name="ResetServerDefaults" xml:space="preserve"><value>Revenir aux valeurs du serveur</value></data>
+  <data name="ResetServerDefaultsTitle" xml:space="preserve"><value>Revenir aux valeurs du serveur</value></data>
+  <data name="ResetServerDefaultsMessage" xml:space="preserve"><value>La langue, le thème et le thème musical reprendront les valeurs du serveur. Les réglages locaux de cet appareil ne sont pas effacés.</value></data>
 </root>
 

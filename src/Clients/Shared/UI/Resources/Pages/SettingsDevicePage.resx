@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="PageTitle" xml:space="preserve"><value>Mon périphérique</value></data>
+  <data name="Subtitle" xml:space="preserve"><value>Lecture, serveur et réglages enregistrés ici.</value></data>
+  <data name="IdentitySection" xml:space="preserve"><value>Informations</value></data>
+  <data name="FormFactor" xml:space="preserve"><value>Type d'appareil</value></data>
+  <data name="Hdr" xml:space="preserve"><value>HDR</value></data>
+  <data name="DeviceDesktop" xml:space="preserve"><value>Ordinateur</value></data>
+  <data name="DevicePhone" xml:space="preserve"><value>Téléphone</value></data>
+  <data name="DeviceTablet" xml:space="preserve"><value>Tablette</value></data>
+  <data name="DeviceTv" xml:space="preserve"><value>TV</value></data>
+  <data name="DeviceWatch" xml:space="preserve"><value>Montre</value></data>
+  <data name="SupportedCodecs" xml:space="preserve"><value>Codecs supportés</value></data>
+  <data name="LoadingCodecs" xml:space="preserve"><value>Chargement...</value></data>
+  <data name="CodecContainers" xml:space="preserve"><value>Conteneurs</value></data>
+  <data name="CodecVideo" xml:space="preserve"><value>Vidéo</value></data>
+  <data name="CodecAudio" xml:space="preserve"><value>Audio</value></data>
+  <data name="CodecSubtitles" xml:space="preserve"><value>Sous-titres</value></data>
+  <data name="Unavailable" xml:space="preserve"><value>Non disponible</value></data>
+  <data name="ServerUrl" xml:space="preserve"><value>URL du serveur K7</value></data>
+  <data name="ChangeServerUrlTitle" xml:space="preserve"><value>Attention</value></data>
+  <data name="ChangeServerUrlWarning" xml:space="preserve"><value>Changer l'URL du serveur K7 supprimera toutes les données locales liées au serveur actuel (statistiques, fichiers hors-ligne, préférences). Les données sur le serveur ne seront pas affectées.</value></data>
+  <data name="LocalDataSection" xml:space="preserve"><value>Réglages de cet appareil</value></data>
+  <data name="LocalDataSectionHint" xml:space="preserve"><value>Efface ce qui est enregistré uniquement ici : lecteur, barre latérale, téléchargements, filtres. L'URL du serveur et la connexion restent en place.</value></data>
+  <data name="ClearAllPreferences" xml:space="preserve"><value>Effacer les réglages de cet appareil</value></data>
+  <data name="ClearAllPreferencesTitle" xml:space="preserve"><value>Effacer les réglages de cet appareil</value></data>
+  <data name="ClearAllPreferencesMessage" xml:space="preserve"><value>Effacer les réglages enregistrés sur cet appareil (lecteur, barre latérale, téléchargements, filtres) ? L'URL du serveur et la connexion restent en place. L'application sera rechargée.</value></data>
+  <data name="ClearPreferencesSuccess" xml:space="preserve"><value>Personnalisations locales effacées.</value></data>
+</root>

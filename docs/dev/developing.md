@@ -30,7 +30,7 @@ dotnet workload install maui
 2. Launch MAUI for the desired TFM.
 3. On first launch, enter the server URL; the app probes `{url}/health` and stores preference `BackendUrl` (`K7_SERVER_URL`).
 4. After first URL setup the app **closes** (known limitation) - reopen it, then sign in.
-5. Retarget via Settings -> General -> disconnect, or clear the preference.
+5. Retarget via Settings -> My device -> disconnect, or clear the preference.
 
 Android emulator often needs `http://10.0.2.2:PORT` instead of `localhost`. Physical devices need the host LAN IP. Mac Catalyst builds are untested by the maintainer. iOS device builds are compiled in CI (`maui-ios-smoke`) and the sideload IPA is produced by [client-release](releasing.md).
 

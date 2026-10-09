@@ -1,15 +1,16 @@
 @page "/settings/about"
 @layout SettingsLayout
 @inject IStringLocalizer<SettingsAboutPage> L
-@inject IStringLocalizer<Settings> Lg
 
 <PageTitle>@L["PageTitle"]</PageTitle>
 
-<h4 class="mb-4">@L["PageTitle"]</h4>
+<div class="admin-page-intro">
+    <AdminPageHeader Title="@L["PageTitle"]" Subtitle="@L["Subtitle"]" />
+</div>
 
 <div class="about-page">
     <section class="about-section">
-        <h5 class="about-section-title">@L["Version"]</h5>
+        <h6 class="about-section-title">@L["Version"]</h6>
         <div class="about-version-grid">
             <span class="about-label">@L["ServerVersion"]</span>
             <span class="about-value" title="@_serverVersion">@ServerVersionDisplay</span>
@@ -19,203 +20,114 @@
     </section>
 
     <section class="about-section">
-        <h5 class="about-section-title">@L["DeviceInfo"]</h5>
-        <div class="about-version-grid">
-            <span class="about-label">@Lg["FormFactor"]</span>
-            <span class="about-value">@_deviceType</span>
-            <span class="about-label">@Lg["Hdr"]</span>
-            <span class="about-value">@_hdrSupport</span>
-        </div>
-        <div class="k7-expansion-panels about-codec-panel">
-            <K7ExpansionPanel Text="@Lg["SupportedCodecs"]">
-                @if (_codecSummary is not null)
-                {
-                    <div class="about-codec-groups">
-                        <div class="about-codec-group">
-                            <p class="about-codec-group-title">@L["CodecContainers"]</p>
-                            <div class="about-codec-chips">
-                                @if (DeviceCodecDisplay.FormatContainers(_codecSummary) is { Count: > 0 } containers)
-                                {
-                                    @foreach (var value in containers)
-                                    {
-                                        <K7Chip Size="sm" Variant="outlined" Text="@value" />
-                                    }
-                                }
-                                else
-                                {
-                                    <span class="about-codec-empty">@L["CodecsUnavailable"]</span>
-                                }
-                            </div>
-                        </div>
-                        <div class="about-codec-group">
-                            <p class="about-codec-group-title">@L["CodecVideo"]</p>
-                            <div class="about-codec-chips">
-                                @if (DeviceCodecDisplay.FormatVideo(_codecSummary) is { Count: > 0 } video)
-                                {
-                                    @foreach (var value in video)
-                                    {
-                                        <K7Chip Size="sm" Variant="outlined" Text="@value" />
-                                    }
-                                }
-                                else
-                                {
-                                    <span class="about-codec-empty">@L["CodecsUnavailable"]</span>
-                                }
-                            </div>
-                        </div>
-                        <div class="about-codec-group">
-                            <p class="about-codec-group-title">@L["CodecAudio"]</p>
-                            <div class="about-codec-chips">
-                                @if (DeviceCodecDisplay.FormatAudio(_codecSummary) is { Count: > 0 } audio)
-                                {
-                                    @foreach (var value in audio)
-                                    {
-                                        <K7Chip Size="sm" Variant="outlined" Text="@value" />
-                                    }
-                                }
-                                else
-                                {
-                                    <span class="about-codec-empty">@L["CodecsUnavailable"]</span>
-                                }
-                            </div>
-                        </div>
-                        <div class="about-codec-group">
-                            <p class="about-codec-group-title">@L["CodecSubtitles"]</p>
-                            <div class="about-codec-chips">
-                                @if (DeviceCodecDisplay.FormatSubtitles(_codecSummary) is { Count: > 0 } subtitles)
-                                {
-                                    @foreach (var value in subtitles)
-                                    {
-                                        <K7Chip Size="sm" Variant="outlined" Text="@value" />
-                                    }
-                                }
-                                else
-                                {
-                                    <span class="about-codec-empty">@L["CodecsUnavailable"]</span>
-                                }
-                            </div>
-                        </div>
-                    </div>
-                }
-                else
-                {
-                    <ul>
-                        <li>@L["LoadingCodecs"]</li>
-                    </ul>
-                }
-            </K7ExpansionPanel>
-        </div>
-    </section>
-
-    <section class="about-section">
-        <h5 class="about-section-title">@L["BuiltWith"]</h5>
+        <h6 class="about-section-title">@L["BuiltWith"]</h6>
         <div class="about-tech-grid">
-            <K7Paper Outlined="true" Class="about-tech-card">
+            <K7Paper Outlined="true" Elevation="0" Class="admin-surface-card about-tech-card">
                 <span class="about-tech-name">.NET 10</span>
             </K7Paper>
-            <K7Paper Outlined="true" Class="about-tech-card">
+            <K7Paper Outlined="true" Elevation="0" Class="admin-surface-card about-tech-card">
                 <span class="about-tech-name">Blazor</span>
             </K7Paper>
-            <K7Paper Outlined="true" Class="about-tech-card">
+            <K7Paper Outlined="true" Elevation="0" Class="admin-surface-card about-tech-card">
                 <span class="about-tech-name">.NET MAUI</span>
             </K7Paper>
-            <K7Paper Outlined="true" Class="about-tech-card">
+            <K7Paper Outlined="true" Elevation="0" Class="admin-surface-card about-tech-card">
                 <span class="about-tech-name">ASP.NET Core</span>
             </K7Paper>
         </div>
     </section>
 
     <section class="about-section">
-        <h5 class="about-section-title">@L["Credits"]</h5>
+        <h6 class="about-section-title">@L["Credits"]</h6>
         <div class="about-credits-grid">
-            <K7Paper Outlined="true" Class="about-credit-card">
+            <K7Paper Outlined="true" Elevation="0" Class="admin-surface-card about-credit-card">
                 <img src="_content/K7.Clients.Shared.UI/images/logos/ffmpeg.svg" alt="FFmpeg" class="about-credit-logo" />
                 <div class="about-credit-text">
                     <a href="https://ffmpeg.org" target="_blank" rel="noopener" class="about-credit-link">FFmpeg <K7Icon Icon="@Phosphor.ArrowSquareOut"  IconSize="@K7IconSize.Xs" /></a>
                     <span class="about-credit-desc">@L["CreditFfmpeg"]</span>
                 </div>
             </K7Paper>
-            <K7Paper Outlined="true" Class="about-credit-card">
+            <K7Paper Outlined="true" Elevation="0" Class="admin-surface-card about-credit-card">
                 <div class="about-credit-text">
                     <a href="https://www.videolan.org/vlc/libvlc.html" target="_blank" rel="noopener" class="about-credit-link">LibVLC <K7Icon Icon="@Phosphor.ArrowSquareOut"  IconSize="@K7IconSize.Xs" /></a>
                     <span class="about-credit-desc">@L["CreditLibVlc"]</span>
                 </div>
             </K7Paper>
-            <K7Paper Outlined="true" Class="about-credit-card">
+            <K7Paper Outlined="true" Elevation="0" Class="admin-surface-card about-credit-card">
                 <img src="_content/K7.Clients.Shared.UI/images/logos/openiddict.png" alt="OpenIddict" class="about-credit-logo" />
                 <div class="about-credit-text">
                     <a href="https://github.com/openiddict/openiddict-core" target="_blank" rel="noopener" class="about-credit-link">OpenIddict <K7Icon Icon="@Phosphor.ArrowSquareOut"  IconSize="@K7IconSize.Xs" /></a>
                     <span class="about-credit-desc">@L["CreditOpenIddict"]</span>
                 </div>
             </K7Paper>
-            <K7Paper Outlined="true" Class="about-credit-card">
+            <K7Paper Outlined="true" Elevation="0" Class="admin-surface-card about-credit-card">
                 <img src="_content/K7.Clients.Shared.UI/images/logos/musicbrainz.svg" alt="MusicBrainz" class="about-credit-logo" />
                 <div class="about-credit-text">
                     <a href="https://musicbrainz.org" target="_blank" rel="noopener" class="about-credit-link">MusicBrainz <K7Icon Icon="@Phosphor.ArrowSquareOut"  IconSize="@K7IconSize.Xs" /></a>
                     <span class="about-credit-desc">@L["CreditMusicBrainz"]</span>
                 </div>
             </K7Paper>
-            <K7Paper Outlined="true" Class="about-credit-card">
+            <K7Paper Outlined="true" Elevation="0" Class="admin-surface-card about-credit-card">
                 <img src="_content/K7.Clients.Shared.UI/images/logos/tmdb.svg" alt="TMDb" class="about-credit-logo" />
                 <div class="about-credit-text">
                     <a href="https://www.themoviedb.org" target="_blank" rel="noopener" class="about-credit-link">TMDb <K7Icon Icon="@Phosphor.ArrowSquareOut"  IconSize="@K7IconSize.Xs" /></a>
                     <span class="about-credit-desc">@L["CreditTmdb"]</span>
                 </div>
             </K7Paper>
-            <K7Paper Outlined="true" Class="about-credit-card">
+            <K7Paper Outlined="true" Elevation="0" Class="admin-surface-card about-credit-card">
                 <img src="_content/K7.Clients.Shared.UI/images/logos/tvdb.png" alt="TheTVDB" class="about-credit-logo about-credit-logo--tvdb" />
                 <div class="about-credit-text">
                     <a href="https://www.thetvdb.com" target="_blank" rel="noopener" class="about-credit-link">TheTVDB <K7Icon Icon="@Phosphor.ArrowSquareOut"  IconSize="@K7IconSize.Xs" /></a>
                     <span class="about-credit-desc">@L["CreditTvdb"]</span>
                 </div>
             </K7Paper>
-            <K7Paper Outlined="true" Class="about-credit-card">
+            <K7Paper Outlined="true" Elevation="0" Class="admin-surface-card about-credit-card">
                 <img src="_content/K7.Clients.Shared.UI/images/logos/wikimedia.svg" alt="Wikimedia Commons" class="about-credit-logo" />
                 <div class="about-credit-text">
                     <a href="https://commons.wikimedia.org" target="_blank" rel="noopener" class="about-credit-link">Wikimedia Commons <K7Icon Icon="@Phosphor.ArrowSquareOut"  IconSize="@K7IconSize.Xs" /></a>
                     <span class="about-credit-desc">@L["CreditWikimedia"]</span>
                 </div>
             </K7Paper>
-            <K7Paper Outlined="true" Class="about-credit-card">
+            <K7Paper Outlined="true" Elevation="0" Class="admin-surface-card about-credit-card">
                 <img src="_content/K7.Clients.Shared.UI/images/logos/acoustid.svg" alt="AcoustID" class="about-credit-logo" />
                 <div class="about-credit-text">
                     <a href="https://acoustid.org/chromaprint" target="_blank" rel="noopener" class="about-credit-link">Chromaprint / AcoustID <K7Icon Icon="@Phosphor.ArrowSquareOut"  IconSize="@K7IconSize.Xs" /></a>
                     <span class="about-credit-desc">@L["CreditChromaprint"]</span>
                 </div>
             </K7Paper>
-            <K7Paper Outlined="true" Class="about-credit-card">
+            <K7Paper Outlined="true" Elevation="0" Class="admin-surface-card about-credit-card">
                 <img src="_content/K7.Clients.Shared.UI/images/logos/audiomuse.png" alt="AudioMuse AI" class="about-credit-logo" />
                 <div class="about-credit-text">
                     <a href="https://github.com/NeptuneHub/AudioMuse-AI" target="_blank" rel="noopener" class="about-credit-link">AudioMuse AI <K7Icon Icon="@Phosphor.ArrowSquareOut"  IconSize="@K7IconSize.Xs" /></a>
                     <span class="about-credit-desc">@L["CreditAudioMuse"]</span>
                 </div>
             </K7Paper>
-            <K7Paper Outlined="true" Class="about-credit-card">
+            <K7Paper Outlined="true" Elevation="0" Class="admin-surface-card about-credit-card">
                 <div class="about-credit-text">
                     <a href="https://github.com/mono/taglib-sharp" target="_blank" rel="noopener" class="about-credit-link">TagLibSharp <K7Icon Icon="@Phosphor.ArrowSquareOut"  IconSize="@K7IconSize.Xs" /></a>
                     <span class="about-credit-desc">@L["CreditTagLib"]</span>
                 </div>
             </K7Paper>
-            <K7Paper Outlined="true" Class="about-credit-card">
+            <K7Paper Outlined="true" Elevation="0" Class="admin-surface-card about-credit-card">
                 <img src="_content/K7.Clients.Shared.UI/images/logos/mediatr.png" alt="MediatR" class="about-credit-logo" />
                 <div class="about-credit-text">
                     <a href="https://github.com/jbogard/MediatR" target="_blank" rel="noopener" class="about-credit-link">MediatR <K7Icon Icon="@Phosphor.ArrowSquareOut"  IconSize="@K7IconSize.Xs" /></a>
                     <span class="about-credit-desc">@L["CreditMediatR"]</span>
                 </div>
             </K7Paper>
-            <K7Paper Outlined="true" Class="about-credit-card">
+            <K7Paper Outlined="true" Elevation="0" Class="admin-surface-card about-credit-card">
                 <div class="about-credit-text">
                     <a href="https://learn.microsoft.com/ef/core/" target="_blank" rel="noopener" class="about-credit-link">Entity Framework Core <K7Icon Icon="@Phosphor.ArrowSquareOut"  IconSize="@K7IconSize.Xs" /></a>
                     <span class="about-credit-desc">@L["CreditEfCore"]</span>
                 </div>
             </K7Paper>
-            <K7Paper Outlined="true" Class="about-credit-card">
+            <K7Paper Outlined="true" Elevation="0" Class="admin-surface-card about-credit-card">
                 <div class="about-credit-text">
                     <a href="https://learn.microsoft.com/aspnet/signalr/" target="_blank" rel="noopener" class="about-credit-link">SignalR <K7Icon Icon="@Phosphor.ArrowSquareOut"  IconSize="@K7IconSize.Xs" /></a>
                     <span class="about-credit-desc">@L["CreditSignalR"]</span>
                 </div>
             </K7Paper>
-            <K7Paper Outlined="true" Class="about-credit-card">
+            <K7Paper Outlined="true" Elevation="0" Class="admin-surface-card about-credit-card">
                 <K7Icon Icon="@Phosphor.PhosphorLogo" Class="about-credit-logo about-credit-logo--icon" />
                 <div class="about-credit-text">
                     <a href="https://phosphoricons.com" target="_blank" rel="noopener" class="about-credit-link">Phosphor Icons <K7Icon Icon="@Phosphor.ArrowSquareOut"  IconSize="@K7IconSize.Xs" /></a>

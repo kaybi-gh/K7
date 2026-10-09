@@ -20,6 +20,7 @@
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
   <data name="PageTitle" xml:space="preserve"><value>About</value></data>
+  <data name="Subtitle" xml:space="preserve"><value>Version and credits.</value></data>
   <data name="Version" xml:space="preserve"><value>Version</value></data>
   <data name="ServerVersion" xml:space="preserve"><value>Server</value></data>
   <data name="ClientVersion" xml:space="preserve"><value>Client</value></data>
@@ -41,11 +42,4 @@
   <data name="CreditPhosphor" xml:space="preserve"><value>UI icons</value></data>
   <data name="TmdbDisclaimer" xml:space="preserve"><value>This product uses the TMDB API but is not endorsed or certified by TMDB.</value></data>
   <data name="TvdbDisclaimer" xml:space="preserve"><value>TV information and images are provided by TheTVDB.com, but we are not endorsed or certified by TheTVDB.com or its affiliates.</value></data>
-  <data name="DeviceInfo" xml:space="preserve"><value>Device</value></data>
-  <data name="LoadingCodecs" xml:space="preserve"><value>Loading...</value></data>
-  <data name="CodecContainers" xml:space="preserve"><value>Containers</value></data>
-  <data name="CodecVideo" xml:space="preserve"><value>Video</value></data>
-  <data name="CodecAudio" xml:space="preserve"><value>Audio</value></data>
-  <data name="CodecSubtitles" xml:space="preserve"><value>Subtitles</value></data>
-  <data name="CodecsUnavailable" xml:space="preserve"><value>Unavailable</value></data>
 </root>

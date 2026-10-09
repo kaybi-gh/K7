@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="PageTitle" xml:space="preserve"><value>My device</value></data>
+  <data name="Subtitle" xml:space="preserve"><value>Playback, server, and settings stored here.</value></data>
+  <data name="IdentitySection" xml:space="preserve"><value>Information</value></data>
+  <data name="FormFactor" xml:space="preserve"><value>Form factor</value></data>
+  <data name="Hdr" xml:space="preserve"><value>HDR</value></data>
+  <data name="DeviceDesktop" xml:space="preserve"><value>Computer</value></data>
+  <data name="DevicePhone" xml:space="preserve"><value>Phone</value></data>
+  <data name="DeviceTablet" xml:space="preserve"><value>Tablet</value></data>
+  <data name="DeviceTv" xml:space="preserve"><value>TV</value></data>
+  <data name="DeviceWatch" xml:space="preserve"><value>Watch</value></data>
+  <data name="SupportedCodecs" xml:space="preserve"><value>Supported codecs</value></data>
+  <data name="LoadingCodecs" xml:space="preserve"><value>Loading...</value></data>
+  <data name="CodecContainers" xml:space="preserve"><value>Containers</value></data>
+  <data name="CodecVideo" xml:space="preserve"><value>Video</value></data>
+  <data name="CodecAudio" xml:space="preserve"><value>Audio</value></data>
+  <data name="CodecSubtitles" xml:space="preserve"><value>Subtitles</value></data>
+  <data name="Unavailable" xml:space="preserve"><value>Unavailable</value></data>
+  <data name="ServerUrl" xml:space="preserve"><value>K7 server URL</value></data>
+  <data name="ChangeServerUrlTitle" xml:space="preserve"><value>Warning</value></data>
+  <data name="ChangeServerUrlWarning" xml:space="preserve"><value>Changing the K7 server URL will delete all local data related to the current server (statistics, offline files, preferences). Data on the server will not be affected.</value></data>
+  <data name="LocalDataSection" xml:space="preserve"><value>This device</value></data>
+  <data name="LocalDataSectionHint" xml:space="preserve"><value>Clears what is stored only on this device: player, sidebar, downloads, filters. The server URL and your sign-in stay in place.</value></data>
+  <data name="ClearAllPreferences" xml:space="preserve"><value>Clear this device's settings</value></data>
+  <data name="ClearAllPreferencesTitle" xml:space="preserve"><value>Clear this device's settings</value></data>
+  <data name="ClearAllPreferencesMessage" xml:space="preserve"><value>Clear settings stored on this device (player, sidebar, downloads, filters)? The server URL and your sign-in stay in place. The app will reload.</value></data>
+  <data name="ClearPreferencesSuccess" xml:space="preserve"><value>Local customizations cleared.</value></data>
+</root>
