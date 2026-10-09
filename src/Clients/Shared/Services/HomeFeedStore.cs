@@ -631,13 +631,30 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
         if (!GetRowsSnapshot().Any(r => RowMightBeAffectedByBatch(r, items)))
             return;
 
+        // Stale LibraryIds snapshots (or brand-new libraries) need a layout reload, not only a
+        // row refresh. Explore always resolves library groups live, so it does not hit this gap.
+        if (items.Any(i => i.LibraryId is { } libraryId && !HasRowTargetingLibrary(libraryId)))
+        {
+            ScheduleLayoutReload();
+            return;
+        }
+
         // New catalog membership can also promote a series into Keep Watching (weekly episode).
         ScheduleCatalogMembershipRefresh(refreshContinueWatching: true, batchItems: items);
     }
 
     private void OnMediaIndexedFilesUpdated(Guid mediaId, Guid libraryId)
     {
-        if (!IsLoaded || IsLoading || IsOffline || !RowMightBeAffectedByLibrary(libraryId))
+        if (!IsLoaded || IsLoading || IsOffline)
+            return;
+
+        if (!HasRowTargetingLibrary(libraryId))
+        {
+            ScheduleLayoutReload();
+            return;
+        }
+
+        if (!RowMightBeAffectedByLibrary(libraryId))
             return;
 
         ScheduleCatalogMembershipRefresh(refreshContinueWatching: true);
@@ -651,9 +668,11 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
             return;
         }
 
-        // Dynamic default home layout adds a "Newly added in ..." row per library group. Refreshing
-        // existing row items is not enough when the library is new: global rows (null LibraryIds)
-        // make RowMightBeAffectedByLibrary true without ever creating that feed.
+        // Reload layout when no loaded row lists this library in LibraryIds. That covers:
+        // - new libraries (default "Newly added in ..." rows)
+        // - admin just checked a library on a LibraryIds-scoped row while another group-scoped
+        //   row would otherwise make a plain refresh keep the stale snapshot
+        // Group-scoped rows resolve membership server-side on the subsequent load.
         if (!HasRowTargetingLibrary(libraryId))
         {
             ScheduleLayoutReload();
@@ -723,14 +742,15 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
     }
 
     /// <summary>
-    /// True when a loaded row is scoped to this library (or to a library group that follows membership).
-    /// Global rows (no library / group filter) do not count: they refresh for every library without
-    /// representing a new library-specific feed.
+    /// True when a loaded row explicitly lists this library in <see cref="HomeRowConfigDto.LibraryIds"/>.
+    /// Library-group rows do not count: the client cannot resolve group membership, and treating them
+    /// as a match blocked layout reload when another library was added to a LibraryIds snapshot.
     /// </summary>
     private bool HasRowTargetingLibrary(Guid libraryId) =>
-        GetRowsSnapshot().Any(r =>
-            (r.Config.LibraryIds is { Count: > 0 } ids && ids.Contains(libraryId))
-            || r.Config.LibraryGroupIds is { Count: > 0 });
+        HasRowTargetingLibrary(GetRowsSnapshot().Select(r => r.Config), libraryId);
+
+    internal static bool HasRowTargetingLibrary(IEnumerable<HomeRowConfigDto> rows, Guid libraryId) =>
+        rows.Any(r => r.LibraryIds is { Count: > 0 } ids && ids.Contains(libraryId));
 
     private bool RowMightBeAffectedByLibrary(Guid libraryId) =>
         GetRowsSnapshot().Any(r =>

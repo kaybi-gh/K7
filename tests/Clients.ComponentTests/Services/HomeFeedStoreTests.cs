@@ -144,6 +144,68 @@ public class HomeFeedStoreTests
         query.LibraryGroupIds.Should().BeNull();
     }
 
+    [Test]
+    public void HasRowTargetingLibrary_ShouldIgnoreLibraryGroupRows_WhenMatchingLibraryId()
+    {
+        var series01 = Guid.Parse("11111111-1111-1111-1111-111111111111");
+        var series02 = Guid.Parse("22222222-2222-2222-2222-222222222222");
+        var moviesGroup = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+
+        var rows = new[]
+        {
+            new HomeRowConfigDto
+            {
+                Id = moviesGroup,
+                Title = "NewlyAddedIn|Movies",
+                DisplayType = HomeRowDisplayType.Carousel,
+                LibraryGroupIds = [moviesGroup],
+                PageSize = 20,
+                ContinueWatching = false,
+                IsVisible = true,
+                Order = 0
+            },
+            new HomeRowConfigDto
+            {
+                Id = Guid.NewGuid(),
+                Title = "NewlyAddedIn|Series",
+                DisplayType = HomeRowDisplayType.Carousel,
+                LibraryIds = [series01],
+                PageSize = 20,
+                ContinueWatching = false,
+                IsVisible = true,
+                Order = 1
+            }
+        };
+
+        HomeFeedStore.HasRowTargetingLibrary(rows, series01).Should().BeTrue();
+        // Must be false so a scan of series 02 reloads layout instead of refreshing the stale snapshot.
+        HomeFeedStore.HasRowTargetingLibrary(rows, series02).Should().BeFalse();
+    }
+
+    [Test]
+    public void HasRowTargetingLibrary_ShouldReturnFalse_WhenOnlyLibraryGroupScope()
+    {
+        var groupId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+        var libraryId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+
+        var rows = new[]
+        {
+            new HomeRowConfigDto
+            {
+                Id = groupId,
+                Title = "NewlyAddedIn|Series",
+                DisplayType = HomeRowDisplayType.Carousel,
+                LibraryGroupIds = [groupId],
+                PageSize = 20,
+                ContinueWatching = false,
+                IsVisible = true,
+                Order = 0
+            }
+        };
+
+        HomeFeedStore.HasRowTargetingLibrary(rows, libraryId).Should().BeFalse();
+    }
+
     private static HomeFeedStore CreateStore(
         IMediaService media,
         IUserPreferencesService? prefs = null)
