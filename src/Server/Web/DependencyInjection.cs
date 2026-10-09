@@ -131,6 +131,7 @@ public static class DependencyInjection
         services.AddSingleton<IBackgroundTaskNotifier, BackgroundTaskNotifier>();
         services.AddSingleton<IFederationNotifier, FederationNotifier>();
         services.AddSingleton<IClientErrorReporter, ServerSideErrorReporter>();
+        services.AddSingleton<IAdminStreamAudience, AdminStreamAudience>();
         services.AddHostedService<AdminStreamNotifier>();
         services.AddHostedService<ServerMetricsWarmupService>();
         services.AddHostedService<AdminMetricsNotifier>();

@@ -14,13 +14,27 @@ public partial class AdminActiveStreamsSection : IDisposable
     private IReadOnlyList<ActiveStreamDto>? _streams;
     private ActiveStreamDto? _selectedStream;
     private bool _loading = true;
+    private bool _federationEnabled;
 
     protected override async Task OnInitializedAsync()
     {
         HubClient.ActiveStreamsUpdated += OnActiveStreamsUpdated;
         HubClient.ConnectionStateChanged += OnHubConnectionStateChanged;
 
-        await RefreshStreamsAsync();
+        await Task.WhenAll(RefreshStreamsAsync(), LoadFederationFlagAsync());
+    }
+
+    private async Task LoadFederationFlagAsync()
+    {
+        try
+        {
+            var flags = await ServerPreferencesService.GetServerFeatureFlagsAsync();
+            _federationEnabled = flags.FederationEnabled;
+        }
+        catch
+        {
+            _federationEnabled = false;
+        }
     }
 
     private void OnHubConnectionStateChanged(HubConnectionState state)

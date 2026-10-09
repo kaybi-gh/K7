@@ -70,6 +70,8 @@ public sealed class ActiveStreamsSnapshotService(
                 MediaTitle = s.MediaTitle,
                 MediaType = s.MediaType,
                 ParentId = s.ParentId,
+                SeasonNumber = s.SeasonNumber,
+                EpisodeNumber = s.EpisodeNumber,
                 DeviceId = s.DeviceId,
                 DeviceName = s.DeviceName,
                 DeviceClient = s.DeviceClient,
@@ -78,7 +80,7 @@ public sealed class ActiveStreamsSnapshotService(
                 StreamDecision = streamDecision,
                 FederatedPlaybackExecution = s.FederatedPlaybackExecution,
                 StartedAt = s.StartedAt,
-                Position = s.Position,
+                Position = EstimatePosition(s),
                 Duration = s.Duration,
                 State = s.State,
                 SharedProfileName = s.SharedProfileName,
@@ -87,5 +89,19 @@ public sealed class ActiveStreamsSnapshotService(
         }
 
         return streams;
+    }
+
+    private static double EstimatePosition(ActiveStreamInfo stream)
+    {
+        if (stream.State != (int)PlaybackState.Playing || stream.LastUpdatedAt == default)
+            return stream.Position;
+
+        var rate = stream.PlaybackRate > 0 ? stream.PlaybackRate : 1.0;
+        var elapsed = (DateTime.UtcNow - stream.LastUpdatedAt).TotalSeconds * rate;
+        if (elapsed <= 0)
+            return stream.Position;
+
+        var next = stream.Position + elapsed;
+        return stream.Duration > 0 ? Math.Min(stream.Duration, next) : next;
     }
 }

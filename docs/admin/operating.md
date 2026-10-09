@@ -301,9 +301,10 @@ Admin Dashboard KPIs and Libraries issue chips link into **Admin -> Diagnostics*
   re-identify / refresh / create-media may find no match and leave some items unchanged).
 
 On TV (Android TV / native TV clients), Admin Dashboard skips live charts and metrics polling.
-Current CPU / RAM / network stay as numbers, active streams stay live, and background-task counts
-refresh on a longer debounce. Background tasks itself still live-updates, but at most about every
-10 seconds.
+Current CPU / RAM / network stay as numbers. Active streams refresh about every 2 seconds on
+desktop and mobile, and about every 10 seconds on TV so the WebView is not redrawn on every tick.
+Background-task counts refresh on a longer debounce. Background tasks itself still live-updates,
+but at most about every 10 seconds.
 
 Severity (Error / Warning / Info) classifies findings - not a promise that a fix or refresh will
 succeed. Work class is the nature of the work:

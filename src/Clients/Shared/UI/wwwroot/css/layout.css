@@ -624,6 +624,9 @@ html .app-nav-main .k7-btn.active {
 
 .page-content {
     flex: 1;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
     padding: var(--space-6);
     min-height: 0;
     overflow-y: auto;

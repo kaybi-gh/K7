@@ -3,6 +3,7 @@
 <section class="dashboard-health @(Compact ? "dashboard-health--compact" : null)">
     <h6>@L["ServerHealthTitle"]</h6>
     <div class="dashboard-health__charts">
+        <div class="dashboard-health__chart-focus focusable" tabindex="0">
         <K7Paper Outlined="true" Class="dashboard-health__chart">
             <div class="dashboard-health__chart-header">
                 <span class="text-overline">@L["CpuUsage"]</span>
@@ -15,6 +16,7 @@
             {
                 @if (_cpuData.Count > 0)
                 {
+                    <div class="dashboard-health__plot">
                     <ApexChart TItem="ChartDataPoint" Options="_cpuChartOptions" Height="160">
                         <ApexPointSeries TItem="ChartDataPoint"
                                          Items="_cpuData"
@@ -23,6 +25,7 @@
                                          XValue="@(e => e.Label)"
                                          YValue="@(e => e.Value)" />
                     </ApexChart>
+                    </div>
                 }
                 else
                 {
@@ -34,6 +37,8 @@
                 <div class="dashboard-health__empty">@L["NoMetricsYet"]</div>
             }
         </K7Paper>
+        </div>
+        <div class="dashboard-health__chart-focus focusable" tabindex="0">
         <K7Paper Outlined="true" Class="dashboard-health__chart">
             <div class="dashboard-health__chart-header">
                 <span class="text-overline">@L["MemoryUsage"]</span>
@@ -46,6 +51,7 @@
             {
                 @if (_memoryData.Count > 0)
                 {
+                    <div class="dashboard-health__plot">
                     <ApexChart TItem="ChartDataPoint" Options="_memoryChartOptions" Height="160">
                         <ApexPointSeries TItem="ChartDataPoint"
                                          Items="_memoryData"
@@ -54,6 +60,7 @@
                                          XValue="@(e => e.Label)"
                                          YValue="@(e => e.Value)" />
                     </ApexChart>
+                    </div>
                 }
                 else
                 {
@@ -65,6 +72,8 @@
                 <div class="dashboard-health__empty">@L["NoMetricsYet"]</div>
             }
         </K7Paper>
+        </div>
+        <div class="dashboard-health__chart-focus focusable" tabindex="0">
         <K7Paper Outlined="true" Class="dashboard-health__chart">
             <div class="dashboard-health__chart-header">
                 <span class="text-overline">@L["NetworkThroughput"]</span>
@@ -77,6 +86,7 @@
             {
                 @if (_networkData.Count > 0)
                 {
+                    <div class="dashboard-health__plot">
                     <ApexChart TItem="ChartDataPoint" Options="_networkChartOptions" Height="160">
                         <ApexPointSeries TItem="ChartDataPoint"
                                          Items="_networkData"
@@ -85,6 +95,7 @@
                                          XValue="@(e => e.Label)"
                                          YValue="@(e => e.Value)" />
                     </ApexChart>
+                    </div>
                 }
                 else
                 {
@@ -96,6 +107,7 @@
                 <div class="dashboard-health__empty">@L["NoMetricsYet"]</div>
             }
         </K7Paper>
+        </div>
     </div>
     @if (Latest is not null && (Latest.GcHeapMb > 0 || Latest.ThreadCount > 0))
     {

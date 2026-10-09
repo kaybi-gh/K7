@@ -30,6 +30,7 @@ public partial class K7Hub(
     ISyncPlayCoordinator syncPlay,
     IUserSettingsService userSettingsService,
     IHubPresenceTracker presenceTracker,
+    IAdminStreamAudience adminStreamAudience,
     IServiceScopeFactory scopeFactory) : Hub<IK7HubClient>
 {
     public override async Task OnConnectedAsync()
@@ -83,6 +84,7 @@ public partial class K7Hub(
 
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
+        adminStreamAudience.Forget(Context.ConnectionId);
         var identityUserId = ResolveIdentityUserId();
 
         if (!string.IsNullOrEmpty(identityUserId))
@@ -169,6 +171,7 @@ public partial class K7Hub(
         }
 
         await Groups.AddToGroupAsync(Context.ConnectionId, AdminStreamsGroup);
+        adminStreamAudience.Track(Context.ConnectionId, CallerIsTv());
         await Clients.Caller.ReceiveOnlineUsersPresenceUpdated(BuildOnlineUsersPresenceDto());
 
         using (var scope = scopeFactory.CreateScope())
@@ -181,6 +184,7 @@ public partial class K7Hub(
 
     public async Task LeaveAdminStreamsGroup()
     {
+        adminStreamAudience.Forget(Context.ConnectionId);
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, AdminStreamsGroup);
     }
 
@@ -202,6 +206,13 @@ public partial class K7Hub(
     public async Task LeaveAdminFederationGroup()
     {
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, AdminFederationGroup);
+    }
+
+    private bool CallerIsTv()
+    {
+        var device = presenceTracker.FindByConnectionId(Context.ConnectionId);
+        return device is not null
+            && string.Equals(device.Value.Connection.DeviceType, nameof(DeviceType.TV), StringComparison.OrdinalIgnoreCase);
     }
 
     private string? ResolveIdentityUserId()

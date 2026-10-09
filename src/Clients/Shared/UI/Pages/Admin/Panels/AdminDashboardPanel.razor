@@ -9,14 +9,14 @@
     </div>
 
     <div class="dashboard-kpis">
-        <NavLink href="/admin/users" class="dashboard-kpi dashboard-kpi--link focusable">
-            <K7Paper Outlined="true" Class="dashboard-kpi__inner">
+        <NavLink href="/admin/users" class="dashboard-kpi dashboard-kpi--link" tabindex="-1">
+            <K7Paper Outlined="true" Class="dashboard-kpi__inner focusable" tabindex="0">
                 <span class="text-overline">@L["OnlineUsersKpi"]</span>
                 <h3 class="dashboard-kpi__value">@OnlineUsersCount</h3>
             </K7Paper>
         </NavLink>
-        <NavLink href="/admin/diagnostics" class="dashboard-kpi dashboard-kpi--link focusable">
-            <K7Paper Outlined="true" Class="dashboard-kpi__inner">
+        <NavLink href="/admin/diagnostics" class="dashboard-kpi dashboard-kpi--link" tabindex="-1">
+            <K7Paper Outlined="true" Class="dashboard-kpi__inner focusable" tabindex="0">
                 <span class="text-overline">@L["DiagnosticsKpi"]</span>
                 <div class="dashboard-kpi__severity-counts" aria-label="@L["DiagnosticsKpi"]">
                     <span class="dashboard-kpi__severity-count dashboard-kpi__value--error">@_errorCount</span>
@@ -27,8 +27,8 @@
                 </div>
             </K7Paper>
         </NavLink>
-        <NavLink href="/admin/background-tasks" class="dashboard-kpi dashboard-kpi--link focusable">
-            <K7Paper Outlined="true" Class="dashboard-kpi__inner">
+        <NavLink href="/admin/background-tasks" class="dashboard-kpi dashboard-kpi--link" tabindex="-1">
+            <K7Paper Outlined="true" Class="dashboard-kpi__inner focusable" tabindex="0">
                 <span class="text-overline">@L["BackgroundTasksKpi"]</span>
                 <h3 class="dashboard-kpi__value">@_runningTaskCount</h3>
             </K7Paper>

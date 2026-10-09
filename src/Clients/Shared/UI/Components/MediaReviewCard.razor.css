@@ -104,7 +104,6 @@
 .media-review-card__leading-artwork ::deep .media-card {
     width: 100%;
     max-width: 100%;
-    max-height: var(--media-review-card-leading-max-height, var(--media-review-card-leading-size, 112px));
 }
 
 .media-review-card__leading-artwork ::deep .media-card-container {
@@ -172,7 +171,6 @@
 }
 
 .media-review-card--leading-focusable .media-review-card__leading-artwork ::deep .media-card-link.focusable {
-    position: relative;
     z-index: 1;
 }
 
@@ -190,6 +188,7 @@
     font-size: var(--text-sm);
     font-weight: 500;
     text-align: center;
+    container-type: inline-size;
 }
 
 .media-review-card__leading-title-inner {
@@ -201,14 +200,22 @@
     will-change: transform;
 }
 
-.media-review-card:focus-within .media-review-card__leading-title-inner,
-.media-review-card:hover .media-review-card__leading-title-inner {
+.media-review-card__leading:hover .media-review-card__leading-title,
+.media-review-card__leading:focus-within .media-review-card__leading-title {
+    overflow: visible;
+}
+
+.media-review-card__leading:hover .media-review-card__leading-title-inner,
+.media-review-card__leading:focus-within .media-review-card__leading-title-inner {
+    display: inline-block;
+    width: auto;
+    overflow: visible;
     animation: media-review-card-title-scroll 3s linear 0.5s infinite alternate;
 }
 
 @keyframes media-review-card-title-scroll {
     from { transform: translateX(0); }
-    to { transform: translateX(calc(-100% + var(--media-review-card-leading-max-width, var(--media-review-card-leading-size, 112px)))); }
+    to { transform: translateX(min(0px, calc(100cqw - 100%))); }
 }
 
 .media-review-card__avatar-wrap {
@@ -559,5 +566,15 @@ a.media-review-card__name:hover {
 
     .media-review-card__rating-pill {
         padding: 4px 8px;
+    }
+
+    .media-review-card__leading:hover .media-review-card__leading-title-inner,
+    .media-review-card__leading:focus-within .media-review-card__leading-title-inner {
+        display: block;
+        width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        animation: none;
+        transform: none;
     }
 }

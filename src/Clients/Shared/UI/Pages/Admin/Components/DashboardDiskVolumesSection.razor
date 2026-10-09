@@ -20,7 +20,7 @@
                         ? "dashboard-disk-volume--warning"
                         : "";
 
-                <K7Paper Outlined="true" Class="@($"dashboard-disk-volume {levelClass}")">
+                <K7Paper Outlined="true" Class="@($"dashboard-disk-volume focusable {levelClass}")" tabindex="0">
                     <div class="dashboard-disk-volume__header">
                         <span class="dashboard-disk-volume__label">@volume.Label</span>
                         <span class="dashboard-disk-volume__stats">

@@ -1,5 +1,6 @@
 @inject IStringLocalizer<AdminActiveStreamsPanel> L
 @inject IServerInfoService K7ServerService
+@inject IServerPreferencesService ServerPreferencesService
 @inject K7HubClient HubClient
 @implements IDisposable
 
@@ -32,7 +33,7 @@
             <div class="streams-grid">
                 @foreach (var stream in _streams)
                 {
-                    <AdminStreamCard Stream="stream" OnClick="OnStreamSelected" />
+                    <AdminStreamCard Stream="stream" FederationEnabled="_federationEnabled" OnClick="OnStreamSelected" />
                 }
             </div>
         </div>

@@ -7,6 +7,8 @@
     min-width: 0;
     box-sizing: border-box;
     overflow-x: clip;
+    padding: 6px;
+    margin: -6px;
 }
 
 .dashboard-header h5 {
@@ -33,7 +35,12 @@
     opacity: 0.92;
 }
 
-.dashboard-kpi--link:focus-visible {
+.dashboard-kpis ::deep .dashboard-kpi--link:focus,
+.dashboard-kpis ::deep .dashboard-kpi--link:focus-visible {
+    outline: none;
+}
+
+.dashboard-kpis ::deep .dashboard-kpi__inner:focus-visible {
     outline: 2px solid var(--color-accent);
     outline-offset: 2px;
 }

@@ -1,7 +1,11 @@
+using K7.Clients.Shared.Models;
+using K7.Clients.Shared.UI.Components;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos;
 using K7.Shared.Enums;
+using K7.Shared.Navigation;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Web;
 
 namespace K7.Clients.Shared.UI.Pages.Admin.Components;
 
@@ -13,11 +17,52 @@ public partial class AdminStreamCard
     [Parameter]
     public EventCallback<ActiveStreamDto> OnClick { get; set; }
 
+    [Parameter]
+    public bool FederationEnabled { get; set; }
+
     private bool IsMusic => Stream.MediaType is "MusicTrack" or "MusicAlbum";
 
     private string CardVariantClass => IsMusic ? "stream-card--music" : "stream-card--video";
 
     private string PlaceholderIcon => IsMusic ? Phosphor.MusicNote : Phosphor.FilmSlate;
+
+    private MediaCardVariant ArtworkVariant => IsMusic ? MediaCardVariant.Cover : MediaCardVariant.Poster;
+
+    private bool HasMediaHref => MediaHref is not null;
+
+    private string? MediaHref
+    {
+        get
+        {
+            if (Stream.MediaId is not Guid mediaId || !Enum.TryParse<MediaType>(Stream.MediaType, out var type))
+                return null;
+
+            return type switch
+            {
+                MediaType.MusicTrack => Stream.ParentId is Guid albumId
+                    ? MediaPageUrls.Build(type, mediaId, albumId: albumId)
+                    : null,
+                MediaType.SerieEpisode => EpisodeHref(mediaId),
+                MediaType.SerieSeason => SeasonHref(mediaId),
+                _ => MediaPageUrls.Build(type, mediaId)
+            };
+        }
+    }
+
+    private string DetailsAriaLabel =>
+        string.Format(L["ViewDetails"].Value, Stream.MediaTitle ?? "-");
+
+    private MediaCardViewModel ArtworkModel => new()
+    {
+        Id = Stream.MediaId?.ToString() ?? Stream.ConnectionId,
+        Title = Stream.MediaTitle,
+        PictureUrl = Stream.ThumbnailUrl,
+        Kind = IsMusic ? MediaCardKind.Cover : MediaCardKind.Poster
+    };
+
+    private bool ShowCompute => FederationEnabled;
+
+    private string ComputeLabel => ShowExecutionBadge ? ExecutionBadgeLabel : L["ComputeLocal"].Value;
 
     /// <summary>Origin side of a federation pull (device type set by CreateFederationStreamSession).</summary>
     private bool IsFederationOriginSide =>
@@ -70,10 +115,6 @@ public partial class AdminStreamCard
         && decision.StreamResolution is not null
         && !string.Equals(decision.SourceResolution, decision.StreamResolution, StringComparison.OrdinalIgnoreCase);
 
-    private bool ShowEncoderBadge => IsVideoTranscoded && HasVideoEncoderInfo;
-
-    private bool ShowAudioEncoderBadge => IsAudioTranscoded && !IsVideoTranscoded && HasAudioEncoderInfo;
-
     private bool HasVideoEncoderInfo => Stream.StreamDecision?.VideoEncoder is not null
         || Stream.StreamDecision?.IsHardwareAccelerated is not null;
 
@@ -87,35 +128,38 @@ public partial class AdminStreamCard
         && d.StreamAudioCodec is not null
         && !string.Equals(d.SourceAudioCodec, d.StreamAudioCodec, StringComparison.OrdinalIgnoreCase);
 
-    private string OverallModeLabel
+    private string? PosterStatus
     {
         get
         {
-            if (!IsLocalCompute) return "Direct";
-            if (IsVideoTranscoded || IsAudioTranscoded) return "Transcode";
-            return Stream.StreamDecision?.Mode switch
+            if (Stream.StreamDecision is null)
+                return null;
+            if (!IsLocalCompute)
+                return "direct";
+            if (IsVideoTranscoded || IsAudioTranscoded)
+                return "transcode";
+            return Stream.StreamDecision.Mode switch
             {
-                PlaybackMode.Direct => "Direct",
-                PlaybackMode.Transmux => "Transmux",
-                _ => ""
+                PlaybackMode.Direct => "direct",
+                PlaybackMode.Transmux => "transmux",
+                _ => null
             };
         }
     }
 
-    private string OverallModeBadgeClass
+    private string PosterStatusLabel => PosterStatus switch
     {
-        get
-        {
-            if (!IsLocalCompute) return "stream-card__mode-badge--direct";
-            if (IsVideoTranscoded || IsAudioTranscoded) return "stream-card__mode-badge--transcode";
-            return Stream.StreamDecision?.Mode switch
-            {
-                PlaybackMode.Direct => "stream-card__mode-badge--direct",
-                PlaybackMode.Transmux => "stream-card__mode-badge--transmux",
-                _ => ""
-            };
-        }
-    }
+        "direct" => L["DirectPlay"].Value,
+        "transcode" => L["Transcode"].Value,
+        "transmux" => L["Transmux"].Value,
+        _ => ""
+    };
+
+    private string VideoDecisionLabel =>
+        DecisionLabel(IsVideoTranscoded, HasVideoEncoderInfo, IsHardwareEncoder);
+
+    private string AudioDecisionLabel =>
+        DecisionLabel(IsAudioTranscoded, HasAudioEncoderInfo, hardware: false);
 
     private bool ShowProgress =>
         !string.Equals(Stream.DeviceClient, "External", StringComparison.OrdinalIgnoreCase)
@@ -193,6 +237,17 @@ public partial class AdminStreamCard
             : $"{bitrate} Kbps";
     }
 
+    private string DecisionLabel(bool transcoded, bool hasMethod, bool hardware)
+    {
+        if (!transcoded)
+            return L["DirectPlay"].Value;
+        if (!hasMethod)
+            return L["Transcode"].Value;
+
+        var method = hardware ? L["Hardware"] : L["Software"];
+        return string.Format(L["TranscodeWithMethod"].Value, method.Value);
+    }
+
     private string FormatReason(TranscodeReason reason)
     {
         var parts = new List<string>();
@@ -219,5 +274,31 @@ public partial class AdminStreamCard
     {
         if (OnClick.HasDelegate)
             await OnClick.InvokeAsync(Stream);
+    }
+
+    private string? EpisodeHref(Guid mediaId)
+    {
+        if (Stream.ParentId is not Guid serieId)
+            return null;
+        if (Stream.SeasonNumber is int season && Stream.EpisodeNumber is int episode)
+            return MediaPageUrls.Build(MediaType.SerieEpisode, mediaId, serieId, season, episode);
+        return MediaPageUrls.Build(MediaType.Serie, serieId);
+    }
+
+    private string? SeasonHref(Guid mediaId)
+    {
+        if (Stream.ParentId is Guid serieId && Stream.SeasonNumber is int season)
+            return MediaPageUrls.Build(MediaType.SerieSeason, mediaId, serieId, season);
+        return Stream.ParentId is Guid parentId
+            ? MediaPageUrls.Build(MediaType.Serie, parentId)
+            : MediaPageUrls.Build(MediaType.SerieSeason, mediaId);
+    }
+
+    private async Task OnCardKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key != " ")
+            return;
+
+        await OnCardClicked();
     }
 }

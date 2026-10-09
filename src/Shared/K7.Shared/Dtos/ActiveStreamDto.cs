@@ -12,6 +12,8 @@ public sealed record ActiveStreamDto
     public string? MediaTitle { get; init; }
     public string? MediaType { get; init; }
     public Guid? ParentId { get; init; }
+    public int? SeasonNumber { get; init; }
+    public int? EpisodeNumber { get; init; }
     public Guid? DeviceId { get; init; }
     public string? DeviceName { get; init; }
     public string? DeviceClient { get; init; }

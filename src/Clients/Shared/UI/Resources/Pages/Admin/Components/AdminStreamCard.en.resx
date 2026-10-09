@@ -46,4 +46,8 @@
   <data name="ExecutionHere" xml:space="preserve"><value>Compute: here</value></data>
   <data name="ExecutionOnPeer" xml:space="preserve"><value>Compute: {0}</value></data>
   <data name="ExecutionOnOrigin" xml:space="preserve"><value>Compute: origin</value></data>
+  <data name="ComputeLocal" xml:space="preserve"><value>Compute: local</value></data>
+  <data name="Transmux" xml:space="preserve"><value>Transmux</value></data>
+  <data name="TranscodeWithMethod" xml:space="preserve"><value>Transcode ({0})</value></data>
+  <data name="ViewDetails" xml:space="preserve"><value>View details for {0}</value></data>
 </root>

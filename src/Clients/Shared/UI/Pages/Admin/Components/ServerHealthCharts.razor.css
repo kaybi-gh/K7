@@ -20,7 +20,21 @@
     min-width: 0;
 }
 
+.dashboard-health__chart-focus {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    height: 100%;
+    border-radius: var(--radius-md);
+}
+
+.dashboard-health__chart-focus:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+}
+
 .dashboard-health__chart {
+    flex: 1;
     padding: var(--space-3);
     display: flex;
     flex-direction: column;
@@ -32,9 +46,19 @@
     overflow: hidden;
 }
 
-.dashboard-health__chart ::deep .apexcharts-canvas,
-.dashboard-health__chart ::deep .apexcharts-svg {
+.dashboard-health__plot {
+    width: 100%;
+    min-width: 0;
     max-width: 100%;
+}
+
+.dashboard-health__plot ::deep > div,
+.dashboard-health__plot ::deep .apexcharts-canvas,
+.dashboard-health__plot ::deep .apexcharts-svg,
+.dashboard-health__plot ::deep svg {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
 }
 
 .dashboard-health__chart-header {
