@@ -42,7 +42,10 @@ public static class DependencyInjection
             var databaseConfiguration = sp.GetRequiredService<IOptions<DatabaseConfiguration>>().Value;
             options.ConfigureDbContext(databaseConfiguration, isDevelopment);
             if (databaseConfiguration.Provider.Equals("sqlite", StringComparison.OrdinalIgnoreCase))
+            {
                 options.AddInterceptors(sp.GetRequiredService<SqliteWalInterceptor>());
+                options.AddInterceptors(new SqliteFoldDiacriticsInterceptor());
+            }
             options.UseOpenIddict();
             options.ConfigureWarnings(w => w.Ignore(RelationalEventId.OptionalDependentWithoutIdentifyingPropertyWarning));
         });

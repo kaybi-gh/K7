@@ -204,7 +204,13 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
         Guid? userId,
         CancellationToken cancellationToken)
     {
-        query = ApplyFilters(context, request, query, userId, BuildSearchPattern(request.SearchText));
+        query = ApplyFilters(
+            context,
+            request,
+            query,
+            userId,
+            BuildSearchPattern(request.SearchText),
+            BuildSortTitlePattern(request.SearchText));
 
         if (request.ContinueWatching == true && userId.HasValue)
         {
@@ -220,12 +226,18 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
             ? null
             : MediaTextSearchHelper.BuildTitlePattern(searchText, databaseCapabilities.SupportsTrigramSearch);
 
+    private string? BuildSortTitlePattern(string? searchText) =>
+        string.IsNullOrWhiteSpace(searchText)
+            ? null
+            : MediaTextSearchHelper.BuildSortTitlePattern(searchText, databaseCapabilities.SupportsTrigramSearch);
+
     internal static IQueryable<BaseMedia> ApplyFilters(
         IApplicationDbContext context,
         GetMediasWithPaginationQuery request,
         IQueryable<BaseMedia> query,
         Guid? userId,
-        string? searchPattern = null)
+        string? searchPattern = null,
+        string? sortTitlePattern = null)
     {
         // Video/series media require library availability (backed by indexed files).
         // Music stays type-based. Explicit Ids bypass availability so history/stats deep fetches still resolve.
@@ -287,7 +299,7 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
 
         if (searchPattern is not null)
         {
-            query = query.Where(x => x.Title != null && EfLikeQueryExtensions.ILike(x.Title, searchPattern));
+            query = query.WhereTitleOrSortTitleMatches(searchPattern, sortTitlePattern ?? searchPattern);
         }
 
         if (request.UnwatchedOnly == true && userId.HasValue)

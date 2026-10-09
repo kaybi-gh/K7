@@ -1,4 +1,5 @@
 using K7.Server.Application.Common.Models;
+using K7.Server.Application.Common.Services;
 using K7.Server.Application.Features.Medias.Queries.GetMedias;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Medias;
@@ -240,5 +241,46 @@ public class GetMediasWithPaginationApplyFiltersTests
         var ids = await query.Select(m => m.Id).ToListAsync();
         ids.Should().Contain(unwatchedSerie.Id);
         ids.Should().NotContain(watchedSerie.Id);
+    }
+
+    [TestCase("element")]
+    [TestCase("élément")]
+    [TestCase("elem")]
+    public async Task ApplyFilters_ShouldMatchSortTitle_WhenSearchOmitsDiacritics(string searchText)
+    {
+        var albumId = Guid.NewGuid();
+        var otherId = Guid.NewGuid();
+        _context.Medias.AddRange(
+            new MusicAlbum
+            {
+                Id = albumId,
+                Title = "Le Cinquième Élément",
+                SortTitle = "Cinquieme Element, Le"
+            },
+            new MusicAlbum
+            {
+                Id = otherId,
+                Title = "Inception",
+                SortTitle = "Inception"
+            });
+        await _context.SaveChangesAsync();
+
+        var request = new GetMediasWithPaginationQuery
+        {
+            PageNumber = 1,
+            PageSize = 20,
+            SearchText = searchText
+        };
+        var query = GetMediasQueryHandler.ApplyFilters(
+            _context,
+            request,
+            _context.Medias.AsQueryable(),
+            userId: null,
+            MediaTextSearchHelper.BuildTitlePattern(searchText, supportsTrigramSearch: true),
+            MediaTextSearchHelper.BuildSortTitlePattern(searchText, supportsTrigramSearch: true));
+
+        var ids = await query.Select(m => m.Id).ToListAsync();
+        ids.Should().Contain(albumId);
+        ids.Should().NotContain(otherId);
     }
 }

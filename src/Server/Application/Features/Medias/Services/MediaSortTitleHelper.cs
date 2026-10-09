@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
+using K7.Server.Application.Common.Services;
 
 namespace K7.Server.Application.Features.Medias.Services;
 
@@ -43,7 +44,7 @@ public static partial class MediaSortTitleHelper
             }
         }
 
-        sortTitle = RemoveDiacritics(sortTitle);
+        sortTitle = MediaTextSearchHelper.RemoveDiacritics(sortTitle);
         return CapitalizeFirstLetter(sortTitle);
     }
 
@@ -69,21 +70,6 @@ public static partial class MediaSortTitleHelper
         }
 
         return builder.ToString().Trim();
-    }
-
-    private static string RemoveDiacritics(string value)
-    {
-        var normalized = value.Normalize(NormalizationForm.FormD);
-        var builder = new StringBuilder(normalized.Length);
-        foreach (var ch in normalized)
-        {
-            if (CharUnicodeInfo.GetUnicodeCategory(ch) == UnicodeCategory.NonSpacingMark)
-                continue;
-
-            builder.Append(ch);
-        }
-
-        return builder.ToString().Normalize(NormalizationForm.FormC);
     }
 
     private static string CapitalizeFirstLetter(string value)

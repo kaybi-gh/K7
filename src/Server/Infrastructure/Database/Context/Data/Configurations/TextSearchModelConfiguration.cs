@@ -18,11 +18,21 @@ internal static class TextSearchModelConfiguration
             [typeof(string), typeof(string)])
         ?? throw new InvalidOperationException($"Could not find {nameof(EfLikeQueryExtensions.ILike)}.");
 
+    private static readonly MethodInfo FoldDiacriticsMethod =
+        typeof(TextSearchFunctions).GetMethod(
+            nameof(TextSearchFunctions.FoldDiacritics),
+            BindingFlags.Public | BindingFlags.Static,
+            [typeof(string)])
+        ?? throw new InvalidOperationException($"Could not find {nameof(TextSearchFunctions.FoldDiacritics)}.");
+
     private static readonly Type? PgILikeExpressionType = Type.GetType(
         "Npgsql.EntityFrameworkCore.PostgreSQL.Query.Expressions.Internal.PgILikeExpression, Npgsql.EntityFrameworkCore.PostgreSQL");
 
     public static void Configure(ModelBuilder builder, bool isPostgres)
     {
+        builder.HasDbFunction(FoldDiacriticsMethod)
+            .HasName(TextSearchFunctions.FoldDiacriticsFunctionName);
+
         if (isPostgres)
         {
             ConfigurePostgres(builder);
@@ -46,6 +56,12 @@ internal static class TextSearchModelConfiguration
             .HasMethod("gin")
             .HasOperators("gin_trgm_ops")
             .HasFilter("\"Title\" IS NOT NULL");
+
+        builder.Entity<BaseMedia>()
+            .HasIndex([nameof(BaseMedia.SortTitle)], "IX_Medias_SortTitle_trgm")
+            .HasMethod("gin")
+            .HasOperators("gin_trgm_ops")
+            .HasFilter("\"SortTitle\" IS NOT NULL");
 
         builder.Entity<Person>()
             .HasIndex(e => e.Name)

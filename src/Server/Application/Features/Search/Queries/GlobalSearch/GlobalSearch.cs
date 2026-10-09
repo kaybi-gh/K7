@@ -42,10 +42,14 @@ public class GlobalSearchQueryHandler(
             return new GlobalSearchResultDto();
 
         var term = MediaTextSearchHelper.BuildTitlePattern(request.Q, databaseCapabilities.SupportsTrigramSearch);
+        var sortTerm = MediaTextSearchHelper.BuildSortTitlePattern(request.Q, databaseCapabilities.SupportsTrigramSearch);
         var rawQuery = EfLikeQueryExtensions.Normalize(request.Q);
+        var foldedRaw = MediaTextSearchHelper.RemoveDiacritics(rawQuery);
+        if (string.IsNullOrWhiteSpace(foldedRaw))
+            foldedRaw = rawQuery;
         Guid? userId = currentUser.Id;
 
-        var mediaQuery = BuildMediaSearchQuery(term, rawQuery, request.Studio);
+        var mediaQuery = BuildMediaSearchQuery(term, sortTerm, rawQuery, request.Studio);
         IQueryable<Guid>? accessibleMediaIds = null;
 
         if (userId is { } currentUserId)
@@ -93,8 +97,12 @@ public class GlobalSearchQueryHandler(
 
         var personQuery = context.Persons
             .Include(p => p.PortraitPicture)
-            .Where(p => EfLikeQueryExtensions.ILike(p.Name, term))
-            .OrderBy(p => EfLikeQueryExtensions.ILike(p.Name, rawQuery) ? 0 : 1)
+            .WhereNameMatches(term, sortTerm)
+            .OrderBy(p =>
+                EfLikeQueryExtensions.ILike(p.Name, rawQuery)
+                || EfLikeQueryExtensions.ILike(TextSearchFunctions.FoldDiacritics(p.Name), foldedRaw)
+                    ? 0
+                    : 1)
             .Take(PersonLimit)
             .AsNoTracking();
 
@@ -103,7 +111,7 @@ public class GlobalSearchQueryHandler(
             .Include(r => r.Person)
                 .ThenInclude(p => p.PortraitPicture)
             .Include(r => r.Media)
-            .Where(r => EfLikeQueryExtensions.ILike(r.CharacterName, term))
+            .WhereCharacterNameMatches(term, sortTerm)
             .Take(CharacterLimit)
             .AsNoTracking();
 
@@ -112,7 +120,7 @@ public class GlobalSearchQueryHandler(
             .Include(r => r.Person)
                 .ThenInclude(p => p.PortraitPicture)
             .Include(r => r.Media)
-            .Where(r => EfLikeQueryExtensions.ILike(r.CharacterName, term))
+            .WhereCharacterNameMatches(term, sortTerm)
             .Take(CharacterLimit)
             .AsNoTracking();
 
@@ -160,10 +168,10 @@ public class GlobalSearchQueryHandler(
         };
     }
 
-    private IQueryable<BaseMedia> BuildMediaSearchQuery(string term, string rawQuery, string? studio)
+    private IQueryable<BaseMedia> BuildMediaSearchQuery(string term, string sortTerm, string rawQuery, string? studio)
     {
         var mediaQuery = context.Medias
-            .Where(m => m.Title != null && EfLikeQueryExtensions.ILike(m.Title, term))
+            .WhereTitleOrSortTitleMatches(term, sortTerm)
             .Where(m =>
                 m is MusicAlbum || m is MusicArtist || m is MusicTrack
                 || context.MediaLibraryAvailabilities.Any(a => a.MediaId == m.Id));
