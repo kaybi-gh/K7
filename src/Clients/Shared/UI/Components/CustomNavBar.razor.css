@@ -24,12 +24,7 @@
 }
 
 .custom-nav-bar:not(.custom-nav-bar--measured) .custom-nav-bar__row {
-    overflow-x: auto;
-    scrollbar-width: none;
-}
-
-.custom-nav-bar:not(.custom-nav-bar--measured) .custom-nav-bar__row::-webkit-scrollbar {
-    display: none;
+    overflow: hidden;
 }
 
 .custom-nav-bar__measure {
@@ -98,6 +93,19 @@ button.custom-nav-bar__item {
 
 .custom-nav-bar__icon {
     display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--text-base);
+    height: var(--text-base);
+    flex: 0 0 auto;
+    line-height: 1;
+    overflow: hidden;
+}
+
+.custom-nav-bar__icon ::deep .k7-icon {
+    width: var(--text-base);
+    height: var(--text-base);
+    font-size: var(--text-base);
     line-height: 1;
 }
 

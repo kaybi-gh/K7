@@ -1,10 +1,13 @@
+using System.Text.Json;
 using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.UI;
 using K7.Clients.Shared.UI.Helpers;
 using K7.Server.Domain.Enums;
+using K7.Shared;
 using K7.Shared.CustomNav;
 using K7.Shared.Dtos.CustomNav;
+using K7.Shared.Json;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Routing;
 using Microsoft.Extensions.Localization;
@@ -14,6 +17,8 @@ namespace K7.Clients.Shared.UI.Components;
 
 public partial class CustomNavBar : IAsyncDisposable
 {
+    private static readonly JsonSerializerOptions JsonOptions = K7JsonSerializerOptions.CreateDefault();
+
     private readonly string _jsId = Guid.NewGuid().ToString("N");
     private DeviceType _device = DeviceType.Desktop;
     private bool _isNativeClient;
@@ -31,6 +36,7 @@ public partial class CustomNavBar : IAsyncDisposable
     [Inject] private NavigationManager NavigationManager { get; set; } = default!;
     [Inject] private IStringLocalizer<CustomNavStrings> NavL { get; set; } = default!;
     [Inject] private IJSRuntime JSRuntime { get; set; } = default!;
+    [Inject] private IDeviceStorageService Storage { get; set; } = default!;
 
     private string CurrentPath => CustomNavPath.From(NavigationManager);
 
@@ -69,13 +75,24 @@ public partial class CustomNavBar : IAsyncDisposable
     private string MeasureKey =>
         $"{Store.Layout.BarShowIcons}:{string.Join('|', VisibleItems.Select(i => $"{i.Id}:{GetTitle(i)}:{CustomNavHrefHelper.GetIcon(i, Store.Groups, Store.Collections, Store.Playlists)}"))}";
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
         Store.Changed += OnStoreChanged;
         NavigationManager.LocationChanged += OnLocationChanged;
         _isNativeClient = DeviceService.GetClientType() != ClientType.Web;
-        _device = DeviceService.CachedDeviceType ?? await DeviceService.GetDeviceTypeAsync();
+        if (DeviceService.CachedDeviceType is { } cached)
+            _device = cached;
+
+        RestoreOverflow();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (DeviceService.CachedDeviceType is null)
+            _device = await DeviceService.GetDeviceTypeAsync();
+
         await Store.EnsureLoadedAsync();
+        RestoreOverflow();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -135,6 +152,7 @@ public partial class CustomNavBar : IAsyncDisposable
 
         _visibleCount = next;
         _overflowMeasured = true;
+        PersistOverflow();
         _ = InvokeAsync(StateHasChanged);
     }
 
@@ -155,8 +173,6 @@ public partial class CustomNavBar : IAsyncDisposable
 
     private async Task DetachObserverAsync()
     {
-        _overflowMeasured = false;
-        _visibleCount = int.MaxValue;
         _measuredKey = null;
 
         if (!_attached || _module is null)
@@ -175,6 +191,62 @@ public partial class CustomNavBar : IAsyncDisposable
         }
     }
 
+    private void RestoreOverflow()
+    {
+        if (_overflowMeasured)
+            return;
+
+        var userId = Storage.Get(PreferenceKeys.LAST_ACTIVE_USER_ID);
+        var json = Storage.Get(PreferenceKeys.CUSTOM_NAV_BAR_MEASURE);
+        if (string.IsNullOrEmpty(userId) || string.IsNullOrWhiteSpace(json))
+            return;
+
+        CustomNavBarOverflowEntry? entry;
+        try
+        {
+            entry = JsonSerializer.Deserialize<CustomNavBarOverflowEntry>(json, JsonOptions);
+        }
+        catch (JsonException)
+        {
+            return;
+        }
+
+        if (entry is null
+            || !string.Equals(entry.UserId, userId, StringComparison.Ordinal)
+            || entry.Key != MeasureKey
+            || entry.Count <= 0
+            || VisibleItems.Count == 0)
+            return;
+
+        _visibleCount = Math.Clamp(entry.Count, 1, VisibleItems.Count);
+        _overflowMeasured = true;
+    }
+
+    private void PersistOverflow()
+    {
+        var userId = Storage.Get(PreferenceKeys.LAST_ACTIVE_USER_ID);
+        if (string.IsNullOrEmpty(userId))
+            return;
+
+        var entry = new CustomNavBarOverflowEntry
+        {
+            UserId = userId,
+            Key = MeasureKey,
+            Count = _visibleCount
+        };
+
+        try
+        {
+            Storage.Set(PreferenceKeys.CUSTOM_NAV_BAR_MEASURE, JsonSerializer.Serialize(entry, JsonOptions));
+        }
+        catch (InvalidOperationException)
+        {
+        }
+        catch (JsonException)
+        {
+        }
+    }
+
     private string GetHref(CustomNavItemDto item) =>
         CustomNavHrefHelper.GetHref(item, Store.Groups, Store.GeneralPreferences, Store.Collections, Store.Playlists);
 
@@ -183,7 +255,13 @@ public partial class CustomNavBar : IAsyncDisposable
 
     private void Navigate(string href) => LibraryGroupBrowseUrlSync.Navigate(NavigationManager, href);
 
-    private void OnStoreChanged() => InvokeAsync(StateHasChanged);
+    private void OnStoreChanged() => InvokeAsync(() =>
+    {
+        if (!_overflowMeasured)
+            RestoreOverflow();
+
+        StateHasChanged();
+    });
 
     private void OnLocationChanged(object? sender, LocationChangedEventArgs e) =>
         InvokeAsync(StateHasChanged);
@@ -220,4 +298,13 @@ public partial class CustomNavBar : IAsyncDisposable
 
     private static bool IsBenignJsFailure(Exception ex) =>
         ex is JSDisconnectedException or ObjectDisposedException or JSException or InvalidOperationException;
+
+    private sealed class CustomNavBarOverflowEntry
+    {
+        public string UserId { get; set; } = "";
+
+        public string Key { get; set; } = "";
+
+        public int Count { get; set; }
+    }
 }

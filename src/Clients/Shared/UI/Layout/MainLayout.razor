@@ -16,7 +16,7 @@
 @inject IStringLocalizer<MainLayout> L
 
 
-<div class="app-shell @(_showCustomNavBar ? "app-shell--custom-nav" : null)">
+<div class="app-shell @(_showCustomNavBar ? "app-shell--custom-nav" : null) @(!_chromeReady ? "app-shell--pending" : null)">
     @if (_showOverlay)
     {
         <div class="reconnection-overlay">

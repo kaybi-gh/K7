@@ -34,15 +34,24 @@ function measureBar(inst) {
     var gap = parsePx(styles.columnGap || styles.gap);
     var padL = parsePx(styles.paddingLeft);
     var padR = parsePx(styles.paddingRight);
+    if (measureRow.clientWidth <= 0)
+        return;
+
     var available = Math.max(0, measureRow.clientWidth - padL - padR);
 
     var widths = [];
     var total = 0;
+    var anyWidth = false;
     for (var i = 0; i < count; i++) {
         var w = items[i].offsetWidth;
+        if (w > 0)
+            anyWidth = true;
         widths.push(w);
         total += w + (i > 0 ? gap : 0);
     }
+
+    if (!anyWidth)
+        return;
 
     if (total <= available) {
         notify(inst, count);
@@ -74,6 +83,18 @@ function scheduleMeasure(inst) {
     if (inst.raf)
         return;
 
+    if (document.fonts && document.fonts.status !== 'loaded') {
+        if (!inst.fontHook) {
+            inst.fontHook = true;
+            document.fonts.ready.then(function () {
+                inst.fontHook = false;
+                if (_instances.get(inst.id) === inst)
+                    scheduleMeasure(inst);
+            });
+        }
+        return;
+    }
+
     inst.raf = requestAnimationFrame(function () {
         inst.raf = 0;
         measureBar(inst);
@@ -86,10 +107,12 @@ export function attach(id, barEl, dotnetRef) {
         return;
 
     var inst = {
+        id: id,
         barEl: barEl,
         dotnetRef: dotnetRef,
         lastCount: -1,
         raf: 0,
+        fontHook: false,
         ro: null
     };
 
@@ -99,13 +122,6 @@ export function attach(id, barEl, dotnetRef) {
     inst.ro.observe(barEl);
     _instances.set(id, inst);
     scheduleMeasure(inst);
-
-    if (document.fonts && document.fonts.ready) {
-        document.fonts.ready.then(function () {
-            if (_instances.get(id) === inst)
-                scheduleMeasure(inst);
-        });
-    }
 }
 
 export function measure(id) {

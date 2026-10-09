@@ -48,6 +48,10 @@ svg.k7-icon.k7-icon--xl { width: 3rem; }
     --custom-nav-height: 44px;
 }
 
+.app-shell--pending {
+    visibility: hidden;
+}
+
 /* Drop the AppNav bottom border so chrome under it (bar or TV feed row) sits flush.
    On Home/Explore TV the hero is fixed full-bleed behind a transparent AppNav, so any
    1px seam reads as a bright gap. */

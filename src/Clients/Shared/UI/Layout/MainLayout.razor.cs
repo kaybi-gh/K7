@@ -43,8 +43,22 @@ public partial class MainLayout : IDisposable
 
     private string? _sessionUserId;
     private bool _showCustomNavBar;
+    private bool _chromeReady;
 
     private static readonly TimeSpan OverlayDelay = TimeSpan.FromSeconds(3);
+
+    protected override void OnInitialized()
+    {
+        var lastUserId = Services.GetRequiredService<IDeviceStorageService>().Get(PreferenceKeys.LAST_ACTIVE_USER_ID);
+        if (!string.IsNullOrEmpty(lastUserId))
+            CustomNavStore.BindUser(lastUserId);
+
+        if (CustomNavStore.IsLoaded)
+        {
+            UpdateCustomNavBarVisibility();
+            _chromeReady = true;
+        }
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -66,13 +80,24 @@ public partial class MainLayout : IDisposable
         }
 
         await EnsureUserSessionAsync();
+        if (!_chromeReady && string.IsNullOrEmpty(_sessionUserId))
+        {
+            UpdateCustomNavBarVisibility();
+            _chromeReady = true;
+        }
+
         await BindFeedHubAsync();
         FeedHub.Changed += OnFeedHubChanged;
         CustomNavStore.Changed += OnCustomNavChanged;
         NavigationManager.LocationChanged += OnCustomNavLocationChanged;
         await DeviceService.GetDeviceTypeAsync();
-        await CustomNavStore.EnsureLoadedAsync();
+        if (!string.IsNullOrEmpty(_sessionUserId) && !CustomNavStore.IsLoaded)
+            await CustomNavStore.EnsureLoadedAsync();
+        else if (!string.IsNullOrEmpty(_sessionUserId))
+            CustomNavStore.RefreshInBackground();
+
         UpdateCustomNavBarVisibility();
+        _chromeReady = true;
     }
 
     private void OnFeedHubChanged()
@@ -113,17 +138,19 @@ public partial class MainLayout : IDisposable
 
             if (!isAuth || string.IsNullOrEmpty(userId))
             {
+                if (_sessionUserId is not null)
+                    CustomNavStore.BindUser(null);
+
                 _sessionUserId = null;
-                CustomNavStore.Invalidate();
                 return;
             }
 
             var userChanged = !string.Equals(_sessionUserId, userId, StringComparison.Ordinal);
             _sessionUserId = userId;
+            CustomNavStore.BindUser(userId);
 
-            if (userChanged)
+            if (userChanged && !CustomNavStore.IsLoaded)
             {
-                CustomNavStore.Invalidate();
                 await CustomNavStore.EnsureLoadedAsync();
                 UpdateCustomNavBarVisibility();
             }

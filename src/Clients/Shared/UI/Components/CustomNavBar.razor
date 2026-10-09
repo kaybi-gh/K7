@@ -20,13 +20,13 @@
                    tabindex="-1">
                     @if (Store.Layout.BarShowIcons && !string.IsNullOrEmpty(icon))
                     {
-                        <span class="custom-nav-bar__icon"><K7Icon Icon="@ToPhosphorClass(icon)" /></span>
+                        <span class="custom-nav-bar__icon"><K7Icon Icon="@ToPhosphorClass(icon)" IconSize="K7IconSize.Sm" /></span>
                     }
                     <span class="custom-nav-bar__label">@title</span>
                 </a>
             }
             <button type="button" class="custom-nav-bar__item custom-nav-bar__more-btn" data-custom-nav-more tabindex="-1">
-                <span class="custom-nav-bar__icon"><K7Icon Icon="@Phosphor.DotsThree" /></span>
+                <span class="custom-nav-bar__icon"><K7Icon Icon="@Phosphor.DotsThree" IconSize="K7IconSize.Sm" /></span>
             </button>
         </div>
         <div class="custom-nav-bar__row">
@@ -43,7 +43,7 @@
                        @onclick:preventDefault>
                         @if (Store.Layout.BarShowIcons && !string.IsNullOrEmpty(icon))
                         {
-                            <span class="custom-nav-bar__icon"><K7Icon Icon="@ToPhosphorClass(icon)" /></span>
+                            <span class="custom-nav-bar__icon"><K7Icon Icon="@ToPhosphorClass(icon)" IconSize="K7IconSize.Sm" /></span>
                         }
                         <span class="custom-nav-bar__label">@title</span>
                     </a>
@@ -57,7 +57,7 @@
                                 class="custom-nav-bar__item custom-nav-bar__more-btn focusable @(OverflowHasActive ? "active" : "")"
                                 aria-label="@NavL["More"]"
                                 title="@NavL["More"]">
-                            <span class="custom-nav-bar__icon"><K7Icon Icon="@Phosphor.DotsThree" /></span>
+                            <span class="custom-nav-bar__icon"><K7Icon Icon="@Phosphor.DotsThree" IconSize="K7IconSize.Sm" /></span>
                         </button>
                     </ActivatorContent>
                     <ChildContent>

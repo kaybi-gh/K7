@@ -22,9 +22,13 @@ public interface ICustomNavStore
 
     GeneralPreferencesDto GeneralPreferences { get; }
 
+    void BindUser(string? userId);
+
     Task EnsureLoadedAsync(CancellationToken cancellationToken = default);
 
     Task ReloadAsync(CancellationToken cancellationToken = default);
+
+    void RefreshInBackground();
 
     void Invalidate();
 }

@@ -124,4 +124,8 @@ public static class PreferenceKeys
     public static readonly PreferenceKey<int> WINDOW_WIDTH = new("WindowWidth");
     public static readonly PreferenceKey<int> WINDOW_HEIGHT = new("WindowHeight");
     public static readonly PreferenceKey<bool> WINDOW_MAXIMIZED = new("WindowMaximized");
+
+    // Custom navigation snapshot so the bar can paint before the network round trip.
+    public static readonly PreferenceKey<string> CUSTOM_NAV_CACHE = new("CustomNavCache");
+    public static readonly PreferenceKey<string> CUSTOM_NAV_BAR_MEASURE = new("CustomNavBarMeasure");
 }

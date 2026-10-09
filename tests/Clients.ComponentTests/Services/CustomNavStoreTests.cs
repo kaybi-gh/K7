@@ -1,6 +1,7 @@
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Services;
 using K7.Server.Domain.Enums;
+using K7.Shared;
 using K7.Shared.Dtos;
 using K7.Shared.Dtos.CustomNav;
 using K7.Shared.Dtos.Entities;
@@ -111,7 +112,8 @@ public class CustomNavStoreTests
         CustomNavLayoutDto? layout = null,
         List<LibraryGroupDto>? groups = null,
         IUserPreferencesService? prefs = null,
-        ICustomNavHubEvents? hubEvents = null)
+        ICustomNavHubEvents? hubEvents = null,
+        IDeviceStorageService? storage = null)
     {
         prefs ??= Substitute.For<IUserPreferencesService>();
         prefs.GetCustomNavLayoutAsync(Arg.Any<CancellationToken>())
@@ -134,7 +136,102 @@ public class CustomNavStoreTests
         var scopeFactory = Substitute.For<IServiceScopeFactory>();
         scopeFactory.CreateScope().Returns(scope);
 
-        return new CustomNavStore(scopeFactory, hubEvents ?? Substitute.For<ICustomNavHubEvents>());
+        return new CustomNavStore(scopeFactory, hubEvents ?? Substitute.For<ICustomNavHubEvents>(), storage);
+    }
+
+    [Test]
+    public async Task BindUser_ShouldHydrateLayout_WhenCacheWasPersisted()
+    {
+        var storage = new MemoryStorage();
+        var groupId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+        var layout = new CustomNavLayoutDto
+        {
+            Enabled = true,
+            Placement = CustomNavPlacement.Bar,
+            BarShowIcons = true,
+            Items =
+            [
+                new CustomNavItemDto
+                {
+                    Id = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"),
+                    Kind = CustomNavItemKind.LibraryGroup,
+                    LibraryGroupId = groupId,
+                    Title = "Films"
+                }
+            ]
+        };
+
+        using (var first = CreateStore(layout, [CreateGroup(groupId, "Films")], storage: storage))
+        {
+            first.BindUser("user-1");
+            await first.EnsureLoadedAsync();
+        }
+
+        var prefs = Substitute.For<IUserPreferencesService>();
+        using var second = CreateStore(prefs: prefs, storage: storage);
+        second.BindUser("user-1");
+
+        second.IsLoaded.Should().BeTrue();
+        second.Layout.Items.Should().ContainSingle().Which.Title.Should().Be("Films");
+        second.Groups.Should().ContainSingle().Which.Title.Should().Be("Films");
+        await prefs.DidNotReceive().GetCustomNavLayoutAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Test]
+    public async Task ReloadAsync_ShouldKeepHydratedLayout_WhenRefreshFails()
+    {
+        var storage = new MemoryStorage();
+        var layout = new CustomNavLayoutDto
+        {
+            Enabled = true,
+            Placement = CustomNavPlacement.Bar,
+            BarShowIcons = true,
+            Items = []
+        };
+
+        using (var first = CreateStore(layout, storage: storage))
+        {
+            first.BindUser("user-1");
+            await first.EnsureLoadedAsync();
+        }
+
+        var prefs = Substitute.For<IUserPreferencesService>();
+        using var second = CreateStore(prefs: prefs, storage: storage);
+        prefs.GetCustomNavLayoutAsync(Arg.Any<CancellationToken>())
+            .Returns(Task.FromException<CustomNavLayoutDto>(new InvalidOperationException("offline")));
+        second.BindUser("user-1");
+
+        await second.ReloadAsync();
+
+        second.Layout.Enabled.Should().BeTrue();
+        second.Layout.Placement.Should().Be(CustomNavPlacement.Bar);
+    }
+
+    [Test]
+    public async Task BindUser_ShouldClearMemoryAndKeepDisk_WhenLoggedOut()
+    {
+        var storage = new MemoryStorage();
+        var layout = new CustomNavLayoutDto
+        {
+            Enabled = true,
+            Placement = CustomNavPlacement.Bar,
+            BarShowIcons = false,
+            Items = []
+        };
+
+        using var sut = CreateStore(layout, storage: storage);
+        sut.BindUser("user-1");
+        await sut.EnsureLoadedAsync();
+
+        sut.BindUser(null);
+
+        sut.IsLoaded.Should().BeFalse();
+        sut.Layout.Enabled.Should().BeFalse();
+
+        sut.BindUser("user-1");
+
+        sut.IsLoaded.Should().BeTrue();
+        sut.Layout.Enabled.Should().BeTrue();
     }
 
     private static LibraryGroupDto CreateGroup(Guid id, string title) => new()
@@ -143,4 +240,18 @@ public class CustomNavStoreTests
         Title = title,
         MediaType = LibraryMediaType.Movie
     };
+
+    private sealed class MemoryStorage : IDeviceStorageService
+    {
+        private readonly Dictionary<string, object?> _values = [];
+
+        public T? Get<T>(PreferenceKey<T> key, T? defaultValue = default) =>
+            _values.TryGetValue(key.Name, out var value) && value is T typed ? typed : defaultValue;
+
+        public void Set<T>(PreferenceKey<T> key, T value) => _values[key.Name] = value;
+
+        public void Remove<T>(PreferenceKey<T> key) => _values.Remove(key.Name);
+
+        public void ClearAllPreferences() => _values.Clear();
+    }
 }
