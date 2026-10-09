@@ -581,6 +581,55 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
         CurrentTrackChanged?.Invoke(CurrentTrack);
     }
 
+    public async Task<PlayerSource?> ResolveRestoredSourceAsync(CancellationToken cancellationToken = default)
+    {
+        if (!_awaitingRestoredPlay)
+            return null;
+
+        var track = CurrentTrack;
+        if (track is null)
+            return null;
+
+        PlayerSource source;
+        if (!string.IsNullOrEmpty(track.LocalPath))
+        {
+            source = CreateTrackSource(track, track.LocalPath, "audio/mpeg");
+        }
+        else
+        {
+            try
+            {
+                var session = await GetSessionForTrackAsync(track, cancellationToken);
+                if (session?.Source is null || !_awaitingRestoredPlay)
+                    return null;
+
+                source = CreateTrackSource(
+                    track,
+                    session.Source.Uri.OriginalString,
+                    session.Source.MimeType,
+                    session.Id);
+            }
+            catch (HttpRequestException)
+            {
+                return null;
+            }
+        }
+
+        if (!_awaitingRestoredPlay)
+            return null;
+
+        if (_restoredPosition > 1 && (_restoredMediaId is null || track.MediaId == _restoredMediaId))
+            source.PendingSeekTime = _restoredPosition;
+
+        return source;
+    }
+
+    public void CompleteRestoredPrepare()
+    {
+        _awaitingRestoredPlay = false;
+        _restoredMediaId = null;
+    }
+
     public void ReplaceQueueFromSource(IReadOnlyList<AudioQueueItem> tracks, Guid currentMediaId, bool shuffle, int shuffleSeed)
     {
         if (tracks.Count == 0)

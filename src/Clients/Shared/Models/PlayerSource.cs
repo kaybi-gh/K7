@@ -29,6 +29,19 @@ public class PlayerSource
 
     public int SourceVideoHeight { get; set; }
 
+    public bool TryConsumePendingSeek(out double seconds)
+    {
+        if (PendingSeekTime is > 1 and var pending)
+        {
+            seconds = pending;
+            PendingSeekTime = null;
+            return true;
+        }
+
+        seconds = 0;
+        return false;
+    }
+
     public void CopyVideoTimingFrom(PlayerSource? other)
     {
         if (other is null)

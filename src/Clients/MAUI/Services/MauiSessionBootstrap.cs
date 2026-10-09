@@ -69,11 +69,22 @@ internal static class MauiSessionBootstrap
         if (authProvider is null)
             return;
 
-        var userId = await AuthIdentity.GetOnlineUserIdAsync(authProvider, cancellationToken);
-        if (userId is not null)
-            await DeviceInitializer.InitializeDeviceAsync(services, userId);
+        var state = await authProvider.GetAuthenticationStateAsync().WaitAsync(cancellationToken);
+        var userId = state.User.Identity?.IsAuthenticated == true
+            ? AuthIdentity.GetUserId(state.User)
+            : null;
+        var onlineUserId = AuthIdentity.IsOnlineAuthenticated(state.User) ? userId : null;
+        if (onlineUserId is not null)
+            await DeviceInitializer.InitializeDeviceAsync(services, onlineUserId);
 
-        await EnableHeadlessPlaybackReportingAsync(services, userId, cancellationToken);
+        await EnableHeadlessPlaybackReportingAsync(services, onlineUserId, cancellationToken);
+
+        if (userId is null)
+            return;
+
+        var musicSessions = services.GetService<MusicSessionPersistenceService>();
+        if (musicSessions is not null)
+            await musicSessions.BindAndRestoreAsync(userId, cancellationToken);
     }
 
     private static async Task EnableHeadlessPlaybackReportingAsync(

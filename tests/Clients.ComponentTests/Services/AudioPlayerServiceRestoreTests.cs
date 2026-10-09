@@ -51,6 +51,46 @@ public class AudioPlayerServiceRestoreTests
     }
 
     [Test]
+    public async Task ResolveRestoredSource_ShouldExposeTheResumePosition_UntilPrepareCompletes()
+    {
+        _streamUri.GetOrCreateSessionAsync(
+                Arg.Any<Guid>(),
+                Arg.Any<int?>(),
+                Arg.Any<int?>(),
+                Arg.Any<double?>(),
+                Arg.Any<CancellationToken>())
+            .Returns(new StreamingSessionDto
+            {
+                Id = Guid.NewGuid(),
+                IndexedFileId = Guid.NewGuid(),
+                PlaybackSettings = new PlaybackSettingsDto(),
+                Source = new IndexedFileStreamUri
+                {
+                    Uri = new Uri("https://k7.example/stream/restored"),
+                    MimeType = "audio/mpeg"
+                }
+            });
+        var opened = 0;
+        _sut.SourceChanged += _ => opened++;
+        var currentId = Guid.NewGuid();
+        _sut.RestorePaused(Snapshot(currentId, positionSeconds: 42));
+
+        var source = await _sut.ResolveRestoredSourceAsync();
+
+        opened.Should().Be(0);
+        _sut.IsAwaitingRestoredPlay.Should().BeTrue();
+        source.Should().NotBeNull();
+        source!.PendingSeekTime.Should().Be(42);
+        source.MediaId.Should().Be(currentId);
+        source.TryConsumePendingSeek(out var seconds).Should().BeTrue();
+        seconds.Should().Be(42);
+
+        _sut.CompleteRestoredPrepare();
+        _sut.IsAwaitingRestoredPlay.Should().BeFalse();
+        (await _sut.ResolveRestoredSourceAsync()).Should().BeNull();
+    }
+
+    [Test]
     public async Task RestorePaused_ShouldKeepTheExistingQueue_WhenOneIsAlreadyLoaded()
     {
         var existingId = Guid.NewGuid();

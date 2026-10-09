@@ -229,10 +229,13 @@ public class K7MediaLibraryService : MediaLibraryService,
 
         if (_audioPlayerService is not null)
             _audioEqualizer.UpdateSettings(_audioPlayerService.EqEnabled, _audioPlayerService.EqBands);
+
+        _ = PublishRestoredSessionAsync();
     }
 
     public override void OnDestroy()
     {
+        FlushMusicSession();
         UnsubscribeFromAuthEvents();
         UnsubscribeFromAudioPlayerEvents();
         UnsubscribeFromVideoPlayerEvents();
@@ -777,11 +780,8 @@ public class K7MediaLibraryService : MediaLibraryService,
         player.Volume = volume;
         player.SetMediaItem(itemBuilder.Build()!);
         player.Prepare();
-        if (playWhenReady && source.PendingSeekTime is > 1 and var startSeconds)
-        {
+        if (source.TryConsumePendingSeek(out var startSeconds))
             player.SeekTo((long)(startSeconds * 1000));
-            source.PendingSeekTime = null;
-        }
         player.PlayWhenReady = playWhenReady;
     }
 
@@ -1412,6 +1412,62 @@ public class K7MediaLibraryService : MediaLibraryService,
     }
 
     private void OnAccessTokenChanged(object? sender, EventArgs e) => UpdateAuthHeaders();
+
+    private async Task PublishRestoredSessionAsync()
+    {
+        try
+        {
+            await _headlessReady;
+            if (_audioPlayerService is not { IsAwaitingRestoredPlay: true } audio)
+                return;
+
+            var source = await audio.ResolveRestoredSourceAsync();
+            if (source is null || string.IsNullOrEmpty(source.Url) || !audio.IsAwaitingRestoredPlay)
+                return;
+
+            MainThread.BeginInvokeOnMainThread(() =>
+            {
+                try
+                {
+                    if (_player is null || _player.MediaItemCount > 0)
+                        return;
+                    if (_audioPlayerService is not { IsAwaitingRestoredPlay: true })
+                        return;
+
+                    RefreshLoudnessGain(applyToPlayer: false);
+                    PreparePlayerWithSource(_player, source, _loudnessLinearGain, playWhenReady: false);
+                    _audioPlayerService.CompleteRestoredPrepare();
+                    _forwardingPlayer?.NotifyQueueChanged();
+                    Log.Info(Tag, $"Restored paused session: {_audioPlayerService.CurrentTrack?.Title ?? "unknown"}");
+                }
+                catch (Exception ex)
+                {
+                    Log.Warn(Tag, $"Restored session publish failed: {ex.Message}");
+                }
+            });
+        }
+        catch (Exception ex)
+        {
+            Log.Warn(Tag, $"Restored session publish failed: {ex.Message}");
+        }
+    }
+
+    private static void FlushMusicSession()
+    {
+        var persistence = IPlatformApplication.Current?.Services
+            .GetService<MusicSessionPersistenceService>();
+        if (persistence is null)
+            return;
+
+        try
+        {
+            Task.Run(() => persistence.FlushAsync()).Wait(TimeSpan.FromSeconds(2));
+        }
+        catch (Exception ex)
+        {
+            Log.Warn(Tag, $"Music session flush failed: {ex.Message}");
+        }
+    }
 
     private async Task PrepareHeadlessSessionAsync()
     {

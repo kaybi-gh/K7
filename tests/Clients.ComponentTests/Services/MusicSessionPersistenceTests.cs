@@ -30,6 +30,22 @@ public class MusicSessionPersistenceTests
     }
 
     [Test]
+    public async Task BindAndRestore_ShouldWriteLocal_WhenTheQueueChangesAfterAnEmptyBind()
+    {
+        var audio = CreateAudio();
+        var store = Substitute.For<IMusicSessionStore>();
+        var sut = CreateSut(audio, store, remember: true, online: false);
+        await sut.BindAndRestoreAsync("user-1");
+
+        await audio.PlayTracksAsync([Track("FromCar")]);
+
+        store.Received().Write(
+            Arg.Any<string>(),
+            Arg.Is<MusicSessionSnapshotDto>(snapshot =>
+                snapshot.Items.Any(item => item.Title == "FromCar")));
+    }
+
+    [Test]
     public async Task BindAndRestore_ShouldSkip_WhenQueueIsAlreadyLoaded()
     {
         var audio = CreateAudio();

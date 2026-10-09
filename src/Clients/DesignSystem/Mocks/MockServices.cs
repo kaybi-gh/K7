@@ -404,6 +404,11 @@ public sealed class MockAudioPlayerService : IAudioPlayerService, IDisposable
         RestoredPlaybackStarted?.Invoke();
     }
 
+    public Task<PlayerSource?> ResolveRestoredSourceAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult<PlayerSource?>(null);
+
+    public void CompleteRestoredPrepare() { }
+
     public void ReplaceQueueFromSource(IReadOnlyList<AudioQueueItem> tracks, Guid currentMediaId, bool shuffle, int shuffleSeed)
     {
         _queue = tracks.ToList();

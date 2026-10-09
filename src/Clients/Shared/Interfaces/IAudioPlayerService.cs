@@ -109,6 +109,15 @@ public interface IAudioPlayerService
         Guid? sourceId = null,
         CancellationToken cancellationToken = default);
     void RestorePaused(MusicSessionSnapshotDto snapshot, bool replace = false);
+    /// <summary>
+    /// Build the current restored track source without starting playback.
+    /// Returns null when nothing is waiting to resume.
+    /// </summary>
+    Task<PlayerSource?> ResolveRestoredSourceAsync(CancellationToken cancellationToken = default);
+    /// <summary>
+    /// Mark the restored item as prepared so the next Play uses the native player.
+    /// </summary>
+    void CompleteRestoredPrepare();
     void ReplaceQueueFromSource(IReadOnlyList<AudioQueueItem> tracks, Guid currentMediaId, bool shuffle, int shuffleSeed);
     Task PlayRadioAsync(IEnumerable<AudioQueueItem> tracks, string radioTitle, int startIndex = 0, CancellationToken cancellationToken = default);
     void AddToQueue(AudioQueueItem track);
