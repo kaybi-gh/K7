@@ -5,8 +5,8 @@
 @inject IStringLocalizer<AdminVideoPlayerSettingsPanel> L
 @inject IStringLocalizer<AdminTrackSelectionPanel> Lt
 
-<div class="d-flex pa-4" style="width: 100%">
-    <h5>@L["PageTitle"]</h5>
+<div class="admin-page-intro">
+    <AdminPageHeader Title="@L["PageTitle"]" Subtitle="@L["DefaultsInfo"]" />
 </div>
 
 @if (_loading)
@@ -19,12 +19,6 @@ else
 {
     <div class="settings-form-page">
         <div class="settings-form-page__body pa-4 d-flex flex-col gap-6">
-        <K7Alert Severity="K7Severity.Info" Variant="outlined" NoIcon="true">
-            @L["DefaultsInfo"]
-        </K7Alert>
-
-        <K7Divider />
-
         <section id="tracks" class="d-flex flex-col gap-4">
             <h6>@Lt["SectionTitle"]</h6>
 
@@ -86,7 +80,7 @@ else
                     <K7Switch Label="@Lt["RememberTrackSelection"]"
                               Value="_settings.RememberTrackSelection != false"
                               ValueChanged="OnRememberTrackSelectionChanged" />
-                    <span class="text-caption video-playback-hint">@Lt["RememberTrackSelectionHint"]</span>
+                    <span class="text-sm video-playback-hint">@Lt["RememberTrackSelectionHint"]</span>
                 }
             }
         </section>
@@ -99,9 +93,9 @@ else
                 <h6>@L["SeekbarSection"]</h6>
 
                 <K7Switch Label="@L["ShowSeekbarThumbnails"]" @bind-Value="_settings.ShowSeekbarThumbnails" />
-                <span class="text-caption video-playback-hint">@L["ShowSeekbarThumbnailsHintLibrary"]</span>
+                <span class="text-sm video-playback-hint">@L["ShowSeekbarThumbnailsHintLibrary"]</span>
                 <K7Switch Label="@L["ShowChapterTicks"]" @bind-Value="_settings.ShowChapterTicks" />
-                <span class="text-caption video-playback-hint">@L["ShowChapterTicksHintLibrary"]</span>
+                <span class="text-sm video-playback-hint">@L["ShowChapterTicksHintLibrary"]</span>
 
                 <K7Slider TValue="int" Min="5" Max="60" Step="5" Immediate="true"
                           Label="@L["SkipBackDuration"]"
@@ -113,7 +107,7 @@ else
                           FormatValue="FormatSkipSeconds"
                           Value="_settings.SkipForwardSeconds"
                           ValueChanged="OnSkipForwardSecondsChanged" />
-                <span class="text-caption video-playback-hint">@L["SkipDurationHint"]</span>
+                <span class="text-sm video-playback-hint">@L["SkipDurationHint"]</span>
             </section>
 
             <K7Divider />
@@ -139,7 +133,7 @@ else
             <section class="d-flex flex-col gap-4">
                 <h6>@L["TrailersSection"]</h6>
                 <K7Switch Label="@L["OpenTrailersExternally"]" @bind-Value="_settings.OpenTrailersExternally" />
-                <span class="text-caption video-playback-hint">@L["OpenTrailersExternallyHint"]</span>
+                <span class="text-sm video-playback-hint">@L["OpenTrailersExternallyHint"]</span>
             </section>
 
             <K7Divider />

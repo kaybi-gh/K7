@@ -19,15 +19,15 @@
   </xsd:schema>
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
-  <data name="Intro" xml:space="preserve"><value>Le tableau de bord donne une vue d'ensemble de la sante des bibliotheques. La page Details liste les remontees filtrables et permet les corrections. La severite (Erreur / Avertissement / Info) classe les remontees. La classe de travail (Catalogue / Enrichissement / Finition) indique a quelle etape du pipeline le probleme se situe.</value></data>
-  <data name="IssuesTitle" xml:space="preserve"><value>Problemes surveilles</value></data>
+  <data name="Intro" xml:space="preserve"><value>Le tableau de bord donne une vue d'ensemble de la santé des bibliothèques. La page Remontées liste les problèmes filtrables et permet les corrections. La sévérité (Erreur / Avertissement / Info) classe les remontées. La classe de travail (Catalogue / Enrichissement / Finition) indique à quelle étape du pipeline le problème se situe.</value></data>
+  <data name="IssuesTitle" xml:space="preserve"><value>Problèmes surveillés</value></data>
   <data name="ViewIssue" xml:space="preserve"><value>Voir</value></data>
   <data name="MetaWorkClass" xml:space="preserve"><value>Classe</value></data>
-  <data name="MetaSeverity" xml:space="preserve"><value>Severite</value></data>
+  <data name="MetaSeverity" xml:space="preserve"><value>Sévérité</value></data>
   <data name="MetaAppliesTo" xml:space="preserve"><value>S'applique a</value></data>
-  <data name="MetaRemediation" xml:space="preserve"><value>Remediation :</value></data>
+  <data name="MetaRemediation" xml:space="preserve"><value>Correction :</value></data>
   <data name="ScrollRegionAria" xml:space="preserve"><value>Contenu de l'aide diagnostics, utilisez les fleches pour defiler</value></data>
-  <data name="ExpandHint" xml:space="preserve"><value>Ouvrez un probleme pour voir la definition et la remediation.</value></data>
+  <data name="ExpandHint" xml:space="preserve"><value>Ouvrez un problème pour voir la définition et la correction.</value></data>
   <data name="SeverityOrphanShort" xml:space="preserve"><value>Erreur</value></data>
   <data name="SeverityError" xml:space="preserve"><value>Erreur</value></data>
   <data name="SeverityWarning" xml:space="preserve"><value>Avertissement</value></data>

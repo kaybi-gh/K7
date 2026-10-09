@@ -20,6 +20,7 @@
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
   <data name="Title" xml:space="preserve"><value>Fédération</value></data>
+  <data name="Subtitle" xml:space="preserve"><value>Échange de bibliothèques avec d'autres serveurs K7.</value></data>
   <data name="AddPeer" xml:space="preserve"><value>Demander un partage</value></data>
   <data name="AddPeerTitle" xml:space="preserve"><value>Demander un accès</value></data>
   <data name="NoPeers" xml:space="preserve"><value>Aucun pair configuré</value></data>

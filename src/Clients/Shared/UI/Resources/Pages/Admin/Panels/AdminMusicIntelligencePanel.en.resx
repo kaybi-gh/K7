@@ -20,6 +20,7 @@
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
   <data name="Title" xml:space="preserve"><value>AudioMuse AI</value></data>
+  <data name="Subtitle" xml:space="preserve"><value>Music recommendations through AudioMuse.</value></data>
   <data name="Enabled" xml:space="preserve"><value>Enable AudioMuse AI</value></data>
   <data name="EnabledDescription" xml:space="preserve"><value>Music recommendations, smart radios, and AI playlists via AudioMuse.</value></data>
   <data name="DisabledWarning" xml:space="preserve"><value>AI features stay hidden while the integration is disabled.</value></data>

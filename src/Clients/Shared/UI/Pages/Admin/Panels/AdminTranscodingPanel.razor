@@ -5,19 +5,17 @@
 @inject IK7Snackbar Snackbar
 
 <div class="transcoding-panel">
-    <div class="transcoding-panel__header">
-        <h6>@L["Title"]</h6>
-    </div>
+    <AdminPageHeader Title="@L["Title"]" Subtitle="@L["Subtitle"]" />
 
     @if (_loading)
     {
-        <K7Paper Outlined="true" Style="padding: var(--space-6); text-align: center;">
+        <K7Paper Outlined="true" Elevation="0" Class="admin-surface-card transcoding-panel__card transcoding-panel__card--loading">
             <K7Spinner />
         </K7Paper>
     }
     else if (_settings is not null)
     {
-        <K7Paper Outlined="true" Style="padding: var(--space-4); margin-bottom: var(--space-4);">
+        <K7Paper Outlined="true" Elevation="0" Class="admin-surface-card transcoding-panel__card">
             <div class="d-flex flex-col gap-4">
                 <K7Select TValue="HardwareEncoderMode" Value="_settings.EncoderMode" ValueChanged="OnEncoderModeChanged" Label="@L["EncoderMode"]" Variant="outlined">
                     <K7SelectItem Value="HardwareEncoderMode.Auto" Text="@L["EncoderAuto"]">@L["EncoderAuto"]</K7SelectItem>
@@ -28,13 +26,13 @@
                 <K7Switch Label="@L["EnableHdrTonemap"]" Value="_settings.EnableHdrTonemap" ValueChanged="v => _settings = _settings with { EnableHdrTonemap = v }" />
 
                 <K7TextField TValue="int" Label="@L["MaxConcurrentTranscodes"]" Value="_settings.MaxConcurrentTranscodes" ValueChanged="v => _settings = _settings with { MaxConcurrentTranscodes = v }" Type="number" />
-                <span class="text-caption" style="color: var(--color-text-muted);">@L["MaxConcurrentTranscodesHint"]</span>
+                <span class="text-caption transcoding-panel__hint">@L["MaxConcurrentTranscodesHint"]</span>
 
                 <K7TextField TValue="int" Label="@L["TranscodeTempQuotaMb"]" Value="_settings.TranscodeTempQuotaMb" ValueChanged="v => _settings = _settings with { TranscodeTempQuotaMb = v }" Type="number" />
-                <span class="text-caption" style="color: var(--color-text-muted);">@L["TranscodeTempQuotaMbHint"]</span>
+                <span class="text-caption transcoding-panel__hint">@L["TranscodeTempQuotaMbHint"]</span>
 
                 <K7TextField TValue="int" Label="@L["EncoderThrottleBufferSegments"]" Value="_settings.EncoderThrottleBufferSegments" ValueChanged="v => _settings = _settings with { EncoderThrottleBufferSegments = v }" Type="number" />
-                <span class="text-caption" style="color: var(--color-text-muted);">@L["EncoderThrottleBufferSegmentsHint"]</span>
+                <span class="text-caption transcoding-panel__hint">@L["EncoderThrottleBufferSegmentsHint"]</span>
 
                 <div class="d-flex align-center gap-2">
                     <K7Button Color="primary" OnClick="SaveAsync" Disabled="_saving">@L["Save"]</K7Button>
@@ -49,9 +47,9 @@
 
         @if (_capabilities is not null)
         {
-            <K7Paper Outlined="true" Style="padding: var(--space-4);">
+            <K7Paper Outlined="true" Elevation="0" Class="admin-surface-card transcoding-panel__card">
                 <h6>@L["CapabilitiesTitle"]</h6>
-                <p class="text-caption" style="color: var(--color-text-muted);">@L["FfmpegVersion"]: @(_capabilities.FfmpegVersion ?? "-")</p>
+                <p class="text-caption transcoding-panel__hint">@L["FfmpegVersion"]: @(_capabilities.FfmpegVersion ?? "-")</p>
                 @if (_capabilities.AvailableHardwareEncoders.Count > 0)
                 {
                     <p>@L["HardwareEncoders"]: @string.Join(", ", _capabilities.AvailableHardwareEncoders)</p>
@@ -65,14 +63,14 @@
 
         @if (_testResult is not null)
         {
-            <K7Paper Outlined="true" Style="padding: var(--space-4); margin-top: var(--space-4);">
+            <K7Paper Outlined="true" Elevation="0" Class="admin-surface-card transcoding-panel__card">
                 @if (_testResult.Success)
                 {
-                    <span style="color: var(--color-success);">@L["TestSuccess"] @_testResult.SelectedEncoder (@(_testResult.IsHardwareAccelerated ? L["Hardware"] : L["Software"]))</span>
+                    <span class="transcoding-panel__test transcoding-panel__test--ok">@L["TestSuccess"] @_testResult.SelectedEncoder (@(_testResult.IsHardwareAccelerated ? L["Hardware"] : L["Software"]))</span>
                 }
                 else
                 {
-                    <span style="color: var(--color-error);">@L["TestFailed"]: @_testResult.Error</span>
+                    <span class="transcoding-panel__test transcoding-panel__test--error">@L["TestFailed"]: @_testResult.Error</span>
                 }
             </K7Paper>
         }

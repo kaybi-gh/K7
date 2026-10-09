@@ -234,6 +234,33 @@ public partial class AdminLibrariesPanel : IDisposable
         }
     }
 
+    private async Task RefreshLibraryMetadata(LibraryDto library)
+    {
+        var confirmed = await DialogService.ShowMessageBoxAsync(
+            L["RefreshMetadataDialogTitle"],
+            string.Format(L["RefreshMetadataDialogMessage"], library.Title),
+            yesText: L["RefreshMetadataConfirm"],
+            cancelText: S["Cancel"],
+            icon: Phosphor.ArrowsClockwise);
+
+        if (confirmed is not true)
+            return;
+
+        try
+        {
+            var queued = await K7ServerService.RefreshLibraryMetadataAsync(library.Id);
+            Snackbar.Add(
+                queued > 0
+                    ? string.Format(L["RefreshMetadataStarted"], library.Title)
+                    : string.Format(L["RefreshMetadataNone"], library.Title),
+                queued > 0 ? K7Severity.Success : K7Severity.Info);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), K7Severity.Error);
+        }
+    }
+
     private async Task OpenUsersDialog(LibraryDto library)
     {
         var parameters = new K7DialogParameters<AdminLibraryUsersDialog>

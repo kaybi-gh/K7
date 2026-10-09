@@ -19,7 +19,12 @@
   </xsd:schema>
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
-  <data name="ConfigInfo" xml:space="preserve"><value>Authentication settings are defined in appsettings.json and require a restart to change.</value></data>
+  <data name="PageTitle" xml:space="preserve"><value>Authentication</value></data>
+  <data name="Subtitle" xml:space="preserve"><value>Local sign-in, OIDC provider, and passwords.</value></data>
+  <data name="ConfigInfo" xml:space="preserve"><value>Authentication settings are defined in appsettings.json or in your environment variables, and require a restart to change.</value></data>
+  <data name="ConfigInfoDocsBefore" xml:space="preserve"><value> See the </value></data>
+  <data name="ConfigInfoDocsLink" xml:space="preserve"><value>documentation</value></data>
+  <data name="ConfigInfoDocsAfter" xml:space="preserve"><value>.</value></data>
   <data name="LocalAuthTitle" xml:space="preserve"><value>Local authentication</value></data>
   <data name="LocalSignin" xml:space="preserve"><value>Local sign-in</value></data>
   <data name="LocalRegistration" xml:space="preserve"><value>Local registration</value></data>

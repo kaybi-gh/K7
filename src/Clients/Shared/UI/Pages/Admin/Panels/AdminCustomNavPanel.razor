@@ -5,8 +5,8 @@
 
 <PageTitle>@L["PageTitle"]</PageTitle>
 
-<div class="d-flex pa-4">
-    <h5>@L["PageTitle"]</h5>
+<div class="admin-page-intro">
+    <AdminPageHeader Title="@L["PageTitle"]" Subtitle="@L["Description"]" />
 </div>
 
 @if (_isLoading)
@@ -21,7 +21,7 @@ else
                                    Groups="_groups"
                                    Collections="CustomNavStore.Collections"
                                    Playlists="CustomNavStore.Playlists"
-                                   Description="@L["Description"]"
+                                   Description=""
                                    EnabledLabel="@L["Enabled"]"
                                    ItemsEmpty="@L["ItemsEmpty"]"
                                    Disabled="_saving"

@@ -4,9 +4,7 @@
 @implements IDisposable
 
 <div class="admin-dashboard">
-    <div class="dashboard-header">
-        <h5>@L["Title"]</h5>
-    </div>
+    <AdminPageHeader Title="@L["Title"]" Subtitle="@L["Subtitle"]" />
 
     <div class="dashboard-kpis">
         <NavLink href="/admin/users" class="dashboard-kpi dashboard-kpi--link" tabindex="-1">

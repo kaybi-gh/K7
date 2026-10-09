@@ -11,12 +11,13 @@
             DefaultSpacing="16"
             GridItemAspectRatio="null"
             SingleColumnOnMobile="true"
+            ShowBackToTop="false"
             PersistenceKey="admin-library-groups">
     <ToolbarContent>
-        <h6>@L["Title"]</h6>
+        <AdminPageHeader Title="@L["Title"]" Subtitle="@L["Subtitle"]" />
     </ToolbarContent>
     <GridTemplate Context="group">
-        <K7Paper Outlined="true">
+        <K7Paper Outlined="true" Elevation="0" Class="admin-entity-card">
             <div class="group-card">
                 <div class="group-card__header d-flex align-center gap-2">
                     <K7Icon Icon="@GetGroupIcon(group)"  IconSize="@K7IconSize.Sm" Class="group-card__icon" />
@@ -28,18 +29,18 @@
                 }
                 @if (libraryTitles.Count > 0)
                 {
-                    <ul class="group-card__libraries">
+                    <div class="group-card__libraries">
                         @foreach (var libraryTitle in libraryTitles)
                         {
-                            <li>@libraryTitle</li>
+                            <K7Chip Size="sm">@libraryTitle</K7Chip>
                         }
-                    </ul>
+                    </div>
                 }
                 else
                 {
                     <p class="group-card__libraries-empty">@L["NoLibraries"]</p>
                 }
-                <div class="group-card__actions d-flex gap-2">
+                <div class="group-card__actions admin-entity-card__footer">
                     <K7Button Variant="text" Size="sm" StartIcon="@Phosphor.PencilSimple" OnClick="@(() => OpenEditDialog(group))">
                         @L["Edit"]
                     </K7Button>

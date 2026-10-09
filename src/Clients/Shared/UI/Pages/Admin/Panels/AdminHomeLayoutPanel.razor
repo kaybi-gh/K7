@@ -9,18 +9,18 @@
 }
 else
 {
-    <div class="settings-form-page">
-        <div class="settings-form-page__body d-flex flex-col pa-4 gap-4">
-            <div class="d-flex align-center justify-between">
-                <div>
-                    <h6 class="mb-1">@L["PageTitle"]</h6>
-                    <p class="text-sm" Color="secondary">@L["Description"]</p>
-                </div>
+    <div class="admin-page-intro">
+        <AdminPageHeader Title="@L["PageTitle"]" Subtitle="@L["Description"]">
+            <Actions>
                 <K7Button Color="primary" Variant="outlined" StartIcon="@Phosphor.Plus"
                           OnClick="AddRow" Disabled="_saving">
                     @L["AddRow"]
                 </K7Button>
-            </div>
+            </Actions>
+        </AdminPageHeader>
+    </div>
+    <div class="settings-form-page">
+        <div class="settings-form-page__body d-flex flex-col pa-4 gap-4">
 
             <K7SortableList TItem="HomeRowEditModel"
                             Items="_rows"
@@ -28,11 +28,11 @@ else
                             Disabled="_saving"
                             Reordered="RenumberRows">
                 <span class="text-sm">@GetRowTitle(context.Title)</span>
-                <div class="d-flex align-center gap-1">
+                <div class="home-row-actions">
                     <K7Switch Value="@context.IsVisible" ValueChanged="@(v => OnRowVisibilityChanged(context, v))" />
                     <K7IconButton Icon="@Phosphor.PencilSimple" OnClick="() => EditRow(context)"
                             AriaLabel="@L["EditRow"]" />
-                    <K7IconButton Icon="@Phosphor.Trash" OnClick="() => DeleteRow(context)"
+                    <K7IconButton Icon="@Phosphor.Trash" Color="error" OnClick="() => DeleteRow(context)"
                             AriaLabel="@L["DeleteRow"]" />
                 </div>
             </K7SortableList>

@@ -3,6 +3,12 @@
 @inject IStringLocalizer<AdminAuthenticationPanel> L
 @inject IStringLocalizer<SharedResource> S
 
+<PageTitle>@L["PageTitle"]</PageTitle>
+
+<div class="admin-page-intro">
+    <AdminPageHeader Title="@L["PageTitle"]" Subtitle="@L["Subtitle"]" />
+</div>
+
 @if (_isLoading)
 {
     <div class="d-flex flex-col pa-16">
@@ -17,28 +23,11 @@ else
             {
                 <K7Alert Severity="K7Severity.Info" Variant="outlined">
                     @L["ConfigInfo"]
+                    @L["ConfigInfoDocsBefore"]<a class="auth-config-docs"
+                       href="https://github.com/kaybi-gh/K7/blob/main/docs/admin/configuration.md#authentication"
+                       target="_blank"
+                       rel="noopener">@L["ConfigInfoDocsLink"]</a>@L["ConfigInfoDocsAfter"]
                 </K7Alert>
-
-                <section class="d-flex flex-col gap-4">
-                    <h6>@L["LocalAuthTitle"]</h6>
-
-                    <div class="d-flex flex-col gap-4">
-                        <div class="d-flex align-center justify-space-between gap-4">
-                            <p class="text-sm">@L["LocalSignin"]</p>
-                            <K7Chip Size="sm" Color="@(_authInfo.LocalSignInEnabled ? "success" : "default")">
-                                @(_authInfo.LocalSignInEnabled ? S["EnabledFeminine"] : S["DisabledFeminine"])
-                            </K7Chip>
-                        </div>
-                        <div class="d-flex align-center justify-space-between gap-4">
-                            <p class="text-sm">@L["LocalRegistration"]</p>
-                            <K7Chip Size="sm" Color="@(_authInfo.LocalRegistrationEnabled ? "success" : "default")">
-                                @(_authInfo.LocalRegistrationEnabled ? S["EnabledFeminine"] : S["DisabledFeminine"])
-                            </K7Chip>
-                        </div>
-                    </div>
-                </section>
-
-                <K7Divider />
 
                 <section class="d-flex flex-col gap-4">
                     <h6>@L["OidcTitle"]</h6>
@@ -74,12 +63,33 @@ else
                 </section>
 
                 <K7Divider />
+
+                <section class="d-flex flex-col gap-4">
+                    <h6>@L["LocalAuthTitle"]</h6>
+
+                    <div class="d-flex flex-col gap-4">
+                        <div class="d-flex align-center justify-space-between gap-4">
+                            <p class="text-sm">@L["LocalSignin"]</p>
+                            <K7Chip Size="sm" Color="@(_authInfo.LocalSignInEnabled ? "success" : "default")">
+                                @(_authInfo.LocalSignInEnabled ? S["EnabledFeminine"] : S["DisabledFeminine"])
+                            </K7Chip>
+                        </div>
+                        <div class="d-flex align-center justify-space-between gap-4">
+                            <p class="text-sm">@L["LocalRegistration"]</p>
+                            <K7Chip Size="sm" Color="@(_authInfo.LocalRegistrationEnabled ? "success" : "default")">
+                                @(_authInfo.LocalRegistrationEnabled ? S["EnabledFeminine"] : S["DisabledFeminine"])
+                            </K7Chip>
+                        </div>
+                    </div>
+                </section>
+
+                <K7Divider />
             }
 
             <section class="d-flex flex-col gap-4">
                 <div>
                     <h6 class="mb-1">@L["PasswordPolicyTitle"]</h6>
-                    <span class="text-caption" Color="secondary">@L["PasswordPolicyHelp"]</span>
+                    <p class="text-sm" Color="secondary">@L["PasswordPolicyHelp"]</p>
                 </div>
 
                 <div>

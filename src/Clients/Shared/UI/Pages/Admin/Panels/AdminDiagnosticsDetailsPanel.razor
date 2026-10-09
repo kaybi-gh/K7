@@ -8,6 +8,9 @@
 @inject IStringLocalizer<SharedResource> S
 
 <div class="full-bleed-page diagnostics-page">
+    <div class="admin-page-intro">
+        <AdminPageHeader Title="@L["DetailsTitle"]" Subtitle="@L["DetailsSubtitle"]" />
+    </div>
     <div class="data-page-toolbar diagnostics-toolbar">
         <div class="diagnostics-toolbar__row">
             <K7Button Variant="text" Size="sm" Href="/admin/diagnostics" StartIcon="@Phosphor.ArrowLeft"

@@ -19,9 +19,11 @@
   </xsd:schema>
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
+  <data name="Title" xml:space="preserve"><value>Tâches d'arrière-plan</value></data>
+  <data name="Subtitle" xml:space="preserve"><value>File des travaux lancés par le serveur.</value></data>
   <data name="SettingsTitle" xml:space="preserve"><value>Configuration</value></data>
-  <data name="HelpTitle" xml:space="preserve"><value>Aide taches de fond</value></data>
-  <data name="HelpAriaLabel" xml:space="preserve"><value>Aide taches de fond</value></data>
+  <data name="HelpTitle" xml:space="preserve"><value>Aide tâches de fond</value></data>
+  <data name="HelpAriaLabel" xml:space="preserve"><value>Aide tâches de fond</value></data>
   <data name="Save" xml:space="preserve"><value>Enregistrer</value></data>
   <data name="WorkerCountLabel" xml:space="preserve"><value>Nombre de workers</value></data>
   <data name="SettingsSaved" xml:space="preserve"><value>Configuration enregistrée.</value></data>
@@ -107,7 +109,7 @@
   <data name="CancelTitle" xml:space="preserve"><value>Annuler la tâche</value></data>
   <data name="CancelMessage" xml:space="preserve"><value>Annuler la tâche '{0}' ?</value></data>
   <data name="CancelConfirm" xml:space="preserve"><value>Annuler la tâche</value></data>
-  <data name="TaskCancelled" xml:space="preserve"><value>Tâche annulee.</value></data>
+  <data name="TaskCancelled" xml:space="preserve"><value>Tâche annulée.</value></data>
   <data name="FilterTaskType" xml:space="preserve"><value>Type de tâche</value></data>
   <data name="SortBy" xml:space="preserve"><value>Trier par</value></data>
   <data name="SortDateDesc" xml:space="preserve"><value>Plus récents</value></data>

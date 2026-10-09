@@ -1,0 +1,23 @@
+<div class="admin-page-header">
+    <div class="admin-page-header__text">
+        <h5>@Title</h5>
+        <p class="admin-page-header__subtitle">@Subtitle</p>
+    </div>
+    @if (Actions is not null)
+    {
+        <div class="admin-page-header__actions">
+            @Actions
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public string Title { get; set; } = "";
+
+    [Parameter, EditorRequired]
+    public string Subtitle { get; set; } = "";
+
+    [Parameter]
+    public RenderFragment? Actions { get; set; }
+}

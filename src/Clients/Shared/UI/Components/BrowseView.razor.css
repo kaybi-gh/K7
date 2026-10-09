@@ -8,6 +8,12 @@
     position: relative;
 }
 
+:global(.page-content) > .browse-view {
+    height: auto;
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
 .browse-view-surfaces {
     flex: 1;
     min-height: 0;
@@ -603,7 +609,7 @@
 
 .browse-view-simple-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(var(--item-width), 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--item-width)), 1fr));
     gap: var(--grid-gap);
     padding: 0 16px 16px;
     overflow-y: auto;
@@ -614,6 +620,7 @@
 
 .browse-view-simple-grid > ::deep * {
     height: 100%;
+    min-width: 0;
 }
 
 @media (max-width: 599.98px) {

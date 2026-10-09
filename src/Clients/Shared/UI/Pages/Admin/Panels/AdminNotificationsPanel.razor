@@ -5,12 +5,13 @@
 @inject IStringLocalizer<SharedResource> S
 @implements IAsyncDisposable
 
-<div class="full-bleed-page">
-    <div class="data-page-toolbar">
+<div class="full-bleed-page notifications-page">
+    <div class="admin-page-intro">
+        <AdminPageHeader Title="@(_selectionMode ? string.Format(L["SelectedCount"], SelectedCount) : L["Title"])"
+                         Subtitle="@L["Subtitle"]">
+            <Actions>
         @if (_selectionMode)
         {
-            <h5 class="data-page-toolbar__title">@string.Format(L["SelectedCount"], SelectedCount)</h5>
-            <div class="data-page-toolbar__end">
                 <K7Button Variant="text" OnClick="ToggleSelectAll" Disabled="@(_rules.Count == 0 || _deleting)">
                     @(AllSelected ? L["DeselectAll"] : L["SelectAll"])
                 </K7Button>
@@ -25,12 +26,9 @@
                 <K7Button Variant="text" OnClick="ExitSelectionMode" Disabled="@_deleting" AriaLabel="@S["Cancel"]">
                     @S["Cancel"]
                 </K7Button>
-            </div>
         }
         else
         {
-            <h5 class="data-page-toolbar__title">@L["Title"]</h5>
-            <div class="data-page-toolbar__end">
                 @if (!_isLoading && _rules.Count > 0)
                 {
                     <K7ResultCount Count="_rules.Count" />
@@ -42,8 +40,9 @@
                            OnClick="OpenCreateDialog" aria-label="@L["AriaCreate"]">
                     @L["CreateRule"]
                 </K7Button>
-            </div>
         }
+            </Actions>
+        </AdminPageHeader>
     </div>
 
     <div class="data-page-body" aria-live="polite">
@@ -97,7 +96,7 @@
                         <div class="d-flex">
                             <K7IconButton Icon="@Phosphor.PaperPlaneTilt" OnClick="@(() => TestRule(context))" AriaLabel="@L["AriaTest"]" />
                             <K7IconButton Icon="@Phosphor.PencilSimple" OnClick="@(() => OpenEditDialog(context))" AriaLabel="@L["AriaEdit"]" />
-                            <K7IconButton Icon="@Phosphor.Trash" OnClick="@(() => ConfirmDelete(context))" AriaLabel="@L["AriaDelete"]" />
+                            <K7IconButton Icon="@Phosphor.Trash" Color="error" OnClick="@(() => ConfirmDelete(context))" AriaLabel="@L["AriaDelete"]" />
                         </div>
                     </CellTemplate>
                 </K7DataColumn>

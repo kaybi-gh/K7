@@ -5,10 +5,8 @@
 @inject IMusicIntelligenceAdminService MusicIntelligenceAdmin
 @inject IK7Snackbar Snackbar
 
-<div class="music-intelligence-panel">
-    <div class="music-intelligence-panel__header">
-        <h6>@L["Title"]</h6>
-    </div>
+<div class="music-intelligence-panel admin-page-intro">
+    <AdminPageHeader Title="@L["Title"]" Subtitle="@L["Subtitle"]" />
 
     @if (_loading)
     {
@@ -18,10 +16,10 @@
     }
     else if (_settings is not null)
     {
-        <K7Paper Outlined="true" Style="padding: var(--space-4); margin-bottom: var(--space-4);">
+        <K7Paper Outlined="true" Style="padding: var(--space-4);">
             <div class="d-flex flex-col gap-3">
                 <K7Switch Label="@L["Enabled"]" Value="_settings.Enabled" ValueChanged="OnEnabledChanged" />
-                <span class="text-caption" style="color: var(--color-text-muted);">@L["EnabledDescription"]</span>
+                <span class="text-sm" style="color: var(--color-text-muted);">@L["EnabledDescription"]</span>
 
                 @if (!_settings.Enabled)
                 {

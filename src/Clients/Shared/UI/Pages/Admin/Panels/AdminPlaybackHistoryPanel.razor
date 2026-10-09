@@ -8,11 +8,12 @@
 @implements IAsyncDisposable
 
 <div class="full-bleed-page history-page">
-    <div class="data-page-toolbar">
-        @if (_selectionMode)
-        {
-            <h5 class="data-page-toolbar__title">@string.Format(L["SelectedCount"], SelectedCount)</h5>
-            <div class="data-page-toolbar__end">
+    <div class="admin-page-intro">
+        <AdminPageHeader Title="@(_selectionMode ? string.Format(L["SelectedCount"], SelectedCount) : L["Title"])"
+                         Subtitle="@L["Subtitle"]">
+            <Actions>
+                @if (_selectionMode)
+                {
                 <K7Button Variant="text" OnClick="ToggleSelectAllAsync" Disabled="@(!HasSelectableItems || _busy)">
                     @(AllSelected ? L["DeselectAll"] : L["SelectAll"])
                 </K7Button>
@@ -34,12 +35,13 @@
                 <K7Button Variant="text" OnClick="ExitSelectionMode" Disabled="@_busy" AriaLabel="@S["Cancel"]">
                     @S["Cancel"]
                 </K7Button>
-            </div>
-        }
-        else
-        {
-            <h5 class="data-page-toolbar__title">@L["Title"]</h5>
-
+                }
+            </Actions>
+        </AdminPageHeader>
+    </div>
+    @if (!_selectionMode)
+    {
+    <div class="data-page-toolbar">
             <K7Select TValue="Guid?" Class="history-user-select data-toolbar-field"
                       Value="_selectedUserId" ValueChanged="OnUserChanged" Clearable="true"
                       ToStringFunc="@(id => id is null ? L["AllUsers"] : _users.FirstOrDefault(u => u.Id == id)?.DisplayName ?? _users.FirstOrDefault(u => u.Id == id)?.UserName ?? L["AllUsers"])"
@@ -68,8 +70,8 @@
                               Disabled="@(_totalCount == 0)"
                               AriaLabel="@L["Select"]" />
             </div>
-        }
     </div>
+    }
 
     <div class="data-page-body">
         <K7DataTable @key="_tableKey" TItem="PlaybackHistoryItemDto" ServerData="LoadServerDataAsync"

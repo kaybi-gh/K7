@@ -6,48 +6,45 @@
 @implements IAsyncDisposable
 
 <div class="full-bleed-page">
-    <div class="data-page-toolbar">
-        @if (_selectionMode)
-        {
-            <h5 class="data-page-toolbar__title">@string.Format(L["SelectedCount"], SelectedCount)</h5>
-
-            <div class="data-page-toolbar__end">
-                <K7Button Variant="text" OnClick="ToggleSelectAll" Disabled="@(!HasSelectableUsers || _deleting)">
-                    @(AllSelected ? L["DeselectAll"] : L["SelectAll"])
-                </K7Button>
-                <K7Button Variant="filled"
-                          Color="error"
-                          StartIcon="@Phosphor.Trash"
-                          OnClick="ConfirmDeleteSelectedAsync"
-                          Disabled="@(SelectedCount == 0 || _deleting)"
-                          AriaLabel="@L["DeleteSelected"]">
-                    @L["DeleteSelected"]
-                </K7Button>
-                <K7Button Variant="text" OnClick="ExitSelectionMode" Disabled="@_deleting" AriaLabel="@S["Cancel"]">
-                    @S["Cancel"]
-                </K7Button>
-            </div>
-        }
-        else
-        {
-            <h5 class="data-page-toolbar__title">@L["Title"]</h5>
-
-            <div class="data-page-toolbar__end">
-                @if (!_isLoading && _users.Count > 0)
+    <div class="admin-page-intro">
+        <AdminPageHeader Title="@(_selectionMode ? string.Format(L["SelectedCount"], SelectedCount) : L["Title"])"
+                         Subtitle="@L["Subtitle"]">
+            <Actions>
+                @if (_selectionMode)
                 {
-                    <K7ResultCount Count="_users.Count" />
-                    <K7IconButton Icon="@Phosphor.Columns" OnClick="OnColumnPickerClick" AriaLabel="@S["ToggleColumns"]" />
-                    <K7IconButton Icon="@Phosphor.ListChecks"
-                                  OnClick="EnterSelectionMode"
-                                  Disabled="@(!HasSelectableUsers)"
-                                  AriaLabel="@L["Select"]" />
+                    <K7Button Variant="text" OnClick="ToggleSelectAll" Disabled="@(!HasSelectableUsers || _deleting)">
+                        @(AllSelected ? L["DeselectAll"] : L["SelectAll"])
+                    </K7Button>
+                    <K7Button Variant="filled"
+                              Color="error"
+                              StartIcon="@Phosphor.Trash"
+                              OnClick="ConfirmDeleteSelectedAsync"
+                              Disabled="@(SelectedCount == 0 || _deleting)"
+                              AriaLabel="@L["DeleteSelected"]">
+                        @L["DeleteSelected"]
+                    </K7Button>
+                    <K7Button Variant="text" OnClick="ExitSelectionMode" Disabled="@_deleting" AriaLabel="@S["Cancel"]">
+                        @S["Cancel"]
+                    </K7Button>
                 }
-                <K7Button Class="users-toolbar-create" Variant="filled" Color="primary" StartIcon="@Phosphor.UserPlus"
-                          OnClick="OpenCreateUserDialog" aria-label="@L["AriaCreateUser"]">
-                    @L["CreateUserTitle"]
-                </K7Button>
-            </div>
-        }
+                else
+                {
+                    @if (!_isLoading && _users.Count > 0)
+                    {
+                        <K7ResultCount Count="_users.Count" />
+                        <K7IconButton Icon="@Phosphor.Columns" OnClick="OnColumnPickerClick" AriaLabel="@S["ToggleColumns"]" />
+                        <K7IconButton Icon="@Phosphor.ListChecks"
+                                      OnClick="EnterSelectionMode"
+                                      Disabled="@(!HasSelectableUsers)"
+                                      AriaLabel="@L["Select"]" />
+                    }
+                    <K7Button Class="users-toolbar-create" Variant="filled" Color="primary" StartIcon="@Phosphor.UserPlus"
+                              OnClick="OpenCreateUserDialog" aria-label="@L["AriaCreateUser"]">
+                        @L["CreateUserTitle"]
+                    </K7Button>
+                }
+            </Actions>
+        </AdminPageHeader>
     </div>
 
     <div class="data-page-body" aria-live="polite">
@@ -127,7 +124,7 @@
                         </CellTemplate>
                     </K7DataColumn>
                     <K7DataColumn TItem="UserDto" Title="@L["HeaderCreatedAt"]" Width="160px" Property="@(u => u.Created.LocalDateTime.ToString("dd/MM/yyyy HH:mm"))" VisibleOnMobile="false" />
-                    <K7DataColumn TItem="UserDto" Title="@L["HeaderActions"]" Width="56px" Hideable="false" Visible="@(!_selectionMode)">
+                    <K7DataColumn TItem="UserDto" Title="@L["HeaderActions"]" Width="112px" Hideable="false" Visible="@(!_selectionMode)">
                         <CellTemplate>
                             <K7Menu Title="@L["HeaderActions"]">
                                 <ActivatorContent>

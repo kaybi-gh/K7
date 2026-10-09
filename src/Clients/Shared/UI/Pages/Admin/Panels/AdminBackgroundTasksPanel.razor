@@ -7,6 +7,9 @@
 @inject IStringLocalizer<SharedResource> S
 
 <div class="full-bleed-page background-tasks-page">
+    <div class="admin-page-intro">
+        <AdminPageHeader Title="@L["Title"]" Subtitle="@L["Subtitle"]" />
+    </div>
     <div class="data-page-toolbar background-tasks-toolbar">
         <div class="background-tasks-toolbar__primary">
         <K7FilterMenu HasActiveFilters="@HasActiveFilters"

@@ -37,7 +37,7 @@
   <data name="Restrictions" xml:space="preserve"><value>Restrictions</value></data>
   <data name="Authentication" xml:space="preserve"><value>Authentification</value></data>
   <data name="BackgroundTasks" xml:space="preserve"><value>Tâches de fond</value></data>
-  <data name="Diagnostics" xml:space="preserve"><value>Diagnostics</value></data>
+  <data name="Diagnostics" xml:space="preserve"><value>Diagnostic</value></data>
   <data name="ActiveStreams" xml:space="preserve"><value>Flux actifs</value></data>
   <data name="HomeLayout" xml:space="preserve"><value>Disposition de l'accueil</value></data>
   <data name="CustomNav" xml:space="preserve"><value>Navigation</value></data>

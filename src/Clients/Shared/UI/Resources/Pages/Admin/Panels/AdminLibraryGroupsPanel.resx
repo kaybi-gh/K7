@@ -20,6 +20,7 @@
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
   <data name="Title" xml:space="preserve"><value>Groupes de bibliothèques</value></data>
+  <data name="Subtitle" xml:space="preserve"><value>Regroupements de bibliothèques pour la navigation.</value></data>
   <data name="NoLibraries" xml:space="preserve"><value>Aucune bibliothèque</value></data>
   <data name="GroupUpdated" xml:space="preserve"><value>Groupe mis a jour.</value></data>
   <data name="GroupDeleted" xml:space="preserve"><value>Groupe supprime.</value></data>
@@ -27,7 +28,7 @@
   <data name="DeleteConfirmTitle" xml:space="preserve"><value>Supprimer le groupe</value></data>
   <data name="DeleteConfirmMessage" xml:space="preserve"><value>Supprimer le groupe "{0}" ? Cette action est irréversible.</value></data>
   <data name="TypeMovies" xml:space="preserve"><value>Films</value></data>
-  <data name="TypeSeries" xml:space="preserve"><value>Series</value></data>
+  <data name="TypeSeries" xml:space="preserve"><value>Séries</value></data>
   <data name="TypeMusic" xml:space="preserve"><value>Musique</value></data>
   <data name="Edit" xml:space="preserve"><value>Modifier</value></data>
   <data name="Empty" xml:space="preserve"><value>Aucun groupe</value></data>

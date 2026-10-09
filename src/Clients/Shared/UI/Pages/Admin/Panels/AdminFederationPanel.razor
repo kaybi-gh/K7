@@ -6,26 +6,27 @@
 @inject IStringLocalizer<AdminFederationPanel> L
 @inject IStringLocalizer<SharedResource> S
 
-<div class="federation-panel">
-    <div class="federation-panel__header">
-        <h6>@L["Title"]</h6>
-        @if (_federationEnabled)
-        {
-            <K7Button Variant="filled" Color="primary" StartIcon="@Phosphor.Plus" OnClick="OpenRequestDialog" Disabled="!_invitationsEnabled">
-                @L["AddPeer"]
-            </K7Button>
-        }
-    </div>
+<div class="federation-panel admin-page-intro">
+    <AdminPageHeader Title="@L["Title"]" Subtitle="@L["Subtitle"]">
+        <Actions>
+            @if (_federationEnabled)
+            {
+                <K7Button Variant="filled" Color="primary" StartIcon="@Phosphor.Plus" OnClick="OpenRequestDialog" Disabled="!_invitationsEnabled">
+                    @L["AddPeer"]
+                </K7Button>
+            }
+        </Actions>
+    </AdminPageHeader>
 
     <K7Paper Outlined="true" Style="padding: var(--space-4); margin-bottom: var(--space-4);">
         <div class="d-flex flex-col gap-3">
             <K7Switch Label="@L["FederationToggle"]" Value="_federationEnabled" ValueChanged="OnFederationEnabledChanged" />
-            <span class="text-caption" style="color: var(--color-text-muted);">@L["FederationToggleDescription"]</span>
+            <span class="text-sm" style="color: var(--color-text-muted);">@L["FederationToggleDescription"]</span>
 
             @if (_federationEnabled)
             {
                 <K7Switch Label="@L["InvitationsToggle"]" Value="_invitationsEnabled" ValueChanged="OnInvitationsEnabledChanged" />
-                <span class="text-caption" style="color: var(--color-text-muted);">@L["InvitationsToggleDescription"]</span>
+                <span class="text-sm" style="color: var(--color-text-muted);">@L["InvitationsToggleDescription"]</span>
             }
             else
             {
@@ -39,7 +40,7 @@
         <K7Paper Outlined="true" Style="padding: var(--space-4); margin-bottom: var(--space-4);">
             <div class="d-flex flex-col gap-3">
                 <h6>@L["SocialPolicyTitle"]</h6>
-                <span class="text-caption" style="color: var(--color-text-muted);">@L["SocialPolicyDescription"]</span>
+                <span class="text-sm" style="color: var(--color-text-muted);">@L["SocialPolicyDescription"]</span>
                 <K7Switch Label="@L["SocialPolicyEnabled"]" @bind-Value="_socialPolicy.Enabled" />
                 @if (_socialPolicy.Enabled)
                 {
@@ -87,7 +88,7 @@
         @if (_requests is not null && _requests.Count > 0)
         {
             <div class="federation-panel__section">
-                <span class="federation-panel__section-title">@L["IncomingRequests"]</span>
+                <h6 class="federation-panel__section-title">@L["IncomingRequests"]</h6>
                 @foreach (var req in _requests)
                 {
                     <K7Paper @key="req.Id" Outlined="true" class="peer-card">
@@ -119,7 +120,7 @@
         @if (_outboundPeers.Count > 0)
         {
             <div class="federation-panel__section">
-                <span class="federation-panel__section-title">@L["OutboundPeers"]</span>
+                <h6 class="federation-panel__section-title">@L["OutboundPeers"]</h6>
                 @foreach (var peer in _outboundPeers)
                 {
                     <K7Paper @key="peer.Id" Outlined="true" class="peer-card">
@@ -175,7 +176,7 @@
         @if (_inboundPeers.Count > 0)
         {
             <div class="federation-panel__section">
-                <span class="federation-panel__section-title">@L["InboundPeers"]</span>
+                <h6 class="federation-panel__section-title">@L["InboundPeers"]</h6>
                 @foreach (var peer in _inboundPeers)
                 {
                     <K7Paper @key="peer.Id" Outlined="true" class="peer-card">

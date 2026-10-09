@@ -20,6 +20,7 @@
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
   <data name="Title" xml:space="preserve"><value>Users</value></data>
+  <data name="Subtitle" xml:space="preserve"><value>Accounts allowed to sign in to this server.</value></data>
   <data name="Empty" xml:space="preserve"><value>No users</value></data>
   <data name="HeaderUser" xml:space="preserve"><value>User</value></data>
   <data name="ThisUser" xml:space="preserve"><value>You</value></data>

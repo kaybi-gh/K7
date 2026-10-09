@@ -2,8 +2,8 @@
 @layout AdminLayout
 @inject IStringLocalizer<AdminAudioPlaybackPanel> L
 
-<div class="d-flex pa-4" style="width: 100%">
-    <h5>@L["PageTitle"]</h5>
+<div class="admin-page-intro">
+    <AdminPageHeader Title="@L["PageTitle"]" Subtitle="@L["DefaultsInfo"]" />
 </div>
 
 @if (_loading)
@@ -16,12 +16,6 @@ else if (_settings is not null && _audioPolicy is not null)
 {
     <div class="settings-form-page">
         <div class="settings-form-page__body pa-4 d-flex flex-col gap-6">
-            <K7Alert Severity="K7Severity.Info" Variant="outlined" NoIcon="true">
-                @L["DefaultsInfo"]
-            </K7Alert>
-
-            <K7Divider />
-
             <AudioPlayerExperienceSettingsFields Settings="_settings" SettingsChanged="OnSettingsChanged" />
 
             <K7Divider />

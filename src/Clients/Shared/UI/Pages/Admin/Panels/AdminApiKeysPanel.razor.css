@@ -1,4 +1,4 @@
-.notifications-page .data-page-body ::deep .k7-data-table-scroll {
+.api-keys-page .data-page-body ::deep .k7-data-table-scroll {
     overflow-x: auto;
     overflow-y: auto;
     scrollbar-gutter: auto;

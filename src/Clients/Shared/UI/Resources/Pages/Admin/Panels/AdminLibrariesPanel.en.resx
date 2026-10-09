@@ -20,20 +20,28 @@
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
   <data name="Title" xml:space="preserve"><value>Libraries</value></data>
+  <data name="Subtitle" xml:space="preserve"><value>Folders indexed on this server and libraries received from peers.</value></data>
   <data name="NewLibrary" xml:space="preserve"><value>New library</value></data>
   <data name="Empty" xml:space="preserve"><value>No libraries</value></data>
   <data name="EmptyDescription" xml:space="preserve"><value>Create your first library to start organizing your media.</value></data>
   <data name="CreateLibrary" xml:space="preserve"><value>Create a library</value></data>
-  <data name="AriaIndex" xml:space="preserve"><value>Index</value></data>
-  <data name="AriaRematch" xml:space="preserve"><value>Rematch metadata</value></data>
+  <data name="AriaIndex" xml:space="preserve"><value>Scan files</value></data>
+  <data name="AriaRematch" xml:space="preserve"><value>Rematch files</value></data>
+  <data name="AriaRefreshMetadata" xml:space="preserve"><value>Refresh metadata</value></data>
   <data name="AriaUserAccess" xml:space="preserve"><value>User access</value></data>
   <data name="NewLibraryTitle" xml:space="preserve"><value>New library</value></data>
   <data name="IndexStarted" xml:space="preserve"><value>Indexing of '{0}' started.</value></data>
-  <data name="RematchDialogTitle" xml:space="preserve"><value>Rematch metadata</value></data>
+  <data name="RematchDialogTitle" xml:space="preserve"><value>Rematch files</value></data>
   <data name="RematchDialogMessage" xml:space="preserve"><value>Every media item in '{0}' will be rematched with the current algorithm. Automatic and manual identifications will both be redone. User data (watch progress, stats, history, playlists, collections, and so on) is not lost. It is transferred to the newly identified media. Files stay on disk and keep their probes. Matching runs in the background and can take a while on large libraries.</value></data>
   <data name="RematchConfirm" xml:space="preserve"><value>Rematch</value></data>
   <data name="RematchStarted" xml:space="preserve"><value>Rematch of '{0}' started.</value></data>
+  <data name="RefreshMetadataDialogTitle" xml:space="preserve"><value>Refresh metadata</value></data>
+  <data name="RefreshMetadataDialogMessage" xml:space="preserve"><value>Entries in '{0}' will be updated from the provider. Locked fields stay as they are. File identification is not redone.</value></data>
+  <data name="RefreshMetadataConfirm" xml:space="preserve"><value>Refresh</value></data>
+  <data name="RefreshMetadataStarted" xml:space="preserve"><value>Metadata refresh for '{0}' started.</value></data>
+  <data name="RefreshMetadataNone" xml:space="preserve"><value>No media to refresh in '{0}'.</value></data>
   <data name="AccessTitle" xml:space="preserve"><value>Access - {0}</value></data>
+  <data name="MoreActions" xml:space="preserve"><value>More actions</value></data>
   <data name="AriaEdit" xml:space="preserve"><value>Edit</value></data>
   <data name="AriaDelete" xml:space="preserve"><value>Delete</value></data>
   <data name="EditTitle" xml:space="preserve"><value>Edit - {0}</value></data>

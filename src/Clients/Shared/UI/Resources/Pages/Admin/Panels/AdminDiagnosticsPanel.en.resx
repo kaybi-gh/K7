@@ -154,4 +154,5 @@ What to expect: analysis completes for processable tracks. Failures leave analys
   <data name="PolishShortcutsTitle" xml:space="preserve"><value>Quick fixes</value></data>
   <data name="PerLibraryTitle" xml:space="preserve"><value>Per library</value></data>
   <data name="DetailsTitle" xml:space="preserve"><value>Issues</value></data>
+  <data name="DetailsSubtitle" xml:space="preserve"><value>Every reported issue, with filters.</value></data>
 </root>

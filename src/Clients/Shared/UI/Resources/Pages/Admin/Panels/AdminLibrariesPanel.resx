@@ -19,30 +19,38 @@
   </xsd:schema>
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
-  <data name="Title" xml:space="preserve"><value>Librairies</value></data>
+  <data name="Title" xml:space="preserve"><value>Bibliothèques</value></data>
+  <data name="Subtitle" xml:space="preserve"><value>Dossiers indexés sur ce serveur et bibliothèques reçues.</value></data>
   <data name="NewLibrary" xml:space="preserve"><value>Nouvelle librairie</value></data>
   <data name="Empty" xml:space="preserve"><value>Aucune librairie</value></data>
   <data name="EmptyDescription" xml:space="preserve"><value>Créez votre première librairie pour commencer à organiser vos médias.</value></data>
   <data name="CreateLibrary" xml:space="preserve"><value>Créer une librairie</value></data>
-  <data name="AriaIndex" xml:space="preserve"><value>Indexer</value></data>
-  <data name="AriaRematch" xml:space="preserve"><value>Re-identifier les metadonnees</value></data>
+  <data name="AriaIndex" xml:space="preserve"><value>Scanner les fichiers</value></data>
+  <data name="AriaRematch" xml:space="preserve"><value>Réidentifier les fichiers</value></data>
+  <data name="AriaRefreshMetadata" xml:space="preserve"><value>Rafraîchir les métadonnées</value></data>
   <data name="AriaUserAccess" xml:space="preserve"><value>Accès utilisateurs</value></data>
   <data name="NewLibraryTitle" xml:space="preserve"><value>Nouvelle librairie</value></data>
   <data name="IndexStarted" xml:space="preserve"><value>Indexation de « {0} » lancée.</value></data>
-  <data name="RematchDialogTitle" xml:space="preserve"><value>Re-identifier les metadonnees</value></data>
-  <data name="RematchDialogMessage" xml:space="preserve"><value>Tous les medias de « {0} » seront re-identifies avec l'algorithme actuel. Les identifications automatiques et manuelles seront refaites. Les donnees utilisateur (lectures, statistiques, historique, playlists, collections, etc.) ne sont pas perdues : elles sont transferees vers les medias correctement identifies. Les fichiers restent sur le disque et gardent leurs probes. Le matching tourne en arriere-plan et peut prendre du temps sur une grande librairie.</value></data>
-  <data name="RematchConfirm" xml:space="preserve"><value>Re-identifier</value></data>
+  <data name="RematchDialogTitle" xml:space="preserve"><value>Réidentifier les fichiers</value></data>
+  <data name="RematchDialogMessage" xml:space="preserve"><value>Tous les médias de « {0} » seront réidentifiés avec l'algorithme actuel. Les identifications automatiques et manuelles seront refaites. Les données utilisateur (lectures, statistiques, historique, playlists, collections, etc.) ne sont pas perdues : elles sont transférées vers les médias correctement identifiés. Les fichiers restent sur le disque et gardent leurs probes. L'identification tourne en arrière-plan et peut prendre du temps sur une grande bibliothèque.</value></data>
+  <data name="RematchConfirm" xml:space="preserve"><value>Réidentifier</value></data>
   <data name="RematchStarted" xml:space="preserve"><value>Re-identification de « {0} » lancee.</value></data>
+  <data name="RefreshMetadataDialogTitle" xml:space="preserve"><value>Rafraîchir les métadonnées</value></data>
+  <data name="RefreshMetadataDialogMessage" xml:space="preserve"><value>Les fiches de « {0} » seront mises à jour depuis le fournisseur. Les champs verrouillés restent en place. L'identification des fichiers n'est pas refaite.</value></data>
+  <data name="RefreshMetadataConfirm" xml:space="preserve"><value>Rafraîchir</value></data>
+  <data name="RefreshMetadataStarted" xml:space="preserve"><value>Rafraîchissement des métadonnées de « {0} » lancé.</value></data>
+  <data name="RefreshMetadataNone" xml:space="preserve"><value>Aucun média à rafraîchir dans « {0} ».</value></data>
   <data name="AccessTitle" xml:space="preserve"><value>Accès - {0}</value></data>
+  <data name="MoreActions" xml:space="preserve"><value>Plus d'actions</value></data>
   <data name="AriaEdit" xml:space="preserve"><value>Modifier</value></data>
   <data name="AriaDelete" xml:space="preserve"><value>Supprimer</value></data>
   <data name="EditTitle" xml:space="preserve"><value>Modifier - {0}</value></data>
-  <data name="LibraryUpdated" xml:space="preserve"><value>Librairie mise à jour.</value></data>
+  <data name="LibraryUpdated" xml:space="preserve"><value>Bibliothèque mise à jour.</value></data>
   <data name="DeleteDialogTitle" xml:space="preserve"><value>Supprimer la librairie</value></data>
   <data name="DeleteDialogMessage" xml:space="preserve"><value>Êtes-vous sûr de vouloir supprimer la librairie « {0} » ? Cette action est irréversible.</value></data>
   <data name="DeleteConfirm" xml:space="preserve"><value>Supprimer</value></data>
-  <data name="DeleteSuccess" xml:space="preserve"><value>Librairie « {0} » supprimée.</value></data>
-  <data name="IssueCount" xml:space="preserve"><value>{0} probleme(s)</value></data>
+  <data name="DeleteSuccess" xml:space="preserve"><value>Bibliothèque « {0} » supprimée.</value></data>
+  <data name="IssueCount" xml:space="preserve"><value>{0} problème(s)</value></data>
   <data name="StatFiles" xml:space="preserve"><value>fichier(s)</value></data>
   <data name="StatMovies" xml:space="preserve"><value>film(s)</value></data>
   <data name="StatSeries" xml:space="preserve"><value>serie(s)</value></data>

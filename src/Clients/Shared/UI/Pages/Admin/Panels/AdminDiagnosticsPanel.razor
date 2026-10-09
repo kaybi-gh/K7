@@ -8,20 +8,16 @@
 @inject IStringLocalizer<SharedResource> S
 
 <div class="diagnostics-dashboard">
-    <div class="diagnostics-dashboard__header">
-        <div class="diagnostics-dashboard__title-block">
-            <h5>@L["DashboardTitle"]</h5>
-            <p class="text-caption diagnostics-dashboard__subtitle">@L["DashboardSubtitle"]</p>
-        </div>
-        <div class="diagnostics-dashboard__actions">
+    <AdminPageHeader Title="@L["DashboardTitle"]" Subtitle="@L["DashboardSubtitle"]">
+        <Actions>
             <K7IconButton Icon="@Phosphor.Question" Size="sm" OnClick="OpenHelpAsync" AriaLabel="@L["HelpAriaLabel"]" />
             <K7IconButton Icon="@Phosphor.ArrowClockwise" Size="sm" OnClick="LoadAsync" Disabled="_isLoading"
                           AriaLabel="@L["Refresh"]" />
             <K7Button Size="sm" Variant="filled" Color="primary" Href="@BuildDetailsHref()" StartIcon="@Phosphor.ListBullets">
                 @L["ViewAllIssues"]
             </K7Button>
-        </div>
-    </div>
+        </Actions>
+    </AdminPageHeader>
 
     @if (_isLoading)
     {

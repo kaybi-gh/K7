@@ -45,6 +45,7 @@ public partial class BrowseView<TItem> : IAsyncDisposable
     [Parameter] public int OverscanCount { get; set; } = 5;
     [Parameter] public bool DisableViewModePersistence { get; set; }
     [Parameter] public bool SingleColumnOnMobile { get; set; }
+    [Parameter] public bool ShowBackToTop { get; set; } = true;
     [Parameter] public int? MaxColumnCount { get; set; }
     [Parameter] public int? TotalItemCount { get; set; }
     [Parameter] public EventCallback<BrowseViewMode> ViewModeChanged { get; set; }

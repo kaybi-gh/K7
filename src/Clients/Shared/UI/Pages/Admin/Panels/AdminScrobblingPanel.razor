@@ -11,12 +11,11 @@
 }
 else if (_settings is not null)
 {
+    <div class="admin-page-intro">
+        <AdminPageHeader Title="@L["Title"]" Subtitle="@L["Description"]" />
+    </div>
     <div class="settings-form-page">
         <div class="settings-form-page__body d-flex flex-col pa-4 gap-4">
-            <div>
-                <h6 class="mb-1">@L["Title"]</h6>
-                <p class="text-sm" style="color: var(--color-text-muted);">@L["Description"]</p>
-            </div>
 
             <K7Switch Label="@L["Enabled"]" Value="_settings.Enabled" ValueChanged="OnEnabledChanged" />
 

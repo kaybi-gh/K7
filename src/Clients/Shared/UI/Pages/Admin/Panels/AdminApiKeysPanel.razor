@@ -7,19 +7,20 @@
 @inject IK7Snackbar Snackbar
 @inject IApiKeyAdminService ApiKeyAdminService
 
-<div class="full-bleed-page">
-    <div class="data-page-toolbar">
-        <h5 class="data-page-toolbar__title">@L["Title"]</h5>
-        <div class="data-page-toolbar__end">
-            @if (!_loading && _apiKeys.Count > 0)
-            {
-                <K7ResultCount Count="_apiKeys.Count" />
-            }
-            <K7Button StartIcon="@Phosphor.Plus" Variant="filled" Color="primary"
-                       OnClick="ShowCreateDialog" aria-label="@L["AriaCreate"]">
-                @L["CreateKey"]
-            </K7Button>
-        </div>
+<div class="full-bleed-page api-keys-page">
+    <div class="admin-page-intro">
+        <AdminPageHeader Title="@L["Title"]" Subtitle="@L["Subtitle"]">
+            <Actions>
+                @if (!_loading && _apiKeys.Count > 0)
+                {
+                    <K7ResultCount Count="_apiKeys.Count" />
+                }
+                <K7Button StartIcon="@Phosphor.Plus" Variant="filled" Color="primary"
+                           OnClick="ShowCreateDialog" aria-label="@L["AriaCreate"]">
+                    @L["CreateKey"]
+                </K7Button>
+            </Actions>
+        </AdminPageHeader>
     </div>
 
     <div class="data-page-body" aria-live="polite">
@@ -66,7 +67,7 @@
                 </K7DataColumn>
                 <K7DataColumn TItem="ApiKeyDto" Title="@L["HeaderActions"]" Width="80px" Hideable="false">
                     <CellTemplate>
-                        <K7IconButton Icon="@Phosphor.Trash" OnClick="@(() => RevokeKey(context))" AriaLabel="@L["AriaRevoke"]" />
+                        <K7IconButton Icon="@Phosphor.Trash" Color="error" OnClick="@(() => RevokeKey(context))" AriaLabel="@L["AriaRevoke"]" />
                     </CellTemplate>
                 </K7DataColumn>
             </K7DataTable>

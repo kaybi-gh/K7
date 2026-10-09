@@ -20,15 +20,16 @@
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
   <data name="Title" xml:space="preserve"><value>Tableau de bord</value></data>
+  <data name="Subtitle" xml:space="preserve"><value>État du serveur, flux en cours et espace disque.</value></data>
   <data name="OnlineUsersKpi" xml:space="preserve"><value>Utilisateurs en ligne</value></data>
   <data name="DiskSpaceTitle" xml:space="preserve"><value>Espace disque</value></data>
   <data name="DiskVolumeUsage" xml:space="preserve"><value>{0} Go utilisés / {1} Go</value></data>
   <data name="DiskVolumeFree" xml:space="preserve"><value>{0} Go libres ({1} %)</value></data>
   <data name="NoDiskVolumesYet" xml:space="preserve"><value>Aucun volume détecté</value></data>
-  <data name="DiagnosticsKpi" xml:space="preserve"><value>Diagnostics</value></data>
+  <data name="DiagnosticsKpi" xml:space="preserve"><value>Diagnostic</value></data>
   <data name="BackgroundTasksKpi" xml:space="preserve"><value>Tâches actives</value></data>
   <data name="ViewStreams" xml:space="preserve"><value>Voir les flux</value></data>
-  <data name="ViewDiagnostics" xml:space="preserve"><value>Voir les diagnostics</value></data>
+  <data name="ViewDiagnostics" xml:space="preserve"><value>Voir le diagnostic</value></data>
   <data name="ViewTasks" xml:space="preserve"><value>Voir les tâches</value></data>
   <data name="ServerHealthTitle" xml:space="preserve"><value>Santé serveur</value></data>
   <data name="CpuUsage" xml:space="preserve"><value>CPU (%)</value></data>
@@ -36,7 +37,7 @@
   <data name="NetworkThroughput" xml:space="preserve"><value>Débit réseau (Mbps)</value></data>
   <data name="NoMetricsYet" xml:space="preserve"><value>En attente de métriques...</value></data>
   <data name="QuickLinksTitle" xml:space="preserve"><value>Liens rapides</value></data>
-  <data name="QuickLinkDiagnostics" xml:space="preserve"><value>Diagnostics</value></data>
+  <data name="QuickLinkDiagnostics" xml:space="preserve"><value>Diagnostic</value></data>
   <data name="QuickLinkTasks" xml:space="preserve"><value>Tâches de fond</value></data>
   <data name="QuickLinkStats" xml:space="preserve"><value>Statistiques</value></data>
   <data name="GcHeap" xml:space="preserve"><value>Heap GC : {0} Mo</value></data>

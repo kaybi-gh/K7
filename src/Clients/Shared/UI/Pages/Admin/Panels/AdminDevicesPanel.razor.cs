@@ -271,23 +271,28 @@ public partial class AdminDevicesPanel : IAsyncDisposable
         _ => Phosphor.Devices,
     };
 
-    private static string GetClientTypeIcon(ClientType clientType) => clientType switch
+    private IReadOnlyList<string> GetDeviceFacts(DeviceDto device)
     {
-        ClientType.Native => K7Brand.Symbol,
-        ClientType.Web => Phosphor.Globe,
-        ClientType.External => Phosphor.PlugsConnected,
-        _ => Phosphor.AppWindow,
-    };
+        var facts = new List<string>
+        {
+            GetDeviceTypeLabel(device.DeviceType),
+            GetClientTypeLabel(device.ClientType)
+        };
 
-    private static string GetBrowserIcon(Browser browser) => browser switch
-    {
-        Browser.Chrome => Phosphor.GoogleChromeLogo,
-        Browser.Firefox => Phosphor.Browsers,
-        Browser.Edge => Phosphor.Browsers,
-        Browser.Safari => Phosphor.AppleLogo,
-        Browser.Opera => Phosphor.Browsers,
-        _ => Phosphor.Browser,
-    };
+        if (device.WebDeviceDetails is not null)
+            facts.Add(GetBrowserLabel(device.WebDeviceDetails.Browser));
+
+        var os = $"{device.OperatingSystem} {device.OperatingSystemVersion}".Trim();
+        if (!string.IsNullOrEmpty(os))
+            facts.Add(os);
+
+        if (device.DisplayResolutionWidth > 0 && device.DisplayResolutionHeight > 0)
+            facts.Add($"{device.DisplayResolutionWidth:0}x{device.DisplayResolutionHeight:0}");
+        else if (device.DisplayScreenWidth > 0 && device.DisplayScreenHeight > 0)
+            facts.Add($"{device.DisplayScreenWidth:0}x{device.DisplayScreenHeight:0}");
+
+        return facts;
+    }
 
     private string GetDeviceTypeLabel(DeviceType deviceType) => deviceType switch
     {

@@ -1,0 +1,8 @@
+.auth-config-docs {
+    color: var(--color-accent-text);
+    text-decoration: none;
+}
+
+.auth-config-docs:hover {
+    text-decoration: underline;
+}

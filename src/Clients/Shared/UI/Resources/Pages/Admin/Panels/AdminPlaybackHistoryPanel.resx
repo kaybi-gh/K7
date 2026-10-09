@@ -20,13 +20,14 @@
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
   <data name="Title" xml:space="preserve"><value>Historique de lecture</value></data>
+  <data name="Subtitle" xml:space="preserve"><value>Lectures enregistrées pour les utilisateurs du serveur.</value></data>
   <data name="User" xml:space="preserve"><value>Utilisateur</value></data>
   <data name="SharedProfile" xml:space="preserve"><value>Groupe</value></data>
   <data name="AllUsers" xml:space="preserve"><value>Tous les utilisateurs</value></data>
   <data name="All" xml:space="preserve"><value>Tous</value></data>
   <data name="Music" xml:space="preserve"><value>Musique</value></data>
   <data name="Movies" xml:space="preserve"><value>Films</value></data>
-  <data name="TVShows" xml:space="preserve"><value>Series</value></data>
+  <data name="TVShows" xml:space="preserve"><value>Séries</value></data>
   <data name="MediaTitle" xml:space="preserve"><value>Titre</value></data>
   <data name="Type" xml:space="preserve"><value>Type</value></data>
   <data name="Date" xml:space="preserve"><value>Date</value></data>

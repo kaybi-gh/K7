@@ -8,26 +8,28 @@
 <BrowseView TItem="LibraryDto"
             Items="_libraryItems"
             Loading="_isLoading"
-            DefaultItemWidth="300"
+            DefaultItemWidth="560"
             DefaultSpacing="16"
             GridItemAspectRatio="null"
             SingleColumnOnMobile="true"
+            ShowBackToTop="false"
             PersistenceKey="admin-libraries">
     <ToolbarContent>
-        <h6>@L["Title"]</h6>
-        <span style="flex:1"></span>
-        <K7Button Variant="filled" Color="primary" StartIcon="@Phosphor.Plus" OnClick="OpenCreateDialog">
-            @L["NewLibrary"]
-        </K7Button>
+        <AdminPageHeader Title="@L["Title"]" Subtitle="@L["Subtitle"]">
+            <Actions>
+                <K7Button Variant="filled" Color="primary" StartIcon="@Phosphor.Plus" OnClick="OpenCreateDialog">
+                    @L["NewLibrary"]
+                </K7Button>
+            </Actions>
+        </AdminPageHeader>
     </ToolbarContent>
     <GridTemplate Context="library">
-        <K7Paper Outlined="true" Style="display:flex;flex-direction:column;gap:12px;height:100%">
+        <K7Paper Outlined="true" Elevation="0" Class="admin-entity-card">
+            <div class="library-card">
             <div class="library-card__header">
-                <K7Icon Icon="@GetMediaTypeIcon(library.MediaType)" IconSize="@K7IconSize.Lg" Color="primary" />
-                <div class="library-card__title">
-                    <h6>@library.Title</h6>
-                    <K7Chip Size="sm" Color="default">@GetMediaTypeLabel(library.MediaType)</K7Chip>
-                </div>
+                <K7Icon Icon="@GetMediaTypeIcon(library.MediaType)" IconSize="@K7IconSize.Sm" Color="primary" Class="library-card__icon" />
+                <span class="library-card__name">@library.Title</span>
+                <K7Chip Size="sm" Color="default" Class="library-card__type">@GetMediaTypeLabel(library.MediaType)</K7Chip>
             </div>
             <div class="library-card__path">
                 @if (library.PeerServerBaseUrl is not null)
@@ -41,23 +43,19 @@
                     <span>@library.RootPath</span>
                 }
             </div>
-            <div style="display:flex;flex-direction:column;gap:4px;font-size:var(--text-sm);color:var(--color-text-secondary)">
-                @{
-                    var stats = GetStats(library.Id);
-                }
-                @if (stats is not null)
-                {
-                    <span class="library-card__stat">
-                        <strong>@stats.FileCount</strong> @L["StatFiles"]
-                    </span>
+            @{
+                var stats = GetStats(library.Id);
+            }
+            @if (stats is not null)
+            {
+                <div class="library-card__stats">
+                    <K7Chip Size="sm">@stats.FileCount @L["StatFiles"]</K7Chip>
                     @foreach (var entry in GetOrderedMediaCounts(library.Id))
                     {
-                        <span class="library-card__stat">
-                            <strong>@entry.Value</strong> @GetMediaTypeCountLabel(entry.Key)
-                        </span>
+                        <K7Chip Size="sm">@entry.Value @GetMediaTypeCountLabel(entry.Key)</K7Chip>
                     }
-                }
-            </div>
+                </div>
+            }
             @{
                 var issueCount = GetIssueCount(library.Id);
             }
@@ -82,18 +80,27 @@
                     }
                 </div>
             }
-            <div style="display:flex;gap:4px;border-top:1px solid var(--color-border);padding-top:8px;margin-top:auto">
+            <div class="library-card__actions admin-entity-card__footer">
+                <K7Button Variant="text" Size="sm" StartIcon="@Phosphor.Pencil" OnClick="@(() => OpenEditDialog(library))">@L["AriaEdit"]</K7Button>
                 @if (library.PeerServerId is null)
                 {
-                    <K7IconButton Icon="@Phosphor.ArrowClockwise" OnClick="@(() => IndexLibrary(library))" AriaLabel="@L["AriaIndex"]" />
-                    <K7IconButton Icon="@Phosphor.MagnifyingGlass" OnClick="@(() => RematchLibrary(library))" AriaLabel="@L["AriaRematch"]" />
+                    <K7Button Variant="text" Size="sm" Color="error" StartIcon="@Phosphor.Trash" OnClick="@(() => DeleteLibrary(library))">@L["AriaDelete"]</K7Button>
                 }
-                <K7IconButton Icon="@Phosphor.Pencil" OnClick="@(() => OpenEditDialog(library))" AriaLabel="@L["AriaEdit"]" />
-                <K7IconButton Icon="@Phosphor.Users" OnClick="@(() => OpenUsersDialog(library))" AriaLabel="@L["AriaUserAccess"]" />
-                @if (library.PeerServerId is null)
-                {
-                    <K7IconButton Icon="@Phosphor.Trash" OnClick="@(() => DeleteLibrary(library))" AriaLabel="@L["AriaDelete"]" />
-                }
+                <K7Menu>
+                    <ActivatorContent>
+                        <K7IconButton Icon="@Phosphor.DotsThreeVertical" Size="sm" AriaLabel="@L["MoreActions"]" />
+                    </ActivatorContent>
+                    <ChildContent>
+                        @if (library.PeerServerId is null)
+                        {
+                            <K7MenuItem Icon="@Phosphor.ArrowClockwise" OnClick="@(() => IndexLibrary(library))">@L["AriaIndex"]</K7MenuItem>
+                            <K7MenuItem Icon="@Phosphor.MagnifyingGlass" OnClick="@(() => RematchLibrary(library))">@L["AriaRematch"]</K7MenuItem>
+                            <K7MenuItem Icon="@Phosphor.ArrowsClockwise" OnClick="@(() => RefreshLibraryMetadata(library))">@L["AriaRefreshMetadata"]</K7MenuItem>
+                        }
+                        <K7MenuItem Icon="@Phosphor.Users" OnClick="@(() => OpenUsersDialog(library))">@L["AriaUserAccess"]</K7MenuItem>
+                    </ChildContent>
+                </K7Menu>
+            </div>
             </div>
         </K7Paper>
     </GridTemplate>

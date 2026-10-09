@@ -7,7 +7,7 @@
   <data name="Enabled" xml:space="preserve"><value>Activer le scrobbling</value></data>
   <data name="DisabledWarning" xml:space="preserve"><value>Le scrobbling est desactive. Les comptes utilisateur restent enregistres mais aucun envoi n est effectue.</value></data>
   <data name="LastFmSectionTitle" xml:space="preserve"><value>Last.fm / Libre.fm</value></data>
-  <data name="LastFmSectionHint" xml:space="preserve"><value>Cles de l application K7. Creez-les sur last.fm/api/account/create. Les utilisateurs se connectent ensuite avec leur compte.</value></data>
+  <data name="LastFmSectionHint" xml:space="preserve"><value>Clés de l'application K7. Créez-les sur last.fm/api/account/create. Les utilisateurs se connectent ensuite avec leur compte.</value></data>
   <data name="OpenLastFmApi" xml:space="preserve"><value>Ouvrir last.fm/api/account/create</value></data>
   <data name="LastFmApiKey" xml:space="preserve"><value>API key</value></data>
   <data name="LastFmApiSecret" xml:space="preserve"><value>API secret</value></data>

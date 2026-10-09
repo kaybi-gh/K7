@@ -7,7 +7,7 @@
     min-width: 0;
     box-sizing: border-box;
     overflow-x: clip;
-    padding: 6px;
+    padding: calc(6px + var(--space-4));
     margin: -6px;
 }
 
@@ -51,6 +51,7 @@
     gap: var(--space-1);
     padding: var(--space-3);
     height: 100%;
+    box-shadow: var(--shadow-sm);
 }
 
 .dashboard-kpi--link .dashboard-kpi__inner {

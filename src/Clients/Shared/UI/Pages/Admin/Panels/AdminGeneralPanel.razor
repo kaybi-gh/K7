@@ -7,8 +7,8 @@
 
 <PageTitle>@L["PageTitle"]</PageTitle>
 
-<div class="d-flex pa-4">
-    <h5>@L["PageTitle"]</h5>
+<div class="admin-page-intro">
+    <AdminPageHeader Title="@L["PageTitle"]" Subtitle="@L["Subtitle"]" />
 </div>
 
 @if (_isLoading)
@@ -18,16 +18,13 @@
 else
 {
     <div class="settings-form-page">
-        <div class="settings-form-page__body d-flex flex-col pa-4 gap-4">
-            <div>
+        <div class="settings-form-page__body pa-4 d-flex flex-col gap-6">
+            <section class="d-flex flex-col gap-4">
                 <K7LanguageSelect Value="@_defaultLanguage"
                                   ValueChanged="OnDefaultLanguageChanged"
                                   Label="@L["DefaultLanguage"]"
                                   Languages="SupportedLanguages.Interface" />
-                <span class="text-caption mt-1" Color="secondary">@L["DefaultLanguageHelp"]</span>
-            </div>
 
-            <div>
                 <K7Select TValue="ThemeDefinition"
                           Label="@L["DefaultTheme"]"
                           Value="_defaultTheme"
@@ -38,26 +35,31 @@ else
                         <K7SelectItem Value="@theme" Text="@theme.Name">@theme.Name</K7SelectItem>
                     }
                 </K7Select>
-                <span class="text-caption mt-1" Color="secondary">@L["DefaultThemeHelp"]</span>
-            </div>
+            </section>
 
-            <div>
-                <h6>@L["ThemeSongsSection"]</h6>
+            <K7Divider />
+
+            <section class="d-flex flex-col gap-3">
+                <div>
+                    <h6 class="mb-1">@L["ThemeSongsSection"]</h6>
+                    <p class="text-sm" Color="secondary">@L["PlayThemeSongsHint"]</p>
+                </div>
                 <K7Switch Label="@L["PlayThemeSongs"]"
                           Value="_playThemeSongs"
-                          ValueChanged="OnPlayThemeSongsChanged"
-                          Class="mt-2" />
-                <span class="text-caption mt-1" Color="secondary">@L["PlayThemeSongsHint"]</span>
-            </div>
+                          ValueChanged="OnPlayThemeSongsChanged" />
+            </section>
 
-            <div>
-                <h6>@L["MediaLinkPreviewsSection"]</h6>
+            <K7Divider />
+
+            <section class="d-flex flex-col gap-3">
+                <div>
+                    <h6 class="mb-1">@L["MediaLinkPreviewsSection"]</h6>
+                    <p class="text-sm" Color="secondary">@L["MediaLinkPreviewsHint"]</p>
+                </div>
                 <K7Switch Label="@L["MediaLinkPreviews"]"
                           Value="_mediaLinkPreviewsEnabled"
-                          ValueChanged="OnMediaLinkPreviewsChanged"
-                          Class="mt-2" />
-                <span class="text-caption mt-1" Color="secondary">@L["MediaLinkPreviewsHint"]</span>
-            </div>
+                          ValueChanged="OnMediaLinkPreviewsChanged" />
+            </section>
         </div>
 
         <K7SettingsActionBar IsDirty="IsDirty"

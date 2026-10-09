@@ -20,6 +20,7 @@
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
   <data name="Title" xml:space="preserve"><value>Restriction profiles</value></data>
+  <data name="Subtitle" xml:space="preserve"><value>Profiles that filter which media is visible.</value></data>
   <data name="CreateFromTemplate" xml:space="preserve"><value>Create from template</value></data>
   <data name="TemplateChildFriendly" xml:space="preserve"><value>Child-friendly</value></data>
   <data name="TemplateFamily12" xml:space="preserve"><value>Family (12+)</value></data>
@@ -57,5 +58,7 @@
   <data name="DeleteSelectedSuccess" xml:space="preserve"><value>{0} profile(s) deleted</value></data>
   <data name="DeleteSelectedError" xml:space="preserve"><value>Could not delete the selected profiles</value></data>
   <data name="DeleteSelectedPartial" xml:space="preserve"><value>{0} deleted, {1} failed</value></data>
+  <data name="ActionPreview" xml:space="preserve"><value>View media</value></data>
+  <data name="ActionEdit" xml:space="preserve"><value>Edit</value></data>
 </root>
 
