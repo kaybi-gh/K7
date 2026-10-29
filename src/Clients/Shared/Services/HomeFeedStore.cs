@@ -485,7 +485,12 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
         // Membership may still change (enter/leave Keep Watching). Patch existing bars live;
         // debounce membership refresh so progress ticks do not storm the feed API.
         // Completion still refreshes immediately so the card leaves CW without waiting.
-        if (GetRowsSnapshot().Any(r => r.Config.ContinueWatching))
+        // Once the media leads a Keep Watching row, a tick changes neither membership nor
+        // order: the patched bar is enough, so a 2 h movie no longer refetches the row
+        // every 10 s on every device of the user.
+        var continueWatchingRows = GetRowsSnapshot().Where(r => r.Config.ContinueWatching).ToList();
+        if (continueWatchingRows.Count > 0
+            && (isCompleted || !continueWatchingRows.Any(r => r.Items.Count > 0 && r.Items[0].Id == id)))
         {
             var delay = isCompleted ? TimeSpan.Zero : ContinueWatchingRefreshDelay;
             ScheduleContinueWatchingRefresh(delay);

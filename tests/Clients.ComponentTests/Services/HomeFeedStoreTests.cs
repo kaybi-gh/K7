@@ -206,9 +206,59 @@ public class HomeFeedStoreTests
         HomeFeedStore.HasRowTargetingLibrary(rows, libraryId).Should().BeFalse();
     }
 
+    [Test]
+    public async Task ProgressUpdated_ShouldNotRefetchKeepWatching_WhenMediaAlreadyLeadsTheRow()
+    {
+        var leading = CreateItem("Movie A");
+        var media = Substitute.For<IMediaService>();
+        media.GetHomeFeedAsync(Arg.Any<GetHomeFeedQuery>(), Arg.Any<CancellationToken>())
+            .Returns(_ => FeedPage(leading, CreateItem("Movie B")));
+        var hub = new K7HubClient(NullLogger<K7HubClient>.Instance);
+
+        using var sut = CreateStore(media, hubClient: hub);
+        await sut.EnsureLoadedAsync(canTrackProgress: true, identityUserId: "user-a");
+        media.ClearReceivedCalls();
+
+        RaiseProgress(hub, leading.Id, 42, isCompleted: false);
+        await Task.Delay(TimeSpan.FromSeconds(2));
+
+        await media.DidNotReceive().GetHomeFeedAsync(Arg.Any<GetHomeFeedQuery>(), Arg.Any<CancellationToken>());
+        sut.Rows.Single().Items[0].Progress.Should().Be(42);
+    }
+
+    [Test]
+    public async Task ProgressUpdated_ShouldRefetchKeepWatching_WhenMediaIsNotLeadingTheRow()
+    {
+        var second = CreateItem("Movie B");
+        var media = Substitute.For<IMediaService>();
+        media.GetHomeFeedAsync(Arg.Any<GetHomeFeedQuery>(), Arg.Any<CancellationToken>())
+            .Returns(_ => FeedPage(CreateItem("Movie A"), second));
+        var hub = new K7HubClient(NullLogger<K7HubClient>.Instance);
+
+        using var sut = CreateStore(media, hubClient: hub);
+        await sut.EnsureLoadedAsync(canTrackProgress: true, identityUserId: "user-a");
+        media.ClearReceivedCalls();
+
+        RaiseProgress(hub, second.Id, 42, isCompleted: false);
+        await Task.Delay(TimeSpan.FromSeconds(2));
+
+        await media.Received().GetHomeFeedAsync(Arg.Any<GetHomeFeedQuery>(), Arg.Any<CancellationToken>());
+    }
+
+    private static void RaiseProgress(K7HubClient hub, Guid mediaId, double progress, bool isCompleted)
+    {
+        // Field-like event: the compiler-generated backing field carries the event name.
+        var handler = (Action<Guid, double, bool, MediaType>?)typeof(K7HubClient)
+            .GetField(nameof(K7HubClient.ProgressUpdated), System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!
+            .GetValue(hub);
+        handler.Should().NotBeNull();
+        handler!(mediaId, progress, isCompleted, MediaType.Movie);
+    }
+
     private static HomeFeedStore CreateStore(
         IMediaService media,
-        IUserPreferencesService? prefs = null)
+        IUserPreferencesService? prefs = null,
+        K7HubClient? hubClient = null)
     {
         prefs ??= Substitute.For<IUserPreferencesService>();
         prefs.GetHomeLayoutAsync(Arg.Any<CancellationToken>()).Returns(CreateLayout());
@@ -235,7 +285,7 @@ public class HomeFeedStoreTests
 
         return new HomeFeedStore(
             scopeFactory,
-            new K7HubClient(NullLogger<K7HubClient>.Instance),
+            hubClient ?? new K7HubClient(NullLogger<K7HubClient>.Instance),
             new MediaCacheStore(),
             device,
             connectivity,
