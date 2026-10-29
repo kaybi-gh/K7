@@ -18,9 +18,10 @@ public class GetHomeFeed : IEndpoint
             HttpContext httpContext,
             [FromServices] ISender sender,
             [FromServices] IMediaQueryCacheInvalidator cacheInvalidator,
+            [FromServices] IUser currentUser,
             [AsParameters] GetHomeFeedItemsQuery query) =>
         {
-            var etag = $"\"{cacheInvalidator.Version}\"";
+            var etag = cacheInvalidator.GetVersion(currentUser.IdentityId).ToETag();
 
             if (httpContext.Request.Headers.IfNoneMatch == etag)
                 return Results.StatusCode(StatusCodes.Status304NotModified);

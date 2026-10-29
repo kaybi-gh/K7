@@ -541,7 +541,19 @@ public class UpdatePlaybackProgressCommandHandler(
             }
         }
 
-        _cacheInvalidator.InvalidateAll();
+        // A plain progress tick only changes the reporting user's own rows (Continue Watching,
+        // progress bars), so it bumps that user's cache version. Completion, shared profiles and
+        // co-watching also change what other users see (watched badges, trending, group state).
+        var affectsOtherUsers = newlyCompletedSession
+            || hostResult?.WasNewlyCompleted == true
+            || sharedResult?.WasNewlyCompleted == true
+            || viewingGroup is not null
+            || syncPlay is not null;
+        var reportingIdentityId = _currentUser.IdentityId;
+        if (affectsOtherUsers || string.IsNullOrEmpty(reportingIdentityId))
+            _cacheInvalidator.InvalidateAll();
+        else
+            _cacheInvalidator.InvalidateUser(reportingIdentityId);
 
         var identityByUserId = await _context.Users
             .AsNoTracking()

@@ -24,10 +24,11 @@ public class QueryMedias : IEndpoint
             HttpContext httpContext,
             [FromServices] ISender sender,
             [FromServices] IMediaQueryCacheInvalidator cacheInvalidator,
+            [FromServices] IUser currentUser,
             [FromBody] QueryMediasRequest request,
             CancellationToken cancellationToken) =>
         {
-            var etag = $"\"{cacheInvalidator.Version}\"";
+            var etag = cacheInvalidator.GetVersion(currentUser.IdentityId).ToETag();
 
             if (httpContext.Request.Headers.IfNoneMatch == etag)
                 return Results.StatusCode(StatusCodes.Status304NotModified);

@@ -58,10 +58,10 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
                 userId.Value, sharedProfileId, cancellationToken);
 
         var cacheKey = BuildCacheKey(request, userId, sharedProfileId, continueWatchingPolicy);
-        var version = cacheInvalidator.Version;
+        var version = cacheInvalidator.GetVersion(currentUser.IdentityId);
 
         if (cache.TryGetValue(cacheKey, out var cachedValue)
-            && cachedValue is (long cachedVersion, PaginatedList<HomeFeedItemDto> cachedResult)
+            && cachedValue is (MediaQueryCacheVersion cachedVersion, PaginatedList<HomeFeedItemDto> cachedResult)
             && cachedVersion == version)
             return cachedResult;
 

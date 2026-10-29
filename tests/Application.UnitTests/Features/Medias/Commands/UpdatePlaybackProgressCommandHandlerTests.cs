@@ -32,6 +32,7 @@ public class UpdatePlaybackProgressCommandHandlerTests
     private IPlaybackPolicySettingsProvider _policies = null!;
     private IPlaybackProgressNotifier _notifier = null!;
     private IIdentityService _identityService = null!;
+    private IMediaQueryCacheInvalidator _cacheInvalidator = null!;
     private UpdatePlaybackProgressCommandHandler _handler = null!;
     private Guid _userId;
     private Guid _movieId;
@@ -97,6 +98,7 @@ public class UpdatePlaybackProgressCommandHandlerTests
 
         _identityService = Substitute.For<IIdentityService>();
         _identityService.IsInRoleAsync(Arg.Any<string>(), Arg.Any<string>()).Returns(false);
+        _cacheInvalidator = Substitute.For<IMediaQueryCacheInvalidator>();
 
         _handler = new UpdatePlaybackProgressCommandHandler(
             _context,
@@ -105,7 +107,7 @@ public class UpdatePlaybackProgressCommandHandlerTests
             _accessGuard,
             _tracker,
             _identityService,
-            Substitute.For<IMediaQueryCacheInvalidator>(),
+            _cacheInvalidator,
             _stateUpdater,
             _sharedProfileStateUpdater,
             _policies,
@@ -163,6 +165,36 @@ public class UpdatePlaybackProgressCommandHandlerTests
         session.CompletedAt.Should().BeNull();
         await _accessGuard.Received(1).EnsureAccessAsync(_movieId, Arg.Any<CancellationToken>());
         _tracker.Received(1).Upsert(sessionId, Arg.Any<ActiveStreamInfo>());
+    }
+
+    [Test]
+    public async Task Handle_ShouldInvalidateOnlyReportingUserCache_WhenPlainProgressTick()
+    {
+        await _handler.Handle(new UpdatePlaybackProgressCommand(
+            _movieId,
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            Position: 10,
+            Duration: 100,
+            State: PlaybackState.Playing), CancellationToken.None);
+
+        _cacheInvalidator.Received(1).InvalidateUser("ident");
+        _cacheInvalidator.DidNotReceive().InvalidateAll();
+    }
+
+    [Test]
+    public async Task Handle_ShouldInvalidateCatalogCache_WhenSessionNewlyCompleted()
+    {
+        await _handler.Handle(new UpdatePlaybackProgressCommand(
+            _movieId,
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            Position: 91,
+            Duration: 100,
+            State: PlaybackState.Playing), CancellationToken.None);
+
+        _cacheInvalidator.Received(1).InvalidateAll();
+        _cacheInvalidator.DidNotReceive().InvalidateUser(Arg.Any<string>());
     }
 
     [Test]

@@ -61,9 +61,9 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
         CancellationToken cancellationToken)
     {
         var cacheKey = await BuildCacheKeyAsync(request, currentUser.Id, filter, includePagination: true, cancellationToken);
-        var version = cacheInvalidator.Version;
+        var version = cacheInvalidator.GetVersion(currentUser.IdentityId);
 
-        if (cache.TryGetValue(cacheKey, out (long Version, PaginatedList<LiteMediaDto> Result) cached) && cached.Version == version)
+        if (cache.TryGetValue(cacheKey, out (MediaQueryCacheVersion Version, PaginatedList<LiteMediaDto> Result) cached) && cached.Version == version)
             return cached.Result;
 
         var result = await ExecuteQueryAsync(request, filter, cancellationToken);
@@ -161,9 +161,9 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
         else
             filterQuery = mediaAccessFilter.ApplyUnavailablePeerExclusion(filterQuery);
 
-        var version = cacheInvalidator.Version;
+        var version = cacheInvalidator.GetVersion(currentUser.IdentityId);
         var countCacheKey = await BuildCacheKeyAsync(request, userId, filter, includePagination: false, cancellationToken);
-        var countCacheKeyWithVersion = $"count|v:{version}|{countCacheKey}";
+        var countCacheKeyWithVersion = $"count|v:{version.Catalog}-{version.User}|{countCacheKey}";
 
         int totalCount;
         if (cache.TryGetValue(countCacheKeyWithVersion, out int cachedCount))
