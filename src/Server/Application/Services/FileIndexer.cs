@@ -212,20 +212,22 @@ public class FileIndexer : IFileIndexer
             await ProcessUnchangedFilesMissingMetadataAsync(library, unchangedFiles, deferredProbeTasks, cancellationToken);
             ProcessRenamedFiles(library, renamedFiles, backgroundTasks);
 
-            if (unchangedToReIdentify.Count > 0)
-            {
-                _context.IndexedFiles.UpdateRange(unchangedToReIdentify);
-            }
-
-            if (modifiedAsNew.Count > 0)
-            {
-                _context.IndexedFiles.UpdateRange(modifiedAsNew);
-            }
-
             foreach (var (existingFile, scannedFile) in diff.BackfillTimestampFiles)
-            {
                 existingFile.LastWriteTimeUtc = scannedFile.LastWriteTimeUtc;
-                _context.IndexedFiles.Update(existingFile);
+
+            // Existing rows are saved in SaveBatchSize chunks like the added ones: one transaction
+            // for every re-identified, modified and backfilled row held the SQLite writer lock for
+            // tens of seconds after an upgrade (players then hit "database is locked").
+            var updatedFiles = unchangedToReIdentify
+                .Concat(modifiedAsNew)
+                .Concat(diff.BackfillTimestampFiles.Select(pair => pair.ExistingFile))
+                .Distinct()
+                .ToList();
+            foreach (var batch in updatedFiles.Chunk(SaveBatchSize))
+            {
+                _context.IndexedFiles.UpdateRange(batch);
+                await _context.SaveChangesAsync(cancellationToken);
+                ClearChangeTracker();
             }
 
             foreach (var batch in addedFiles.Chunk(SaveBatchSize))
