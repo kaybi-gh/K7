@@ -61,6 +61,7 @@ public static class DependencyInjection
         });
 
         services.AddK7RateLimiting();
+        services.AddK7ResponseCompression();
 
         var authenticationBuilder = services.AddAuthentication(options =>
         {

@@ -46,6 +46,8 @@ sequenceDiagram
 
 Pipeline behaviors (order): Validation -> Authorization -> UnhandledException -> Performance.
 
+Response compression: `ResponseCompressionExtensions` applies Brotli/gzip (fastest level) to `application/json` reads under `/api/` (`GET`, `HEAD`, `QUERY`). Writes and credential-bearing routes (API keys, app passwords, authentication, ephemeral tokens) stay uncompressed. Socket-based MAUI heads set `AutomaticDecompression`.
+
 Exceptions map via `CustomExceptionHandler` (`ValidationException` 400, `ForbiddenAccessException` 403, `NotFoundException` 404). Handlers throw typed exceptions; no `Result<T>` wrapper.
 
 CQRS layout: `Features/{Feature}/Commands|Queries/{Name}/{Name}.cs` (request + handler same file), validators alongside, domain event handlers under `EventHandlers/`. DTO mapping via extension methods in `Application/Common/Mappings/` (no AutoMapper). Endpoints in `Server/Web/Endpoints/` stay thin and delegate to `ISender`.

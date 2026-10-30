@@ -280,6 +280,8 @@ Run K7 behind a reverse proxy for TLS. The app listens on **7080** inside the co
 
 By default K7 trusts private networks for `X-Forwarded-Proto`, so Traefik/Caddy/nginx on the same Docker network works without listing proxy IPs. Set `KnownProxies` only when you need a tighter or non-private allowlist (that list then **replaces** the private defaults). Misconfiguration still causes cookie/HTTPS mismatches or redirect loops.
 
+K7 compresses API JSON reads itself (Brotli or gzip, `GET` and `QUERY` under `/api/`, credential endpoints excluded). Static assets are served precompressed. The proxy does not need to compress, and must not strip `Accept-Encoding` or `Content-Encoding`.
+
 Do not publish K7 `:7080` on an untrusted LAN while trusting private proxies: a client on that network could spoof `X-Forwarded-Proto`. Prefer exposing only the reverse proxy.
 
 SignalR (remote control, Sync Play) needs WebSocket upgrade, reasonable timeouts, and the same host/proto headers.

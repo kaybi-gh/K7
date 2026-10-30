@@ -102,6 +102,7 @@ try
     app.UseAuthLegacyRedirects();
 
     app.UseRequestLocalization(RequestLocalizationSetup.CreateOptions());
+    app.UseK7ResponseCompression();
 
     app.MapStaticAssets();
 

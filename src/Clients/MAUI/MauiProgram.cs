@@ -196,10 +196,14 @@ public static partial class MauiProgram
         builder.Services.AddTransient<AuthenticationDelegatingHandler>();
         builder.Services.AddHttpClient(nameof(K7ServerService))
             .AddHttpMessageHandler<AuthenticationDelegatingHandler>()
-#if ANDROID
-            // HttpURLConnection (AndroidMessageHandler) only allows standard HTTP methods.
-            // SocketsHttpHandler supports QUERY and other custom methods.
-            .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler())
+#if !IOS && !MACCATALYST
+            // Android: HttpURLConnection (AndroidMessageHandler) only allows standard HTTP methods;
+            // SocketsHttpHandler supports QUERY and other custom methods. Every socket-based head
+            // also asks for and decodes Brotli/gzip API responses (Apple's NSUrlSession does it itself).
+            .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
+            {
+                AutomaticDecompression = System.Net.DecompressionMethods.All
+            })
 #endif
             ;
         builder.Services.AddSingleton<K7ServerService>(sp =>
