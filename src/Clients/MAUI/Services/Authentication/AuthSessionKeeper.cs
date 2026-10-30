@@ -89,7 +89,7 @@ public sealed class AuthSessionKeeper : IDisposable
         if (string.IsNullOrEmpty(accessToken))
             return false;
 
-        // Stored expiry first: K7 access tokens are encrypted, so "exp" is unreadable here and
+        // Stored expiry first: older servers issue encrypted access tokens, so "exp" may be unreadable and
         // the old JWT-only check saw DateTime.MinValue (a forced refresh on every poll).
         var expiresAt = StoredSession.ParseExpiry(_deviceStorage.Get(PreferenceKeys.ACCESS_TOKEN_EXPIRES_AT))
             ?? JwtAccessToken.TryReadExpiry(accessToken);

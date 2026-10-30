@@ -5,8 +5,8 @@ using Microsoft.IdentityModel.Tokens;
 namespace K7.Clients.MAUI.Services.Authentication;
 
 /// <summary>
-/// Best-effort reads of a stored access token. K7 tokens are OpenIddict JWEs: the handler
-/// parses the envelope but exposes no payload (ValidTo is DateTime.MinValue, no claims), so
+/// Best-effort reads of a stored access token. Older K7 servers issue OpenIddict JWEs (current ones sign
+/// plain JWTs): for a JWE the handler parses the envelope but exposes no payload (ValidTo is DateTime.MinValue, no claims), so
 /// callers fall back to the persisted expiry and claims snapshot (<c>StoredSession</c>).
 /// </summary>
 internal static class JwtAccessToken

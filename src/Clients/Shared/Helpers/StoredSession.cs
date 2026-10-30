@@ -5,8 +5,8 @@ using System.Text.Json;
 namespace K7.Clients.Shared.Helpers;
 
 /// <summary>
-/// Persisted session facts the native clients keep next to their tokens. K7 access tokens
-/// are OpenIddict JWEs: the client cannot read their "exp" or claims, so the expiry from the
+/// Persisted session facts the native clients keep next to their tokens. Older K7 servers
+/// issue OpenIddict JWEs (current ones sign plain JWTs): the client cannot rely on reading "exp" or claims, so the expiry from the
 /// token response and the signed-in principal's claims are stored alongside the token and
 /// drive "is the stored token still usable" and "restore without the token endpoint".
 /// </summary>

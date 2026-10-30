@@ -730,7 +730,7 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
             // Reuse a still-valid access token unless the caller just got a 401 for that exact token,
             // or proactive rotation was requested (native ExoPlayer keeps a baked Bearer).
             // Never reuse on user switch - SwitchToUserAsync clears the prior session first.
-            // Validity comes from the stored expiry: the token itself is an opaque JWE.
+            // Validity comes from the stored expiry: older servers issue opaque JWEs.
             var mustHitTokenEndpoint = forceRefresh
                 || (!string.IsNullOrEmpty(rejectedAccessToken)
                     && string.Equals(accessToken, rejectedAccessToken, StringComparison.Ordinal));
@@ -1062,7 +1062,7 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
 
     /// <summary>
     /// Signs in from storage without the token endpoint: the stored access token is still
-    /// valid (expiry taken from the token response - the JWE itself is opaque) and the claims
+    /// valid (expiry taken from the token response - older servers issue opaque JWEs) and the claims
     /// snapshot carries a user id. Applies the Bearer without rewriting storage.
     /// </summary>
     private bool TryRestoreFromStoredSession(StoredSessionSnapshot stored)

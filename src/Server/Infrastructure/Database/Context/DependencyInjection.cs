@@ -112,6 +112,11 @@ public static class DependencyInjection
                            Path.Combine(oidcKeysPath, "signing-certificate.pfx"),
                            "CN=K7 OpenIddict Server Signing Certificate"));
 
+                // Access tokens are signed JWTs: validation is a signature check instead of an RSA
+                // decryption on every request. Refresh tokens and codes stay encrypted, and tokens
+                // issued encrypted before this change still validate with the encryption certificate.
+                options.DisableAccessTokenEncryption();
+
                 options.UseAspNetCore()
                        .EnableAuthorizationEndpointPassthrough()
                        .EnableEndSessionEndpointPassthrough()
