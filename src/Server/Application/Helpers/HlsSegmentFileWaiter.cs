@@ -42,7 +42,8 @@ internal static class HlsSegmentFileWaiter
         Func<CancellationToken, Task> ensureGenerationAsync,
         CancellationToken cancellationToken,
         int maxTotalSeconds = 180,
-        int pollingIntervalMs = 200)
+        int pollingIntervalMs = 200,
+        HlsSegmentSnapshot? snapshot = null)
     {
         var absoluteDeadline = DateTime.UtcNow.AddSeconds(maxTotalSeconds);
         var lastKick = DateTime.MinValue;
@@ -52,7 +53,10 @@ internal static class HlsSegmentFileWaiter
         // uses the request token so disconnected clients stop waiting.
         await ensureGenerationAsync(CancellationToken.None);
 
-        while (!IsSegmentFileReady(segmentPath) && DateTime.UtcNow < absoluteDeadline)
+        // Each readiness check reads and validates the whole segment; keep the validated bytes
+        // so the caller serves them instead of reading the file again.
+        var ready = TryCapture(segmentPath, snapshot);
+        while (!ready && DateTime.UtcNow < absoluteDeadline)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -79,9 +83,10 @@ internal static class HlsSegmentFileWaiter
             }
 
             await Task.Delay(pollingIntervalMs, cancellationToken);
+            ready = TryCapture(segmentPath, snapshot);
         }
 
-        return IsSegmentFileReady(segmentPath)
+        return ready
             ? null
             : new TimeoutException("FFmpeg did not generate the requested segment before the timeout.");
     }
@@ -184,6 +189,16 @@ internal static class HlsSegmentFileWaiter
 
     public static bool IsSegmentFileReady(string segmentPath) =>
         TryReadReadySegmentBytes(segmentPath, out _);
+
+    private static bool TryCapture(string segmentPath, HlsSegmentSnapshot? snapshot)
+    {
+        if (!TryReadReadySegmentBytes(segmentPath, out var bytes))
+            return false;
+
+        if (snapshot is not null)
+            snapshot.Bytes = bytes;
+        return true;
+    }
 
     public static bool HasNonEmptyContent(string segmentPath)
     {
@@ -1079,4 +1094,12 @@ internal static class HlsSegmentFileWaiter
         description = sb.ToString();
         return offset == data.Length;
     }
+}
+
+/// <summary>
+/// Validated segment bytes captured by <see cref="HlsSegmentFileWaiter.WaitUntilAvailableAsync"/>.
+/// </summary>
+internal sealed class HlsSegmentSnapshot
+{
+    public byte[]? Bytes { get; set; }
 }

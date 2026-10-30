@@ -202,6 +202,47 @@ public class HlsSegmentFileWaiterTests
     }
 
     [Test]
+    public async Task WaitUntilAvailableAsync_ShouldCaptureValidatedBytes_WhenSegmentBecomesReady()
+    {
+        var initPath = HlsSegmentFileWaiter.GetInitSegmentPath(_tempDirectory);
+        var content = Concat(BuildBox("ftyp", [0x69, 0x73, 0x6F, 0x6D]), BuildBox("moov", [0x00]));
+        File.WriteAllBytes(initPath, content);
+        var snapshot = new HlsSegmentSnapshot();
+
+        var result = await HlsSegmentFileWaiter.WaitUntilAvailableAsync(
+            initPath,
+            CreateJob(),
+            _ => Task.CompletedTask,
+            CancellationToken.None,
+            maxTotalSeconds: 1,
+            pollingIntervalMs: 50,
+            snapshot: snapshot);
+
+        result.Should().BeNull();
+        snapshot.Bytes.Should().Equal(content);
+    }
+
+    [Test]
+    public async Task WaitUntilAvailableAsync_ShouldLeaveSnapshotEmpty_WhenSegmentNeverReady()
+    {
+        var initPath = HlsSegmentFileWaiter.GetInitSegmentPath(_tempDirectory);
+        File.WriteAllBytes(initPath, []);
+        var snapshot = new HlsSegmentSnapshot();
+
+        var result = await HlsSegmentFileWaiter.WaitUntilAvailableAsync(
+            initPath,
+            CreateJob(),
+            _ => Task.CompletedTask,
+            CancellationToken.None,
+            maxTotalSeconds: 1,
+            pollingIntervalMs: 50,
+            snapshot: snapshot);
+
+        result.Should().BeOfType<TimeoutException>();
+        snapshot.Bytes.Should().BeNull();
+    }
+
+    [Test]
     public async Task WaitUntilAvailableAsync_ShouldTimeout_WhenInitStaysEmpty()
     {
         var initPath = HlsSegmentFileWaiter.GetInitSegmentPath(_tempDirectory);

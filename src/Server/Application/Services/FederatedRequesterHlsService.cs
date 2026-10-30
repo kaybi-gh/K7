@@ -716,12 +716,14 @@ public sealed class FederatedRequesterHlsService(
         CancellationToken cancellationToken)
     {
         var requestedIndex = segmentNumber;
+        var snapshot = new HlsSegmentSnapshot();
         var generationFailure = await HlsSegmentFileWaiter.WaitUntilAvailableAsync(
             segmentPath,
             job,
             ct => transcodeJobManager.EnsureSegmentWillBeGeneratedAsync(job.JobId, requestedIndex, allSegments, ct),
             cancellationToken,
-            maxTotalSeconds: segmentNumber == -1 ? 90 : 180);
+            maxTotalSeconds: segmentNumber == -1 ? 90 : 180,
+            snapshot: snapshot);
 
         if (generationFailure is not null)
         {
@@ -736,18 +738,25 @@ public sealed class FederatedRequesterHlsService(
                 503);
         }
 
-        await HlsSegmentFileWaiter.WaitUntilReadableAsync(segmentPath, cancellationToken);
-        if (!HlsSegmentFileWaiter.TryReadReadySegmentBytes(segmentPath, out var segmentBytes))
+        // The wait above already read and validated the segment; re-read only if it did not.
+        var segmentBytes = snapshot.Bytes;
+        if (segmentBytes is null)
         {
-            // Brief race: ready check passed then ffmpeg appended again. One more wait.
-            await HlsSegmentFileWaiter.WaitUntilReadableAsync(segmentPath, cancellationToken, timeoutSeconds: 10);
-            if (!HlsSegmentFileWaiter.TryReadReadySegmentBytes(segmentPath, out segmentBytes))
+            await HlsSegmentFileWaiter.WaitUntilReadableAsync(segmentPath, cancellationToken);
+            if (!HlsSegmentFileWaiter.TryReadReadySegmentBytes(segmentPath, out var rereadBytes))
             {
-                return new TextHttpContentResult(
-                    "Transcoding failed: segment file is incomplete or corrupt.",
-                    "text/plain",
-                    503);
+                // Brief race: ready check passed then ffmpeg appended again. One more wait.
+                await HlsSegmentFileWaiter.WaitUntilReadableAsync(segmentPath, cancellationToken, timeoutSeconds: 10);
+                if (!HlsSegmentFileWaiter.TryReadReadySegmentBytes(segmentPath, out rereadBytes))
+                {
+                    return new TextHttpContentResult(
+                        "Transcoding failed: segment file is incomplete or corrupt.",
+                        "text/plain",
+                        503);
+                }
             }
+
+            segmentBytes = rereadBytes;
         }
 
         // Same serve-side tfdt rebase as local StreamPlaybackService. Peer encode windows

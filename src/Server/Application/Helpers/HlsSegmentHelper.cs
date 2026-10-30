@@ -22,7 +22,10 @@ public static class HlsSegmentHelper
         Guid indexedFileId,
         CancellationToken cancellationToken = default)
     {
+        // Read-only timeline: callers never update rows, and tracking 1,000-4,000 entities per
+        // segment request was pure overhead.
         return await context.HlsSegments
+            .AsNoTracking()
             .Where(s => s.IndexedFileId == indexedFileId)
             .OrderBy(s => s.Number)
             .ToListAsync(cancellationToken);

@@ -190,7 +190,7 @@ public sealed class StreamPlaybackService(
             Guard.Against.Null(qualityDef, nameof(query.Quality), $"Provided quality '{query.Quality}' is not valid.");
         }
 
-        var entity = await context.IndexedFiles.Include(x => x.FileMetadata)
+        var entity = await context.IndexedFiles.AsNoTracking().Include(x => x.FileMetadata)
             .FirstOrDefaultAsync(x => x.Id == query.Id, cancellationToken);
         Guard.Against.NotFound(query.Id, entity);
         Guard.Against.NullOrEmpty(entity.Path);
@@ -255,7 +255,7 @@ public sealed class StreamPlaybackService(
         GetHlsAudioStreamSegmentQuery query,
         CancellationToken cancellationToken = default)
     {
-        var entity = await context.IndexedFiles.Include(x => x.FileMetadata)
+        var entity = await context.IndexedFiles.AsNoTracking().Include(x => x.FileMetadata)
             .FirstOrDefaultAsync(x => x.Id == query.Id, cancellationToken);
         Guard.Against.NotFound(query.Id, entity);
         Guard.Against.NullOrEmpty(entity.Path);
@@ -368,12 +368,14 @@ public sealed class StreamPlaybackService(
                 await WaitForPairedVideoSegmentAsync(job, segmentNumber, allSegments, cancellationToken);
         }
 
+        var snapshot = new HlsSegmentSnapshot();
         var generationFailure = await HlsSegmentFileWaiter.WaitUntilAvailableAsync(
             segmentPath,
             job,
             ct => transcodeJobManager.EnsureSegmentWillBeGeneratedAsync(job.JobId, requestedIndex, allSegments, ct),
             cancellationToken,
-            maxTotalSeconds: segmentNumber == -1 ? 90 : 180);
+            maxTotalSeconds: segmentNumber == -1 ? 90 : 180,
+            snapshot: snapshot);
         if (generationFailure is not null)
         {
             logger.LogError(
@@ -389,19 +391,26 @@ public sealed class StreamPlaybackService(
                 503);
         }
 
-        await HlsSegmentFileWaiter.WaitUntilReadableAsync(segmentPath, cancellationToken);
-        if (!HlsSegmentFileWaiter.TryReadReadySegmentBytes(segmentPath, out var segmentBytes))
+        // The wait above already read and validated the segment; re-read only if it did not.
+        var segmentBytes = snapshot.Bytes;
+        if (segmentBytes is null)
         {
-            logger.LogError(
-                "Segment {SegmentNumber} for job {JobId} was not a complete fMP4 after wait (path: {SegmentPath}, unreadiness: {Unreadiness})",
-                segmentNumber,
-                job.JobId,
-                segmentPath,
-                HlsSegmentFileWaiter.DescribeUnreadiness(segmentPath));
-            return new TextHttpContentResult(
-                "Transcoding failed: segment file is incomplete or corrupt.",
-                "text/plain",
-                503);
+            await HlsSegmentFileWaiter.WaitUntilReadableAsync(segmentPath, cancellationToken);
+            if (!HlsSegmentFileWaiter.TryReadReadySegmentBytes(segmentPath, out var rereadBytes))
+            {
+                logger.LogError(
+                    "Segment {SegmentNumber} for job {JobId} was not a complete fMP4 after wait (path: {SegmentPath}, unreadiness: {Unreadiness})",
+                    segmentNumber,
+                    job.JobId,
+                    segmentPath,
+                    HlsSegmentFileWaiter.DescribeUnreadiness(segmentPath));
+                return new TextHttpContentResult(
+                    "Transcoding failed: segment file is incomplete or corrupt.",
+                    "text/plain",
+                    503);
+            }
+
+            segmentBytes = rereadBytes;
         }
 
         // Video copy: rebase only a true window reset (>= 1s). Do not flatten the
