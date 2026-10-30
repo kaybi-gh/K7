@@ -216,9 +216,20 @@ public partial class Serie : IAsyncDisposable
                 .ToList();
 
             BuildStudioNetworkChips();
-            await ResolveLibraryGroupIdAsync();
 
             if (!isBackgroundRefresh && !isPicturesRefresh)
+            {
+                // Paint the hero as soon as the serie is mapped: the library group, the theme song
+                // and the resume episode follow instead of holding first paint.
+                _loading = false;
+                StateHasChanged();
+            }
+
+            await ResolveLibraryGroupIdAsync();
+
+            // The user may have navigated to another serie while the group was resolving.
+            if (!isBackgroundRefresh && !isPicturesRefresh
+                && Guid.TryParse(Id, out var currentId) && currentId == serie.Id)
             {
                 await ThemeSongPlaybackHelper.TryStartAsync(
                     serie.Id,

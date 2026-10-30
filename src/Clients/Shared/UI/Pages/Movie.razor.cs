@@ -209,9 +209,19 @@ public partial class Movie : IAsyncDisposable
                 _useExplicitTrackSelection = false;
             }
 
+            if (!isBackgroundRefresh && !isPicturesRefresh)
+            {
+                // Paint the hero as soon as the movie is mapped: the library group and the theme
+                // song used to hold first paint behind 2-3 more round trips and the MP3 download.
+                isLoading = false;
+                StateHasChanged();
+            }
+
             await ResolveLibraryGroupIdAsync();
 
-            if (!isBackgroundRefresh && !isPicturesRefresh)
+            // The user may have navigated to another movie while the group was resolving.
+            if (!isBackgroundRefresh && !isPicturesRefresh
+                && Guid.TryParse(Id, out var currentId) && currentId == movie.Id)
             {
                 await ThemeSongPlaybackHelper.TryStartAsync(
                     movie.Id,

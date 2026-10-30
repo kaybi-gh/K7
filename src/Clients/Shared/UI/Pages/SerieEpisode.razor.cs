@@ -188,7 +188,9 @@ public partial class SerieEpisode : IAsyncDisposable
 
         _serieOriginalLanguage = serie.OriginalLanguage;
 
-        await ThemeSongPlaybackHelper.TryStartAsync(
+        // The theme song downloads alongside the season/episode fetches instead of holding
+        // first paint behind the MP3 transfer.
+        ThemeSongPlaybackHelper.TryStartAsync(
             serie.Id,
             serie.HasThemeSong,
             k7ServerService,
@@ -196,7 +198,7 @@ public partial class SerieEpisode : IAsyncDisposable
             AmbientThemeService,
             AudioPlayerService,
             PlayerService,
-            DeviceStorageService);
+            DeviceStorageService).FireAndForget();
 
         var seasonSummary = serie.Seasons?.FirstOrDefault(s => s.SeasonNumber == SeasonNumber);
         if (seasonSummary is null)

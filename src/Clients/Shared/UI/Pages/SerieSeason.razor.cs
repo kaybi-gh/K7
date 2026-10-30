@@ -149,7 +149,9 @@ public partial class SerieSeason : IAsyncDisposable
 
         _serieOriginalLanguage = serie.OriginalLanguage;
 
-        await ThemeSongPlaybackHelper.TryStartAsync(
+        // The theme song downloads alongside the season/episode fetches instead of holding
+        // first paint behind the MP3 transfer.
+        ThemeSongPlaybackHelper.TryStartAsync(
             serie.Id,
             serie.HasThemeSong,
             k7ServerService,
@@ -157,7 +159,7 @@ public partial class SerieSeason : IAsyncDisposable
             AmbientThemeService,
             AudioPlayerService,
             PlayerService,
-            DeviceStorageService);
+            DeviceStorageService).FireAndForget();
 
         var backdropPicture = serie.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Backdrop);
         (_backdropUrl, _backdropHighResUrl) = MetadataPictureDisplayHelper.ResolveAdaptiveBackdropUrls(
