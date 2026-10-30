@@ -50,6 +50,9 @@ public class CurrentUser : IUser
         }
     }
 
+    public bool IsInRole(string role) =>
+        _httpContextAccessor.HttpContext?.User?.IsInRole(role) == true;
+
     public Guid? SharedProfileId
     {
         get

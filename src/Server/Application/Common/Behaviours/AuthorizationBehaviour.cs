@@ -35,19 +35,21 @@ public class AuthorizationBehaviour<TRequest, TResponse> : IPipelineBehavior<TRe
 
             if (authorizeAttributesWithRoles.Any())
             {
-                var authorized = false;
+                var roleNames = authorizeAttributesWithRoles
+                    .SelectMany(a => a.Roles.Split(','))
+                    .Select(role => role.Trim())
+                    .ToList();
 
-                foreach (var roles in authorizeAttributesWithRoles.Select(a => a.Roles.Split(',')))
+                // Role claims are what the endpoint policies already authorized on. Only principals
+                // without a matching claim (e.g. a token issued before a role change) hit the store.
+                var authorized = roleNames.Any(_user.IsInRole);
+
+                foreach (var role in roleNames)
                 {
-                    foreach (var role in roles)
-                    {
-                        var isInRole = await _identityService.IsInRoleAsync(_user.IdentityId, role.Trim());
-                        if (isInRole)
-                        {
-                            authorized = true;
-                            break;
-                        }
-                    }
+                    if (authorized)
+                        break;
+
+                    authorized = await _identityService.IsInRoleAsync(_user.IdentityId, role);
                 }
 
                 // Must be a member of at least one role in roles

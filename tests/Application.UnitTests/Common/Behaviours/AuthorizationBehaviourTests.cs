@@ -71,6 +71,19 @@ public class AuthorizationBehaviourTests
     }
 
     [Test]
+    public async Task Handle_ShouldSkipIdentityStore_WhenPrincipalCarriesRoleClaim()
+    {
+        _user.IdentityId.Returns("user-1");
+        _user.IsInRole("User").Returns(true);
+        var behaviour = CreateBehaviour<RoleAuthorizedRequest>();
+
+        await behaviour.Handle(new RoleAuthorizedRequest(), Next, CancellationToken.None);
+
+        _nextCalled.Should().BeTrue();
+        await _identityService.DidNotReceiveWithAnyArgs().IsInRoleAsync(default!, default!);
+    }
+
+    [Test]
     public async Task Handle_ShouldThrowForbidden_WhenUserHasNoneOfRoles()
     {
         _user.IdentityId.Returns("user-1");
