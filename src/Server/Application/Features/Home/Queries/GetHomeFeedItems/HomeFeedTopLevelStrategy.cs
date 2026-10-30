@@ -49,6 +49,9 @@ internal sealed class HomeFeedTopLevelStrategy(
             .Include(x => x.Ratings)
             .Include(x => x.MetadataTags).ThenInclude(mt => mt.MetadataTag)
             .Include(x => ((MusicAlbum)x).Artist)
+            // Pictures x ratings x tags in one query multiplied the rows (~2,600 per page); the
+            // other feed strategies already split.
+            .AsSplitQuery()
             .AsNoTracking()
             .ToListAsync(cancellationToken);
 
