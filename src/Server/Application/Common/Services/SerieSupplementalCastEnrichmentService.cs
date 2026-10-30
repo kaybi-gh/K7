@@ -1,13 +1,10 @@
 using K7.Server.Application.Common.Interfaces;
-using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
-using K7.Server.Application.Features.Persons.Commands.RefreshPersonMetadata;
 using K7.Server.Application.Helpers;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Metadatas;
 using K7.Server.Domain.Entities.Metadatas.External;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Metadatas.PersonRoles;
-using K7.Server.Domain.Enums;
 using K7.Server.Domain.Interfaces;
 
 namespace K7.Server.Application.Common.Services;
@@ -70,33 +67,11 @@ public sealed class SerieSupplementalCastEnrichmentService(
 
         await _context.SaveChangesAsync(cancellationToken);
 
-        foreach (var person in serie.PersonRoles.Select(r => r.Person).Distinct())
-        {
-            if (person.Id == Guid.Empty || !PersonMetadataMergeHelper.NeedsProviderRefresh(person))
-                continue;
-
-            var tmdbId = person.ExternalIds.FirstOrDefault(e => e.ProviderName == "tmdb")?.Value;
-            if (string.IsNullOrWhiteSpace(tmdbId))
-                continue;
-
-            await _sender.Send(new CreateBackgroundTaskCommand
-            {
-                Request = new RefreshPersonMetadataCommand
-                {
-                    PersonId = person.Id,
-                    ProviderName = "tmdb",
-                    ProviderId = tmdbId,
-                    Language = language
-                },
-                TargetEntityId = person.Id,
-                TargetEntityTypeName = nameof(Person),
-                Lane = BackgroundTaskLane.Metadata,
-                MetadataProviderName = MetadataProviderHostMapper.NormalizeProviderName("tmdb"),
-                WorkClass = BackgroundTaskWorkClass.Polish,
-                TriggeredBy = BackgroundTaskTriggeredBy.System,
-                MaxAttempts = 3
-            }, cancellationToken);
-        }
+        await PersonMetadataRefreshQueueHelper.QueueMissingTmdbDetailsAsync(
+            _sender,
+            serie.PersonRoles.Select(r => r.Person),
+            language,
+            cancellationToken);
     }
 
     public async Task ApplyEpisodePersonRolesAsync(

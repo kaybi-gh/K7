@@ -199,7 +199,7 @@ public class TMDbMetadataProvider : IMetadataProvider<ExternalMovieMetadata>, IS
                 Revenue = tmdbMovie.Revenue > 0 ? tmdbMovie.Revenue : null,
                 Trailers = TmdbLibCompat.MapYoutubeTrailers(tmdbMovie.Videos?.Results),
                 RecommendedExternalIds = [.. tmdbMovie.Recommendations?.Results?.Select(r => r.Id.ToString()) ?? []],
-                PersonRoles = await ConvertToPersonRolesAsync(tmdbMovie.Credits, language),
+                PersonRoles = ConvertToPersonRoles(tmdbMovie.Credits),
                 ExternalIds =
                 [
                     new ExternalId()
@@ -302,7 +302,13 @@ public class TMDbMetadataProvider : IMetadataProvider<ExternalMovieMetadata>, IS
         return metadataPictures;
     }
 
-    private async Task<IList<BasePersonRole>> ConvertToPersonRolesAsync(Credits? credits, string language)
+    /// <summary>
+    /// Builds roles from the credits payload only (name, TMDb id, profile picture), like the
+    /// serie provider. Fetching every person used to cost 40-90 TMDb calls per movie refresh, and
+    /// for persons already in the database the result was only merged into missing fields.
+    /// <c>RefreshMediaMetadatas</c> queues person enrichment for new persons after the save.
+    /// </summary>
+    private IList<BasePersonRole> ConvertToPersonRoles(Credits? credits)
     {
         var roles = new List<BasePersonRole>();
         if (credits is null)
@@ -310,8 +316,7 @@ public class TMDbMetadataProvider : IMetadataProvider<ExternalMovieMetadata>, IS
 
         foreach (var role in credits.Cast ?? [])
         {
-            var imdbPerson = await _tdmbClient.GetPersonAsync(role.Id, language);
-            if (imdbPerson is null)
+            if (string.IsNullOrWhiteSpace(role.Name))
                 continue;
 
             var actor = new Actor()
@@ -326,32 +331,19 @@ public class TMDbMetadataProvider : IMetadataProvider<ExternalMovieMetadata>, IS
                         Value = role.CastId.ToString()
                     }
                 ],
-                Person = ConvertToPerson(imdbPerson)
+                Person = CreatePersonStub(role.Id, role.Name)
             };
 
-            if (!string.IsNullOrEmpty(role.ProfilePath))
-            {
-                var uri = _tdmbClient.GetImageUrl("original", role.ProfilePath, true);
-                if (uri != null && uri != actor.Person.PortraitPicture?.OriginalRemoteUri)
-                {
-                    actor.PortraitPicture = new MetadataPicture()
-                    {
-                        OriginalRemoteUri = uri,
-                        Type = MetadataPictureType.Portrait
-                    };
-                    actor.PortraitPicture.AddDomainEvent(new MetadataPictureCreatedEvent(actor.PortraitPicture));
-                }
-            }
+            actor.PortraitPicture = CreatePortrait(role.ProfilePath);
             roles.Add(actor);
         }
 
         foreach (var role in credits.Crew ?? [])
         {
-            if (role.Department is null || role.Job is null || !_wantedCrewRoles.Contains((role.Department, role.Job)))
-                continue;
-
-            var imdbPerson = await _tdmbClient.GetPersonAsync(role.Id, language);
-            if (imdbPerson is null)
+            if (string.IsNullOrWhiteSpace(role.Name)
+                || role.Department is null
+                || role.Job is null
+                || !_wantedCrewRoles.Contains((role.Department, role.Job)))
                 continue;
 
             var crewMember = new CrewMember()
@@ -366,27 +358,39 @@ public class TMDbMetadataProvider : IMetadataProvider<ExternalMovieMetadata>, IS
                         Value = role.CreditId ?? role.Id.ToString()
                     }
                 ],
-                Person = ConvertToPerson(imdbPerson)
+                Person = CreatePersonStub(role.Id, role.Name)
             };
 
-            if (!string.IsNullOrEmpty(role.ProfilePath))
-            {
-                var uri = _tdmbClient.GetImageUrl("original", role.ProfilePath, true);
-                if (uri != null && uri != crewMember.Person.PortraitPicture?.OriginalRemoteUri)
-                {
-                    crewMember.PortraitPicture = new MetadataPicture()
-                    {
-                        OriginalRemoteUri = uri,
-                        Type = MetadataPictureType.Portrait
-                    };
-                    crewMember.PortraitPicture.AddDomainEvent(new MetadataPictureCreatedEvent(crewMember.PortraitPicture));
-                }
-            }
+            crewMember.PortraitPicture = CreatePortrait(role.ProfilePath);
             roles.Add(crewMember);
         }
 
         PersonRoleImportHelper.DedupByTmdbCreditId(roles);
         return roles;
+    }
+
+    private static Person CreatePersonStub(int tmdbPersonId, string name) => new()
+    {
+        Name = name,
+        ExternalIds = [new ExternalId() { ProviderName = "tmdb", Value = tmdbPersonId.ToString() }]
+    };
+
+    private MetadataPicture? CreatePortrait(string? profilePath)
+    {
+        if (string.IsNullOrEmpty(profilePath))
+            return null;
+
+        var uri = _tdmbClient.GetImageUrl("original", profilePath, true);
+        if (uri is null)
+            return null;
+
+        var portrait = new MetadataPicture()
+        {
+            OriginalRemoteUri = uri,
+            Type = MetadataPictureType.Portrait
+        };
+        portrait.AddDomainEvent(new MetadataPictureCreatedEvent(portrait));
+        return portrait;
     }
 
     public async Task<ExternalPersonDetails?> FetchPersonAsync(string providerId, string language, CancellationToken cancellationToken = default)
@@ -428,58 +432,6 @@ public class TMDbMetadataProvider : IMetadataProvider<ExternalMovieMetadata>, IS
         {
             return null;
         }
-    }
-
-    private Person ConvertToPerson(TMDbLib.Objects.People.Person tmdbPerson)
-    {
-        var person = new Person()
-        {
-            Biography = tmdbPerson.Biography,
-            Birthday = tmdbPerson.Birthday.HasValue ? DateOnly.FromDateTime(tmdbPerson.Birthday.Value) : null,
-            BirthPlace = tmdbPerson.PlaceOfBirth,
-            Gender = tmdbPerson.Gender switch
-            {
-                TMDbLib.Objects.People.PersonGender.Female => PersonGender.Female,
-                TMDbLib.Objects.People.PersonGender.Male => PersonGender.Male,
-                TMDbLib.Objects.People.PersonGender.NonBinary => PersonGender.NonBinary,
-                _ => PersonGender.NotSpecified,
-            },
-            Name = tmdbPerson.Name ?? string.Empty,
-            Deathday = tmdbPerson.Deathday.HasValue ? DateOnly.FromDateTime(tmdbPerson.Deathday.Value) : null,
-            ExternalIds =
-            [
-                new ExternalId()
-                {
-                    ProviderName = "tmdb",
-                    Value = tmdbPerson.Id.ToString()
-                }
-            ]
-        };
-
-        if (!string.IsNullOrEmpty(tmdbPerson.ImdbId))
-        {
-            person.ExternalIds.Add(new ExternalId()
-            {
-                ProviderName = "imdb",
-                Value = tmdbPerson.ImdbId
-            });
-        }
-
-        if (!string.IsNullOrEmpty(tmdbPerson.ProfilePath))
-        {
-            var uri = _tdmbClient.GetImageUrl("original", tmdbPerson.ProfilePath, true);
-            if (uri != null)
-            {
-                person.PortraitPicture = new MetadataPicture()
-                {
-                    OriginalRemoteUri = uri,
-                    Type = MetadataPictureType.Portrait
-                };
-                person.PortraitPicture.AddDomainEvent(new MetadataPictureCreatedEvent(person.PortraitPicture));
-            }
-        }
-
-        return person;
     }
 
     private static string? ExtractContentRating(TMDbLib.Objects.General.ResultContainer<TMDbLib.Objects.Movies.ReleaseDatesContainer>? releaseDates, string language)

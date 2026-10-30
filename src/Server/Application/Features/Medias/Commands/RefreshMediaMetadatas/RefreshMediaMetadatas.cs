@@ -138,6 +138,17 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
         }
 
         await _context.SaveChangesAsync(cancellationToken);
+
+        // Movie roles come from the TMDb credits payload (name, id, portrait). New persons get
+        // their biography and birthday from a background refresh once they have an id.
+        if (media is Movie refreshedMovie)
+        {
+            await PersonMetadataRefreshQueueHelper.QueueMissingTmdbDetailsAsync(
+                _sender,
+                refreshedMovie.PersonRoles.Select(r => r.Person),
+                request.Language,
+                cancellationToken);
+        }
     }
 
     private async Task HandleMovieAsync(RefreshMediaMetadatasCommand request, Movie movie, CancellationToken cancellationToken = default)
