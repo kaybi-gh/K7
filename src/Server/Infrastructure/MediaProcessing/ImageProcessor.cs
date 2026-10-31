@@ -159,17 +159,6 @@ public class ImageProcessor : IImageProcessor
             }, cancellationToken);
         }
 
-        await FFMpegArguments
-            .FromFileInput(inputPath, verifyExists: false)
-            .OutputToFile("-", overwrite: true, options => options
-                .WithCustomArgument("-vf \"scale=8:8,avgblur=8\"")
-                .WithCustomArgument("-frames:v 1")
-                .WithCustomArgument("-pix_fmt rgb24")
-                .ForceFormat("rawvideo"))
-            .CancellableThrough(cancellationToken)
-            .ProcessAsynchronously(throwOnError: false)
-            .ConfigureAwait(false);
-
         try
         {
             var tempPath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid()}.txt");
