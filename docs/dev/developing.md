@@ -128,7 +128,7 @@ Typical sequence for a returning multi-user device: Android DecorView shows `k7_
 - Android Auto headless: cold start from car only, browse + play, auth still valid, now-playing / scrobble path.
 - Music session: play on phone, kill process, relaunch (restore). Play on Auto, disconnect, reopen phone. Pause still flushes.
 
-Player scripts (`video.min.js`, audioplayer) load after first paint on MAUI / Windows / Web, and are awaited if play happens before the prefetch finishes.
+Player scripts (`video.min.js`, videoplayer, audioplayer, ambient theme) load after first paint through `K7.ensurePlaybackAssets` (`playbackAssets.js`) on MAUI / Windows / Web, and are awaited if play happens before the prefetch finishes. The web host loads the Google Cast sender with `async`: only the device picker uses it.
 
 Android `MainActivity` ignores restored instance state so a TV/process death cannot paint a frozen Blazor snapshot (visible select-profile, dead remote). `OnResume` resumes WebView timers, puts focus back on the WebView, dismisses leftover splash overlays, and re-inits spatial nav. `OnWindowFocusChanged` retries that focus once the window can take it. D-pad is forwarded into the page when the WebView does not own focus. The activity is recreated if the JS bridge or the Blazor dispatcher does not answer. On TV the WebView renderer is kept while the screen is off so standby cannot leave a frozen frame. `AppLifecycleGate` suppresses music UI renders while the host is paused so the mini player does not replay every track change when the screen turns back on.
 

@@ -93,15 +93,14 @@
         <script src="@Assets["_content/K7.Clients.Shared.UI/js/navigation.js"]"></script>
         <script src="@Assets["_content/K7.Clients.Shared.UI/dist/qrcodejs/qrcode.min.js"]"></script>
         <script src="@Assets["_content/K7.Clients.Shared.UI/js/qrcode.js"]"></script>
-        <script src="@Assets["_content/K7.Clients.Shared.UI/js/ambientTheme.js"]"></script>
         <script src="@Assets["dist/bowser/es5.min.js"]"></script>
-        <script src="@Assets["_content/K7.Clients.Shared.UI/dist/video.js/video.min.js"]"></script>
-        <script src="@Assets["_content/K7.Clients.Shared.UI/js/videoplayer.js"]"></script>
-        <script src="@Assets["_content/K7.Clients.Shared.UI/js/audioplayer.js"]"></script>
+        @* Video.js, the player scripts and the ambient theme load after first paint through
+           K7.ensurePlaybackAssets (MainLayout / EmptyLayout prefetch, awaited before any
+           player call), like the MAUI host. *@
+        <script src="@Assets["_content/K7.Clients.Shared.UI/js/playbackAssets.js"]"></script>
         <script src="@Assets["_content/K7.Clients.Shared.UI/js/deviceCapabilities.js"]"></script>
         <script src="@Assets["js/deviceUtils.js"]"></script>
         <script src="@Assets["js/castplayer.js"]"></script>
-        <script src="https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1"></script>
         <script>
             window.blazorCulture = {
                 getSaved: () => window.localStorage.getItem('BlazorCulture'),
@@ -114,6 +113,9 @@
                 }
             };
         </script>
+        @* Cast is only used from the device picker: never block the first load on gstatic
+           (LAN-only installs used to wait for it to time out). *@
+        <script async src="https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1"></script>
     }
 </body>
 
