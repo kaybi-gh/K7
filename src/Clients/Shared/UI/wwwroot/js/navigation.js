@@ -3904,6 +3904,34 @@ K7.isNarrowViewport = function () {
     return window.matchMedia('(max-width: 599.98px)').matches;
 };
 
+// Mini music player slots: the navbar copy shows from 600px, the bottom dock below. Both stay
+// mounted (layout CSS keys off them), but only the displayed one keeps rendering its progress.
+K7.MiniPlayerSlot = {
+    _entries: {},
+    _nextId: 1,
+    observe: function (query, dotNetRef) {
+        var mql = window.matchMedia(query);
+        var id = K7.MiniPlayerSlot._nextId++;
+        var handler = function (e) {
+            dotNetRef.invokeMethodAsync('OnSlotVisibilityChanged', e.matches).catch(function () { });
+        };
+        if (mql.addEventListener) mql.addEventListener('change', handler);
+        else mql.addListener(handler);
+        K7.MiniPlayerSlot._entries[id] = { mql: mql, handler: handler };
+        return id;
+    },
+    matches: function (query) {
+        return window.matchMedia(query).matches;
+    },
+    unobserve: function (id) {
+        var entry = K7.MiniPlayerSlot._entries[id];
+        if (!entry) return;
+        if (entry.mql.removeEventListener) entry.mql.removeEventListener('change', entry.handler);
+        else entry.mql.removeListener(entry.handler);
+        delete K7.MiniPlayerSlot._entries[id];
+    }
+};
+
 K7._resetMenuInlineLayout = function (dropdown) {
     if (!dropdown || !dropdown.style) return;
     var s = dropdown.style;

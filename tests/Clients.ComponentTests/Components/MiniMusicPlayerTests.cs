@@ -87,6 +87,31 @@ public class MiniMusicPlayerTests
     }
 
     [Test]
+    public void TrackChange_ShouldWaitForTheSlot_WhenThisCopyIsHiddenByItsMediaQuery()
+    {
+        var audio = CreateAudioService();
+        var first = CreateTrack();
+        var second = CreateTrack("Incoming Track", "Incoming Artist");
+        audio.IsVisible.Returns(true);
+        StubTracks(audio, first);
+        audio.PlaybackState = PlaybackState.Playing;
+
+        using var ctx = CreateContext(audio);
+        ctx.JSInterop.Setup<int>("K7.MiniPlayerSlot.observe", _ => true).SetResult(1);
+        ctx.JSInterop.Setup<bool>("K7.MiniPlayerSlot.matches", _ => true).SetResult(false);
+        var cut = ctx.Render<MiniMusicPlayer>(p => p.Add(x => x.VisibleMediaQuery, "(max-width: 599.98px)"));
+        cut.Markup.Should().Contain("Test Track");
+
+        StubTracks(audio, second);
+        audio.CurrentTrackChanged += Raise.Event<Action<AudioQueueItem?>>(second);
+
+        cut.Markup.Should().NotContain("Incoming Track");
+
+        cut.InvokeAsync(() => cut.Instance.OnSlotVisibilityChanged(true));
+        cut.WaitForAssertion(() => cut.Markup.Should().Contain("Incoming Track"));
+    }
+
+    [Test]
     public void Render_ShouldShowDisplayedTrack_WhenPlayingTrackHasAlreadyAdvanced()
     {
         var audio = CreateAudioService();

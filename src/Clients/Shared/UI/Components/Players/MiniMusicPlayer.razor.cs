@@ -19,6 +19,12 @@ public partial class MiniMusicPlayer : IAsyncDisposable
     [Inject] private IDeviceService DeviceService { get; set; } = default!;
     [Inject] private ISpatialNavService SpatialNav { get; set; } = default!;
 
+    /// <summary>
+    /// CSS media query under which this copy is displayed. The layout mounts one copy in the
+    /// navbar and one in the bottom dock; the hidden one skips its progress renders.
+    /// </summary>
+    [Parameter] public string? VisibleMediaQuery { get; set; }
+
     private ElementReference _progressBarRef;
     private bool _isDragging;
     private bool _showVolumeControls = true;
@@ -30,6 +36,8 @@ public partial class MiniMusicPlayer : IAsyncDisposable
     private bool _needsRender = true;
     private DateTime _lastProgressRenderUtc;
     private volatile bool _disposed;
+    private bool _slotVisible = true;
+    private int? _slotObservationId;
 
     private AudioQueueItem? DisplayedTrack => Audio.CurrentDisplayedTrack ?? Audio.CurrentPlayingTrack;
 
@@ -104,6 +112,8 @@ public partial class MiniMusicPlayer : IAsyncDisposable
                 _dotNetRef?.Dispose();
                 _dotNetRef = null;
             }
+
+            await ObserveSlotAsync();
         }
     }
 
@@ -124,6 +134,17 @@ public partial class MiniMusicPlayer : IAsyncDisposable
         Audio.IsMutedChanged -= OnMutedStateChanged;
         Audio.IsVisibleChanged -= OnVisibilityChanged;
         AppLifecycleGate.ForegroundChanged -= OnAppForegroundChanged;
+
+        if (_slotObservationId is { } observationId)
+        {
+            try
+            {
+                await JS.InvokeVoidAsync("K7.MiniPlayerSlot.unobserve", observationId);
+            }
+            catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException)
+            {
+            }
+        }
 
         if (_dotNetRef is not null)
         {
@@ -299,6 +320,32 @@ public partial class MiniMusicPlayer : IAsyncDisposable
             RequestRender();
     }
 
+    private async Task ObserveSlotAsync()
+    {
+        if (string.IsNullOrEmpty(VisibleMediaQuery) || _disposed)
+            return;
+
+        try
+        {
+            _dotNetRef ??= DotNetObjectReference.Create(this);
+            _slotObservationId = await JS.InvokeAsync<int>(
+                "K7.MiniPlayerSlot.observe", VisibleMediaQuery, _dotNetRef);
+            _slotVisible = await JS.InvokeAsync<bool>("K7.MiniPlayerSlot.matches", VisibleMediaQuery);
+        }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException)
+        {
+            _slotVisible = true;
+        }
+    }
+
+    [JSInvokable]
+    public void OnSlotVisibilityChanged(bool visible)
+    {
+        _slotVisible = visible;
+        if (visible)
+            RequestRender();
+    }
+
     private void RequestProgressRender()
     {
         if (DateTime.UtcNow - _lastProgressRenderUtc < TimeSpan.FromMilliseconds(250))
@@ -314,6 +361,9 @@ public partial class MiniMusicPlayer : IAsyncDisposable
             return;
 
         _needsRender = true;
+        if (!_slotVisible)
+            return;
+
         InvokeAsync(StateHasChanged).FireAndForget();
     }
 
