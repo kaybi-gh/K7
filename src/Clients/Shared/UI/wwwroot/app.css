@@ -301,6 +301,16 @@ html.platform-tv .app-nav-bar {
     backdrop-filter: none;
 }
 
+/* TV boxes: no backdrop blur anywhere. Each blurred surface (dialog scrims, review cards,
+   overlays, mini player) costs a full-area blur pass per frame on a small GPU, and blur over
+   the hardware video overlay shows nothing anyway. The tinted backgrounds stay. */
+html.platform-tv *,
+html.platform-tv *::before,
+html.platform-tv *::after {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
 html.platform-tv .app-nav-popover.open,
 html.platform-tv .k7-menu-dropdown.k7-menu-dropdown--open.k7-menu-dropdown--placed,
 html.platform-tv .k7-select-dropdown.k7-select-dropdown--open.k7-select-dropdown--placed {

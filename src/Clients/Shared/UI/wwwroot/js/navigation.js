@@ -2874,15 +2874,15 @@ var SpatialNav = (function () {
 
             // Global filter: when a layer is open, restrict navigation to it.
             SpatialNavigation.set({
+                // Runs once per candidate on every key press: when a layer is open it rejects most
+                // of the page first, and the computed style (an allocation and possibly a style
+                // flush per element) only runs for candidates that passed everything else.
                 navigableFilter: function (el) {
-                    if (isInsideInactiveFeedHub(el)) return false;
-                    if (window.getComputedStyle(el).visibility === 'hidden') return false;
-                    if (isInClosedDetailsContent(el)) return false;
                     var layer = peekLayer();
-                    if (layer && layer.el) {
-                        return layer.el.contains(el);
-                    }
-                    return true;
+                    if (layer && layer.el && !layer.el.contains(el)) return false;
+                    if (isInsideInactiveFeedHub(el)) return false;
+                    if (isInClosedDetailsContent(el)) return false;
+                    return window.getComputedStyle(el).visibility !== 'hidden';
                 }
             });
 

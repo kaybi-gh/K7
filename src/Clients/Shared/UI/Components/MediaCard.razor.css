@@ -4,7 +4,7 @@
     min-width: 0;
     container-type: inline-size;
     padding: 4px;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    transition: transform 0.2s ease;
 }
 
 .media-card-container {
@@ -309,7 +309,6 @@
     white-space: nowrap;
     text-overflow: ellipsis;
     overflow: hidden;
-    will-change: transform;
 }
 
 a.media-card-subtitle-link,
@@ -329,7 +328,6 @@ a.media-card-title-link:hover {
     white-space: nowrap;
     text-overflow: ellipsis;
     overflow: hidden;
-    will-change: transform;
 }
 
 .media-card:hover .media-card-title,
@@ -350,6 +348,9 @@ a.media-card-title-link:hover {
     display: inline-block;
     width: auto;
     overflow: visible;
+    /* Layer only while the marquee runs: a permanent will-change kept two compositor
+       layers per card (hundreds on a library page). */
+    will-change: transform;
     animation: media-card-title-scroll 3s linear 0.5s infinite alternate;
 }
 
