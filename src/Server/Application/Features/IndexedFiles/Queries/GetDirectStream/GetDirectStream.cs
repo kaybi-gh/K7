@@ -45,7 +45,8 @@ public class GetDirectStreamQueryHandler : IRequestHandler<GetDirectStreamQuery,
             ? mime
             : "application/octet-stream";
 
-        _logger.LogInformation(
+        // Players issue many Range requests per minute: keep this out of the default log level.
+        _logger.LogDebug(
             "Direct stream {IndexedFileId} size={Size} mime={Mime} container={Container}",
             entity.Id,
             file.Length,

@@ -56,8 +56,11 @@ try
                 || httpContext.Request.Path.StartsWithSegments(HealthProbePaths.Liveness))
                 return LogEventLevel.Verbose;
 
-            return ex is not null || httpContext.Response.StatusCode > 499
-                ? LogEventLevel.Error
+            if (ex is not null || httpContext.Response.StatusCode > 499)
+                return LogEventLevel.Error;
+
+            return RequestLogLevels.IsHighVolumePath(httpContext.Request.Path)
+                ? LogEventLevel.Debug
                 : LogEventLevel.Information;
         };
         options.EnrichDiagnosticContext = (diagnosticContext, httpContext) =>
