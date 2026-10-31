@@ -485,9 +485,15 @@ window.initVideoJs = function (id, videoPlayer, videoContainer, options, dotNetR
             .catch(error => console.error('Error invoking OnVolumeChanged', error));
     });
 
-    document.addEventListener('fullscreenchange', function () {
+    const onFullscreenChange = function () {
         dotNetRef.invokeMethodAsync('OnFullscreenChanged', document.fullscreenElement === videoContainer)
-            .catch(error => console.error('Error invoking OnVolumeChanged', error));
+            .catch(error => console.error('Error invoking OnFullscreenChanged', error));
+    };
+    document.addEventListener('fullscreenchange', onFullscreenChange);
+    // Every disposal path (disposeVideoJs, re-init, surface blanking) fires 'dispose': without
+    // this, each past playback kept a document listener calling a released DotNetObjectReference.
+    player.on('dispose', function () {
+        document.removeEventListener('fullscreenchange', onFullscreenChange);
     });
 
     players[id] = player;

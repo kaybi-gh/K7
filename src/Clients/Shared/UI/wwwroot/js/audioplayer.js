@@ -1438,10 +1438,20 @@ window.K7.Visualizer = {
                 return;
             }
 
-            const w = canvas.width = clientW * (window.devicePixelRatio || 1);
-            const h = canvas.height = clientH * (window.devicePixelRatio || 1);
+            // Resize the backing store only when the layout changed: assigning width/height
+            // reallocates and clears the canvas, which used to happen on every frame.
+            const dpr = window.devicePixelRatio || 1;
+            const targetW = Math.floor(clientW * dpr);
+            const targetH = Math.floor(clientH * dpr);
+            if (canvas.width !== targetW) canvas.width = targetW;
+            if (canvas.height !== targetH) canvas.height = targetH;
+            const w = canvas.width;
+            const h = canvas.height;
 
-            const data = new Uint8Array(audioState.analyserNode.frequencyBinCount);
+            const binCount = audioState.analyserNode.frequencyBinCount;
+            if (!this._freqData || this._freqData.length !== binCount)
+                this._freqData = new Uint8Array(binCount);
+            const data = this._freqData;
             audioState.analyserNode.getByteFrequencyData(data);
 
             ctx.clearRect(0, 0, w, h);
