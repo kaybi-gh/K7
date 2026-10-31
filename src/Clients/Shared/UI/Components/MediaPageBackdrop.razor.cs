@@ -60,6 +60,8 @@ public partial class MediaPageBackdrop : IAsyncDisposable
     private string? _attachedSoftStillImageUrl;
     private string? _resolvedImageUrl;
     private string? _resolvedSecondaryImageUrl;
+    private (string? Image, string? HighRes, string? Secondary, string? SecondaryHighRes) _resolvedInputs;
+    private bool _hasResolvedInputs;
     private readonly string?[] _layerUrls = [null, null];
     private readonly bool[] _layerSoft = [false, false];
     private int _activeLayer;
@@ -176,7 +178,7 @@ public partial class MediaPageBackdrop : IAsyncDisposable
 
     [JSInvokable]
     public Task OnHeroViewportChangedAsync() =>
-        _disposed ? Task.CompletedTask : RefreshResolvedUrlsAsync();
+        _disposed ? Task.CompletedTask : RefreshResolvedUrlsAsync(force: true);
 
     /// <summary>
     /// Crossfade a TV still without a parent re-render. Incoming JPEG is decoded
@@ -226,9 +228,15 @@ public partial class MediaPageBackdrop : IAsyncDisposable
     private Task SwapPendingFocusedLayerAsync() =>
         SwapFocusedLayerAsync(_pendingFocusedUrl, _pendingFocusedSoft);
 
-    private async Task RefreshResolvedUrlsAsync()
+    private async Task RefreshResolvedUrlsAsync(bool force = false)
     {
         if (_disposed || _module is null)
+            return;
+
+        // Parent re-renders (every D-pad focus on a detail page) used to cost two interop round
+        // trips here for the same URLs. Only new inputs or a viewport change pick again.
+        var inputs = (ImageUrl, HighResImageUrl, SecondaryImageUrl, SecondaryHighResImageUrl);
+        if (!force && _hasResolvedInputs && inputs == _resolvedInputs)
             return;
 
         try
@@ -250,6 +258,9 @@ public partial class MediaPageBackdrop : IAsyncDisposable
 
             if (_disposed)
                 return;
+
+            _resolvedInputs = inputs;
+            _hasResolvedInputs = true;
 
             var primaryChanged = !string.Equals(primary, _resolvedImageUrl, StringComparison.Ordinal);
             var secondaryChanged = !string.Equals(secondary, _resolvedSecondaryImageUrl, StringComparison.Ordinal);

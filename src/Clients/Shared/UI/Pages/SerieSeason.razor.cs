@@ -56,6 +56,7 @@ public partial class SerieSeason : IAsyncDisposable
     private string? _episodeCarouselKey;
     private readonly Dictionary<Guid, MediaCardViewModel> _episodeCardModels = [];
     private readonly Dictionary<Guid, IReadOnlyList<LitePersonRoleDto>> _episodeCastCache = [];
+    private readonly SuppressRenderEventHandler _silentFocus = new();
     private IReadOnlyList<PersonRoleDisplayHelper.GroupedDisplay> _focusedEpisodeDisplayableCast = [];
     private Guid? _castLoadEpisodeId;
     private CancellationTokenSource? _castLoadCts;
@@ -355,6 +356,11 @@ public partial class SerieSeason : IAsyncDisposable
         return model;
     }
 
+    // The focus handler drives the hero, backdrop and cast imperatively: a page render per
+    // D-pad step re-diffed every episode card for nothing.
+    private EventCallback CreateSilentEpisodeFocusCallback(LiteSerieEpisodeDto episode) =>
+        EventCallback.Factory.Create(_silentFocus, () => OnTvEpisodeFocus(episode));
+
     private void OnTvEpisodeFocus(LiteSerieEpisodeDto episode)
     {
         if (_focusedEpisode?.Id == episode.Id)
@@ -464,8 +470,13 @@ public partial class SerieSeason : IAsyncDisposable
         if (_focusedEpisode?.Id != episodeId)
             return;
 
+        var hadCast = HasDisplayableCast;
         ApplyFocusedEpisodeCast(roles);
         _tvCast?.ApplyCast(_focusedEpisodeDisplayableCast);
+
+        // Focus no longer re-renders the page: refresh it when the scroll hint must appear or go.
+        if (hadCast != HasDisplayableCast)
+            StateHasChanged();
     }
 
     private void ApplyFocusedEpisodeCast(IReadOnlyList<LitePersonRoleDto> roles)

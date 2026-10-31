@@ -89,7 +89,7 @@ else if (_season is not null && _isTv)
                                        WatchedStatusEnabled="true"
                                        WatchStateMenuEnabled="_canSetWatchState"
                                        OnActivated="() => PlayEpisodeAsync(ep)"
-                                       OnFocused="() => OnTvEpisodeFocus(ep)"
+                                       OnFocused="@CreateSilentEpisodeFocusCallback(ep)"
                                        OnWatchStateChanged="() => OnEpisodeWatchStateChangedAsync(ep)" />
                         </div>
                     }
