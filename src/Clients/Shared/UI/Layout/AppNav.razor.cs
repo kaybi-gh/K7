@@ -34,6 +34,7 @@ public partial class AppNav : IDisposable
     private bool _chatOpen;
     private readonly Dictionary<Guid, string> _knownParticipants = [];
     private int _adminStreamCount;
+    private int _renderedNowPlayingCount = -1;
     private bool _joinedAdminStreams;
     private int _savedSessionCount;
     private bool _savedSessionsKnown;
@@ -278,7 +279,17 @@ public partial class AppNav : IDisposable
         await InvokeAsync(StateHasChanged);
     }
 
-    private void OnNowPlayingChanged() => InvokeAsync(StateHasChanged);
+    // The nav only shows how many other devices play: their 10 s heartbeats change positions,
+    // not the count, and used to re-render the whole nav every few seconds.
+    private void OnNowPlayingChanged()
+    {
+        var count = NowPlayingCount;
+        if (count == _renderedNowPlayingCount)
+            return;
+
+        _renderedNowPlayingCount = count;
+        InvokeAsync(StateHasChanged);
+    }
 
     private void OnMusicSessionsChanged() => _ = RefreshSavedSessionsAsync();
 
@@ -334,6 +345,10 @@ public partial class AppNav : IDisposable
 
     private void OnAdminStreamsUpdated(IReadOnlyList<ActiveStreamDto> streams)
     {
+        // Pushed every 2 s while streams run; only the count is displayed.
+        if (streams.Count == _adminStreamCount)
+            return;
+
         _adminStreamCount = streams.Count;
         InvokeAsync(StateHasChanged);
     }
