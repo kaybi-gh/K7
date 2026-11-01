@@ -36,7 +36,8 @@ public partial class K7DialogHost : IDisposable
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        foreach (var entry in _dialogs)
+        // Snapshot: a dialog can close (and leave _dialogs) while this loop awaits.
+        foreach (var entry in _dialogs.ToArray())
         {
             if (entry.LayerAttached || entry.Result.IsCompleted)
                 continue;
@@ -71,6 +72,14 @@ public partial class K7DialogHost : IDisposable
         {
             // Element already removed
         }
+
+        // Closed entries used to stay in the list for the life of the layout, holding their
+        // parameters (DTO graphs) and their DotNetObjectReference.
+        await InvokeAsync(() =>
+        {
+            _dialogs.Remove(entry);
+            entry.Dispose();
+        });
 
         await UpdatePageInteractionLockAsync();
     }
@@ -119,6 +128,9 @@ public partial class K7DialogHost : IDisposable
     {
         if (DialogService is K7DialogService svc)
             svc.OnShow -= HandleShow;
+
+        foreach (var entry in _dialogs)
+            entry.Dispose();
 
         if (!RendererInfo.IsInteractive)
             return;
