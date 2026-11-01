@@ -1,6 +1,7 @@
 using K7.Clients.Shared.UI.Components.Dialogs;
 using K7.Clients.Shared.UI.Helpers;
 using K7.Clients.Shared.UI.Models;
+using K7.Shared.Dtos.Entities;
 using K7.Shared.Dtos.Entities.Reviews;
 using K7.Shared.Dtos.Federation.Social;
 using K7.Shared.Interfaces;
@@ -16,6 +17,12 @@ public partial class MediaReviewsSection : ComponentBase
     [Inject] private IUserAdminService UserAdminService { get; set; } = default!;
 
     [Parameter] public Guid MediaId { get; set; }
+
+    /// <summary>
+    /// Watched state the page already holds (see <see cref="IsWatched"/>). When set, spoiler blur
+    /// does not reload the whole media just to read it.
+    /// </summary>
+    [Parameter] public bool? Watched { get; set; }
 
     private Carousel? _carousel;
     private readonly List<MediaReviewCardModel> _reviews = [];
@@ -44,7 +51,12 @@ public partial class MediaReviewsSection : ComponentBase
                 .DistinctBy(r => r.Id));
             _reviews.Sort((a, b) => b.Created.CompareTo(a.Created));
 
-            await UpdateSpoilerStateAsync();
+            // Spoiler blur needs the current user, the review preferences and the watched state:
+            // three calls a detail page does not need when there is no review to show.
+            if (_reviews.Count > 0)
+                await UpdateSpoilerStateAsync();
+            else
+                _blurUnwatchedMedia = false;
         }
         catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
         {
@@ -78,11 +90,12 @@ public partial class MediaReviewsSection : ComponentBase
             return;
         }
 
-        var media = await MediaService.GetMediaAsync(MediaId);
-        var state = media?.UserState;
-        var watched = state is not null && (state.IsCompleted || state.PlayCount > 0);
+        var watched = Watched ?? IsWatched((await MediaService.GetMediaAsync(MediaId))?.UserState);
         _blurUnwatchedMedia = !watched;
     }
+
+    public static bool IsWatched(UserMediaStateDto? state) =>
+        state is not null && (state.IsCompleted || state.PlayCount > 0);
 
     private bool IsReviewSpoilerBlurred(MediaReviewCardModel review) =>
         _blurUnwatchedMedia && review.UserId != _currentUserId;

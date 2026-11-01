@@ -242,7 +242,7 @@ else if (_episode is not null)
             </Carousel>
         }
 
-        <MediaReviewsSection @ref="_reviewsSection" MediaId="_episode.Id" />
+        <MediaReviewsSection @ref="_reviewsSection" MediaId="_episode.Id" Watched="@MediaReviewsSection.IsWatched(_episode.UserState)" />
         </div>
         </MediaPageContent>
         </div>

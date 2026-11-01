@@ -219,7 +219,7 @@ else
 
         @if (_movie is not null)
         {
-            <MediaReviewsSection @ref="_reviewsSection" MediaId="_movie.Id" />
+            <MediaReviewsSection @ref="_reviewsSection" MediaId="_movie.Id" Watched="@MediaReviewsSection.IsWatched(_movie.UserState)" />
         }
 
         @if (_similarMedia.Count > 0)

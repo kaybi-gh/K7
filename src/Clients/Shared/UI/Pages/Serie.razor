@@ -270,7 +270,7 @@ else if (_serie is not null)
 
                 @if (_serie is not null)
                 {
-                    <MediaReviewsSection @ref="_reviewsSection" MediaId="_serie.Id" />
+                    <MediaReviewsSection @ref="_reviewsSection" MediaId="_serie.Id" Watched="@MediaReviewsSection.IsWatched(_serie.UserState)" />
                 }
 
                 @if (_similarMedia.Count > 0)
@@ -316,7 +316,7 @@ else if (_serie is not null)
 
                 @if (_serie is not null)
                 {
-                    <MediaReviewsSection @ref="_reviewsSection" MediaId="_serie.Id" />
+                    <MediaReviewsSection @ref="_reviewsSection" MediaId="_serie.Id" Watched="@MediaReviewsSection.IsWatched(_serie.UserState)" />
                 }
 
                 @if (_similarMedia.Count > 0)

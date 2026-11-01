@@ -278,7 +278,7 @@ else if (_album is not null)
             }
 
             <div class="album-reviews">
-                <MediaReviewsSection @ref="_reviewsSection" MediaId="_album.Id" />
+                <MediaReviewsSection @ref="_reviewsSection" MediaId="_album.Id" Watched="@MediaReviewsSection.IsWatched(_album.UserState)" />
             </div>
         </div>
         </div>
