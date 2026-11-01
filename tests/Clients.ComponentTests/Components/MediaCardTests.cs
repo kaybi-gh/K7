@@ -1,3 +1,4 @@
+using System.Reflection;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Clients.Shared.Services;
@@ -17,6 +18,78 @@ namespace K7.Clients.ComponentTests.Components;
 [TestFixture]
 public class MediaCardTests
 {
+    [Test]
+    public void RenderState_ShouldCoverEveryParameter_WhenParametersAreAdded()
+    {
+        // ShouldRender skips a parent re-render when RenderState is unchanged: a parameter left
+        // out of it would stop reaching the screen after the first render.
+        var renderState = typeof(MediaCard).GetNestedType("RenderState", BindingFlags.NonPublic);
+        renderState.Should().NotBeNull();
+        var captured = renderState!.GetProperties().Select(p => p.Name).ToHashSet(StringComparer.Ordinal);
+
+        var missing = typeof(MediaCard)
+            .GetProperties(BindingFlags.Public | BindingFlags.Instance)
+            .Where(p => p.GetCustomAttribute<ParameterAttribute>() is not null)
+            // Arbitrary child content cannot be compared: ShouldRender always renders with it.
+            .Where(p => p.Name != nameof(MediaCard.CoverContent))
+            .Select(p => p.PropertyType == typeof(EventCallback) && p.Name.StartsWith("On", StringComparison.Ordinal)
+                ? "Has" + p.Name[2..]
+                : p.Name)
+            .Where(name => !captured.Contains(name))
+            .ToList();
+
+        missing.Should().BeEmpty("every MediaCard parameter must be part of RenderState");
+    }
+
+    [Test]
+    public void ParentRerender_ShouldSkipCardRender_WhenOnlyCallbacksChanged()
+    {
+        using var ctx = CreateContext();
+        var model = new MediaCardViewModel
+        {
+            Id = Guid.NewGuid().ToString(),
+            Kind = MediaCardKind.Poster,
+            MediaType = MediaType.Movie,
+            Title = "Test Movie"
+        };
+
+        var cut = ctx.Render<MediaCard>(p => p
+            .Add(c => c.Model, model)
+            .Add(c => c.OnFocused, () => { }));
+        // The first parameter pass after the initial render records the displayed state.
+        cut.Render(p => p.Add(c => c.OnFocused, () => { }));
+        var renders = cut.RenderCount;
+
+        cut.Render(p => p.Add(c => c.OnFocused, () => { }));
+        cut.Render(p => p.Add(c => c.OnFocused, () => { }));
+
+        cut.RenderCount.Should().Be(renders);
+    }
+
+    [Test]
+    public void ParentRerender_ShouldRenderCard_WhenModelWasPatchedInPlace()
+    {
+        using var ctx = CreateContext();
+        var model = new MediaCardViewModel
+        {
+            Id = Guid.NewGuid().ToString(),
+            Kind = MediaCardKind.Poster,
+            MediaType = MediaType.Movie,
+            Title = "Test Movie"
+        };
+
+        var cut = ctx.Render<MediaCard>(p => p
+            .Add(c => c.Model, model)
+            .Add(c => c.ProgressEnabled, true));
+        cut.Render(p => p.Add(c => c.Model, model));
+        var renders = cut.RenderCount;
+
+        model.Progress = 42;
+        cut.Render(p => p.Add(c => c.Model, model));
+
+        cut.RenderCount.Should().BeGreaterThan(renders);
+    }
+
     [Test]
     public void Render_ShouldDisplayAdditionalInformations_InFooter()
     {

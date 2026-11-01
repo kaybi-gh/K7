@@ -58,6 +58,8 @@ public partial class MediaCard : IDisposable
     private const double DragCancelClickThresholdSquared = 100; // 10px
 
     private readonly Guid _menuOwnerId = Guid.NewGuid();
+    private bool _parametersPending;
+    private RenderState? _lastRenderState;
     private bool _menuOpen;
     private bool _longPressTriggered;
     private bool _keyHeldDown;
@@ -147,6 +149,92 @@ public partial class MediaCard : IDisposable
 
         return L["ProgressPercent", (int)Math.Round(Model.Progress)];
     }
+
+    // Parents pass new EventCallback instances on every render, so Blazor re-diffed every card
+    // (and its image) each time a Home row, a grid or a season page rendered. Parent-driven
+    // renders now go through only when something the card displays changed. Internal state
+    // changes (menu, long press, drag) do not go through SetParametersAsync and still render.
+    public override Task SetParametersAsync(ParameterView parameters)
+    {
+        _parametersPending = true;
+        return base.SetParametersAsync(parameters);
+    }
+
+    protected override bool ShouldRender()
+    {
+        if (!_parametersPending)
+            return true;
+
+        _parametersPending = false;
+
+        // Arbitrary child content cannot be compared.
+        if (CoverContent is not null)
+            return true;
+
+        var state = CaptureRenderState();
+        if (state == _lastRenderState)
+            return false;
+
+        _lastRenderState = state;
+        return true;
+    }
+
+    // Model is copied: feeds patch Progress / Watched on the same instance.
+    private RenderState CaptureRenderState() => new(
+        Model is null ? null : Model with { },
+        Skeleton,
+        Variant,
+        Href,
+        OverlayEnabled,
+        HoverOverlayEnabled,
+        Selected,
+        ContextMenuEnabled,
+        ProgressEnabled,
+        WatchedStatusEnabled,
+        FooterVisible,
+        ExcludeMenuEnabled,
+        ContinueWatchingMenuEnabled,
+        WatchStateMenuEnabled,
+        BulkEpisodeCount,
+        IsAdmin,
+        ElementId,
+        PlaceholderIcon,
+        TypeBadgeIcon,
+        ImageLoading,
+        OnActivated.HasDelegate,
+        OnFocused.HasDelegate,
+        OnWatchStateChanged.HasDelegate,
+        OnExcludeForSelf.HasDelegate,
+        OnExcludeForOthers.HasDelegate,
+        OnDismissFromContinueWatching.HasDelegate);
+
+    private sealed record RenderState(
+        MediaCardViewModel? Model,
+        bool Skeleton,
+        MediaCardVariant Variant,
+        string? Href,
+        bool OverlayEnabled,
+        bool HoverOverlayEnabled,
+        bool Selected,
+        bool ContextMenuEnabled,
+        bool ProgressEnabled,
+        bool WatchedStatusEnabled,
+        bool FooterVisible,
+        bool ExcludeMenuEnabled,
+        bool ContinueWatchingMenuEnabled,
+        bool WatchStateMenuEnabled,
+        int? BulkEpisodeCount,
+        bool IsAdmin,
+        string? ElementId,
+        string? PlaceholderIcon,
+        string? TypeBadgeIcon,
+        string ImageLoading,
+        bool HasActivated,
+        bool HasFocused,
+        bool HasWatchStateChanged,
+        bool HasExcludeForSelf,
+        bool HasExcludeForOthers,
+        bool HasDismissFromContinueWatching);
 
     protected override void OnInitialized() =>
         ContextMenuService.Changed += OnContextMenuServiceChanged;
