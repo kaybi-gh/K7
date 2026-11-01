@@ -110,6 +110,8 @@ The scanner derives titles from filenames and folders. Prefer consistent layouts
 
 When the last indexed file for an episode is removed (scan or delete), K7 removes orphan episodes with no user data and cascades to empty seasons and series. Episodes kept for watch history, playlists, or collections are retained without files until you clear that state. Library browse, home, and search only list series/seasons/episodes that still have playable files. Series detail carousels hide empty seasons and non-playable episodes. History, reviews, and stats deep links can still open those media pages (playback is disabled with an unavailable state).
 
+A scan never treats an unreachable library as deleted content. When the library root is missing or empty (typically a network share that is not mounted), or when a full scan finds no media file at all, K7 keeps every indexed file and logs a warning instead of removing them. Files under a folder that cannot be read (access denied, timeout, I/O error) are kept the same way while the rest of the scan applies. To really empty a library, delete the library itself.
+
 When a directory already has episodes attached to a single series, new files in that folder are attached to the same series (folder consensus). Close title variants parsed from filenames in the same folder are also unified before matching. A mis-matched episode file can be re-identified from the episode page (Indexed versions).
 
 Adding a new episode to an existing series refreshes series-level fields (status, overview) and enriches the new episode (and its season when that season is new). Existing episodes keep their metadata and artwork. A manual **Refresh metadata** or the scheduled library refresh still re-fetches the whole series.

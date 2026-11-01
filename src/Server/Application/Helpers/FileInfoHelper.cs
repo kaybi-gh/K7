@@ -5,6 +5,12 @@ namespace K7.Server.Application.Helpers;
 
 public static class FileInfoHelper
 {
+    /// <summary>
+    /// Error reported for a scoped scan path that is gone. Unlike access errors it means the
+    /// content was really removed, so the scan may drop its indexed files.
+    /// </summary>
+    public const string PathDoesNotExistError = "Path does not exist.";
+
     private static readonly HashSet<string> ExcludedDirectoryNames = new(StringComparer.OrdinalIgnoreCase)
     {
         "@eaDir",
@@ -137,7 +143,7 @@ public static class FileInfoHelper
                 continue;
             }
 
-            inaccessiblePaths.Add((path, "Path does not exist."));
+            inaccessiblePaths.Add((path, PathDoesNotExistError));
         }
 
         var distinctFiles = files
@@ -146,6 +152,25 @@ public static class FileInfoHelper
             .ToList();
 
         return (distinctFiles, inaccessiblePaths);
+    }
+
+    /// <summary>
+    /// True when the directory exists and lists at least one entry. An unmounted network share
+    /// usually leaves its mount point empty; a timeout or an access error counts as unavailable.
+    /// </summary>
+    public static bool IsDirectoryPopulated(string directoryPath, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return FileSystemIo.Run(
+                () => Directory.Exists(directoryPath) && Directory.EnumerateFileSystemEntries(directoryPath).Any(),
+                FileSystemIo.FileAccessTimeout,
+                cancellationToken);
+        }
+        catch (Exception ex) when (ex is TimeoutException or IOException or UnauthorizedAccessException)
+        {
+            return false;
+        }
     }
 
     public static (List<FileInfo> Files, List<(string Path, string Error)> InaccessiblePaths) GetAllFileInfosRecursively(

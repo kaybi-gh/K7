@@ -129,7 +129,18 @@ public class FileIndexer : IFileIndexer
 
             // Trust the filesystem scan membership for removals. A full File.Exists sweep over the
             // whole catalog is a common hang point on SMB/NAS and duplicates work already done by scan.
-            var removedFiles = diff.RemovedFiles;
+            // The guard keeps files when the share looks unmounted or their folder could not be read.
+            var removalDecision = LibraryScanRemovalGuard.Apply(
+                diff.RemovedFiles,
+                library.RootPath!,
+                isFullScan: scopePaths is null,
+                scannedEntries.Count,
+                libraryRootAvailable: diff.RemovedFiles.Count == 0
+                    || FileInfoHelper.IsDirectoryPopulated(library.RootPath!, cancellationToken),
+                inaccessiblePaths);
+            LogProtectedRemovals(library, removalDecision);
+
+            var removedFiles = removalDecision.FilesToRemove;
             var removedIds = removedFiles.Select(f => f.Id).ToHashSet();
 
             var unchangedFiles = diff.UnchangedFiles.Where(f => !removedIds.Contains(f.Id)).ToList();
@@ -580,6 +591,31 @@ public class FileIndexer : IFileIndexer
         _logger.LogInformation("Found {Count} unchanged files missing FileMetadata, creating tasks.", filesMissingMetadata.Count);
 
         ProcessAddedFiles(library, filesMissingMetadata, backgroundTasks);
+    }
+
+    private void LogProtectedRemovals(Library library, LibraryScanRemovalDecision decision)
+    {
+        if (decision.ProtectedFiles.Count == 0)
+            return;
+
+        switch (decision.BlockReason)
+        {
+            case LibraryScanRemovalBlockReason.LibraryRootUnavailable:
+                _logger.LogWarning(
+                    "Library {LibraryId} root {RootPath} is missing or empty: keeping {Count} indexed files the scan did not find. Check that the share is mounted.",
+                    library.Id, library.RootPath, decision.ProtectedFiles.Count);
+                break;
+            case LibraryScanRemovalBlockReason.NoFilesFound:
+                _logger.LogWarning(
+                    "Scan of library {LibraryId} found no media files: keeping {Count} indexed files. Delete the library if its content is really gone.",
+                    library.Id, decision.ProtectedFiles.Count);
+                break;
+            default:
+                _logger.LogWarning(
+                    "Keeping {Count} indexed files of library {LibraryId} located under folders that could not be read.",
+                    decision.ProtectedFiles.Count, library.Id);
+                break;
+        }
     }
 
     private async Task ProcessRemovedFilesAsync(IReadOnlyList<IndexedFile> removedFiles, CancellationToken cancellationToken)
