@@ -61,6 +61,26 @@ internal static class MauiStartupTrace
         Emit(name + "#" + count, ms);
     }
 
+    /// <summary>
+    /// Sink for <see cref="K7.Clients.Shared.Services.PerfTrace"/> lines: <c>adb logcat -s K7-Perf</c>.
+    /// </summary>
+    public static void WritePerf(string line)
+    {
+        Debug.WriteLine("K7-Perf " + line);
+#if ANDROID
+        try
+        {
+            Log.Info("K7-Perf", line);
+        }
+        catch
+        {
+            // Logging must never break the app.
+        }
+#else
+        Console.WriteLine("K7-Perf " + line);
+#endif
+    }
+
     private static void Emit(string label, double ms)
     {
         var line = label + " +" + ms.ToString("F0") + "ms" + RuntimeCounters();

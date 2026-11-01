@@ -125,6 +125,9 @@ public static class PreferenceKeys
     // Ambient media theme on serie/movie detail pages
     public static readonly PreferenceKey<bool> THEME_SONGS_DISABLED_ON_DEVICE = new("ThemeSongsDisabledOnDevice");
 
+    // Opt-in page timing lines (Settings -> About -> Diagnostics, admins)
+    public static readonly PreferenceKey<bool> PERF_TRACE_ENABLED = new("PerfTraceEnabled");
+
     // Page sidebar (admin / settings)
     public static readonly PreferenceKey<bool> PAGE_SIDEBAR_COLLAPSED = new("PageSidebarCollapsed");
 

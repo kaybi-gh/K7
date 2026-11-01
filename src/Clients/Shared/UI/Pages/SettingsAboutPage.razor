@@ -43,6 +43,17 @@
         </div>
     </section>
 
+    @if (_isAdmin)
+    {
+        <section class="about-section">
+            <h6 class="about-section-title">@L["Diagnostics"]</h6>
+            <p class="about-disclaimer">@L["PerfTraceHint"]</p>
+            <K7Switch Label="@L["PerfTrace"]"
+                      Value="_perfTraceEnabled"
+                      ValueChanged="OnPerfTraceChangedAsync" />
+        </section>
+    }
+
     <section class="about-section">
         <h6 class="about-section-title">@L["Links"]</h6>
         <div class="about-links">

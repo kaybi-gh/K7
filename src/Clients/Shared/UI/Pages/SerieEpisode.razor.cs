@@ -117,6 +117,9 @@ public partial class SerieEpisode : IAsyncDisposable
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        if (!_loading && _episode is not null)
+            PerfTrace.Mark("Episode", "ready");
+
         if (!_loading && _episode is not null && HasBelowContent)
         {
             if (!_tvScrollInitialized)
@@ -233,6 +236,7 @@ public partial class SerieEpisode : IAsyncDisposable
             return;
         }
 
+        PerfTrace.Mark("Episode", "data");
         _indexedFile = _episode.IndexedFiles?.FirstOrDefault();
         _episodeUserRating = GetUserRating(_episode.Ratings);
         _pageTitle = $"{_episode.SerieTitle} - S{SeasonNumber:00}E{EpisodeNumber:00} - {_episode.Title}";

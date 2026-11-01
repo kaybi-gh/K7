@@ -46,4 +46,7 @@
   <data name="CreditPhosphor" xml:space="preserve"><value>Icônes d'interface</value></data>
   <data name="TmdbDisclaimer" xml:space="preserve"><value>Ce produit utilise l'API TMDB mais n'est ni approuvé ni certifié par TMDB.</value></data>
   <data name="TvdbDisclaimer" xml:space="preserve"><value>Les informations et images TV sont fournies par TheTVDB.com, sans approbation ni certification de TheTVDB.com ou de ses affiliés.</value></data>
+  <data name="Diagnostics" xml:space="preserve"><value>Diagnostic</value></data>
+  <data name="PerfTrace" xml:space="preserve"><value>Mesures de performance sur cet appareil</value></data>
+  <data name="PerfTraceHint" xml:space="preserve"><value>Écrit les temps de chargement des pages, des appels au serveur et du D-pad dans les journaux de l'appareil : logcat sur Android (adb logcat -s K7-Perf), console du navigateur sur le web. À désactiver une fois les mesures faites.</value></data>
 </root>

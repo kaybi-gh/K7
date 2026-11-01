@@ -3,6 +3,7 @@ using System.Security.Claims;
 using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
+using K7.Clients.Shared.Services;
 using K7.Clients.Shared.UI.Components;
 using K7.Clients.Shared.UI.Components.Dialogs;
 using K7.Clients.Shared.UI.Helpers;
@@ -316,6 +317,9 @@ public partial class HomeView : IAsyncDisposable
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        if (PerfTrace.IsEnabled && !isLoading && GetVisibleRows().Any())
+            PerfTrace.Mark("Home", "ready");
+
         if (FeedStore.IsLoaded && !isLoading && !_isOffline && !_emptyFeedRetried && !GetVisibleRows().Any())
         {
             _emptyFeedRetried = true;

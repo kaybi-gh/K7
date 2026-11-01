@@ -303,6 +303,8 @@ Peer follows the same stream decision as local playback (do not force video enco
 
 Admin Dashboard KPIs and Libraries issue chips link into **Admin -> Diagnostics**.
 
+To measure page load and TV navigation times on one device, turn on **Settings -> About -> Diagnostics -> Performance measurements on this device** (admins only). The timings go to the device logs (`adb logcat -s K7-Perf` on Android, browser console on the web). See [developing.md](../dev/developing.md#measuring-pages-perftrace). Turn it off when you are done.
+
 The dashboard disk section lists free space for the filesystem that holds the app, each configured `Paths` directory, and each library root. In Docker, a bind-mounted library is measured on its own mount, separate from the container root. That root entry is labeled Runtime. Mounts that share one filesystem (two library folders on the same disk) appear as a single entry. Amounts stay in GB until 1024 GB, then switch to TB. The bar keeps the accent color while more than 20% is free, turns orange at 20% free, and red at 10% free.
 
 - **`/admin/diagnostics` (dashboard):** media-health overview for K7 - severity totals, work-class

@@ -237,11 +237,17 @@ public partial class SerieSeason : IAsyncDisposable
             ScheduleFocusedEpisodeCastUpdate(_focusedEpisode);
         }
 
+        if (_season is not null)
+            PerfTrace.Mark("Season", "data");
+
         _loading = false;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        if (!_loading && _season is not null)
+            PerfTrace.Mark("Season", "ready");
+
         if (_isTv && _season is not null && !_loading)
         {
             try

@@ -50,7 +50,10 @@ public partial class MainLayout : IDisposable
     protected override void OnInitialized()
     {
         ColdStartTrace.Write("MainLayout-init");
-        var lastUserId = Services.GetRequiredService<IDeviceStorageService>().Get(PreferenceKeys.LAST_ACTIVE_USER_ID);
+        var deviceStorage = Services.GetRequiredService<IDeviceStorageService>();
+        PerfTrace.Initialize(deviceStorage.Get(PreferenceKeys.PERF_TRACE_ENABLED) == true, NavigationManager);
+
+        var lastUserId = deviceStorage.Get(PreferenceKeys.LAST_ACTIVE_USER_ID);
         if (!string.IsNullOrEmpty(lastUserId))
             CustomNavStore.BindUser(lastUserId);
 
@@ -234,6 +237,8 @@ public partial class MainLayout : IDisposable
             FirstPaintSignal.Signal();
             AppReadySignal.Signal();
             PlaybackAssetLoader.Prefetch(JS);
+            if (PerfTrace.IsEnabled)
+                await PerfTrace.SyncJsAsync(JS);
             await JS.InvokeVoidAsync("K7.applyTheme", ThemeService.Theme.CssDataAttribute);
             await JS.InvokeVoidAsync("K7.dismissPreload");
             _selfRef = DotNetObjectReference.Create(this);

@@ -264,9 +264,13 @@ public partial class SelectProfile
     private async Task SelectUserAsync(LocalUser user)
     {
         if (_selecting)
+        {
+            PerfTrace.Note("select-user ignored: a selection is already running");
             return;
+        }
 
         _selecting = true;
+        PerfTrace.Note("select-user start reconnect=" + NeedsReconnect(user) + " pin=" + user.HasPin);
         try
         {
             SharedProfileSession.ClearActiveGroup();

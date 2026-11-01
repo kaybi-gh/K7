@@ -1,8 +1,11 @@
 using System.Reflection;
+using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Services;
 using K7.Server.Domain.Constants;
+using K7.Shared;
 using K7.Shared.Interfaces;
 using Microsoft.AspNetCore.Components;
+using Microsoft.JSInterop;
 
 namespace K7.Clients.Shared.UI.Pages;
 
@@ -10,6 +13,8 @@ public partial class SettingsAboutPage
 {
     [Inject] private IServerInfoService ServerInfoService { get; set; } = default!;
     [Inject] private IFeatureAccessService FeatureAccess { get; set; } = default!;
+    [Inject] private IDeviceStorageService DeviceStorage { get; set; } = default!;
+    [Inject] private IJSRuntime JS { get; set; } = default!;
 
     private const string RepositoryUrl = "https://github.com/kaybi-gh/K7";
     private const string UserDocsUrl = "https://github.com/kaybi-gh/K7/blob/main/docs/user/guide.md";
@@ -18,6 +23,7 @@ public partial class SettingsAboutPage
     private string? _serverVersion;
     private string _clientVersion = string.Empty;
     private bool _isAdmin;
+    private bool _perfTraceEnabled = PerfTrace.IsEnabled;
 
     private string ServerVersionDisplay => GetVersionWithoutHash(_serverVersion) ?? "...";
     private string ClientVersionDisplay => GetVersionWithoutHash(_clientVersion) ?? "...";
@@ -43,6 +49,14 @@ public partial class SettingsAboutPage
         {
             // Server version unavailable (offline, outdated server, or non-JSON response)
         }
+    }
+
+    private async Task OnPerfTraceChangedAsync(bool enabled)
+    {
+        _perfTraceEnabled = enabled;
+        DeviceStorage.Set(PreferenceKeys.PERF_TRACE_ENABLED, enabled);
+        PerfTrace.SetEnabled(enabled);
+        await PerfTrace.SyncJsAsync(JS);
     }
 
     private static string? GetVersionWithoutHash(string? version)

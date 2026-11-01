@@ -221,6 +221,7 @@ public partial class Serie : IAsyncDisposable
             {
                 // Paint the hero as soon as the serie is mapped: the library group, the theme song
                 // and the resume episode follow instead of holding first paint.
+                PerfTrace.Mark("Serie", "data");
                 _loading = false;
                 StateHasChanged();
             }
@@ -271,6 +272,7 @@ public partial class Serie : IAsyncDisposable
     {
         var episode = await SeriePlaybackHelper.ResolveEpisodeToPlayAsync(k7ServerService, Guid.Parse(Id), _seasons);
         _resumeEpisode = SeriePlaybackHelper.IsInProgress(episode) ? episode : null;
+        PerfTrace.Mark("Serie", "resume");
     }
 
     private bool CanResumePlayback =>
@@ -293,6 +295,9 @@ public partial class Serie : IAsyncDisposable
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        if (!_loading && _serie is not null)
+            PerfTrace.Mark("Serie", "ready");
+
         if (!_loading && _serie is not null && HasTvScrollContent)
         {
             if (!_tvScrollInitialized)

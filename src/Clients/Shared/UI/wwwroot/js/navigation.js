@@ -1114,8 +1114,19 @@ var SpatialNav = (function () {
     }
 
 
+    function perfNote(text) {
+        if (window.K7 && K7.PerfTrace && K7.PerfTrace.report) K7.PerfTrace.report(text);
+    }
+
+    function perfDescribe(el) {
+        return window.K7 && K7.PerfTrace && K7.PerfTrace.describe ? K7.PerfTrace.describe(el) : '';
+    }
+
     function handleTvRemoteSelect(phase, keyCode, heldMs) {
         window.__k7TvNativeRemote = true;
+        if (phase === 'up' || phase === 'long-up')
+            perfNote('select ' + phase + ' held=' + heldMs + ' active=' + perfDescribe(document.activeElement)
+                + ' snapshot=' + perfDescribe(_tvSelectSnapshotEl));
 
         if (phase === 'down') {
             // After TV standby, document.activeElement is often body. Focus a card
@@ -1251,6 +1262,7 @@ var SpatialNav = (function () {
                 }
                 var tag = (target.tagName || '').toLowerCase();
                 if (tag === 'button' || tag === 'a' || target.classList.contains('focusable')) {
+                    perfNote('select click ' + perfDescribe(target));
                     target.click();
                 }
             }
@@ -5540,3 +5552,101 @@ window.K7.bindMusicSessionFlush = function (dotNetRef) {
             flush();
     });
 };
+
+// Opt-in D-pad latency (PerfTrace in K7.Clients.Shared, Settings -> About -> Diagnostics).
+// Measures arrow keydown to the frame after the focus moved, and reports median / p95 / max
+// to .NET after 20 presses or 3 s without a press. No listener exists while it is off.
+window.K7 = window.K7 || {};
+window.K7.PerfTrace = (function () {
+    var enabled = false;
+    var pendingStart = null;
+    var samples = [];
+    var idleTimer = null;
+    var arrowKeys = { ArrowUp: true, ArrowDown: true, ArrowLeft: true, ArrowRight: true };
+
+    function onKeyDown(e) {
+        if (arrowKeys[e.key])
+            pendingStart = performance.now();
+    }
+
+    function onFocusIn() {
+        if (pendingStart === null)
+            return;
+
+        var start = pendingStart;
+        var focused = performance.now();
+        pendingStart = null;
+        requestAnimationFrame(function () {
+            var painted = performance.now();
+            samples.push({ total: painted - start, move: focused - start, after: painted - focused });
+            if (samples.length >= 20) {
+                flush();
+                return;
+            }
+            clearTimeout(idleTimer);
+            idleTimer = setTimeout(flush, 3000);
+        });
+    }
+
+    function flush() {
+        clearTimeout(idleTimer);
+        idleTimer = null;
+        if (!samples.length)
+            return;
+
+        var batch = samples;
+        samples = [];
+        var pick = function (key, p) {
+            var sorted = batch.map(function (s) { return s[key]; }).sort(function (a, b) { return a - b; });
+            return sorted[Math.min(sorted.length - 1, Math.floor(p * sorted.length))];
+        };
+        // move: keydown to focus change (spatial search). after: focus change to the next frame
+        // (work triggered by the focus: Blazor renders, observers, scroll). dom: focusable count.
+        var line = 'dpad n=' + batch.length
+            + ' median=' + pick('total', 0.5).toFixed(0) + 'ms'
+            + ' p95=' + pick('total', 0.95).toFixed(0) + 'ms'
+            + ' max=' + pick('total', 1).toFixed(0) + 'ms'
+            + ' move=' + pick('move', 0.5).toFixed(0) + 'ms'
+            + ' after=' + pick('after', 0.5).toFixed(0) + 'ms'
+            + ' dom=' + document.querySelectorAll('button, a[href], input, select, textarea, [tabindex]').length;
+
+        send(line);
+    }
+
+    function send(line) {
+        if (window.DotNet && typeof DotNet.invokeMethodAsync === 'function') {
+            DotNet.invokeMethodAsync('K7.Clients.Shared', 'ReportPerfTrace', line)
+                .catch(function () { });
+        }
+    }
+
+    return {
+        // Free-form diagnostic line (TV select path, theme failures). No-op while off.
+        report: function (line) {
+            if (enabled && line)
+                send(String(line));
+        },
+        describe: function (el) {
+            if (!el) return 'null';
+            if (el === document.body) return 'body';
+            var cls = (typeof el.className === 'string' ? el.className : '').split(' ').filter(Boolean).slice(0, 2).join('.');
+            return (el.tagName || '?').toLowerCase() + (cls ? '.' + cls : '') + (el.isConnected === false ? '(detached)' : '');
+        },
+        setEnabled: function (value) {
+            value = !!value;
+            if (value === enabled)
+                return;
+
+            enabled = value;
+            if (enabled) {
+                document.addEventListener('keydown', onKeyDown, true);
+                document.addEventListener('focusin', onFocusIn, true);
+            } else {
+                document.removeEventListener('keydown', onKeyDown, true);
+                document.removeEventListener('focusin', onFocusIn, true);
+                pendingStart = null;
+                flush();
+            }
+        }
+    };
+})();

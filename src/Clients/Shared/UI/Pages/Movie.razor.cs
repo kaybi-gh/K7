@@ -207,6 +207,7 @@ public partial class Movie : IAsyncDisposable
             {
                 // Paint the hero as soon as the movie is mapped: the library group and the theme
                 // song used to hold first paint behind 2-3 more round trips and the MP3 download.
+                PerfTrace.Mark("Movie", "data");
                 isLoading = false;
                 StateHasChanged();
             }
@@ -248,6 +249,9 @@ public partial class Movie : IAsyncDisposable
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        if (!isLoading && _movie is not null)
+            PerfTrace.Mark("Movie", "ready");
+
         if (!isLoading && _movie is not null && HasTvBelowContent)
         {
             if (!_tvScrollInitialized)

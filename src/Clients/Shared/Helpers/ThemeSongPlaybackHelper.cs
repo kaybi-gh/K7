@@ -1,4 +1,5 @@
 using K7.Clients.Shared.Interfaces;
+using K7.Clients.Shared.Services;
 using K7.Server.Domain.Enums;
 using K7.Shared;
 using K7.Shared.Dtos;
@@ -63,7 +64,10 @@ public static class ThemeSongPlaybackHelper
         // Streamed by the audio element where the platform can authenticate it (web cookie,
         // Android auth proxy): the MP3 no longer crosses the .NET to JS bridge as bytes.
         if (await ambientTheme.TryKeepOrStartStreamingAsync(mediaId, url, cancellationToken: cancellationToken))
+        {
+            PerfTrace.Mark("Theme", "stream");
             return;
+        }
 
         if (mediaService is not K7ServerService server)
             return;
@@ -86,6 +90,7 @@ public static class ThemeSongPlaybackHelper
             url,
             audioBytes,
             cancellationToken: cancellationToken);
+        PerfTrace.Mark("Theme", "bytes");
     }
 
     /// <summary>

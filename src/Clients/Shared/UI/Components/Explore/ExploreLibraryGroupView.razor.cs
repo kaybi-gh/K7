@@ -1,5 +1,6 @@
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Helpers;
+using K7.Clients.Shared.Services;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos;
 using K7.Shared.Dtos.Entities;
@@ -56,6 +57,12 @@ public partial class ExploreLibraryGroupView : IDisposable
             return;
 
         InvokeAsync(() => LoadGroupAsync(showLoading: false)).FireAndForget();
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (!_loading)
+            PerfTrace.Mark("Explore", "ready");
     }
 
     private async Task LoadGroupAsync(bool showLoading)

@@ -93,6 +93,8 @@ export async function init(rootElement, dotNetRef) {
         e.preventDefault();
         e.stopPropagation();
         e.stopImmediatePropagation();
+        if (globalThis.K7 && K7.PerfTrace && K7.PerfTrace.report)
+            K7.PerfTrace.report('carousel click suppressed after drag');
     }, true);
 
     var prevBtn = rootElement.querySelector('[data-carousel-prev]');

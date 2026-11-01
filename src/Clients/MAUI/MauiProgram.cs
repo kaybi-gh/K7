@@ -43,6 +43,7 @@ public static partial class MauiProgram
     {
         MauiStartupTrace.Mark("CreateMauiApp-start");
         ColdStartTrace.Mark = MauiStartupTrace.Mark;
+        PerfTrace.Sink = MauiStartupTrace.WritePerf;
         // AppReady may fire at SelectProfile OnInitialized (before first paint). Do not start
         // OpenIddict there - it starved EmptyLayout ~13s on TV. Heavy work waits FirstPaint.
         AppReadySignal.OnSignaled = static () => MauiStartupTrace.Mark("AppReadySignal");
@@ -193,8 +194,10 @@ public static partial class MauiProgram
         builder.Services.AddSingleton<BackButtonService>();
         builder.Services.AddSingleton<ThemeService>();
 
+        builder.Services.AddTransient<PerfTraceHttpHandler>();
         builder.Services.AddTransient<AuthenticationDelegatingHandler>();
         builder.Services.AddHttpClient(nameof(K7ServerService))
+            .AddHttpMessageHandler<PerfTraceHttpHandler>()
             .AddHttpMessageHandler<AuthenticationDelegatingHandler>()
 #if !IOS && !MACCATALYST
             // Android: HttpURLConnection (AndroidMessageHandler) only allows standard HTTP methods;
