@@ -33,8 +33,9 @@ public partial class Movie : IAsyncDisposable
     [Parameter] public required string Id { get; set; }
 
     private bool isLoading { get; set; } = true;
-    private static MovieDto? _movie;
-    private static MediaCardViewModel? _mediaCard;
+    // Per instance: a static field showed the previous movie (page title included) until the
+    // next one loaded.
+    private MovieDto? _movie;
     private string? _backdropUrl;
     private string? _backdropHighResUrl;
     private string? _dominantColor;
@@ -190,13 +191,6 @@ public partial class Movie : IAsyncDisposable
                 _movie.Pictures?.FirstOrDefault(x => x.Type == MetadataPictureType.Poster)?
                     .GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri;
             _posterSmallUrl = MediaPictureUrlHelper.WithCacheBuster(posterUri, cacheVersion);
-
-            _mediaCard = new MediaCardViewModel()
-            {
-                Id = _movie.Id.ToString(),
-                Title = _movie.Title,
-                PictureUrl = _posterSmallUrl
-            };
 
             _selectedFile = _movie.IndexedFiles?.FirstOrDefault();
             _selectedRemoteFile = _selectedFile is null
