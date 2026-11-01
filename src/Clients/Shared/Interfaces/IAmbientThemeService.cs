@@ -23,6 +23,18 @@ public interface IAmbientThemeService
         CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Same rules as <see cref="KeepOrStartAsync"/>, but the audio element streams the theme from a
+    /// URL the platform can load with the current authentication, so no audio bytes cross the
+    /// .NET to JS bridge. Returns false when this platform has no such URL or playback could not
+    /// start: the caller then downloads the bytes.
+    /// </summary>
+    Task<bool> TryKeepOrStartStreamingAsync(
+        Guid mediaId,
+        string themeUrl,
+        double volume = 0.25,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Schedules a fade-out after a short grace period so navigation within the same media
     /// tree (serie -> season -> episode) can cancel the leave and keep playing.
     /// </summary>

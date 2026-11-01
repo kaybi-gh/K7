@@ -10,8 +10,59 @@ window.K7.AmbientTheme = {
     _visibilityBound: false,
 
     playBytes: async function (bytes, volume, crossfadeSeconds, sourceUrl, dotNetRef) {
-        if (!bytes || !bytes.length) return;
+        if (!bytes || !bytes.length) return false;
 
+        return await this._play(function () {
+            var data = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+            var objectUrl = URL.createObjectURL(new Blob([data], { type: 'audio/mpeg' }));
+            return { src: objectUrl, objectUrl: objectUrl };
+        }, volume, crossfadeSeconds, sourceUrl, dotNetRef);
+    },
+
+    // Streams from a URL the audio element can load with the current authentication (same-origin
+    // cookie on the web, native auth proxy on Android): no audio bytes cross the .NET bridge.
+    // Resolves false when the source cannot be played so the caller can fall back to bytes.
+    playUrl: async function (playableUrl, volume, crossfadeSeconds, sourceUrl, dotNetRef) {
+        if (!playableUrl) return false;
+
+        if (!this._isCrossOrigin(playableUrl)) {
+            return await this._play(function () {
+                return { src: playableUrl, objectUrl: null };
+            }, volume, crossfadeSeconds, sourceUrl, dotNetRef);
+        }
+
+        // Android auth proxy (other origin): the WebView media stack rejects intercepted
+        // responses (MEDIA_ERR_SRC_NOT_SUPPORTED on the TV box, 2026-11-01) while fetch() reads
+        // them. The bytes go WebView network layer to blob, never through .NET interop.
+        var blob;
+        try {
+            var response = await fetch(playableUrl);
+            if (!response.ok) return false;
+            blob = await response.blob();
+        } catch (e) {
+            if (window.K7 && K7.PerfTrace && K7.PerfTrace.report)
+                K7.PerfTrace.report('theme fetch failed ' + (e && e.name));
+            return false;
+        }
+
+        if (!blob || !blob.size) return false;
+
+        return await this._play(function () {
+            var typed = blob.type ? blob : new Blob([blob], { type: 'audio/mpeg' });
+            var objectUrl = URL.createObjectURL(typed);
+            return { src: objectUrl, objectUrl: objectUrl };
+        }, volume, crossfadeSeconds, sourceUrl, dotNetRef);
+    },
+
+    _isCrossOrigin: function (url) {
+        try {
+            return new URL(url, window.location.href).origin !== window.location.origin;
+        } catch (e) {
+            return false;
+        }
+    },
+
+    _play: async function (createSource, volume, crossfadeSeconds, sourceUrl, dotNetRef) {
         this._bindVisibility();
 
         var targetVolume = typeof volume === 'number' ? Math.min(1, Math.max(0, volume)) : 0.25;
@@ -22,12 +73,12 @@ window.K7.AmbientTheme = {
         // Keep a visibility-paused instance. Do not restart from 0.
         if (identity && this._sourceUrl === identity && this._audio
             && (!this._audio.paused || this._pausedByHide))
-            return;
+            return true;
 
-        var data = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
-        var objectUrl = URL.createObjectURL(new Blob([data], { type: 'audio/mpeg' }));
+        var source = createSource();
+        var objectUrl = source.objectUrl;
 
-        var next = new Audio(objectUrl);
+        var next = new Audio(source.src);
         next.loop = false;
         next.preload = 'auto';
         next.volume = 0;
@@ -45,18 +96,31 @@ window.K7.AmbientTheme = {
 
         try {
             var playPromise = next.play();
-            if (playPromise && typeof playPromise.catch === 'function')
-                await playPromise;
+            if (playPromise && typeof playPromise.catch === 'function') {
+                // A URL source that never starts must not hold the byte fallback for seconds.
+                await (objectUrl ? playPromise : Promise.race([playPromise, new Promise(function (_, reject) {
+                    setTimeout(function () {
+                        var timeout = new Error('theme url did not start');
+                        timeout.name = 'TimeoutError';
+                        reject(timeout);
+                    }, 2500);
+                })]));
+            }
         } catch (e) {
             console.warn('AmbientTheme play failed', e);
+            if (window.K7 && K7.PerfTrace && K7.PerfTrace.report) {
+                K7.PerfTrace.report('theme play failed ' + (e && e.name) + ' mediaError='
+                    + (next.error ? next.error.code : 'none') + ' src=' + (objectUrl ? 'blob' : 'url'));
+            }
+            try { next.removeAttribute('src'); next.load(); } catch (err) { }
             this._revoke(objectUrl);
-            return;
+            return false;
         }
 
         if (generation !== this._generation) {
             try { next.pause(); } catch (e) { }
             this._revoke(objectUrl);
-            return;
+            return true;
         }
 
         var previous = this._audio;
@@ -71,7 +135,7 @@ window.K7.AmbientTheme = {
         if (typeof document !== 'undefined' && document.hidden) {
             this._pauseForHide();
             next.volume = targetVolume;
-            return;
+            return true;
         }
 
         if (previous && crossfadeMs > 0) {
@@ -85,6 +149,8 @@ window.K7.AmbientTheme = {
             else
                 next.volume = targetVolume;
         }
+
+        return true;
     },
 
     fadeOut: async function (durationSeconds) {

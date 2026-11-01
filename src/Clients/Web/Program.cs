@@ -83,6 +83,7 @@ builder.Services.AddSingleton<IStreamUriService, StreamUriService>();
 builder.Services.AddScoped<IFeatureAccessService, FeatureAccessService>();
 builder.Services.AddSingleton<IPlayerService, PlayerService>();
 builder.Services.AddSingleton<IAudioPlayerService, AudioPlayerService>();
+builder.Services.AddSingleton<IThemeSongSourceResolver, SameOriginThemeSongSourceResolver>();
 builder.Services.AddSingleton<IAmbientThemeService, AmbientThemeService>();
 builder.Services.AddSingleton<ISleepTimerService, SleepTimerService>();
 builder.Services.AddSingleton<AutoplayService>();

@@ -16,6 +16,7 @@ public sealed class AmbientThemeService : IAmbientThemeService, IAsyncDisposable
     private readonly TimeSpan _leaveGrace;
     private readonly object _gate = new();
     private readonly DotNetObjectReference<AmbientThemeService> _jsRef;
+    private readonly IThemeSongSourceResolver? _sourceResolver;
     private Guid? _currentMediaId;
     private string? _currentUrl;
     private bool _finished;
@@ -23,19 +24,24 @@ public sealed class AmbientThemeService : IAmbientThemeService, IAsyncDisposable
     private int _playVersion;
     private bool _disposed;
 
-    public AmbientThemeService(IJSRuntime js, NavigationManager navigation)
-        : this(js, navigation, leaveGrace: null)
+    public AmbientThemeService(IJSRuntime js, NavigationManager navigation, IThemeSongSourceResolver? sourceResolver = null)
+        : this(js, navigation, leaveGrace: null, sourceResolver)
     {
     }
 
     /// <summary>
     /// Testable constructor with optional leave grace override.
     /// </summary>
-    internal AmbientThemeService(IJSRuntime js, NavigationManager navigation, TimeSpan? leaveGrace)
+    internal AmbientThemeService(
+        IJSRuntime js,
+        NavigationManager navigation,
+        TimeSpan? leaveGrace,
+        IThemeSongSourceResolver? sourceResolver = null)
     {
         _js = js;
         _navigation = navigation;
         _leaveGrace = leaveGrace ?? TimeSpan.FromMilliseconds(500);
+        _sourceResolver = sourceResolver;
         _jsRef = DotNetObjectReference.Create(this);
         _navigation.LocationChanged += OnLocationChanged;
     }
@@ -71,8 +77,62 @@ public sealed class AmbientThemeService : IAmbientThemeService, IAsyncDisposable
         double volume = 0.25,
         CancellationToken cancellationToken = default)
     {
+        await StartCoreAsync(
+            mediaId,
+            themeUrl,
+            audioBytes is { Length: > 0 },
+            async ct =>
+            {
+                await _js.InvokeVoidAsync(
+                    "K7.AmbientTheme.playBytes",
+                    ct,
+                    audioBytes,
+                    volume,
+                    DefaultCrossfadeSeconds,
+                    themeUrl,
+                    _jsRef);
+                return true;
+            },
+            cancellationToken);
+    }
+
+    public async Task<bool> TryKeepOrStartStreamingAsync(
+        Guid mediaId,
+        string themeUrl,
+        double volume = 0.25,
+        CancellationToken cancellationToken = default)
+    {
         if (string.IsNullOrWhiteSpace(themeUrl))
-            return;
+            return false;
+
+        var playableUrl = _sourceResolver?.ResolvePlayableUrl(mediaId, themeUrl);
+
+        return await StartCoreAsync(
+            mediaId,
+            themeUrl,
+            !string.IsNullOrWhiteSpace(playableUrl),
+            ct => _js.InvokeAsync<bool>(
+                "K7.AmbientTheme.playUrl",
+                ct,
+                playableUrl,
+                volume,
+                DefaultCrossfadeSeconds,
+                themeUrl,
+                _jsRef).AsTask(),
+            cancellationToken);
+    }
+
+    // Returns true when the theme plays (or already played) for this media context; false when
+    // nothing could be started, so a caller can try another source.
+    private async Task<bool> StartCoreAsync(
+        Guid mediaId,
+        string themeUrl,
+        bool hasSource,
+        Func<CancellationToken, Task<bool>> playAsync,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(themeUrl))
+            return false;
 
         CancelLeave();
 
@@ -82,37 +142,31 @@ public sealed class AmbientThemeService : IAmbientThemeService, IAsyncDisposable
                 && (_finished || string.Equals(_currentUrl, themeUrl, StringComparison.Ordinal)))
             {
                 // Same media context: keep playing, or keep Finished (do not restart).
-                return;
+                return true;
             }
         }
 
-        if (audioBytes is not { Length: > 0 })
-            return;
+        if (!hasSource)
+            return false;
 
         var version = Interlocked.Increment(ref _playVersion);
 
         try
         {
             await PlaybackAssetLoader.EnsureAsync(_js, cancellationToken);
-            await _js.InvokeVoidAsync(
-                "K7.AmbientTheme.playBytes",
-                cancellationToken,
-                audioBytes,
-                volume,
-                DefaultCrossfadeSeconds,
-                themeUrl,
-                _jsRef);
+            if (!await playAsync(cancellationToken))
+                return false;
         }
         catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException)
         {
-            return;
+            return false;
         }
 
         if (version != Volatile.Read(ref _playVersion))
         {
             // Watch/leave won the race: do not leave an orphan HTML5 Audio running.
             await HaltJsAsync();
-            return;
+            return true;
         }
 
         lock (_gate)
@@ -121,6 +175,8 @@ public sealed class AmbientThemeService : IAmbientThemeService, IAsyncDisposable
             _currentUrl = themeUrl;
             _finished = false;
         }
+
+        return true;
     }
 
     public async Task InterruptAsync(Guid mediaId, CancellationToken cancellationToken = default)

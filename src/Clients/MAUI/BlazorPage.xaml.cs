@@ -329,6 +329,11 @@ public partial class BlazorPage : ContentPage
 
     private void OnWebResourceRequested(object? sender, Microsoft.Maui.Controls.WebViewWebResourceRequestedEventArgs e)
     {
+#if ANDROID
+        if (global::K7.Clients.MAUI.Services.ThemeSongAuthProxy.TryHandle(e, _k7ServerService))
+            return;
+#endif
+
         const string localFileHost = "https://k7-local-files/";
         var url = e.Uri?.ToString();
         if (url is null || !url.StartsWith(localFileHost, StringComparison.OrdinalIgnoreCase))

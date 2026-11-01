@@ -255,6 +255,10 @@ public static partial class MauiProgram
         builder.Services.AddSingleton<IStreamUriService, StreamUriService>();
         builder.Services.AddSingleton<IPlayerService, PlayerService>();
         builder.Services.AddSingleton<IAudioPlayerService, AudioPlayerService>();
+#if ANDROID
+        // Theme songs stream through the WebView interception (BlazorPage.OnWebResourceRequested).
+        builder.Services.AddSingleton<IThemeSongSourceResolver, ThemeSongAuthProxy>();
+#endif
         // Scoped: IJSRuntime is scoped in Blazor Hybrid; a singleton would capture a dead runtime.
         builder.Services.AddScoped<IAmbientThemeService, AmbientThemeService>();
         builder.Services.AddSingleton<ISleepTimerService, SleepTimerService>();

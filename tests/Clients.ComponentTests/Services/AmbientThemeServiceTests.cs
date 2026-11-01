@@ -1,3 +1,4 @@
+using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Services;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
@@ -248,6 +249,50 @@ public class AmbientThemeServiceTests
         _sut.CurrentMediaId.Should().Be(SerieId);
         _sut.IsFinished.Should().BeFalse();
         await AssertPlayBytesCalledAsync(times: 2);
+    }
+
+    [Test]
+    public async Task TryKeepOrStartStreamingAsync_ShouldReturnFalse_WhenNoResolverIsRegistered()
+    {
+        var started = await _sut.TryKeepOrStartStreamingAsync(SerieId, "https://server/api/medias/a/theme");
+
+        started.Should().BeFalse();
+        _sut.CurrentMediaId.Should().BeNull();
+    }
+
+    [Test]
+    public async Task TryKeepOrStartStreamingAsync_ShouldPlayResolvedUrl_WhenResolverGivesOne()
+    {
+        var resolver = Substitute.For<IThemeSongSourceResolver>();
+        resolver.ResolvePlayableUrl(SerieId, Arg.Any<string>()).Returns("https://k7-theme-proxy/a");
+        _js.InvokeAsync<bool>("K7.AmbientTheme.playUrl", Arg.Any<CancellationToken>(), Arg.Any<object?[]>())
+            .Returns(new ValueTask<bool>(true));
+        await using var sut = new AmbientThemeService(_js, _navigation, TimeSpan.FromMilliseconds(40), resolver);
+
+        var started = await sut.TryKeepOrStartStreamingAsync(SerieId, "https://server/api/medias/a/theme");
+
+        started.Should().BeTrue();
+        sut.CurrentMediaId.Should().Be(SerieId);
+        await _js.Received(1).InvokeAsync<bool>(
+            "K7.AmbientTheme.playUrl",
+            Arg.Any<CancellationToken>(),
+            Arg.Is<object?[]>(args => (string?)args[0] == "https://k7-theme-proxy/a"));
+        await AssertPlayBytesCalledAsync(times: 0);
+    }
+
+    [Test]
+    public async Task TryKeepOrStartStreamingAsync_ShouldReturnFalse_WhenTheUrlCannotBePlayed()
+    {
+        var resolver = Substitute.For<IThemeSongSourceResolver>();
+        resolver.ResolvePlayableUrl(Arg.Any<Guid>(), Arg.Any<string>()).Returns("https://k7-theme-proxy/a");
+        _js.InvokeAsync<bool>("K7.AmbientTheme.playUrl", Arg.Any<CancellationToken>(), Arg.Any<object?[]>())
+            .Returns(new ValueTask<bool>(false));
+        await using var sut = new AmbientThemeService(_js, _navigation, TimeSpan.FromMilliseconds(40), resolver);
+
+        var started = await sut.TryKeepOrStartStreamingAsync(SerieId, "https://server/api/medias/a/theme");
+
+        started.Should().BeFalse();
+        sut.CurrentMediaId.Should().BeNull();
     }
 
     private async Task StartThemeAsync(Guid mediaId, string url)

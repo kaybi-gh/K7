@@ -60,6 +60,11 @@ public static class ThemeSongPlaybackHelper
             return;
         }
 
+        // Streamed by the audio element where the platform can authenticate it (web cookie,
+        // Android auth proxy): the MP3 no longer crosses the .NET to JS bridge as bytes.
+        if (await ambientTheme.TryKeepOrStartStreamingAsync(mediaId, url, cancellationToken: cancellationToken))
+            return;
+
         if (mediaService is not K7ServerService server)
             return;
 
