@@ -5740,7 +5740,6 @@
           {
             "name": "currentEpisodeId",
             "in": "query",
-            "required": true,
             "schema": {
               "type": "string",
               "format": "uuid"

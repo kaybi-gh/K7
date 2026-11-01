@@ -497,6 +497,15 @@ public partial class K7ServerService : IK7ServerService, IMediaService, ILibrary
         return await response.Content.ReadFromJsonAsync<LiteSerieEpisodeDto>(_serializerOptions, cancellationToken);
     }
 
+    public async Task<LiteSerieEpisodeDto?> GetEpisodeToPlayAsync(Guid serieId, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.GetAsync($"api/medias/{serieId}/next-episode", cancellationToken);
+        if (response.StatusCode == System.Net.HttpStatusCode.NoContent)
+            return null;
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<LiteSerieEpisodeDto>(_serializerOptions, cancellationToken);
+    }
+
     public async Task<List<LibraryDto>> GetLibrariesAsync(CancellationToken cancellationToken = default)
     {
         var libraries = await HttpClient.GetFromJsonAsync<List<LibraryDto>>("api/libraries", _serializerOptions, cancellationToken);

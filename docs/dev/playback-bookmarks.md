@@ -85,6 +85,7 @@ Mark series or season unwatched dismisses the series bookmark (serie and season 
 | `CreateMedia` / `ReidentifyIndexedFile` | `RefreshSeriesBookmarksForSerieAsync` when episode becomes playable |
 | `HomeFeedContinueWatchingStrategy` | Queries `PlaybackBookmarks`, backfills missing next episodes, expires stale series bookmarks. In-progress episode bookmarks win over series next-up |
 | `GetMedia` | Loads item bookmarks for the media graph and overlays them in `ToMediaDto` so Play/Resume receives `LastPlaybackPosition` |
+| `GetNextEpisode` (`GET /api/medias/{serieId}/next-episode`) | With `currentEpisodeId`: the episode after it (player offer). Without: the series page Play/Resume target, resolved by `EpisodeToPlaySelector` over playable, non-excluded episodes with item bookmarks overlaid (most recent in progress, else first unwatched, else first episode - specials last). It does not read series bookmarks, so it matches what the season pages show |
 | `LiteMediaProjectionService` | Merges item bookmarks into `UserMediaStateDto` for position/progress overlay. Series and season cards aggregate episode `IsCompleted` so the watched badge matches playback |
 | Browse filters (`IsCompleted`, `InProgress`, `UnwatchedOnly`) | Series/season filters aggregate episode states. A series is completed only when every episode is completed |
 
@@ -107,4 +108,4 @@ Series bookmarks migrated without `NextEpisodeId` are filled on the next Keep Wa
 
 ## Tests
 
-`PlaybackBookmarkServiceTests` (complete, dismiss including serie/season ids, expire, late-season refresh, recreate after caught-up, backfill, shared profile, batch next-up), `SetMediaWatchStateCommandHandlerTests`, `SeriesPlaybackBookmarkRefreshEventHandlerTests`, `ContinueWatchingEligibilityTests`, `ContinueWatchingFeedDeduperTests`, `MediaMappingsTests` (bookmark overlay), `GetMediaQueryHandlerTests`, and related handler tests in `tests/Application.UnitTests`.
+`PlaybackBookmarkServiceTests` (complete, dismiss including serie/season ids, expire, late-season refresh, recreate after caught-up, backfill, shared profile, batch next-up), `SetMediaWatchStateCommandHandlerTests`, `SeriesPlaybackBookmarkRefreshEventHandlerTests`, `ContinueWatchingEligibilityTests`, `ContinueWatchingFeedDeduperTests`, `MediaMappingsTests` (bookmark overlay), `GetMediaQueryHandlerTests`, `GetNextEpisodeQueryHandlerTests`, `EpisodeToPlaySelectorTests`, and related handler tests in `tests/Application.UnitTests`.

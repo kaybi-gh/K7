@@ -31,10 +31,31 @@ internal static class SeriePlaybackHelper
         && (episode.UserState.LastPlaybackPosition >= 1
             || episode.UserState is { ProgressPercentage: >= 1 and < 100 });
 
+    /// <summary>
+    /// Episode the series page offers to play. The server resolves it in one request; servers
+    /// older than the parameterless next-episode route reject the call, so fall back to
+    /// loading every season.
+    /// </summary>
     public static async Task<LiteSerieEpisodeDto?> ResolveEpisodeToPlayAsync(
         IMediaService mediaService,
+        Guid serieId,
         IReadOnlyList<LiteSerieSeasonDto> seasons,
         CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await mediaService.GetEpisodeToPlayAsync(serieId, cancellationToken);
+        }
+        catch (HttpRequestException)
+        {
+            return await ResolveEpisodeToPlayFromSeasonsAsync(mediaService, seasons, cancellationToken);
+        }
+    }
+
+    private static async Task<LiteSerieEpisodeDto?> ResolveEpisodeToPlayFromSeasonsAsync(
+        IMediaService mediaService,
+        IReadOnlyList<LiteSerieSeasonDto> seasons,
+        CancellationToken cancellationToken)
     {
         var allEpisodes = await LoadPlayableEpisodesAsync(mediaService, seasons, cancellationToken);
         if (allEpisodes.Count == 0)

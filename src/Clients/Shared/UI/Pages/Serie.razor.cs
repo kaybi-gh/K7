@@ -269,7 +269,7 @@ public partial class Serie : IAsyncDisposable
 
     private async Task RefreshResumeEpisodeAsync()
     {
-        var episode = await SeriePlaybackHelper.ResolveEpisodeToPlayAsync(k7ServerService, _seasons);
+        var episode = await SeriePlaybackHelper.ResolveEpisodeToPlayAsync(k7ServerService, Guid.Parse(Id), _seasons);
         _resumeEpisode = SeriePlaybackHelper.IsInProgress(episode) ? episode : null;
     }
 
@@ -334,7 +334,7 @@ public partial class Serie : IAsyncDisposable
             return;
 
         var episode = _resumeEpisode
-            ?? await SeriePlaybackHelper.ResolveEpisodeToPlayAsync(k7ServerService, _seasons);
+            ?? await SeriePlaybackHelper.ResolveEpisodeToPlayAsync(k7ServerService, Guid.Parse(Id), _seasons);
         if (episode is null)
             return;
 

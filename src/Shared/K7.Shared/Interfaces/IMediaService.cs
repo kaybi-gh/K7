@@ -40,6 +40,12 @@ public interface IMediaService
     Task<Guid> ImportPersonPictureFromUrlAsync(Guid personId, ImportMediaPictureFromUrlRequest request, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<ProviderImageDto>> GetPersonProviderImagesAsync(Guid personId, CancellationToken cancellationToken = default);
     Task<LiteSerieEpisodeDto?> GetNextEpisodeAsync(Guid serieId, Guid currentEpisodeId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Episode the series page offers to play for the current user: in progress, otherwise the
+    /// first unwatched one, otherwise the first episode. Null when nothing is playable.
+    /// </summary>
+    Task<LiteSerieEpisodeDto?> GetEpisodeToPlayAsync(Guid serieId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<MediaSegmentDto>> GetMediaSegmentsAsync(Guid mediaId, CancellationToken cancellationToken = default);
     Task DetectMediaSegmentsAsync(Guid seasonId, CancellationToken cancellationToken = default);
     /// <summary>Absolute or relative URI for the media theme song stream, or null if none.</summary>
