@@ -245,6 +245,49 @@ public class HomeFeedStoreTests
         await media.Received().GetHomeFeedAsync(Arg.Any<GetHomeFeedQuery>(), Arg.Any<CancellationToken>());
     }
 
+    [Test]
+    public async Task HomeFeedInvalidated_ShouldRefreshRowsOnce_WhenRaisedTwiceInARow()
+    {
+        var media = Substitute.For<IMediaService>();
+        media.GetHomeFeedAsync(Arg.Any<GetHomeFeedQuery>(), Arg.Any<CancellationToken>())
+            .Returns(_ => FeedPage(CreateItem("Movie A")));
+        var cache = new MediaCacheStore();
+
+        using var sut = CreateStore(media, cacheStore: cache);
+        await sut.EnsureLoadedAsync(canTrackProgress: true, identityUserId: "user-a");
+        var rowCount = sut.Rows.Count;
+        media.ClearReceivedCalls();
+
+        // Playback stop: terminal progress report, then tracker stop.
+        cache.InvalidateHomeFeed();
+        cache.InvalidateHomeFeed();
+        await Task.Delay(TimeSpan.FromSeconds(1));
+
+        await media.Received(rowCount).GetHomeFeedAsync(Arg.Any<GetHomeFeedQuery>(), Arg.Any<CancellationToken>());
+    }
+
+    [Test]
+    public async Task ProgressUpdated_ShouldCheckMembershipOncePerMinute_WhenMediaStaysOutOfTheLead()
+    {
+        var second = CreateItem("Movie B");
+        var media = Substitute.For<IMediaService>();
+        media.GetHomeFeedAsync(Arg.Any<GetHomeFeedQuery>(), Arg.Any<CancellationToken>())
+            .Returns(_ => FeedPage(CreateItem("Movie A"), second));
+        var hub = new K7HubClient(NullLogger<K7HubClient>.Instance);
+
+        using var sut = CreateStore(media, hubClient: hub);
+        await sut.EnsureLoadedAsync(canTrackProgress: true, identityUserId: "user-a");
+        media.ClearReceivedCalls();
+
+        RaiseProgress(hub, second.Id, 10, isCompleted: false);
+        await Task.Delay(TimeSpan.FromSeconds(2));
+        RaiseProgress(hub, second.Id, 11, isCompleted: false);
+        await Task.Delay(TimeSpan.FromSeconds(2));
+
+        await media.Received(1).GetHomeFeedAsync(Arg.Any<GetHomeFeedQuery>(), Arg.Any<CancellationToken>());
+        sut.Rows.Single().Items[1].Progress.Should().Be(11);
+    }
+
     private static void RaiseProgress(K7HubClient hub, Guid mediaId, double progress, bool isCompleted)
     {
         // Field-like event: the compiler-generated backing field carries the event name.
@@ -258,7 +301,8 @@ public class HomeFeedStoreTests
     private static HomeFeedStore CreateStore(
         IMediaService media,
         IUserPreferencesService? prefs = null,
-        K7HubClient? hubClient = null)
+        K7HubClient? hubClient = null,
+        MediaCacheStore? cacheStore = null)
     {
         prefs ??= Substitute.For<IUserPreferencesService>();
         prefs.GetHomeLayoutAsync(Arg.Any<CancellationToken>()).Returns(CreateLayout());
@@ -286,7 +330,7 @@ public class HomeFeedStoreTests
         return new HomeFeedStore(
             scopeFactory,
             hubClient ?? new K7HubClient(NullLogger<K7HubClient>.Instance),
-            new MediaCacheStore(),
+            cacheStore ?? new MediaCacheStore(),
             device,
             connectivity,
             session,

@@ -29,6 +29,7 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
     private CancellationTokenSource? _membershipRefreshCts;
     private CancellationTokenSource? _continueWatchingRefreshCts;
     private CancellationTokenSource? _watchStateRefreshCts;
+    private CancellationTokenSource? _invalidatedRefreshCts;
     private Task? _loadTask;
     private int _catalogRefreshGeneration;
     private int _loadGeneration;
@@ -38,9 +39,13 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
     private bool _hasFeedContext;
     private Guid? _feedSharedProfileId;
     private string? _feedIdentityUserId;
+    private string? _membershipCheckMediaId;
+    private DateTime _membershipCheckAtUtc;
 
     private static readonly TimeSpan ContinueWatchingRefreshDelay = TimeSpan.FromSeconds(1.5);
     private static readonly TimeSpan WatchStateRefreshDelay = TimeSpan.FromSeconds(1.5);
+    private static readonly TimeSpan HomeFeedInvalidatedDelay = TimeSpan.FromMilliseconds(300);
+    private static readonly TimeSpan ContinueWatchingMembershipInterval = TimeSpan.FromMinutes(1);
 
     public event Action? Changed;
 
@@ -407,6 +412,7 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
         CancelAndDispose(ref _membershipRefreshCts);
         CancelAndDispose(ref _continueWatchingRefreshCts);
         CancelAndDispose(ref _watchStateRefreshCts);
+        CancelAndDispose(ref _invalidatedRefreshCts);
     }
 
     private static void CancelAndDispose(ref CancellationTokenSource? cts)
@@ -490,7 +496,9 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
         // every 10 s on every device of the user.
         var continueWatchingRows = GetRowsSnapshot().Where(r => r.Config.ContinueWatching).ToList();
         if (continueWatchingRows.Count > 0
-            && (isCompleted || !continueWatchingRows.Any(r => r.Items.Count > 0 && r.Items[0].Id == id)))
+            && (isCompleted
+                || (!continueWatchingRows.Any(r => r.Items.Count > 0 && r.Items[0].Id == id)
+                    && ShouldCheckContinueWatchingMembership(id))))
         {
             var delay = isCompleted ? TimeSpan.Zero : ContinueWatchingRefreshDelay;
             ScheduleContinueWatchingRefresh(delay);
@@ -619,13 +627,58 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
             return;
         }
 
-        Interlocked.Increment(ref _catalogRefreshGeneration);
-        _ = RefreshAllRowsAsync().ContinueWith(t =>
+        ScheduleInvalidatedRefresh();
+    }
+
+    // Playback stop invalidates twice (terminal progress report, then tracker stop) and other
+    // callers can follow: one refresh of every row covers them all, including the Keep
+    // Watching refresh a progress tick may have scheduled.
+    private void ScheduleInvalidatedRefresh()
+    {
+        _invalidatedRefreshCts?.Cancel();
+        _invalidatedRefreshCts?.Dispose();
+        _invalidatedRefreshCts = new CancellationTokenSource();
+        var token = _invalidatedRefreshCts.Token;
+
+        _ = Task.Run(async () =>
         {
-            if (t.IsFaulted)
+            try
+            {
+                await Task.Delay(HomeFeedInvalidatedDelay, token);
+                CancelAndDispose(ref _continueWatchingRefreshCts);
+                Interlocked.Increment(ref _catalogRefreshGeneration);
+                await RefreshAllRowsAsync();
+                NotifyChanged();
+            }
+            catch (OperationCanceledException)
+            {
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Home feed refresh after invalidation failed");
                 _pendingRefresh = true;
-            NotifyChanged();
-        }, TaskScheduler.Default);
+                NotifyChanged();
+            }
+        }, token);
+    }
+
+    // A media that does not lead Keep Watching may enter it once the server resume threshold
+    // is met. Checking that once a minute, instead of on every 10 s progress tick, is enough.
+    private bool ShouldCheckContinueWatchingMembership(string mediaId)
+    {
+        var now = DateTime.UtcNow;
+        lock (_sync)
+        {
+            if (string.Equals(_membershipCheckMediaId, mediaId, StringComparison.Ordinal)
+                && now - _membershipCheckAtUtc < ContinueWatchingMembershipInterval)
+            {
+                return false;
+            }
+
+            _membershipCheckMediaId = mediaId;
+            _membershipCheckAtUtc = now;
+            return true;
+        }
     }
 
     private void OnMediaBatchAdded(List<MediaBatchItem> items)
