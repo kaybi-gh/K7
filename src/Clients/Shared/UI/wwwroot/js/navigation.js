@@ -780,7 +780,9 @@ var SpatialNav = (function () {
             var fromEl = el.closest('.video-controls-overlay');
             if (fromEl) return fromEl;
         }
-        return document.querySelector('.video-controls-overlay');
+        // Only a visible player may claim OK when the focus is outside its chrome: a leftover
+        // overlay must not route every OK of the app to a hidden player.
+        return isVideoPlayerActive() ? document.querySelector('.video-controls-overlay') : null;
     }
 
     // When overlay chrome is forced visible by scrub JS but Blazor already hid it,
@@ -1146,6 +1148,7 @@ var SpatialNav = (function () {
         var openMenuEl = active && active.closest ? active.closest('.k7-menu-dropdown--open') : null;
 
         if (openMenuEl) {
+            if (phase === 'up') perfNote('select inside open menu');
             if (phase === 'up' && heldMs < 600) {
                 var menuTarget = takeTvSelectSnapshot();
                 if (menuTarget && menuTarget !== document.body) {
@@ -1171,6 +1174,7 @@ var SpatialNav = (function () {
 
         if (videoOverlay && isVideoControlsHidden(videoOverlay)) {
             if (phase === 'up' && heldMs < 600) {
+                perfNote('select routed to hidden video player');
                 _tvSelectSnapshotEl = null;
                 handleHiddenVideoPlayerSelect(makeFakeKeyEvent(keyCode, active));
             }
@@ -1245,6 +1249,7 @@ var SpatialNav = (function () {
 
             if (card && link) {
                 _tvSelectSnapshotEl = null;
+                perfNote('select media card link');
                 navigateMediaCardLink(link);
                 return;
             }
@@ -1252,6 +1257,7 @@ var SpatialNav = (function () {
             var target = takeTvSelectSnapshot();
             // Stale Select-up after process sleep / unpaired down (adb heldMs=404696018).
             if (heldMs > 10000) {
+                perfNote('select ignored: stale key-up');
                 return;
             }
             if (target && target !== document.body && heldMs < 600) {
