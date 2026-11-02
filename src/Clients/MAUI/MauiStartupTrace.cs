@@ -61,6 +61,24 @@ internal static class MauiStartupTrace
         Emit(name + "#" + count, ms);
     }
 
+    /// <summary>Always-on error line: <c>adb logcat -s K7-Error</c>.</summary>
+    public static void WriteError(string line)
+    {
+        Debug.WriteLine("K7-Error " + line);
+#if ANDROID
+        try
+        {
+            Log.Error("K7-Error", line);
+        }
+        catch
+        {
+            // Logging must never break the app.
+        }
+#else
+        Console.Error.WriteLine("K7-Error " + line);
+#endif
+    }
+
     /// <summary>
     /// Sink for <see cref="K7.Clients.Shared.Services.PerfTrace"/> lines: <c>adb logcat -s K7-Perf</c>.
     /// </summary>

@@ -163,6 +163,9 @@ public static partial class MauiProgram
         builder.Logging.AddFilter("Microsoft.AspNetCore.Components", LogLevel.Information);
 #endif
 
+        // Blazor errors outside an ErrorBoundary were invisible in Release (no log sink).
+        builder.Services.AddSingleton<ILoggerProvider, BlazorErrorLoggerProvider>();
+
         // https://github.com/dotnet/maui/issues/14185
         // https://github.com/microsoft/microsoft-ui-xaml/issues/6527
         builder.ConfigureMauiHandlers(handlers =>
