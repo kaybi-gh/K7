@@ -58,6 +58,24 @@ public class AgeRestrictionEvaluatorTests
     }
 
     [Test]
+    public void Apply_ShouldAllowBareNumericAgeLabel_WhenViewerAgeIsAtLeastThatAge()
+    {
+        var kids = new Movie { Id = Guid.NewGuid(), Title = "Kids" };
+        kids.MetadataTags.Add(CreateRatingTag(kids, "8", "8+"));
+        var teen = new Movie { Id = Guid.NewGuid(), Title = "Teen" };
+        teen.MetadataTags.Add(CreateRatingTag(teen, "13", "13+"));
+        var medias = new List<BaseMedia> { kids, teen };
+
+        var tooYoung = AgeRestrictionEvaluator.Apply(
+            medias.AsQueryable(), new DateOnly(2014, 1, 1), Today).ToList();
+        tooYoung.Select(m => m.Title).Should().Equal("Kids");
+
+        var oldEnough = AgeRestrictionEvaluator.Apply(
+            medias.AsQueryable(), new DateOnly(2013, 1, 1), Today).ToList();
+        oldEnough.Select(m => m.Title).Should().BeEquivalentTo("Kids", "Teen");
+    }
+
+    [Test]
     public void Apply_ShouldKeepMusicWithoutRating()
     {
         var movies = CreateLibrary();
