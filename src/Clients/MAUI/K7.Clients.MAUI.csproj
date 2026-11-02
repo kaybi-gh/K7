@@ -144,12 +144,14 @@
   </PropertyGroup>
 
   <!--
-    Custom AOT profile recorded on a device with Mono.AotProfiler.Android (docs/dev/developing.md,
-    MAUI startup). Picked up automatically when the file exists; only used when
-    AndroidEnableProfiledAot is true, next to the default maui / maui-blazor profiles.
+    Custom AOT profiles recorded on a device with Mono.AotProfiler.Android (docs/dev/developing.md,
+    MAUI startup): custom.aprof (manual session: playback, menus) and tour.aprof (unattended
+    AotProfileTour). Every *.aprof next to the csproj is picked up and the AOT compiler takes the
+    union; only used when AndroidEnableProfiledAot is true, next to the default maui / maui-blazor
+    profiles.
   -->
-  <ItemGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net10.0-android|AnyCPU' And Exists('$(MSBuildThisFileDirectory)custom.aprof')">
-    <AndroidAotProfile Include="$(MSBuildThisFileDirectory)custom.aprof" />
+  <ItemGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net10.0-android|AnyCPU'">
+    <AndroidAotProfile Include="$(MSBuildThisFileDirectory)*.aprof" />
   </ItemGroup>
 
   <!--
@@ -162,6 +164,8 @@
     <AndroidEnableProfiledAot>false</AndroidEnableProfiledAot>
     <AndroidEnableAotProfiler>true</AndroidEnableAotProfiler>
     <AndroidEmbedProfilers>aot</AndroidEmbedProfilers>
+    <!-- Turns on AotProfileTour: the app walks its pages by itself while the profile records. -->
+    <DefineConstants>$(DefineConstants);K7_AOT_PROFILING</DefineConstants>
   </PropertyGroup>
   <ItemGroup Condition="'$(K7AotProfiling)' == 'true' And '$(TargetFramework)' == 'net10.0-android'">
     <PackageReference Include="Mono.AotProfiler.Android" />

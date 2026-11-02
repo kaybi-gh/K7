@@ -239,6 +239,7 @@ public partial class MainLayout : IDisposable
             PlaybackAssetLoader.Prefetch(JS);
             if (PerfTrace.IsEnabled)
                 await PerfTrace.SyncJsAsync(JS);
+            AotProfileTour.Start(Services, NavigationManager, JS, InvokeAsync);
             await JS.InvokeVoidAsync("K7.applyTheme", ThemeService.Theme.CssDataAttribute);
             await JS.InvokeVoidAsync("K7.dismissPreload");
             _selfRef = DotNetObjectReference.Create(this);

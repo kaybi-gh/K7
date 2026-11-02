@@ -44,6 +44,9 @@ public static partial class MauiProgram
         MauiStartupTrace.Mark("CreateMauiApp-start");
         ColdStartTrace.Mark = MauiStartupTrace.Mark;
         PerfTrace.Sink = MauiStartupTrace.WritePerf;
+#if K7_AOT_PROFILING
+        global::K7.Clients.Shared.UI.Helpers.AotProfileTour.Enabled = true;
+#endif
         // AppReady may fire at SelectProfile OnInitialized (before first paint). Do not start
         // OpenIddict there - it starved EmptyLayout ~13s on TV. Heavy work waits FirstPaint.
         AppReadySignal.OnSignaled = static () => MauiStartupTrace.Mark("AppReadySignal");
