@@ -64,6 +64,10 @@ else
                             {
                                 <K7Chip Size="sm" Icon="star" Color="primary" Variant="filled" Style="font-weight: 700;">@externalRating.ToString("N1")</K7Chip>
                             }
+                            @if (!string.IsNullOrEmpty(_movie.ContentRating))
+                            {
+                                <K7Chip Variant="outlined" Size="sm">@_movie.ContentRating</K7Chip>
+                            }
                             @if (_canRate)
                             {
                                 <div class="movie-user-rating" @onclick:stopPropagation="true">
