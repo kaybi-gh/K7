@@ -151,6 +151,7 @@ public static class DependencyInjection
         services.AddScoped<ISoftKeyboardService, NoOpSoftKeyboardService>();
         services.AddScoped<SoftKeyboardJsBridge>();
         services.AddScoped<IWindowsStreamFetchJsBridge, NoOpWindowsStreamFetchJsBridge>();
+        services.AddSingleton<IDeviceStorageService, NoOpDeviceStorageService>();
         services.AddScoped<MediaCardContextMenuService>();
         services.AddScoped<IMediaCardContextMenuService>(sp => sp.GetRequiredService<MediaCardContextMenuService>());
         services.AddSignalR();
