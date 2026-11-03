@@ -19,14 +19,17 @@ public class GetHomeFeed : IEndpoint
             [FromServices] ISender sender,
             [FromServices] IMediaQueryCacheInvalidator cacheInvalidator,
             [FromServices] IUser currentUser,
-            [AsParameters] GetHomeFeedItemsQuery query) =>
+            [AsParameters] GetHomeFeedItemsQuery query,
+            CancellationToken cancellationToken) =>
         {
-            var etag = cacheInvalidator.GetVersion(currentUser.IdentityId).ToETag();
+            var etag = cacheInvalidator.GetETag(
+                currentUser.IdentityId,
+                await currentUser.GetSharedProfileIdAsync(cancellationToken));
 
             if (httpContext.Request.Headers.IfNoneMatch == etag)
                 return Results.StatusCode(StatusCodes.Status304NotModified);
 
-            var result = await sender.Send(query);
+            var result = await sender.Send(query, cancellationToken);
 
             httpContext.Response.Headers[HeaderNames.ETag] = etag;
             httpContext.Response.Headers[HeaderNames.CacheControl] = "no-store";

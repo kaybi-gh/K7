@@ -13,6 +13,14 @@ public interface IMediaQueryCacheInvalidator
     /// </summary>
     MediaQueryCacheVersion GetVersion(string? identityUserId);
 
+    /// <summary>
+    /// HTTP ETag for a per-user media response. Besides the versions it carries a per-process
+    /// epoch (counters restart at 0 with the server) and a hash of the user and shared profile
+    /// (two profiles on the same browser share the same counters), so a browser revalidation can
+    /// never get a 304 for a response computed for someone else or before a restart.
+    /// </summary>
+    string GetETag(string? identityUserId, Guid? sharedProfileId);
+
     void InvalidateAll();
 
     /// <summary>
@@ -21,7 +29,4 @@ public interface IMediaQueryCacheInvalidator
     void InvalidateUser(string identityUserId);
 }
 
-public readonly record struct MediaQueryCacheVersion(long Catalog, long User)
-{
-    public string ToETag() => $"\"{Catalog}-{User}\"";
-}
+public readonly record struct MediaQueryCacheVersion(long Catalog, long User);

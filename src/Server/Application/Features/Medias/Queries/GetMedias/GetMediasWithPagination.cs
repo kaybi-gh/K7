@@ -74,14 +74,16 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
         return result;
     }
 
-    private async Task<string> BuildCacheKeyAsync(
+    internal async Task<string> BuildCacheKeyAsync(
         GetMediasWithPaginationQuery request,
         Guid? userId,
         RuleGroupDto? filter,
         bool includePagination,
         CancellationToken cancellationToken)
     {
-        var parts = new List<string> { "medias", $"u:{userId}" };
+        // The shared profile changes the access filter (restriction profile, age gating).
+        var sharedProfileId = userId.HasValue ? await currentUser.GetSharedProfileIdAsync(cancellationToken) : null;
+        var parts = new List<string> { "medias", $"u:{userId}", $"sp:{sharedProfileId}" };
 
         if (request.LibraryIds is { Length: > 0 })
             parts.Add($"lib:{string.Join(',', request.LibraryIds.OrderBy(x => x))}");

@@ -36,13 +36,48 @@ public class MediaQueryCacheInvalidatorTests
     }
 
     [Test]
-    public void ToETag_ShouldDiffer_WhenOnlyUserVersionChanged()
+    public void GetETag_ShouldDiffer_WhenOnlyUserVersionChanged()
     {
         var invalidator = new MediaQueryCacheInvalidator();
-        var before = invalidator.GetVersion("alice").ToETag();
+        var before = invalidator.GetETag("alice", null);
 
         invalidator.InvalidateUser("alice");
 
-        invalidator.GetVersion("alice").ToETag().Should().NotBe(before);
+        invalidator.GetETag("alice", null).Should().NotBe(before);
+    }
+
+    [Test]
+    public void GetETag_ShouldDiffer_WhenUsersShareTheSameVersions()
+    {
+        var invalidator = new MediaQueryCacheInvalidator();
+
+        invalidator.GetVersion("alice").Should().Be(invalidator.GetVersion("bob"));
+        invalidator.GetETag("alice", null).Should().NotBe(invalidator.GetETag("bob", null));
+    }
+
+    [Test]
+    public void GetETag_ShouldDiffer_WhenSharedProfileChanged()
+    {
+        var invalidator = new MediaQueryCacheInvalidator();
+
+        invalidator.GetETag("alice", Guid.NewGuid()).Should().NotBe(invalidator.GetETag("alice", null));
+    }
+
+    [Test]
+    public void GetETag_ShouldDiffer_WhenServerRestartedWithTheSameVersions()
+    {
+        var beforeRestart = new MediaQueryCacheInvalidator();
+        var afterRestart = new MediaQueryCacheInvalidator();
+
+        afterRestart.GetETag("alice", null).Should().NotBe(beforeRestart.GetETag("alice", null));
+    }
+
+    [Test]
+    public void GetETag_ShouldBeStable_WhenNothingChanged()
+    {
+        var invalidator = new MediaQueryCacheInvalidator();
+        var profileId = Guid.NewGuid();
+
+        invalidator.GetETag("alice", profileId).Should().Be(invalidator.GetETag("alice", profileId));
     }
 }

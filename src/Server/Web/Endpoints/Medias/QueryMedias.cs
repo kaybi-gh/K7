@@ -28,7 +28,9 @@ public class QueryMedias : IEndpoint
             [FromBody] QueryMediasRequest request,
             CancellationToken cancellationToken) =>
         {
-            var etag = cacheInvalidator.GetVersion(currentUser.IdentityId).ToETag();
+            var etag = cacheInvalidator.GetETag(
+                currentUser.IdentityId,
+                await currentUser.GetSharedProfileIdAsync(cancellationToken));
 
             if (httpContext.Request.Headers.IfNoneMatch == etag)
                 return Results.StatusCode(StatusCodes.Status304NotModified);
@@ -43,6 +45,8 @@ public class QueryMedias : IEndpoint
             };
 
             httpContext.Response.Headers[HeaderNames.ETag] = etag;
+            // Per-user body: no shared cache, and the browser revalidates every time.
+            httpContext.Response.Headers[HeaderNames.CacheControl] = "private, no-cache";
             return Results.Ok(result);
         })
         .RequireAuthorization(Policies.GuestOrAbove)
