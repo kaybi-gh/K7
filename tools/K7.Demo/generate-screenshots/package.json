@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "capture": "node capture.mjs",
+    "play": "node playstore.mjs",
     "composite:movie": "node composite-showcase.mjs",
     "showcase": "node capture.mjs && node composite-showcase.mjs",
     "install-browsers": "playwright install chromium"

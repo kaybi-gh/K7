@@ -1,0 +1,62 @@
+{
+  "baseUrl": "https://k7.kaybi.dev",
+  "outputDir": "../../../screenshots/play",
+  "colorScheme": "dark",
+  "guestLogin": true,
+  "settleMs": 4000,
+  "defaultProfile": "play-phone",
+  "profiles": {
+    "play-phone": {
+      "viewport": {
+        "width": 540,
+        "height": 960
+      },
+      "deviceScaleFactor": 2,
+      "isMobile": true,
+      "locale": "en-US",
+      "userAgent": "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36"
+    }
+  },
+  "captures": [
+    {
+      "file": "phone-home.png",
+      "path": "/",
+      "profile": "play-phone",
+      "waitFor": "a[href='/explore']"
+    },
+    {
+      "file": "phone-explore.png",
+      "path": "/explore",
+      "profile": "play-phone",
+      "waitFor": "text=MOVIES"
+    },
+    {
+      "file": "phone-movies.png",
+      "resolve": { "category": "MOVIES" },
+      "profile": "play-phone",
+      "optional": true,
+      "waitFor": "a[href*=\"/movies/\"]"
+    },
+    {
+      "file": "phone-movie.png",
+      "resolve": { "search": "Sintel", "kind": "movie" },
+      "profile": "play-phone",
+      "optional": true,
+      "waitFor": "button:has-text(\"Play\"), button:has-text(\"Lecture\"), h1"
+    },
+    {
+      "file": "phone-music.png",
+      "resolve": { "search": "Goldberg", "kind": "album" },
+      "profile": "play-phone",
+      "optional": true,
+      "waitFor": "h1, table, button:has-text(\"Play\"), button:has-text(\"Lecture\")"
+    },
+    {
+      "file": "phone-series.png",
+      "resolve": { "search": "Superman", "kind": "series" },
+      "profile": "play-phone",
+      "optional": true,
+      "waitFor": "button:has-text(\"Play\"), button:has-text(\"Lecture\"), h1"
+    }
+  ]
+}

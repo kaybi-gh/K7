@@ -38,6 +38,16 @@ $env:K7_SCREENSHOTS_FILES = "movie-detail-sintel-desktop.png,movie-detail-sintel
 npm run capture
 ```
 
+## Play Store assets
+
+Writes phone screenshots, the 512x512 icon, and the 1024x500 feature graphic to [`screenshots/play/`](../../../screenshots/play/). Phone shots are 1080x1920 (9:16), which Play accepts. The README gallery is left unchanged.
+
+```bash
+npm run play
+```
+
+Upload every `phone-*.png`, plus `icon.png` and `feature-graphic.png`.
+
 ## Device showcase composite
 
 Builds `screenshots/movie-showcase-devices.png` from existing captures (TV home, Sintel on laptop and phone):
