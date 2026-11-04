@@ -15,6 +15,14 @@
       "isMobile": true,
       "locale": "en-US",
       "userAgent": "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36"
+    },
+    "play-tv": {
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "locale": "en-US",
+      "platform": "tv"
     }
   },
   "captures": [
@@ -55,6 +63,46 @@
       "file": "phone-series.png",
       "resolve": { "search": "Superman", "kind": "series" },
       "profile": "play-phone",
+      "optional": true,
+      "waitFor": "button:has-text(\"Play\"), button:has-text(\"Lecture\"), h1"
+    },
+    {
+      "file": "tv-home.png",
+      "path": "/",
+      "profile": "play-tv",
+      "waitFor": ".home-tv-hero, .home-page--tv"
+    },
+    {
+      "file": "tv-explore.png",
+      "path": "/explore",
+      "profile": "play-tv",
+      "waitFor": "text=MOVIES"
+    },
+    {
+      "file": "tv-movies.png",
+      "resolve": { "category": "MOVIES" },
+      "profile": "play-tv",
+      "optional": true,
+      "waitFor": "a[href*=\"/movies/\"]"
+    },
+    {
+      "file": "tv-movie.png",
+      "resolve": { "search": "Sintel", "kind": "movie" },
+      "profile": "play-tv",
+      "optional": true,
+      "waitFor": "button:has-text(\"Play\"), button:has-text(\"Lecture\"), h1"
+    },
+    {
+      "file": "tv-music.png",
+      "resolve": { "search": "Goldberg", "kind": "album" },
+      "profile": "play-tv",
+      "optional": true,
+      "waitFor": "h1, table, button:has-text(\"Play\"), button:has-text(\"Lecture\")"
+    },
+    {
+      "file": "tv-series.png",
+      "resolve": { "search": "Superman", "kind": "series" },
+      "profile": "play-tv",
       "optional": true,
       "waitFor": "button:has-text(\"Play\"), button:has-text(\"Lecture\"), h1"
     }

@@ -40,13 +40,13 @@ npm run capture
 
 ## Play Store assets
 
-Writes phone screenshots, the 512x512 icon, and the 1024x500 feature graphic to [`screenshots/play/`](../../../screenshots/play/). Phone shots are 1080x1920 (9:16), which Play accepts. The README gallery is left unchanged.
+Writes phone screenshots, Android TV screenshots, the 512x512 icon, and the 1024x500 feature graphic to [`screenshots/play/`](../../../screenshots/play/). Phone shots are 1080x1920 (9:16). TV shots are 1920x1080. The README gallery is left unchanged.
 
 ```bash
 npm run play
 ```
 
-Upload every `phone-*.png`, plus `icon.png` and `feature-graphic.png`.
+Upload every `phone-*.png` on the phone listing and every `tv-*.png` on the Android TV listing, plus `icon.png` and `feature-graphic.png`.
 
 ## Device showcase composite
 

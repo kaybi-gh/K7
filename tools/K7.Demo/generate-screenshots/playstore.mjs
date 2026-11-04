@@ -250,16 +250,7 @@ async function writeFeatureGraphic(browser) {
   console.log(`FEATURE ${out}`);
 }
 
-function assertPlayPhoneShots() {
-  const files = [
-    'phone-home.png',
-    'phone-explore.png',
-    'phone-movies.png',
-    'phone-movie.png',
-    'phone-music.png',
-    'phone-series.png',
-  ];
-
+function assertShots(label, files, accept) {
   for (const file of files) {
     const filePath = path.join(outputDir, file);
     if (!existsSync(filePath)) {
@@ -268,13 +259,32 @@ function assertPlayPhoneShots() {
     }
 
     const size = pngSize(filePath);
-    const ratio = size.height / size.width;
-    if (size.width < 320 || size.height > 3840 || ratio > 2) {
-      throw new Error(`${file} is ${size.width}x${size.height}, outside Play phone limits`);
+    if (!accept(size)) {
+      throw new Error(`${file} is ${size.width}x${size.height} colorType=${size.colorType}`);
     }
 
-    console.log(`PHONE ${file} ${size.width}x${size.height} colorType=${size.colorType}`);
+    console.log(`${label} ${file} ${size.width}x${size.height} colorType=${size.colorType}`);
   }
+}
+
+function assertPlayShots() {
+  assertShots('PHONE', [
+    'phone-home.png',
+    'phone-explore.png',
+    'phone-movies.png',
+    'phone-movie.png',
+    'phone-music.png',
+    'phone-series.png',
+  ], (size) => size.width >= 320 && size.height <= 3840 && size.height / size.width <= 2);
+
+  assertShots('TV', [
+    'tv-home.png',
+    'tv-explore.png',
+    'tv-movies.png',
+    'tv-movie.png',
+    'tv-music.png',
+    'tv-series.png',
+  ], (size) => size.width === 1920 && size.height === 1080 && size.colorType === 2);
 }
 
 async function main() {
@@ -284,7 +294,7 @@ async function main() {
   }
 
   await runCapture();
-  assertPlayPhoneShots();
+  assertPlayShots();
 
   const browser = await chromium.launch({ headless: true });
   try {
