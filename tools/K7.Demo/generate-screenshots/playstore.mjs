@@ -16,6 +16,8 @@ const logoSource = path.resolve(repoRoot, 'branding/logo.svg');
 const featureWidth = 1024;
 const featureHeight = 500;
 const iconSize = 512;
+const tvBannerWidth = 1280;
+const tvBannerHeight = 720;
 
 function runCapture() {
   return new Promise((resolve, reject) => {
@@ -250,6 +252,47 @@ async function writeFeatureGraphic(browser) {
   console.log(`FEATURE ${out}`);
 }
 
+async function writeTvBanner(browser) {
+  const page = await browser.newPage({
+    viewport: { width: tvBannerWidth, height: tvBannerHeight },
+    deviceScaleFactor: 1,
+  });
+  const logo = toDataUrl(logoSource, 'image/svg+xml');
+  const logoWidth = 512;
+  const logoHeight = 280;
+
+  await page.setContent(`<!DOCTYPE html>
+<html>
+<body style="margin:0">
+  <img id="logo" src="${logo}" alt="" />
+</body>
+</html>`, { waitUntil: 'load' });
+  await page.locator('#logo').evaluate((node) => node.decode());
+
+  const rgba = await page.evaluate(({ width, height, logoWidth: markWidth, logoHeight: markHeight }) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext('2d', { willReadFrequently: true });
+    context.fillStyle = '#0d0907';
+    context.fillRect(0, 0, width, height);
+    const logoNode = document.querySelector('#logo');
+    context.drawImage(
+      logoNode,
+      Math.round((width - markWidth) / 2),
+      Math.round((height - markHeight) / 2),
+      markWidth,
+      markHeight,
+    );
+    return Array.from(context.getImageData(0, 0, width, height).data);
+  }, { width: tvBannerWidth, height: tvBannerHeight, logoWidth, logoHeight });
+  await page.close();
+
+  const out = path.join(outputDir, 'tv-banner.png');
+  writeFileSync(out, encodePng(tvBannerWidth, tvBannerHeight, rgbaToRgb(Buffer.from(rgba)), 2));
+  console.log(`TV BANNER ${out}`);
+}
+
 function assertShots(label, files, accept) {
   for (const file of files) {
     const filePath = path.join(outputDir, file);
@@ -293,6 +336,23 @@ async function main() {
     throw new Error(`Icon not found: ${iconSource}`);
   }
 
+  if (process.argv.includes('--banner-only')) {
+    const browser = await chromium.launch({ headless: true });
+    try {
+      await writeTvBanner(browser);
+    } finally {
+      await browser.close();
+    }
+
+    const bannerOnly = pngSize(path.join(outputDir, 'tv-banner.png'));
+    if (bannerOnly.width !== 1280 || bannerOnly.height !== 720 || bannerOnly.colorType !== 2) {
+      throw new Error(`tv-banner.png is ${bannerOnly.width}x${bannerOnly.height} colorType=${bannerOnly.colorType}`);
+    }
+
+    console.log('TV BANNER DONE');
+    return;
+  }
+
   await runCapture();
   assertPlayShots();
 
@@ -305,6 +365,7 @@ async function main() {
     await writeIcon(page);
     await page.close();
     await writeFeatureGraphic(browser);
+    await writeTvBanner(browser);
   } finally {
     await browser.close();
   }
@@ -317,6 +378,11 @@ async function main() {
 
   if (feature.width !== 1024 || feature.height !== 500 || feature.colorType !== 2) {
     throw new Error(`feature-graphic.png is ${feature.width}x${feature.height} colorType=${feature.colorType}`);
+  }
+
+  const banner = pngSize(path.join(outputDir, 'tv-banner.png'));
+  if (banner.width !== 1280 || banner.height !== 720 || banner.colorType !== 2) {
+    throw new Error(`tv-banner.png is ${banner.width}x${banner.height} colorType=${banner.colorType}`);
   }
 
   console.log('PLAY DONE');

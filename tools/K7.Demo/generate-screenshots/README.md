@@ -46,7 +46,7 @@ Writes phone screenshots, Android TV screenshots, the 512x512 icon, and the 1024
 npm run play
 ```
 
-Upload every `phone-*.png` on the phone listing and every `tv-*.png` on the Android TV listing, plus `icon.png` and `feature-graphic.png`.
+Upload every `phone-*.png` on the phone listing and every `tv-*.png` on the Android TV listing, plus `icon.png`, `feature-graphic.png`, and `tv-banner.png` (1280x720).
 
 ## Device showcase composite
 
