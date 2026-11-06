@@ -36,6 +36,7 @@ public partial class CollectionDetailPage
     private bool _loadingItems = true;
     private bool _evaluating;
     private bool _showUnavailable;
+    private CancellationTokenSource? _loadCts;
     private bool _canTrackProgress;
     private bool _canExclude;
     private bool _canSetWatchState;
@@ -103,6 +104,7 @@ public partial class CollectionDetailPage
         }
 
         _collection = await K7ServerService.GetCollectionAsync(id);
+        _loading = false;
 
         if (_collection is not null)
         {
@@ -110,8 +112,6 @@ public partial class CollectionDetailPage
             ApplyCollectionDefaultSort();
             await LoadItemsAsync(id);
         }
-
-        _loading = false;
     }
 
     private void ApplyCollectionDefaultSort()
@@ -130,48 +130,88 @@ public partial class CollectionDetailPage
         (_activeSortKey, _activeSortDirection) = MapSortOption(_selectedSort);
     }
 
-    private async Task LoadItemsAsync(Guid collectionId)
+    private Task LoadItemsAsync(Guid collectionId)
+    {
+        _loadCts?.Cancel();
+        _loadCts?.Dispose();
+        _loadCts = new CancellationTokenSource();
+        return LoadItemsCoreAsync(collectionId, _loadCts.Token);
+    }
+
+    private async Task LoadItemsCoreAsync(Guid collectionId, CancellationToken cancellationToken)
     {
         _loadingItems = true;
-        _browseRows.Clear();
+        _browseRows = [];
+        RebuildDisplayRows();
+        StateHasChanged();
 
         var includeUnavailable = _collection is { IsDynamic: false } && _showUnavailable;
         var pageNumber = 1;
         var index = 0;
 
-        while (true)
+        try
         {
-            var page = await K7ServerService.GetCollectionItemsAsync(
-                collectionId,
-                pageNumber: pageNumber,
-                pageSize: PageSize,
-                includeUnavailable: includeUnavailable);
-
-            if (page?.Items is null || page.Items.Count == 0)
-                break;
-
-            foreach (var item in page.Items)
+            while (!cancellationToken.IsCancellationRequested)
             {
-                _browseRows.Add(new CollectionBrowseRow(item.Id, item.Media, index));
-                index++;
+                var page = await K7ServerService.GetCollectionItemsAsync(
+                    collectionId,
+                    pageNumber: pageNumber,
+                    pageSize: PageSize,
+                    includeUnavailable: includeUnavailable,
+                    cancellationToken: cancellationToken);
+
+                if (page?.Items is null || page.Items.Count == 0)
+                    break;
+
+                foreach (var item in page.Items)
+                {
+                    _browseRows.Add(new CollectionBrowseRow(item.Id, item.Media, index));
+                    index++;
+                }
+
+                RebuildDisplayRows();
+
+                if (pageNumber == 1)
+                {
+                    RefreshHeaderPreviews();
+                    _loadingItems = false;
+                }
+
+                if (_dataTable is not null)
+                    await _dataTable.RefreshAsync();
+                if (_browseView is not null)
+                    await _browseView.RefreshAsync();
+                StateHasChanged();
+
+                if (!page.HasNextPage)
+                    break;
+
+                pageNumber++;
             }
-
-            if (!page.HasNextPage)
-                break;
-
-            pageNumber++;
+        }
+        catch (OperationCanceledException)
+        {
+            return;
         }
 
-        _headerPreviewUrls = _browseRows
-            .SelectMany(r => GetItemPreviewUrls(r.Media))
-            .Take(4)
-            .ToList();
-        RebuildDisplayRows();
+        if (cancellationToken.IsCancellationRequested)
+            return;
+
+        RefreshHeaderPreviews();
         _loadingItems = false;
         if (_dataTable is not null)
             await _dataTable.RefreshAsync();
         if (_browseView is not null)
             await _browseView.RefreshAsync();
+        StateHasChanged();
+    }
+
+    private void RefreshHeaderPreviews()
+    {
+        _headerPreviewUrls = _browseRows
+            .SelectMany(r => GetItemPreviewUrls(r.Media))
+            .Take(4)
+            .ToList();
     }
 
     private Task<K7DataTableResult<CollectionBrowseRow>> LoadTableDataAsync(

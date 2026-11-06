@@ -13,7 +13,7 @@
 
 @if (_dynamicPlaylist is not null)
 {
-    <PlaylistDetailShell PageScrollable="true">
+    <PlaylistDetailShell>
         <div class="playlist-header">
             <div class="playlist-header-cover">
                 <K7CoverMosaic CoverPicture="@(_showHeaderPlaceholder ? null : _dynamicPlaylist.CoverPicture)"
@@ -57,14 +57,14 @@
             <div class="playlist-header-actions">
                 <K7Button Variant="filled" Color="primary"
                            StartIcon="@Phosphor.Play"
-                           OnClick="PlayAll" Disabled="@(_items.Count == 0)"
+                           OnClick="PlayAll" Disabled="@(_loadingItems || _items.Count == 0)"
                            AriaLabel="@S["PlayAll"]">
                     <span class="playlist-action-label">@S["PlayAll"]</span>
                 </K7Button>
                 <div class="playlist-header-manage">
                     <K7Button Variant="outlined" Color="primary"
                                StartIcon="@Phosphor.Shuffle"
-                               OnClick="ShuffleAll" Disabled="@(_items.Count == 0)"
+                               OnClick="ShuffleAll" Disabled="@(_loadingItems || _items.Count == 0)"
                                AriaLabel="@S["Shuffle"]">
                         <span class="playlist-action-label">@S["Shuffle"]</span>
                     </K7Button>
@@ -109,51 +109,73 @@
         else
         {
             <div class="playlist-tracklist">
-                <K7Table Items="_items"
-                          TItem="DynamicPlaylistItemViewModel" OnRowClick="@(args => OnTrackClick(args))" RowClass="cursor-pointer">
-                    <HeaderContent>
-                        <th Style="width: 50px;">#</th>
-                        <th>@S["Title"]</th>
-                        <th>@S["Artist"]</th>
-                        <th>@S["Album"]</th>
-                        <th Style="width: 80px;"><K7Icon Name="clock" IconSize="@K7IconSize.Sm" /></th>
-                        <th Style="width: 130px;"></th>
-                        <th Style="width: 50px;"></th>
-                    </HeaderContent>
-                    <RowTemplate>
-                        <td>
-                            @if (context.IsPlaying)
+                <K7DataTable TItem="DynamicPlaylistItemViewModel"
+                             ServerData="LoadTableDataAsync"
+                             OnRowClick="OnTrackClick"
+                             RowHeight="56"
+                             ShowToolbar="false"
+                             Surface="false"
+                             RowClass="@(_ => "cursor-pointer")"
+                             @ref="_dataTable">
+                    <K7DataColumn TItem="DynamicPlaylistItemViewModel" Title="#" Width="50px" Hideable="false">
+                        <CellTemplate Context="item">
+                            @if (item.IsPlaying)
                             {
                                 <K7Icon Name="equalizer" IconSize="@K7IconSize.Sm" Color="primary" />
                             }
                             else
                             {
-                                <p class="text-sm" Color="secondary">@(context.Order + 1)</p>
+                                <p class="text-sm" Color="secondary">@(item.Order + 1)</p>
                             }
-                        </td>
-                        <td>
-                            <div class="d-flex align-center gap-2">
-                                @if (context.CoverUrl is not null)
+                        </CellTemplate>
+                    </K7DataColumn>
+                    <K7DataColumn TItem="DynamicPlaylistItemViewModel" Title="@S["Title"]" Hideable="false">
+                        <CellTemplate Context="item">
+                            <div class="playlist-tracklist-title">
+                                @if (item.CoverUrl is not null)
                                 {
-                                    <K7Image Src="@context.CoverUrl" Width="36"
+                                    <K7Image Src="@item.CoverUrl" Width="36"
                                               ObjectFit="cover" Class="rounded" LoadingMode="K7ImageLoadingMode.Css" loading="lazy" />
                                 }
-                                <span Style="@(context.IsPlaying ? "color: var(--color-accent);" : "")">
-                                    @context.Title
+                                <span style="@(item.IsPlaying ? "color: var(--color-accent);" : null)">
+                                    @item.Title
                                 </span>
                             </div>
-                        </td>
-                        <td><p class="text-sm" Color="secondary">@context.ArtistName</p></td>
-                        <td><p class="text-sm" Color="secondary">@context.AlbumTitle</p></td>
-                        <td><p class="text-sm" Color="secondary">@FormatTime(context.Duration)</p></td>
-                        <td>
-                            <RatingStars MediaId="context.MediaId" Value="context.UserRating" Size="sm" />
-                        </td>
-                        <td>
-                            <TrackContextMenu Track="BuildQueueItem(context)" />
-                        </td>
-                    </RowTemplate>
-                </K7Table>
+                        </CellTemplate>
+                    </K7DataColumn>
+                    <K7DataColumn TItem="DynamicPlaylistItemViewModel" Title="@S["Artist"]" Width="160px" VisibleOnMobile="false">
+                        <CellTemplate Context="item">
+                            <p class="text-sm" Color="secondary">@item.ArtistName</p>
+                        </CellTemplate>
+                    </K7DataColumn>
+                    <K7DataColumn TItem="DynamicPlaylistItemViewModel" Title="@S["Album"]" Width="180px" VisibleOnMobile="false">
+                        <CellTemplate Context="item">
+                            <p class="text-sm" Color="secondary">@item.AlbumTitle</p>
+                        </CellTemplate>
+                    </K7DataColumn>
+                    <K7DataColumn TItem="DynamicPlaylistItemViewModel" Title="@S["Duration"]" Width="80px" VisibleOnMobile="false">
+                        <CellTemplate Context="item">
+                            <p class="text-sm" Color="secondary">@FormatTime(item.Duration)</p>
+                        </CellTemplate>
+                    </K7DataColumn>
+                    <K7DataColumn TItem="DynamicPlaylistItemViewModel" Title="" Width="130px" Hideable="false" VisibleOnMobile="false">
+                        <CellTemplate Context="item">
+                            <div @onclick:stopPropagation="true">
+                                <RatingStars MediaId="item.MediaId" Value="item.UserRating" Size="sm" />
+                            </div>
+                        </CellTemplate>
+                    </K7DataColumn>
+                    <K7DataColumn TItem="DynamicPlaylistItemViewModel" Title="" Width="50px" Hideable="false">
+                        <CellTemplate Context="item">
+                            <div @onclick:stopPropagation="true">
+                                @if (item.IndexedFileId.HasValue)
+                                {
+                                    <TrackContextMenu Track="BuildQueueItem(item)" />
+                                }
+                            </div>
+                        </CellTemplate>
+                    </K7DataColumn>
+                </K7DataTable>
             </div>
         }
     </PlaylistDetailShell>

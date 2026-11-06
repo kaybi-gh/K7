@@ -3,6 +3,7 @@ using K7.Clients.Shared.Models;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities;
 using K7.Shared.Dtos.Entities.Medias;
+using K7.Shared.Dtos.Entities.Playlists;
 using K7.Shared.Dtos.Requests;
 using K7.Shared.Interfaces;
 using Microsoft.Extensions.Localization;
@@ -539,7 +540,7 @@ public sealed class MediaBrowseService : IMediaBrowseService
         var playlistId = Guid.Parse(parentId[PrefixPlaylist.Length..]);
         var playlist = await _playlistService.GetPlaylistAsync(playlistId, cancellationToken);
         var playlistCoverUrl = GetPictureUrl(playlist?.CoverPicture);
-        var result = await _playlistService.GetPlaylistItemsAsync(playlistId, pageNumber: 1, pageSize: 500, cancellationToken: cancellationToken);
+        var playlistItems = await GetAllPlaylistItemsAsync(playlistId, cancellationToken);
 
         var items = new List<MediaBrowseItem>
         {
@@ -547,7 +548,7 @@ public sealed class MediaBrowseService : IMediaBrowseService
             new() { Id = $"{parentId}{ShuffleSuffix}", Title = T("Shuffle"), IsPlayable = true }
         };
 
-        items.AddRange((result?.Items ?? [])
+        items.AddRange(playlistItems
             .Select(item => new MediaBrowseItem
             {
                 Id = $"{PrefixPlaylist}{playlistId}:{item.MediaId}",
@@ -713,9 +714,9 @@ public sealed class MediaBrowseService : IMediaBrowseService
     private async Task<IReadOnlyList<AudioQueueItem>> GetPlaylistQueueAsync(string parentId, CancellationToken cancellationToken)
     {
         var playlistId = Guid.Parse(parentId[PrefixPlaylist.Length..]);
-        var result = await _playlistService.GetPlaylistItemsAsync(playlistId, pageNumber: 1, pageSize: 500, cancellationToken: cancellationToken);
+        var playlistItems = await GetAllPlaylistItemsAsync(playlistId, cancellationToken);
 
-        return (result?.Items ?? [])
+        return playlistItems
             .Where(item => item.IndexedFileId.HasValue)
             .Select(item => new AudioQueueItem
             {
@@ -730,6 +731,32 @@ public sealed class MediaBrowseService : IMediaBrowseService
                 CoverUrl = GetPictureUrl(item.Pictures)
             })
             .ToArray();
+    }
+
+    private async Task<List<PlaylistItemDto>> GetAllPlaylistItemsAsync(Guid playlistId, CancellationToken cancellationToken)
+    {
+        // Server clamps page size to PagingDefaults.MaxPageSize (100).
+        const int pageSize = 100;
+        var items = new List<PlaylistItemDto>();
+        var pageNumber = 1;
+
+        while (true)
+        {
+            var result = await _playlistService.GetPlaylistItemsAsync(
+                playlistId, pageNumber, pageSize, cancellationToken: cancellationToken);
+
+            if (result?.Items is null || result.Items.Count == 0)
+                break;
+
+            items.AddRange(result.Items);
+
+            if (!result.HasNextPage)
+                break;
+
+            pageNumber++;
+        }
+
+        return items;
     }
 
     private string? GetPictureUrl(IReadOnlyList<MetadataPictureDto>? pictures)

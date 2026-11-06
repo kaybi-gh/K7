@@ -458,7 +458,9 @@ public sealed class MusicSessionPersistenceService : IMusicSessionPersistence, I
     private async Task<List<AudioQueueItem>?> LoadPlaylistAsync(Guid playlistId)
     {
         var items = new List<AudioQueueItem>();
-        for (var page = 1; page <= 20; page++)
+        var page = 1;
+
+        while (true)
         {
             var result = await _playlists.GetPlaylistItemsAsync(playlistId, page, 100);
             var batch = result?.Items ?? [];
@@ -473,6 +475,8 @@ public sealed class MusicSessionPersistenceService : IMusicSessionPersistence, I
 
             if (result?.HasNextPage != true)
                 break;
+
+            page++;
         }
 
         return items;

@@ -1,6 +1,8 @@
+using K7.Clients.Shared.Enums;
 using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
+using K7.Clients.Shared.UI.Components;
 using K7.Clients.Shared.UI.Components.Dialogs;
 using K7.Clients.Shared.UI.Helpers;
 using K7.Server.Domain.Enums;
@@ -13,6 +15,9 @@ namespace K7.Clients.Shared.UI.Pages.Music;
 
 public partial class DynamicPlaylistDetail
 {
+    // Server clamps page size to PagingDefaults.MaxPageSize (100).
+    private const int PageSize = 100;
+
     [Parameter] public required string Id { get; set; }
     [Inject] private IAudioPlayerService Audio { get; set; } = default!;
     [Inject] private IK7DialogService DialogService { get; set; } = default!;
@@ -25,7 +30,11 @@ public partial class DynamicPlaylistDetail
     private string? _rulesDescription;
     private bool _loading = true;
     private bool _loadingItems = true;
+    private bool _itemsComplete;
     private bool _evaluating;
+    private K7DataTable<DynamicPlaylistItemViewModel>? _dataTable;
+    private CancellationTokenSource? _loadCts;
+    private Task? _itemsLoadTask;
 
     private bool _showHeaderPlaceholder => _items.Count == 0;
 
@@ -33,27 +42,111 @@ public partial class DynamicPlaylistDetail
     {
         _loading = true;
         _dynamicPlaylist = await K7ServerService.GetDynamicPlaylistAsync(Guid.Parse(Id));
+        _loading = false;
         if (_dynamicPlaylist is not null)
         {
             _rulesDescription = BuildRulesDescription(_dynamicPlaylist);
             await LoadItemsAsync();
         }
-        _loading = false;
     }
 
-    private async Task LoadItemsAsync()
+    private Task LoadItemsAsync()
+    {
+        _loadCts?.Cancel();
+        _loadCts?.Dispose();
+        _loadCts = new CancellationTokenSource();
+        _itemsLoadTask = LoadItemsCoreAsync(_loadCts.Token);
+        return _itemsLoadTask;
+    }
+
+    private async Task LoadItemsCoreAsync(CancellationToken cancellationToken)
     {
         _loadingItems = true;
+        _itemsComplete = false;
+        _items = [];
+        StateHasChanged();
+
         var playlistId = Guid.Parse(Id);
-        var result = await K7ServerService.GetPlaylistItemsAsync(playlistId, 1, 200);
-        _items = result?.Items?.Select(ToViewModel).ToList() ?? [];
+        var pageNumber = 1;
+
+        try
+        {
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                var result = await K7ServerService.GetPlaylistItemsAsync(
+                    playlistId, pageNumber, PageSize, cancellationToken: cancellationToken);
+
+                if (result?.Items is null || result.Items.Count == 0)
+                    break;
+
+                _items.AddRange(result.Items.Select(ToViewModel));
+
+                if (pageNumber == 1)
+                {
+                    RefreshHeaderPreviews();
+                    _loadingItems = false;
+                }
+
+                if (_dataTable is not null)
+                    await _dataTable.RefreshAsync();
+                else
+                    StateHasChanged();
+
+                if (!result.HasNextPage)
+                    break;
+
+                pageNumber++;
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+
+        if (cancellationToken.IsCancellationRequested)
+            return;
+
+        RefreshHeaderPreviews();
+        _loadingItems = false;
+        _itemsComplete = true;
+        if (_dataTable is not null)
+            await _dataTable.RefreshAsync();
+        else
+            StateHasChanged();
+    }
+
+    private void RefreshHeaderPreviews()
+    {
         _headerPreviewUrls = _items
             .Select(i => i.CoverUrl)
             .Where(url => !string.IsNullOrEmpty(url))
             .Cast<string>()
             .Take(4)
             .ToList();
-        _loadingItems = false;
+    }
+
+    private async Task EnsureItemsLoadedAsync()
+    {
+        if (_itemsComplete)
+            return;
+
+        if (_itemsLoadTask is not null)
+            await _itemsLoadTask;
+    }
+
+    private Task<K7DataTableResult<DynamicPlaylistItemViewModel>> LoadTableDataAsync(
+        K7DataTableState<DynamicPlaylistItemViewModel> state,
+        CancellationToken cancellationToken)
+    {
+        if (state.Count <= 0)
+            return Task.FromResult(new K7DataTableResult<DynamicPlaylistItemViewModel>([], 0));
+
+        var items = _items
+            .Skip(state.StartIndex)
+            .Take(state.Count)
+            .ToList();
+
+        return Task.FromResult(new K7DataTableResult<DynamicPlaylistItemViewModel>(items, _items.Count));
     }
 
     private DynamicPlaylistItemViewModel ToViewModel(PlaylistItemDto item) => new()
@@ -92,6 +185,7 @@ public partial class DynamicPlaylistDetail
 
     private async Task PlayAll()
     {
+        await EnsureItemsLoadedAsync();
         var queue = BuildQueueItems();
         if (queue.Count > 0)
         {
@@ -102,6 +196,7 @@ public partial class DynamicPlaylistDetail
 
     private async Task ShuffleAll()
     {
+        await EnsureItemsLoadedAsync();
         var queue = BuildQueueItems();
         if (queue.Count > 0)
         {
@@ -110,10 +205,9 @@ public partial class DynamicPlaylistDetail
         }
     }
 
-    private async Task OnTrackClick(K7.Clients.Shared.UI.Components.TableRowClickEventArgs<DynamicPlaylistItemViewModel> args)
+    private async Task OnTrackClick(DynamicPlaylistItemViewModel track)
     {
-        var track = args.Item;
-        if (track is null) return;
+        await EnsureItemsLoadedAsync();
         var queue = BuildQueueItems();
         var index = queue.FindIndex(q => q.MediaId == track.MediaId);
         await RecordPlaybackAsync();

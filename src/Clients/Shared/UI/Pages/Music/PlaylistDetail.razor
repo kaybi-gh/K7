@@ -92,7 +92,7 @@
 
                            OnClick="PlayAll"
 
-                           Disabled="@(!_items.Any(i => !i.IsUnavailable))"
+                           Disabled="@(_loadingItems || !_items.Any(i => !i.IsUnavailable))"
 
                            AriaLabel="@S["PlayAll"]">
 
@@ -110,7 +110,7 @@
 
                            OnClick="ShuffleAll"
 
-                           Disabled="@(!_items.Any(i => !i.IsUnavailable))"
+                           Disabled="@(_loadingItems || !_items.Any(i => !i.IsUnavailable))"
 
                            AriaLabel="@S["Shuffle"]">
 
