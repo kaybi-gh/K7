@@ -96,6 +96,7 @@ public class GetMusicRadioQueryHandlerTests
         _currentUser = Substitute.For<IUser>();
         _currentUser.Id.Returns(_userId);
         _currentUser.GetIdAsync(Arg.Any<CancellationToken>()).Returns(_userId);
+        _currentUser.GetSharedProfileIdAsync(Arg.Any<CancellationToken>()).Returns((Guid?)null);
         _musicIntelligence = Substitute.For<IMusicIntelligenceService>();
         _musicIntelligence.IsEnabledAsync(Arg.Any<CancellationToken>()).Returns(true);
 
@@ -103,7 +104,8 @@ public class GetMusicRadioQueryHandlerTests
             _context,
             _currentUser,
             _musicIntelligence,
-            new LiteMediaProjectionService(_context));
+            new LiteMediaProjectionService(_context),
+            new MediaAccessFilter(_context));
     }
 
     [TearDown]
@@ -561,6 +563,47 @@ public class GetMusicRadioQueryHandlerTests
     }
 
     [Test]
+    public async Task Handle_RecentlyAdded_ShouldExcludeTracks_WhenLibraryIsExcluded()
+    {
+        var hiddenTrackId = AddHiddenLibraryTrack();
+        await _context.SaveChangesAsync();
+
+        var result = await _handler.Handle(new GetMusicRadioQuery
+        {
+            RadioType = MusicRadioType.RecentlyAdded,
+            Limit = 50
+        }, CancellationToken.None);
+
+        result.Select(t => t.Id).Should().NotContain(hiddenTrackId);
+        result.Select(t => t.Id).Should().Contain(_favoriteTrackId);
+    }
+
+    [Test]
+    public async Task Handle_Sonic_ShouldDropTracks_WhenLibraryIsExcluded()
+    {
+        var hiddenTrackId = AddHiddenLibraryTrack();
+        await _context.SaveChangesAsync();
+
+        _musicIntelligence.IsAvailableAsync(Arg.Any<CancellationToken>()).Returns(true);
+        _musicIntelligence
+            .GetSimilarTracksAsync(
+                Arg.Any<Guid>(),
+                Arg.Any<int>(),
+                Arg.Any<string?>(),
+                Arg.Any<string?>(),
+                Arg.Any<CancellationToken>())
+            .Returns([new MusicIntelligenceTrackMatchDto { ItemId = hiddenTrackId }]);
+
+        var result = await _handler.Handle(new GetMusicRadioQuery
+        {
+            RadioType = MusicRadioType.Sonic,
+            Limit = 10
+        }, CancellationToken.None);
+
+        result.Select(t => t.Id).Should().NotContain(hiddenTrackId);
+    }
+
+    [Test]
     public async Task Handle_DiscoveryAi_ShouldReturnEmpty_WhenIntelligenceDisabled()
     {
         _musicIntelligence.IsEnabledAsync(Arg.Any<CancellationToken>()).Returns(false);
@@ -579,6 +622,51 @@ public class GetMusicRadioQueryHandlerTests
                 Arg.Any<string?>(),
                 Arg.Any<string?>(),
                 Arg.Any<CancellationToken>());
+    }
+
+    private Guid AddHiddenLibraryTrack()
+    {
+        var hiddenLibraryId = Guid.NewGuid();
+        var hiddenTrackId = Guid.NewGuid();
+        var groupId = Guid.NewGuid();
+        var albumId = Guid.NewGuid();
+
+        _context.LibraryGroups.Add(new LibraryGroup
+        {
+            Id = groupId,
+            Title = "Hidden",
+            MediaType = LibraryMediaType.Music
+        });
+        _context.Libraries.Add(new Library
+        {
+            Id = hiddenLibraryId,
+            LibraryGroupId = groupId,
+            MediaType = LibraryMediaType.Music,
+            Title = "Hidden",
+            MetadataProviderName = "none",
+            MetadataLanguage = "fr",
+            MetadataFallbackLanguage = "en"
+        });
+
+        var album = new MusicAlbum
+        {
+            Id = albumId,
+            Title = "Hidden Album",
+            SortTitle = "Hidden Album",
+            ArtistId = _artistId
+        };
+        var track = CreateTrack(hiddenTrackId, "PRIVATE-MARKER", _artistId, album);
+        _context.Medias.AddRange(album, track);
+        _context.MediaLibraryAvailabilities.Add(
+            new MediaLibraryAvailability { MediaId = hiddenTrackId, LibraryId = hiddenLibraryId });
+        _context.UserLibraryExclusions.Add(new UserLibraryExclusion
+        {
+            UserId = _userId,
+            LibraryId = hiddenLibraryId,
+            IsAdminExcluded = true
+        });
+
+        return hiddenTrackId;
     }
 
     private (Guid ArtistId, Guid[] TrackIds) AddArtistCatalog(string name, int trackCount)

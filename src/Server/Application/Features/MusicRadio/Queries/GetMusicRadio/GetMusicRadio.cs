@@ -26,7 +26,8 @@ public class GetMusicRadioQueryHandler(
     IApplicationDbContext context,
     IUser currentUser,
     IMusicIntelligenceService musicIntelligenceService,
-    LiteMediaProjectionService liteMediaProjection)
+    LiteMediaProjectionService liteMediaProjection,
+    MediaAccessFilter mediaAccessFilter)
     : IRequestHandler<GetMusicRadioQuery, List<BaseMedia>>
 {
     private const int DiscoveryAiSeedCount = 5;
@@ -84,7 +85,9 @@ public class GetMusicRadioQueryHandler(
         if (request.SeedArtistId is not { } artistId)
             return [];
 
-        var playable = ApplyExcludeIdsFilter(BuildLightTrackIdQuery(userId, libraryIds), request.ExcludeIds);
+        var playable = ApplyExcludeIdsFilter(
+            await BuildLightTrackIdQueryAsync(userId, libraryIds, ct),
+            request.ExcludeIds);
         var artistTrackIds = await WhereLinkedToMusicArtist(playable, artistId)
             .OrderBy(_ => EF.Functions.Random())
             .Select(t => t.Id)
@@ -102,7 +105,7 @@ public class GetMusicRadioQueryHandler(
         {
             var genreIds = await GetGenreNeighborTrackIdsAsync(
                 playable,
-                WhereLinkedToMusicArtist(BuildLightTrackIdQuery(userId, libraryIds), artistId),
+                WhereLinkedToMusicArtist(await BuildLightTrackIdQueryAsync(userId, libraryIds, ct), artistId),
                 artistId,
                 similarIds,
                 request.Limit - similarIds.Count,
@@ -296,7 +299,9 @@ public class GetMusicRadioQueryHandler(
             return [];
 
         var genre = request.Genre.Trim();
-        var query = ApplyExcludeIdsFilter(BuildLightTrackIdQuery(userId, libraryIds), request.ExcludeIds)
+        var query = ApplyExcludeIdsFilter(
+            await BuildLightTrackIdQueryAsync(userId, libraryIds, ct),
+            request.ExcludeIds)
             .Where(t => t.MetadataTags.Any(mt =>
                     mt.MetadataTag.Kind == MetadataTagKind.Genre
                     && mt.MetadataTag.DisplayName == genre)
@@ -320,7 +325,9 @@ public class GetMusicRadioQueryHandler(
         Guid[]? excludeIds,
         CancellationToken ct)
     {
-        var baseQuery = ApplyExcludeIdsFilter(BuildLightTrackIdQuery(userId, libraryIds), excludeIds);
+        var baseQuery = ApplyExcludeIdsFilter(
+            await BuildLightTrackIdQueryAsync(userId, libraryIds, ct),
+            excludeIds);
 
         if (userId is null)
         {
@@ -429,8 +436,9 @@ public class GetMusicRadioQueryHandler(
             // Push rating exclusion to SQL before load so AudioMuse neighbors that are
             // already rated (track, album, or artist) never reach the queue mapper.
             var candidateSet = candidateIds.ToHashSet();
+            var accessibleCandidates = await BuildLightTrackIdQueryAsync(userId, libraryIds, ct);
             var unratedIds = await WhereNotRatedByUser(
-                    BuildLightTrackIdQuery(userId, libraryIds).Where(t => candidateSet.Contains(t.Id)),
+                    accessibleCandidates.Where(t => candidateSet.Contains(t.Id)),
                     uid)
                 .Select(t => t.Id)
                 .ToListAsync(ct);
@@ -450,7 +458,7 @@ public class GetMusicRadioQueryHandler(
         int seedCount,
         CancellationToken ct)
     {
-        var query = BuildLightTrackIdQuery(userId, libraryIds);
+        var query = await BuildLightTrackIdQueryAsync(userId, libraryIds, ct);
 
         if (userId is { } uid)
         {
@@ -511,7 +519,9 @@ public class GetMusicRadioQueryHandler(
         var now = DateTime.UtcNow;
         var windowStart = now.AddYears(-1).AddDays(-14);
         var windowEnd = now.AddYears(-1).AddDays(14);
-        var baseQuery = ApplyExcludeIdsFilter(BuildLightTrackIdQuery(userId, libraryIds), excludeIds);
+        var baseQuery = ApplyExcludeIdsFilter(
+            await BuildLightTrackIdQueryAsync(userId, libraryIds, ct),
+            excludeIds);
 
         var ids = await baseQuery
             .Where(t => t.UserMediaStates.Any(s =>
@@ -582,7 +592,9 @@ public class GetMusicRadioQueryHandler(
         Guid[]? excludeIds,
         CancellationToken ct)
     {
-        var query = ApplyExcludeIdsFilter(BuildLightTrackIdQuery(userId, libraryIds), excludeIds);
+        var query = ApplyExcludeIdsFilter(
+            await BuildLightTrackIdQueryAsync(userId, libraryIds, ct),
+            excludeIds);
 
         if (userId.HasValue)
         {
@@ -600,11 +612,7 @@ public class GetMusicRadioQueryHandler(
 
     private async Task<Guid?> PickAutoSeedTrackIdAsync(Guid? userId, Guid[]? libraryIds, CancellationToken ct)
     {
-        var query = context.Medias
-            .OfType<MusicTrack>()
-            .AsNoTracking();
-
-        query = ApplyLibraryFilter(query, libraryIds);
+        var query = await BuildLightTrackIdQueryAsync(userId, libraryIds, ct);
 
         if (userId.HasValue)
         {
@@ -638,24 +646,63 @@ public class GetMusicRadioQueryHandler(
         if (trackIds.Count == 0)
             return [];
 
-        var idSet = trackIds.ToHashSet();
-        var tracks = await liteMediaProjection.GetLiteMediasAsync(idSet.ToList(), userId, ct);
+        var allowedIds = await FilterToAccessibleIdsAsync(trackIds, userId, libraryIds, ct);
+        if (allowedIds.Count == 0)
+            return [];
+
+        var tracks = await liteMediaProjection.GetLiteMediasAsync(allowedIds, userId, ct);
         var trackMap = tracks.OfType<MusicTrack>().ToDictionary(t => t.Id);
-        return trackIds
+        return allowedIds
             .Where(trackMap.ContainsKey)
             .Select(id => (BaseMedia)trackMap[id])
             .ToList();
     }
 
-    private IQueryable<MusicTrack> BuildLightTrackIdQuery(Guid? userId, Guid[]? libraryIds)
+    private async Task<List<Guid>> FilterToAccessibleIdsAsync(
+        IReadOnlyList<Guid> trackIds,
+        Guid? userId,
+        Guid[]? libraryIds,
+        CancellationToken ct)
     {
-        var query = context.Medias
-            .OfType<MusicTrack>()
-            .WhereHasLibraryAvailability(context)
-            .AsNoTracking();
+        var idSet = trackIds.ToHashSet();
+        var accessible = await BuildLightTrackIdQueryAsync(userId, libraryIds, ct);
+        var allowed = await accessible
+            .Where(t => idSet.Contains(t.Id))
+            .Select(t => t.Id)
+            .ToListAsync(ct);
+        var allowedSet = allowed.ToHashSet();
+        return trackIds.Where(allowedSet.Contains).ToList();
+    }
 
-        query = ApplyLibraryFilter(query, libraryIds);
-        return query;
+    private async Task<IQueryable<MusicTrack>> BuildLightTrackIdQueryAsync(
+        Guid? userId,
+        Guid[]? libraryIds,
+        CancellationToken ct)
+    {
+        // Stay on BaseMedia for access filters. WhereNotUserExcluded casts to SerieEpisode,
+        // which EF cannot coerce once the query is already OfType<MusicTrack>.
+        IQueryable<BaseMedia> accessible = context.Medias
+            .AsNoTracking()
+            .Where(m => m.Type == MediaType.MusicTrack)
+            .WhereHasLibraryAvailability(context);
+
+        if (userId is { } id)
+        {
+            var sharedProfileId = await currentUser.GetSharedProfileIdAsync(ct);
+            accessible = await mediaAccessFilter.ApplyAllAsync(accessible, id, sharedProfileId, ct);
+        }
+        else
+        {
+            accessible = mediaAccessFilter.ApplyUnavailablePeerExclusion(accessible);
+        }
+
+        var accessibleIds = accessible.Select(m => m.Id);
+        var tracks = context.Medias
+            .OfType<MusicTrack>()
+            .AsNoTracking()
+            .Where(t => accessibleIds.Contains(t.Id));
+
+        return ApplyLibraryFilter(tracks, libraryIds);
     }
 
     private async Task<HashSet<Guid>> GetUserRatedMediaIdsAsync(Guid userId, CancellationToken ct)

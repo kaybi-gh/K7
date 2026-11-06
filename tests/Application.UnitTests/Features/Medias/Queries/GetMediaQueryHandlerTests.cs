@@ -118,6 +118,95 @@ public class GetMediaQueryHandlerTests
     }
 
     [Test]
+    public async Task Handle_ShouldOmitTracks_WhenLibraryIsExcluded()
+    {
+        var albumId = Guid.NewGuid();
+        var visibleTrackId = Guid.NewGuid();
+        var hiddenTrackId = Guid.NewGuid();
+        var visibleLibraryId = AddLibrary("Family");
+        var hiddenLibraryId = AddLibrary("Private");
+        var album = new MusicAlbum { Id = albumId, Title = "Album", SortTitle = "Album" };
+        var visible = new MusicTrack
+        {
+            Id = visibleTrackId,
+            Title = "Visible",
+            SortTitle = "Visible",
+            AlbumId = albumId
+        };
+        var hidden = new MusicTrack
+        {
+            Id = hiddenTrackId,
+            Title = "PRIVATE-MARKER",
+            SortTitle = "PRIVATE-MARKER",
+            AlbumId = albumId
+        };
+        album.Tracks.Add(visible);
+        album.Tracks.Add(hidden);
+        _context.Medias.AddRange(album, visible, hidden);
+        _context.IndexedFiles.AddRange(
+            CreateFile(visibleLibraryId, visibleTrackId, "/visible.mp3"),
+            CreateFile(hiddenLibraryId, hiddenTrackId, "/hidden.mp3"));
+        _context.UserLibraryExclusions.Add(new UserLibraryExclusion
+        {
+            UserId = _userId,
+            LibraryId = hiddenLibraryId,
+            IsAdminExcluded = true
+        });
+        await _context.SaveChangesAsync();
+
+        var result = await _handler.Handle(new GetMediaQuery(albumId), CancellationToken.None);
+
+        var loaded = (MusicAlbum)result.Media;
+        loaded.Tracks.Select(t => t.Id).Should().Equal(visibleTrackId);
+    }
+
+    [Test]
+    public async Task Handle_ShouldOmitEpisodes_WhenLibraryIsExcluded()
+    {
+        var season = await _context.Medias.OfType<SerieSeason>().AsNoTracking()
+            .Select(s => new { s.Id, s.SerieId })
+            .SingleAsync();
+        var keptId = Guid.NewGuid();
+        var hiddenId = Guid.NewGuid();
+        var visibleLibraryId = AddLibrary("Family");
+        var hiddenLibraryId = AddLibrary("Private");
+        _context.Medias.AddRange(
+            new SerieEpisode
+            {
+                Id = keptId,
+                SerieId = season.SerieId,
+                SeasonId = season.Id,
+                EpisodeNumber = 2,
+                Title = "E2",
+                SortTitle = "E2"
+            },
+            new SerieEpisode
+            {
+                Id = hiddenId,
+                SerieId = season.SerieId,
+                SeasonId = season.Id,
+                EpisodeNumber = 3,
+                Title = "Hidden",
+                SortTitle = "Hidden"
+            });
+        _context.IndexedFiles.AddRange(
+            CreateFile(visibleLibraryId, keptId, "/kept.mkv"),
+            CreateFile(hiddenLibraryId, hiddenId, "/hidden.mkv"));
+        _context.UserLibraryExclusions.Add(new UserLibraryExclusion
+        {
+            UserId = _userId,
+            LibraryId = hiddenLibraryId,
+            IsAdminExcluded = true
+        });
+        await _context.SaveChangesAsync();
+
+        var result = await _handler.Handle(new GetMediaQuery(season.Id), CancellationToken.None);
+
+        var loaded = (SerieSeason)result.Media;
+        loaded.Episodes.Select(e => e.Id).Should().BeEquivalentTo([_episodeId, keptId]);
+    }
+
+    [Test]
     public async Task Handle_ShouldOmitSelfExcludedEpisode_WhenLoadingSeason()
     {
         var season = _context.Medias.OfType<SerieSeason>().AsNoTracking()
@@ -283,4 +372,40 @@ public class GetMediaQueryHandlerTests
         ratings?.FirstOrDefault(r => r.Source == RatingSource.LocalUser)?.Value is double value
             ? (int)value
             : null;
+
+    private Guid AddLibrary(string title)
+    {
+        var groupId = Guid.NewGuid();
+        var libraryId = Guid.NewGuid();
+        _context.LibraryGroups.Add(new LibraryGroup
+        {
+            Id = groupId,
+            Title = title,
+            MediaType = LibraryMediaType.Music
+        });
+        _context.Libraries.Add(new Library
+        {
+            Id = libraryId,
+            LibraryGroupId = groupId,
+            MediaType = LibraryMediaType.Music,
+            Title = title,
+            MetadataProviderName = "none",
+            MetadataLanguage = "fr",
+            MetadataFallbackLanguage = "en"
+        });
+        return libraryId;
+    }
+
+    private static IndexedFile CreateFile(Guid libraryId, Guid mediaId, string path) =>
+        new()
+        {
+            Id = Guid.NewGuid(),
+            LibraryId = libraryId,
+            Name = Path.GetFileNameWithoutExtension(path),
+            Extension = Path.GetExtension(path),
+            Path = path,
+            Hash = 7,
+            Size = 1000,
+            MediaId = mediaId
+        };
 }

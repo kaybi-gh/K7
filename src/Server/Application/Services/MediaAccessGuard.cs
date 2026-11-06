@@ -1,4 +1,5 @@
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Common.QueryExtensions;
 using K7.Server.Application.Common.Services;
 using K7.Server.Application.Features.Restrictions.Services;
 using K7.Server.Domain.Entities.Medias;
@@ -52,17 +53,27 @@ public class MediaAccessGuard(IApplicationDbContext context, IUser currentUser, 
             .Select(m => new
             {
                 IsMediaExcluded = context.UserMediaExclusions
-                    .Any(e => e.UserId == userId && e.MediaId == mediaId && (e.IsAdminExcluded || e.IsSelfExcluded)),
-                HasNonExcludedFile = !m.IndexedFiles.Any()
-                    || m.IndexedFiles.Any(f => !context.UserLibraryExclusions
-                        .Any(e => e.UserId == userId && e.LibraryId == f.LibraryId && (e.IsAdminExcluded || e.IsSelfExcluded)))
+                    .Any(e => e.UserId == userId && e.MediaId == mediaId && (e.IsAdminExcluded || e.IsSelfExcluded))
             })
             .FirstOrDefaultAsync(cancellationToken);
 
         if (check is null)
             return false;
 
-        if ((!ignoreMediaExclusion && check.IsMediaExcluded) || !check.HasNonExcludedFile)
+        if (!ignoreMediaExclusion && check.IsMediaExcluded)
+            return false;
+
+        var excludedLibraryIds = context.UserLibraryExclusions
+            .Where(e => e.UserId == userId && (e.IsAdminExcluded || e.IsSelfExcluded))
+            .Select(e => e.LibraryId);
+
+        var hasLibraryAccess = await context.Medias
+            .AsNoTracking()
+            .Where(m => m.Id == mediaId)
+            .WhereLibraryVisibleToUser(context, excludedLibraryIds)
+            .AnyAsync(cancellationToken);
+
+        if (!hasLibraryAccess)
             return false;
 
         var sharedProfileId = await currentUser.GetSharedProfileIdAsync(cancellationToken);

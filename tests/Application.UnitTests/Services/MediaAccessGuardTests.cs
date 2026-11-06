@@ -242,6 +242,116 @@ public class MediaAccessGuardTests
     }
 
     [Test]
+    public async Task CanAccessAsync_ShouldReturnFalse_WhenLibraryIsExcluded()
+    {
+        _context.UserLibraryExclusions.Add(new UserLibraryExclusion
+        {
+            UserId = _userId,
+            LibraryId = _libraryId,
+            IsAdminExcluded = true
+        });
+        await _context.SaveChangesAsync();
+
+        var canAccess = await _guard.CanAccessAsync(_accessibleMediaId, _userId);
+
+        canAccess.Should().BeFalse();
+    }
+
+    [Test]
+    public async Task CanAccessAsync_ShouldReturnTrue_WhenMediaHasNoLibraryLinkAndNoFiles()
+    {
+        var shellId = Guid.NewGuid();
+        _context.Medias.Add(new Movie { Id = shellId, Title = "Shell" });
+        await _context.SaveChangesAsync();
+
+        var canAccess = await _guard.CanAccessAsync(shellId, _userId);
+
+        canAccess.Should().BeTrue();
+    }
+
+    [Test]
+    public async Task CanAccessAsync_ShouldReturnFalse_WhenAlbumTracksAreOnlyInAnExcludedLibrary()
+    {
+        var albumId = Guid.NewGuid();
+        var artistId = Guid.NewGuid();
+        var trackId = Guid.NewGuid();
+        var excludedLibraryId = AddLibrary("Private");
+        _context.Medias.Add(new MusicArtist { Id = artistId, Title = "Secret Artist" });
+        _context.Medias.Add(new MusicAlbum { Id = albumId, Title = "Hidden Album", ArtistId = artistId });
+        _context.Medias.Add(new MusicTrack
+        {
+            Id = trackId,
+            Title = "PRIVATE-MARKER",
+            AlbumId = albumId,
+            ArtistId = artistId
+        });
+        _context.IndexedFiles.Add(CreateFile(excludedLibraryId, trackId, "/private.mp3"));
+        _context.UserLibraryExclusions.Add(new UserLibraryExclusion
+        {
+            UserId = _userId,
+            LibraryId = excludedLibraryId,
+            IsAdminExcluded = true
+        });
+        await _context.SaveChangesAsync();
+
+        (await _guard.CanAccessAsync(albumId, _userId)).Should().BeFalse();
+        (await _guard.CanAccessAsync(artistId, _userId)).Should().BeFalse();
+        (await _guard.CanAccessAsync(trackId, _userId)).Should().BeFalse();
+    }
+
+    [Test]
+    public async Task CanAccessAsync_ShouldReturnTrue_WhenAlbumTrackFileIsOutsideExcludedLibraries()
+    {
+        var albumId = Guid.NewGuid();
+        var trackId = Guid.NewGuid();
+        _context.Medias.Add(new MusicAlbum { Id = albumId, Title = "Family Album" });
+        _context.Medias.Add(new MusicTrack { Id = trackId, Title = "Family", AlbumId = albumId });
+        _context.IndexedFiles.Add(CreateFile(_libraryId, trackId, "/family.mp3"));
+        await _context.SaveChangesAsync();
+
+        var canAccess = await _guard.CanAccessAsync(albumId, _userId);
+
+        canAccess.Should().BeTrue();
+    }
+
+    [Test]
+    public async Task CanAccessAsync_ShouldReturnFalse_WhenSerieEpisodesAreOnlyInAnExcludedLibrary()
+    {
+        var serieId = Guid.NewGuid();
+        var seasonId = Guid.NewGuid();
+        var episodeId = Guid.NewGuid();
+        var excludedLibraryId = AddLibrary("Private shows");
+        _context.Medias.Add(new Serie { Id = serieId, Title = "Hidden Show" });
+        _context.Medias.Add(new SerieSeason
+        {
+            Id = seasonId,
+            Title = "S1",
+            SerieId = serieId,
+            SeasonNumber = 1
+        });
+        _context.Medias.Add(new SerieEpisode
+        {
+            Id = episodeId,
+            Title = "E1",
+            SerieId = serieId,
+            SeasonId = seasonId,
+            EpisodeNumber = 1
+        });
+        _context.IndexedFiles.Add(CreateFile(excludedLibraryId, episodeId, "/hidden-show.mkv"));
+        _context.UserLibraryExclusions.Add(new UserLibraryExclusion
+        {
+            UserId = _userId,
+            LibraryId = excludedLibraryId,
+            IsAdminExcluded = true
+        });
+        await _context.SaveChangesAsync();
+
+        (await _guard.CanAccessAsync(serieId, _userId)).Should().BeFalse();
+        (await _guard.CanAccessAsync(seasonId, _userId)).Should().BeFalse();
+        (await _guard.CanAccessAsync(episodeId, _userId)).Should().BeFalse();
+    }
+
+    [Test]
     public async Task CanAccessAsync_ShouldDenyEpisode_WhenParentSerieRatingExceedsAge()
     {
         var episodeId = await SeedAdultSerieEpisodeAsync();
@@ -254,6 +364,36 @@ public class MediaAccessGuardTests
 
         canAccess.Should().BeFalse();
     }
+
+    private Guid AddLibrary(string title)
+    {
+        var groupId = _context.LibraryGroups.Select(g => g.Id).First();
+        var libraryId = Guid.NewGuid();
+        _context.Libraries.Add(new Library
+        {
+            Id = libraryId,
+            LibraryGroupId = groupId,
+            MediaType = LibraryMediaType.Movie,
+            Title = title,
+            MetadataProviderName = "tmdb",
+            MetadataLanguage = "fr",
+            MetadataFallbackLanguage = "en"
+        });
+        return libraryId;
+    }
+
+    private static IndexedFile CreateFile(Guid libraryId, Guid mediaId, string path) =>
+        new()
+        {
+            Id = Guid.NewGuid(),
+            LibraryId = libraryId,
+            Name = Path.GetFileNameWithoutExtension(path),
+            Extension = Path.GetExtension(path),
+            Path = path,
+            Hash = 7,
+            Size = 1000,
+            MediaId = mediaId
+        };
 
     private async Task<Guid> SeedAdultSerieEpisodeAsync()
     {

@@ -18,7 +18,8 @@ public record GetTopMusicTracksQuery : IRequest<IReadOnlyList<PlayedMusicTrackDt
 public class GetTopMusicTracksQueryHandler(
     IApplicationDbContext context,
     IUser currentUser,
-    LiteMediaProjectionService liteMediaProjection)
+    LiteMediaProjectionService liteMediaProjection,
+    MediaAccessFilter mediaAccessFilter)
     : IRequestHandler<GetTopMusicTracksQuery, IReadOnlyList<PlayedMusicTrackDto>>
 {
     public async Task<IReadOnlyList<PlayedMusicTrackDto>> Handle(
@@ -26,7 +27,7 @@ public class GetTopMusicTracksQueryHandler(
         CancellationToken cancellationToken)
     {
         var count = Math.Clamp(request.Count, 1, 100);
-        var tracksQuery = BuildTracksQuery(request.LibraryIds);
+        var tracksQuery = await BuildTracksQueryAsync(request.LibraryIds, cancellationToken);
 
         var topTracks = await context.UserMediaStates
             .AsNoTracking()
@@ -60,16 +61,36 @@ public class GetTopMusicTracksQueryHandler(
             .ToList();
     }
 
-    private IQueryable<MusicTrack> BuildTracksQuery(Guid[]? libraryIds)
+    private async Task<IQueryable<MusicTrack>> BuildTracksQueryAsync(
+        Guid[]? libraryIds,
+        CancellationToken cancellationToken)
     {
-        var query = context.Medias
+        // Stay on BaseMedia for access filters. WhereNotUserExcluded casts to SerieEpisode,
+        // which EF cannot coerce once the query is already OfType<MusicTrack>.
+        IQueryable<BaseMedia> accessible = context.Medias
             .AsNoTracking()
-            .OfType<MusicTrack>()
+            .Where(m => m.Type == MediaType.MusicTrack)
             .WhereHasLibraryAvailability(context);
 
-        if (libraryIds is not { Length: > 0 })
-            return query;
+        if (currentUser.Id is { } userId)
+        {
+            var sharedProfileId = await currentUser.GetSharedProfileIdAsync(cancellationToken);
+            accessible = await mediaAccessFilter.ApplyAllAsync(accessible, userId, sharedProfileId, cancellationToken);
+        }
+        else
+        {
+            accessible = mediaAccessFilter.ApplyUnavailablePeerExclusion(accessible);
+        }
 
-        return query.WhereAvailableInLibraries(context, libraryIds);
+        var accessibleIds = accessible.Select(m => m.Id);
+        var tracks = context.Medias
+            .OfType<MusicTrack>()
+            .AsNoTracking()
+            .Where(t => accessibleIds.Contains(t.Id));
+
+        if (libraryIds is not { Length: > 0 })
+            return tracks;
+
+        return tracks.WhereAvailableInLibraries(context, libraryIds);
     }
 }
