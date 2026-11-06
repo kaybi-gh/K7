@@ -15,18 +15,27 @@
     The tour starts once a profile is signed in: if the profile picker shows, pick a profile
     with the remote, then leave the device alone until the script ends.
 
+    Without the four AndroidSigning* parameters, Install uses the debug keystore. Android then
+    refuses the update over a release-signed com.k7.maui and the install wipes app data.
+    Pass the same keystore, store password, alias and key password as the usual release APK.
+
     Compatible with Windows PowerShell 5.1.
 
 .EXAMPLE
     .\tools\record-aot-profile.ps1
     .\tools\record-aot-profile.ps1 -SkipBuild -Device 192.168.1.50:5555
+    .\tools\record-aot-profile.ps1 -AndroidSigningKeyStore C:\keys\k7.keystore -AndroidSigningStorePass $store -AndroidSigningKeyAlias k7 -AndroidSigningKeyPass $key
 #>
 param(
     [switch]$SkipBuild,
     [string]$Device = '',
     [int]$TimeoutMinutes = 20,
     [string]$Activity = 'com.k7.maui/crc648f5a7c81d1a4b3dd.MainActivity',
-    [string]$Output = ''
+    [string]$Output = '',
+    [string]$AndroidSigningKeyStore = '',
+    [string]$AndroidSigningStorePass = '',
+    [string]$AndroidSigningKeyAlias = '',
+    [string]$AndroidSigningKeyPass = ''
 )
 
 $ErrorActionPreference = 'Stop'
@@ -49,8 +58,34 @@ function Invoke-Adb {
 }
 
 if (-not $SkipBuild) {
+    $signing = @($AndroidSigningKeyStore, $AndroidSigningStorePass, $AndroidSigningKeyAlias, $AndroidSigningKeyPass)
+    $signingSet = @($signing | Where-Object { -not [string]::IsNullOrEmpty($_) }).Count
+    if ($signingSet -gt 0 -and $signingSet -lt 4) {
+        throw "Pass AndroidSigningKeyStore, AndroidSigningStorePass, AndroidSigningKeyAlias and AndroidSigningKeyPass together."
+    }
+
+    $buildArgs = @(
+        $project,
+        '-f', 'net10.0-android',
+        '-c', 'Release',
+        '-p:K7AotProfiling=true',
+        '-t:Install'
+    )
+    if ($signingSet -eq 4) {
+        if (-not (Test-Path -LiteralPath $AndroidSigningKeyStore)) {
+            throw "Keystore not found: $AndroidSigningKeyStore"
+        }
+        $buildArgs += @(
+            '-p:AndroidKeyStore=true',
+            "-p:AndroidSigningKeyStore=$AndroidSigningKeyStore",
+            "-p:AndroidSigningStorePass=$AndroidSigningStorePass",
+            "-p:AndroidSigningKeyAlias=$AndroidSigningKeyAlias",
+            "-p:AndroidSigningKeyPass=$AndroidSigningKeyPass"
+        )
+    }
+
     Write-Host 'Building and installing the profiling variant...'
-    & dotnet build $project -f net10.0-android -c Release -p:K7AotProfiling=true -t:Install
+    & dotnet build @buildArgs
     if ($LASTEXITCODE -ne 0) {
         throw "Build or install failed (exit code $LASTEXITCODE)."
     }
@@ -73,7 +108,10 @@ try {
     $done = $false
     while ((Get-Date) -lt $deadline) {
         Start-Sleep -Seconds 5
-        $log = Invoke-Adb logcat -d -s K7-Startup
+        $log = Invoke-Adb logcat -d -s K7-Startup:I AndroidRuntime:E
+        if ($log -match 'FATAL EXCEPTION') {
+            throw "The app crashed before the tour finished. adb logcat -s AndroidRuntime:E shows the exception."
+        }
         if ($log -match 'AotProfileTour-done') {
             $done = $true
             break

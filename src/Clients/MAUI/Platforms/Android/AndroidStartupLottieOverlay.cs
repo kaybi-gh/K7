@@ -211,7 +211,8 @@ internal static class AndroidStartupLottieOverlay
 
     public static void Dismiss()
     {
-        if (_root is null)
+        var root = _root;
+        if (root is null)
             return;
 
         global::K7.Clients.MAUI.MauiStartupTrace.Mark("splash-dismiss");
@@ -223,15 +224,23 @@ internal static class AndroidStartupLottieOverlay
         if (_driver is not null)
             _driver.FirstOpaqueFrame -= OnFirstOpaqueFrame;
 
-        _root.RemoveCallbacks(HideStaticLogo);
-        _root.RemoveCallbacks(SignalReadyToBuildStartPage);
-        (_root.Parent as ViewGroup)?.RemoveView(_root);
-        _driver?.Teardown();
+        root.RemoveCallbacks(HideStaticLogo);
+        root.RemoveCallbacks(SignalReadyToBuildStartPage);
+
+        var driver = _driver;
         _driver = null;
         _lottieView = null;
         _logo = null;
         _root = null;
         ReadyToBuildStartPage = null;
+
+        // Page Loaded and the Skottie attach run inside performTraversals. RemoveView
+        // there leaves a null child, and dispatchAttachedToWindow NPEs on Android TV.
+        root.Post(() =>
+        {
+            (root.Parent as ViewGroup)?.RemoveView(root);
+            driver?.Teardown();
+        });
     }
 
     private static void OnFirstOpaqueFrame() => HideStaticLogo();
