@@ -234,9 +234,11 @@ internal static class AndroidStartupLottieOverlay
         _root = null;
         ReadyToBuildStartPage = null;
 
-        // Page Loaded and the Skottie attach run inside performTraversals. RemoveView
-        // there leaves a null child, and dispatchAttachedToWindow NPEs on Android TV.
-        root.Post(() =>
+        // SetupPage.Loaded runs inside the first performTraversals. View.Post before
+        // attach is flushed from dispatchAttachedToWindow, RemoveView leaves a null
+        // child, and the next sibling NPEs on getVisibility. A looper message runs
+        // after that traversal.
+        new Handler(Looper.MainLooper!).Post(() =>
         {
             (root.Parent as ViewGroup)?.RemoveView(root);
             driver?.Teardown();
