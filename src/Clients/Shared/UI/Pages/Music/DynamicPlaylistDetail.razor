@@ -117,40 +117,35 @@
                              Surface="false"
                              RowClass="@(_ => "cursor-pointer")"
                              @ref="_dataTable">
-                    <K7DataColumn TItem="DynamicPlaylistItemViewModel" Title="#" Width="50px" Hideable="false">
-                        <CellTemplate Context="item">
-                            @if (item.IsPlaying)
-                            {
-                                <K7Icon Name="equalizer" IconSize="@K7IconSize.Sm" Color="primary" />
-                            }
-                            else
-                            {
-                                <p class="text-sm" Color="secondary">@(item.Order + 1)</p>
-                            }
-                        </CellTemplate>
-                    </K7DataColumn>
                     <K7DataColumn TItem="DynamicPlaylistItemViewModel" Title="@S["Title"]" Hideable="false">
                         <CellTemplate Context="item">
                             <div class="playlist-tracklist-title">
                                 @if (item.CoverUrl is not null)
                                 {
-                                    <K7Image Src="@item.CoverUrl" Width="36"
-                                              ObjectFit="cover" Class="rounded" LoadingMode="K7ImageLoadingMode.Css" loading="lazy" />
+                                    <K7Image Src="@item.CoverUrl" Width="40" Height="40"
+                                              ObjectFit="cover" Class="playlist-tracklist-cover rounded"
+                                              LoadingMode="K7ImageLoadingMode.Css" loading="lazy" />
                                 }
-                                <span style="@(item.IsPlaying ? "color: var(--color-accent);" : null)">
+                                else
+                                {
+                                    <div class="playlist-tracklist-cover playlist-tracklist-cover--placeholder">
+                                        <K7Icon Icon="@Phosphor.Image" IconSize="@K7IconSize.Sm" />
+                                    </div>
+                                }
+                                <span class="playlist-tracklist-name" style="@(item.IsPlaying ? "color: var(--color-accent);" : null)">
                                     @item.Title
                                 </span>
                             </div>
                         </CellTemplate>
                     </K7DataColumn>
-                    <K7DataColumn TItem="DynamicPlaylistItemViewModel" Title="@S["Artist"]" Width="160px" VisibleOnMobile="false">
+                    <K7DataColumn TItem="DynamicPlaylistItemViewModel" Title="@S["Artist"]" Width="160px">
                         <CellTemplate Context="item">
-                            <p class="text-sm" Color="secondary">@item.ArtistName</p>
+                            <p class="text-sm playlist-tracklist-cell" Color="secondary">@item.ArtistName</p>
                         </CellTemplate>
                     </K7DataColumn>
-                    <K7DataColumn TItem="DynamicPlaylistItemViewModel" Title="@S["Album"]" Width="180px" VisibleOnMobile="false">
+                    <K7DataColumn TItem="DynamicPlaylistItemViewModel" Title="@S["Album"]" Width="180px">
                         <CellTemplate Context="item">
-                            <p class="text-sm" Color="secondary">@item.AlbumTitle</p>
+                            <p class="text-sm playlist-tracklist-cell" Color="secondary">@item.AlbumTitle</p>
                         </CellTemplate>
                     </K7DataColumn>
                     <K7DataColumn TItem="DynamicPlaylistItemViewModel" Title="@S["Duration"]" Width="80px" VisibleOnMobile="false">
