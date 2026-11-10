@@ -366,7 +366,11 @@ public partial class BlazorPage
         TryEvaluateWebViewJs(
             "try{if(window.K7&&K7.recoverAfterHostResume)K7.recoverAfterHostResume();}catch(e){}");
 
-        if (AndroidTelevision.IsDeviceTelevision())
+        // AppReady fires at SelectProfile OnInitialized, before the first paint. Probing the
+        // dispatcher then times out on a page that is simply still booting, and the restart
+        // tears down a half-built WebView (select-profile painted over a page that keeps the
+        // remote). Only a page that has painted can be judged dead.
+        if (AndroidTelevision.IsDeviceTelevision() && FirstPaintSignal.IsSignaled)
             ScheduleTvBridgeHealthCheck();
     }
 
@@ -476,7 +480,7 @@ public partial class BlazorPage
     {
         MainThread.BeginInvokeOnMainThread(() =>
         {
-            if (!IsCurrentBlazorPage() || _playerService.IsVisible)
+            if (!IsCurrentBlazorPage() || _playerService.IsVisible || !FirstPaintSignal.IsSignaled)
                 return;
 
             if (DateTime.UtcNow - _lastTvBridgeRestartUtc < TimeSpan.FromSeconds(20))

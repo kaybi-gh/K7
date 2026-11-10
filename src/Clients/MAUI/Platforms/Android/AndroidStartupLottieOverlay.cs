@@ -233,6 +233,9 @@ internal static class AndroidStartupLottieOverlay
         _logo = null;
         _root = null;
         ReadyToBuildStartPage = null;
+        // Per activity: a stale "ready" made a recreated activity build its Blazor page inside
+        // base.OnCreate, before Show(), unlike the cold start it is supposed to mirror.
+        _readySignaled = false;
 
         // SetupPage.Loaded runs inside the first performTraversals. View.Post before
         // attach is flushed from dispatchAttachedToWindow, RemoveView leaves a null
