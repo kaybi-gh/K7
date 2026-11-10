@@ -42,7 +42,33 @@ public class AutoplayService : IDisposable
 
     private async Task OnPlaybackStateChangedAsync(PlaybackState state)
     {
-        if (state != PlaybackState.Ended || !Enabled || _isLoading)
+        if (state != PlaybackState.Ended || _isLoading)
+            return;
+
+        // A radio never ends on its own: when its queue runs dry (refill late, session
+        // restored with a short window) continue that same radio, with its own rules,
+        // instead of switching to a similar-tracks radio.
+        if (_musicRadioPlayback.ActiveRequest is not null && _audioPlayerService.ActiveRadioTitle is not null)
+        {
+            _isLoading = true;
+            try
+            {
+                if (await _musicRadioPlayback.ExtendAsync())
+                    await _audioPlayerService.NextAsync();
+            }
+            catch
+            {
+                // Best-effort, like the similar-tracks autoplay below.
+            }
+            finally
+            {
+                _isLoading = false;
+            }
+
+            return;
+        }
+
+        if (!Enabled)
             return;
 
         var currentTrack = _audioPlayerService.CurrentTrack;

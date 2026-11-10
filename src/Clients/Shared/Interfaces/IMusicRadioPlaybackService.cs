@@ -13,4 +13,10 @@ public interface IMusicRadioPlaybackService
     MusicRadioRequest? ActiveRequest { get; }
     void AttachWithoutPlaying(MusicRadioRequest request);
     void BeginRefill();
+
+    /// <summary>
+    /// Appends one more batch of the active radio to the queue (end of queue reached before
+    /// the refill loop caught up). False when no radio is active or it has nothing left.
+    /// </summary>
+    Task<bool> ExtendAsync(CancellationToken cancellationToken = default);
 }

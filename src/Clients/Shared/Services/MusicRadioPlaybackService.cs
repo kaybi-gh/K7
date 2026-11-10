@@ -86,6 +86,43 @@ public sealed class MusicRadioPlaybackService : IMusicRadioPlaybackService, IDis
         }
     }
 
+    public async Task<bool> ExtendAsync(CancellationToken cancellationToken = default)
+    {
+        var request = _activeRequest;
+        if (request is null || _audio.ActiveRadioTitle is null)
+            return false;
+
+        // Let a refill that is already fetching finish instead of queuing the same tracks twice.
+        for (var i = 0; i < 50 && _isRefilling; i++)
+            await Task.Delay(100, cancellationToken);
+
+        if (!ReferenceEquals(_activeRequest, request))
+            return false;
+
+        if (_audio.Queue.Count - _audio.CurrentIndex - 1 <= 0)
+        {
+            _isRefilling = true;
+            try
+            {
+                var moreTracks = await FetchTracksAsync(request, RefillBatchSize, BuildExcludeIds(request), cancellationToken);
+                if (!ReferenceEquals(_activeRequest, request))
+                    return false;
+
+                _audio.AddToQueue(moreTracks);
+            }
+            finally
+            {
+                _isRefilling = false;
+            }
+        }
+
+        if (_audio.Queue.Count - _audio.CurrentIndex - 1 <= 0)
+            return false;
+
+        BeginRefill();
+        return true;
+    }
+
     public void StopRefill()
     {
         _refillCts?.Cancel();
@@ -202,6 +239,9 @@ public sealed class MusicRadioPlaybackService : IMusicRadioPlaybackService, IDis
     private Guid[] BuildExcludeIds(MusicRadioRequest request)
     {
         var ids = _audio.Queue.Select(t => t.MediaId).ToHashSet();
+        // Tracks already played in this session that left the queue window.
+        foreach (var played in _audio.PlayHistory)
+            ids.Add(played.MediaId);
         if (IsDiscoveryRadio(request.RadioType))
         {
             // Offline / in-session ratings may not be on the server yet.
