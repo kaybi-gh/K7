@@ -19,6 +19,7 @@ public class MainActivity : MauiAppCompatActivity
     private long _selectDownTime;
     private bool _selectLongPressFired;
     private bool _mediaLibraryStarted;
+    private bool _mediaLibraryWarm;
     private CancellationTokenSource? _mediaLibraryStartCts;
 
     protected override void OnCreate(Bundle? savedInstanceState)
@@ -89,12 +90,11 @@ public class MainActivity : MauiAppCompatActivity
             // only pays for the Media3 objects, which must be created on the main looper.
             await Task.Run(() => K7MediaLibraryService.WarmUpDependencies(), cancellationToken);
 
-            if (cancellationToken.IsCancellationRequested || IsFinishing || IsDestroyed || _mediaLibraryStarted)
+            if (cancellationToken.IsCancellationRequested)
                 return;
 
-            _mediaLibraryStarted = true;
-            MauiStartupTrace.Mark("MediaLibrary-StartService");
-            StartService(new Intent(this, typeof(K7MediaLibraryService)));
+            _mediaLibraryWarm = true;
+            TryStartMediaLibrary();
         }
         catch (System.OperationCanceledException)
         {
@@ -103,6 +103,31 @@ public class MainActivity : MauiAppCompatActivity
         catch (Exception ex)
         {
             global::Android.Util.Log.Warn("K7-Startup", "MediaLibrary deferred start failed: " + ex);
+        }
+    }
+
+    /// <summary>
+    /// Starts the media service, or restarts it when Android stopped it. A start from the
+    /// background is refused (the app left the foreground during the deferred start): the
+    /// flag stays clear so OnResume tries again, otherwise the music UI has no player.
+    /// </summary>
+    private void TryStartMediaLibrary()
+    {
+        if (!_mediaLibraryWarm || IsFinishing || IsDestroyed)
+            return;
+        if (_mediaLibraryStarted && K7MediaLibraryService.IsRunning)
+            return;
+
+        try
+        {
+            MauiStartupTrace.Mark("MediaLibrary-StartService");
+            StartService(new Intent(this, typeof(K7MediaLibraryService)));
+            _mediaLibraryStarted = true;
+        }
+        catch (Exception ex)
+        {
+            _mediaLibraryStarted = false;
+            global::Android.Util.Log.Warn("K7-Startup", "MediaLibrary start refused: " + ex.Message);
         }
     }
 
@@ -240,6 +265,7 @@ public class MainActivity : MauiAppCompatActivity
     protected override void OnResume()
     {
         base.OnResume();
+        TryStartMediaLibrary();
         AndroidBlazorHost.CloseStaleWindows(this);
         GetBlazorPage()?.RecoverAfterHostResume();
     }

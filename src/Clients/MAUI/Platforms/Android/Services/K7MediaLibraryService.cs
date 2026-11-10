@@ -113,6 +113,13 @@ public class K7MediaLibraryService : MediaLibraryService,
     /// a worker thread before StartService so OnCreate (main thread) only builds the Media3
     /// objects. Each resolve is isolated: a constructor that fails here is retried in OnCreate.
     /// </summary>
+    /// <summary>
+    /// True between OnCreate and OnDestroy. Android stops a started service that is no longer
+    /// in the foreground (paused music, app in the background): MainActivity restarts it on
+    /// resume so the transport controls have a player again.
+    /// </summary>
+    public static bool IsRunning { get; private set; }
+
     public static void WarmUpDependencies()
     {
         var services = IPlatformApplication.Current?.Services;
@@ -141,6 +148,7 @@ public class K7MediaLibraryService : MediaLibraryService,
         base.OnCreate();
         Log.Info(Tag, "K7MediaLibraryService created");
         TryInitializeService();
+        IsRunning = true;
         MauiStartupTrace.Mark("MediaLibrary-OnCreate-end");
     }
 
@@ -281,11 +289,12 @@ public class K7MediaLibraryService : MediaLibraryService,
         if (_audioPlayerService is not null)
             _audioEqualizer.UpdateSettings(_audioPlayerService.EqEnabled, _audioPlayerService.EqBands);
 
-        _ = PublishRestoredSessionAsync();
+        _ = AdoptExistingSessionAsync();
     }
 
     public override void OnDestroy()
     {
+        IsRunning = false;
         FlushMusicSession();
         UnsubscribeFromAuthEvents();
         UnsubscribeFromAudioPlayerEvents();
@@ -1055,11 +1064,31 @@ public class K7MediaLibraryService : MediaLibraryService,
         if (_updatingFromPlayer) return Task.CompletedTask;
         MainThread.BeginInvokeOnMainThread(() =>
         {
+            if (TryReloadCurrentTrackOnEmptyPlayer())
+                return;
+
             _player?.Play();
             if (_crossfadeInProgress)
                 _crossfadePlayer?.Play();
         });
         return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// The queue has a current track but this player has nothing loaded (service recreated
+    /// under a live queue): reload the track at its position instead of a silent no-op.
+    /// </summary>
+    private bool TryReloadCurrentTrackOnEmptyPlayer()
+    {
+        if (_isVideoMode || _player is null || _player.MediaItemCount > 0)
+            return false;
+        if (_audioPlayerService is not { CurrentTrack: not null } audio || audio.IsAwaitingRestoredPlay)
+            return false;
+
+        Log.Info(Tag, "Play requested on an empty player, reloading the current track");
+        audio.HoldResumePosition();
+        _ = audio.RecoverAfterNativePlaybackFailureAsync();
+        return true;
     }
 
     private Task OnPauseRequested()
@@ -1501,12 +1530,42 @@ public class K7MediaLibraryService : MediaLibraryService,
         });
     }
 
-    private async Task PublishRestoredSessionAsync()
+    /// <summary>
+    /// Picks up the queue the shared player already holds: a persisted session restored before
+    /// this service existed, or the live queue of a previous service instance that Android
+    /// stopped. Without it the new ExoPlayer stays empty and Play does nothing.
+    /// </summary>
+    private async Task AdoptExistingSessionAsync()
     {
         try
         {
             await _headlessReady;
-            if (_audioPlayerService is not { IsAwaitingRestoredPlay: true } audio)
+            if (_audioPlayerService is not { } audio)
+                return;
+
+            var reload = false;
+            await MainThread.InvokeOnMainThreadAsync(() =>
+            {
+                if (_player is null || _player.MediaItemCount > 0)
+                    return;
+                if (audio.IsAwaitingRestoredPlay || audio.CurrentTrack is null)
+                    return;
+
+                // Live queue without a prepared player. A load that started before this
+                // service existed is replayed. A paused track is re-armed at its position.
+                if (audio.PlaybackState is PlaybackState.Buffering or PlaybackState.Playing)
+                    reload = true;
+                else
+                    audio.HoldResumePosition();
+            });
+
+            if (reload)
+            {
+                await MainThread.InvokeOnMainThreadAsync(() => audio.RecoverAfterNativePlaybackFailureAsync());
+                return;
+            }
+
+            if (!audio.IsAwaitingRestoredPlay)
                 return;
 
             var source = await audio.ResolveRestoredSourceAsync();
@@ -1522,22 +1581,25 @@ public class K7MediaLibraryService : MediaLibraryService,
                     if (_audioPlayerService is not { IsAwaitingRestoredPlay: true })
                         return;
 
+                    // Buffering while a restore is armed: Play was pressed before this
+                    // service started, so start the track instead of leaving it paused.
+                    var playNow = _audioPlayerService.PlaybackState == PlaybackState.Buffering;
                     RefreshLoudnessGain(applyToPlayer: false);
-                    _restoredPrepareInProgress = true;
-                    PreparePlayerWithSource(_player, source, _loudnessLinearGain, playWhenReady: false);
+                    _restoredPrepareInProgress = !playNow;
+                    PreparePlayerWithSource(_player, source, _loudnessLinearGain, playWhenReady: playNow);
                     _audioPlayerService.CompleteRestoredPrepare();
                     _forwardingPlayer?.NotifyQueueChanged();
-                    Log.Info(Tag, $"Restored paused session: {_audioPlayerService.CurrentTrack?.Title ?? "unknown"}");
+                    Log.Info(Tag, $"Adopted session ({(playNow ? "playing" : "paused")}): {_audioPlayerService.CurrentTrack?.Title ?? "unknown"}");
                 }
                 catch (Exception ex)
                 {
-                    Log.Warn(Tag, $"Restored session publish failed: {ex.Message}");
+                    Log.Warn(Tag, $"Session adoption failed: {ex.Message}");
                 }
             });
         }
         catch (Exception ex)
         {
-            Log.Warn(Tag, $"Restored session publish failed: {ex.Message}");
+            Log.Warn(Tag, $"Session adoption failed: {ex.Message}");
         }
     }
 

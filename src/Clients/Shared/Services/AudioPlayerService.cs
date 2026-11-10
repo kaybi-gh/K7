@@ -55,6 +55,10 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
                 return;
             _playbackState = value;
             PlaybackStateChanged?.Invoke(value);
+            // A native controller (notification, Android Auto) can start a restored session
+            // without going through Play().
+            if (value == PlaybackState.Playing)
+                NotifyRestoredPlaybackStarted();
         }
     }
 
@@ -193,6 +197,7 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
 
     private bool _preserveShuffleSeed;
     private bool _awaitingRestoredPlay;
+    private bool _restoredStartPending;
     private bool _queueExhausted;
     private double _restoredPosition;
     private Guid? _restoredMediaId;
@@ -401,6 +406,7 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
     private async Task LoadQueueAsync(IEnumerable<AudioQueueItem> tracks, int startIndex, CancellationToken cancellationToken)
     {
         _awaitingRestoredPlay = false;
+        _restoredStartPending = false;
         _restoredMediaId = null;
         _queueExhausted = false;
         _queue.Clear();
@@ -571,6 +577,7 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
         _restoredPosition = Math.Max(0, snapshot.PositionSeconds);
         _restoredMediaId = snapshot.CurrentMediaId;
         _awaitingRestoredPlay = true;
+        _restoredStartPending = true;
         Duration = CurrentTrack?.Duration ?? 0;
         CurrentTime = _restoredPosition;
         _playbackState = PlaybackState.Paused;
@@ -1235,6 +1242,18 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
         if (ShowFullscreenOnPlay && !IsFullScreenVisible)
             ToggleFullScreen();
 
+        if (SourceChanged is null && restored)
+        {
+            // No native player is attached yet (Android starts its media service after the
+            // first paint). Keep the restore armed and the state on Buffering: the player
+            // that attaches next resolves the source itself and starts it.
+            _awaitingRestoredPlay = true;
+            if (resumeAt is not null)
+                CurrentTime = resumeAt.Value;
+            NotifyRestoredPlaybackStarted();
+            return;
+        }
+
         PlayerSource source;
 
         if (preparedSource is not null)
@@ -1281,7 +1300,16 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
 
         SourceChanged?.Invoke(source);
         if (restored)
-            RestoredPlaybackStarted?.Invoke();
+            NotifyRestoredPlaybackStarted();
+    }
+
+    private void NotifyRestoredPlaybackStarted()
+    {
+        if (!_restoredStartPending)
+            return;
+
+        _restoredStartPending = false;
+        RestoredPlaybackStarted?.Invoke();
     }
 
     private static PlayerSource CreateTrackSource(

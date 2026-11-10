@@ -147,6 +147,37 @@ public class AudioPlayerServiceRestoreTests
         resumed.MediaId.Should().Be(mediaId);
     }
 
+    [Test]
+    public void Play_ShouldKeepTheRestoreArmed_WhenNoNativePlayerIsAttached()
+    {
+        var started = 0;
+        _sut.RestoredPlaybackStarted += () => started++;
+        _sut.RestorePaused(Snapshot(Guid.NewGuid(), positionSeconds: 42));
+
+        _sut.Play();
+
+        _sut.IsAwaitingRestoredPlay.Should().BeTrue();
+        _sut.PlaybackState.Should().Be(PlaybackState.Buffering);
+        _sut.CurrentTime.Should().Be(42);
+        _ = _streamUri.DidNotReceiveWithAnyArgs().GetOrCreateSessionAsync(default);
+        started.Should().Be(1);
+    }
+
+    [Test]
+    public void RestoredPlaybackStarted_ShouldFireOnce_WhenANativeControllerStartsThePreparedTrack()
+    {
+        var started = 0;
+        _sut.RestoredPlaybackStarted += () => started++;
+        _sut.RestorePaused(Snapshot(Guid.NewGuid(), positionSeconds: 42));
+        _sut.CompleteRestoredPrepare();
+
+        _sut.PlaybackState = PlaybackState.Playing;
+        _sut.PlaybackState = PlaybackState.Paused;
+        _sut.PlaybackState = PlaybackState.Playing;
+
+        started.Should().Be(1);
+    }
+
     private static MusicSessionSnapshotDto Snapshot(Guid currentId, double positionSeconds) =>
         new()
         {
