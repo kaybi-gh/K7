@@ -484,14 +484,8 @@ public partial class BlazorPage
         });
     }
 
-    private bool IsCurrentBlazorPage()
-    {
-        var windows = Microsoft.Maui.Controls.Application.Current?.Windows;
-        if (windows is null || windows.Count == 0)
-            return false;
-
-        return ReferenceEquals(windows[0].Page, this);
-    }
+    private bool IsCurrentBlazorPage() =>
+        ReferenceEquals(AndroidBlazorHost.PageFor(Platform.CurrentActivity), this);
 
     private static bool IsJsBridgeAliveResult(string? result)
     {

@@ -52,15 +52,7 @@ public sealed class TvVideoControlJsBridge : Java.Lang.Object
         // Best-effort Blazor flag sync; DOM is already hidden by JS.
     }
 
-    private static BlazorPage? ResolveBlazorPage()
-    {
-        if (Microsoft.Maui.Controls.Application.Current?.Windows.Count > 0)
-        {
-            var window = Microsoft.Maui.Controls.Application.Current.Windows[0];
-            return window.Page as BlazorPage;
-        }
-
-        return null;
-    }
+    private static BlazorPage? ResolveBlazorPage() =>
+        AndroidBlazorHost.PageFor(Microsoft.Maui.ApplicationModel.Platform.CurrentActivity);
 }
 #endif

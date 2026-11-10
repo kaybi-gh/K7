@@ -30,6 +30,9 @@ public class MainActivity : MauiAppCompatActivity
         MauiStartupTrace.Mark("base.OnCreate-start");
         base.OnCreate(null);
         MauiStartupTrace.Mark("base.OnCreate-end");
+        // Process survived (media service). Drop a window whose destroy threw so it
+        // cannot keep receiving the remote under the new select-profile page.
+        AndroidBlazorHost.CloseStaleWindows(this);
 
         // Logo overlay ASAP - before permission prompts / window chrome - so cold
         // start is not a long blank brand color.
@@ -225,15 +228,7 @@ public class MainActivity : MauiAppCompatActivity
     private static bool IsSelectKeyCode(Keycode keyCode) =>
         keyCode is Keycode.DpadCenter or Keycode.Enter or Keycode.NumpadEnter or Keycode.ButtonA;
 
-    private static BlazorPage? GetBlazorPage()
-    {
-        if (Microsoft.Maui.Controls.Application.Current?.Windows.Count > 0)
-        {
-            var window = Microsoft.Maui.Controls.Application.Current.Windows[0];
-            return window.Page as BlazorPage;
-        }
-        return null;
-    }
+    private BlazorPage? GetBlazorPage() => AndroidBlazorHost.PageFor(this);
 
     protected override void OnPause()
     {
@@ -245,6 +240,7 @@ public class MainActivity : MauiAppCompatActivity
     protected override void OnResume()
     {
         base.OnResume();
+        AndroidBlazorHost.CloseStaleWindows(this);
         GetBlazorPage()?.RecoverAfterHostResume();
     }
 

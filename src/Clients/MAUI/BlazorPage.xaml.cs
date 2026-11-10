@@ -1857,20 +1857,54 @@ public partial class BlazorPage : ContentPage
 
     protected override void OnDisappearing()
     {
-        base.OnDisappearing();
+        // Window.Destroying calls this on the UI thread. A throw aborts teardown, so the
+        // activity recreate paints a new select-profile over this page and the remote
+        // still drives the page behind. Always detach, and never let a missing player escape.
+        try
+        {
+            base.OnDisappearing();
 #if ANDROID
-        TryStopAndroidVideo();
+            TryStopAndroidVideo();
 #endif
-        // Players are created lazily (Android video attaches on first play, audio players exist
-        // on Mac Catalyst only): the activity can be destroyed before they were ever created.
-        _nativePlayer?.Stop();
+            // Players are created lazily (Android video attaches on first play, audio players exist
+            // on Mac Catalyst only): the activity can be destroyed before they were ever created.
+            try
+            {
+                _nativePlayer?.Stop();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("K7 MAUI - video stop on disappear failed: " + ex.Message);
+            }
 #if ANDROID
-        SuppressAndroidPlayerViewPlaceholder();
+            SuppressAndroidPlayerViewPlaceholder();
 #endif
 #if !WINDOWS
-        _nativeAudioPlayer?.Stop();
+            try
+            {
+                _nativeAudioPlayer?.Stop();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("K7 MAUI - audio stop on disappear failed: " + ex.Message);
+            }
 #endif
-        DetachEventHandlers();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine("K7 MAUI - OnDisappearing failed: " + ex.Message);
+        }
+        finally
+        {
+            try
+            {
+                DetachEventHandlers();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("K7 MAUI - detach on disappear failed: " + ex.Message);
+            }
+        }
     }
 
     private void OnNativePlayerCloseClicked(object? sender, EventArgs e) => OnNativePlayerCloseClickedAsync().FireAndForget();

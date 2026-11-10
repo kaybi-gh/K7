@@ -1130,6 +1130,15 @@ var SpatialNav = (function () {
             perfNote('select ' + phase + ' held=' + heldMs + ' active=' + perfDescribe(document.activeElement)
                 + ' snapshot=' + perfDescribe(_tvSelectSnapshotEl));
 
+        var authRoot = getStandaloneAuthRoot();
+        var authLayer = peekLayer();
+        var inAuthLayer = !!(authLayer && authLayer.el && _tvSelectSnapshotEl
+            && authLayer.el.contains(_tvSelectSnapshotEl));
+        if (authRoot && !inAuthLayer && _tvSelectSnapshotEl && _tvSelectSnapshotEl.isConnected
+            && !authRoot.contains(_tvSelectSnapshotEl)) {
+            _tvSelectSnapshotEl = null;
+        }
+
         if (phase === 'down') {
             // After TV standby, document.activeElement is often body. Focus a card
             // before the snapshot so the matching key-up can activate it.
@@ -1143,6 +1152,17 @@ var SpatialNav = (function () {
                 ? _tvSelectSnapshotEl
                 : document.activeElement)
             : document.activeElement;
+
+        var activeInLayer = !!(authLayer && authLayer.el && active && authLayer.el.contains(active));
+        if (authRoot && !activeInLayer && active && !authRoot.contains(active)) {
+            ensurePageFocus();
+            active = document.activeElement;
+            activeInLayer = !!(authLayer && authLayer.el && active && authLayer.el.contains(active));
+            if (!activeInLayer && (!active || !authRoot.contains(active))) {
+                _tvSelectSnapshotEl = null;
+                return;
+            }
+        }
 
 
         var openMenuEl = active && active.closest ? active.closest('.k7-menu-dropdown--open') : null;
@@ -2422,6 +2442,15 @@ var SpatialNav = (function () {
                     return inLayer[l];
             }
         }
+        var authRoot = getStandaloneAuthRoot();
+        if (authRoot) {
+            var authMatches = authRoot.querySelectorAll(selector);
+            for (var a = 0; a < authMatches.length; a++) {
+                if (!isInsideInactiveFeedHub(authMatches[a]))
+                    return authMatches[a];
+            }
+            return null;
+        }
         var roots = [
             document.querySelector('.app-main .page-viewport'),
             document.querySelector('.empty-layout'),
@@ -2445,6 +2474,12 @@ var SpatialNav = (function () {
 
     function isStandaloneAuthPage() {
         return /^\/(welcome|sign-in|sign-up|linkdevice|select-profile|select-user)(\/|$)/.test(window.location.pathname);
+    }
+
+    function getStandaloneAuthRoot() {
+        if (!isStandaloneAuthPage()) return null;
+        return document.querySelector('.empty-layout')
+            || document.querySelector('.select-profile-page');
     }
 
     function applyDomFocus(el) {
@@ -2491,6 +2526,8 @@ var SpatialNav = (function () {
     }
 
     function getPageFocusRoot() {
+        var authRoot = getStandaloneAuthRoot();
+        if (authRoot) return authRoot;
         return document.querySelector('[data-page-focus]')
             || document.querySelector('.app-main .page-viewport')
             || document.querySelector('.empty-layout')
@@ -2512,7 +2549,8 @@ var SpatialNav = (function () {
     }
 
     function getPageFocusTarget() {
-        var markers = document.querySelectorAll('[data-initial-focus]');
+        var authRoot = getStandaloneAuthRoot();
+        var markers = (authRoot || document).querySelectorAll('[data-initial-focus]');
         for (var i = 0; i < markers.length; i++) {
             var marker = markers[i];
             if (isInsideInactiveFeedHub(marker)) continue;
@@ -2730,7 +2768,10 @@ var SpatialNav = (function () {
         if (document.querySelector('[data-sn-editing]')) return;
         if (!shouldRefocusPage(document.activeElement)) return;
 
-        if (restoreLastPageContentFocus()) {
+        if (isStandaloneAuthPage()) {
+            _lastPageContentFocus = null;
+            _lastPageContentFocusId = null;
+        } else if (restoreLastPageContentFocus()) {
             markPageFocusSettled();
             return;
         }
@@ -2898,6 +2939,12 @@ var SpatialNav = (function () {
                 navigableFilter: function (el) {
                     var layer = peekLayer();
                     if (layer && layer.el && !layer.el.contains(el)) return false;
+                    // select-profile can stay painted over a page that was not unmounted
+                    // after a TV activity recreate. Do not move onto that page.
+                    if (!layer) {
+                        var authRoot = getStandaloneAuthRoot();
+                        if (authRoot && !authRoot.contains(el)) return false;
+                    }
                     if (isInsideInactiveFeedHub(el)) return false;
                     if (isInClosedDetailsContent(el)) return false;
                     return window.getComputedStyle(el).visibility !== 'hidden';
@@ -3109,12 +3156,22 @@ var SpatialNav = (function () {
                 if (window.SpatialNavigation && SpatialNavigation.resume) SpatialNavigation.resume();
                 if (window.K7.reInitAndRestoreCarousels) K7.reInitAndRestoreCarousels();
                 if (window.SpatialNav && SpatialNav.refresh) SpatialNav.refresh();
+                var authRoot = getStandaloneAuthRoot();
+                if (authRoot) {
+                    _lastPageContentFocus = null;
+                    _lastPageContentFocusId = null;
+                    var outside = document.activeElement;
+                    if (outside && outside.blur && !authRoot.contains(outside)) {
+                        try { outside.blur(); } catch (exBlur) { }
+                    }
+                }
                 ensurePageFocus();
-                var initial = document.querySelector('[data-initial-focus]');
+                var scope = authRoot || document;
+                var initial = scope.querySelector('[data-initial-focus]');
                 if (initial && window.SpatialNav && SpatialNav.focusElement) {
                     SpatialNav.focusElement(initial);
                 } else if (window.SpatialNavigation && SpatialNavigation.focus) {
-                    var first = document.querySelector('.focusable');
+                    var first = scope.querySelector('.focusable');
                     if (first) SpatialNavigation.focus(first);
                 }
             } catch (e) { /* host resume best-effort */ }
