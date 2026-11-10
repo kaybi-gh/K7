@@ -259,16 +259,15 @@ public partial class NextEpisodeOverlay : IDisposable
             serieId,
             indexedFile.Id);
 
+        // Same as Play: no track indexes. The server applies serie memory or user preferences.
         await PlayerService.PlayIndexedFileAsync(
             indexedFile.Id,
             videoMetadata.AudioTracks ?? [],
             videoMetadata.SubtitleTracks,
-            PlaybackTrackContinuity.MatchAudioIndex(videoMetadata.AudioTracks, PlayerService.SelectedAudioTrack),
-            PlaybackTrackContinuity.MatchSubtitleIndex(videoMetadata.SubtitleTracks, PlayerService.SelectedSubtitleTrack),
-            videoMetadata.VideoResolution,
-            videoMetadata.Thumbnails?.Uri?.ToString(),
-            nextEpisodeId,
-            VideoPlayerTitleHelper.FormatEpisode(episodeDto),
+            videoResolution: videoMetadata.VideoResolution,
+            thumbnailsUrl: videoMetadata.Thumbnails?.Uri?.ToString(),
+            mediaId: nextEpisodeId,
+            title: VideoPlayerTitleHelper.FormatEpisode(episodeDto),
             chapters: videoMetadata.Chapters,
             durationSeconds: videoMetadata.Duration.TotalSeconds,
             libraryId: indexedFile.LibraryId,

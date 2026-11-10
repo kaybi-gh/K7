@@ -24,6 +24,10 @@ public partial class BlazorPage
     private Android.Views.ViewTreeObserver.IOnGlobalFocusChangeListener? _videoFocusBounceListener;
     private bool _videoFocusBounceAttached;
     private string? _directTrackOverrideUrl;
+    private string? _appliedTrackGroupSignature;
+    private int _androidSubtitleEnsureGeneration;
+    private int _androidSubtitleEnsureSeenGeneration;
+    private int _androidSubtitleEnsureAttempts;
     private int _androidHttpTimeoutRetryCount;
     private int _androidDirectPlayRuntimeRetryCount;
     private bool? _androidLastSourceWasHls;
@@ -176,6 +180,7 @@ public partial class BlazorPage
         var platformView = NativePlayer.Handler?.PlatformView as Android.Views.View;
         var playerView = platformView is null ? null : FindPlayerView(platformView);
         AndroidExoHlsTuning.ReapplyHardwareOverlayFlatten(playerView);
+        ScheduleAndroidSubtitleEnsure();
         LogVideoSurfaceSnapshot("first-frame");
 
         var source = _playerService.Source;
@@ -555,6 +560,9 @@ public partial class BlazorPage
     partial void ConfigureNativeVideoPlayerAfterOpen()
     {
         _directTrackOverrideUrl = null;
+        _appliedTrackGroupSignature = null;
+        _androidSubtitleEnsureGeneration++;
+        _androidSubtitleEnsureAttempts = 0;
         var platformView = NativePlayer.Handler?.PlatformView as Android.Views.View;
         var playerView = platformView is null ? null : FindPlayerView(platformView);
         var invalidateSelections = CurrentExoInvalidateSelectionsOnCapabilitiesChange();
@@ -582,6 +590,7 @@ public partial class BlazorPage
     partial void DetachPlayerPlatform()
     {
         _directTrackOverrideUrl = null;
+        _appliedTrackGroupSignature = null;
         _androidSubtitleWarmCts?.Cancel();
         _androidSubtitleWarmCts = null;
         if (_exoPlaybackBridge is not null)
@@ -2115,27 +2124,21 @@ public partial class BlazorPage
         MainThread.BeginInvokeOnMainThread(() => BeginAndroidSubtitleSelection(slug));
     }
 
-    private void BeginAndroidSubtitleSelection(string? slug)
+    private AndroidExoTrackOverridePolicy.SubtitleBind BeginAndroidSubtitleSelection(string? slug)
     {
         // Drop any warm still pending from a previous selection.
         _androidSubtitleWarmCts?.Cancel();
         _androidSubtitleWarmCts = null;
 
         if (slug is null)
-        {
-            TrySwitchSubtitleTrack(null, attempt: 0);
-            return;
-        }
+            return TrySwitchSubtitleTrack(null, attempt: 0);
 
         // Direct play exposes embedded text tracks - select immediately, no server VTT.
         var isHls = _playerService.Source?.MimeType?.Contains(
             "mpegurl", StringComparison.OrdinalIgnoreCase) == true;
         var fileId = _playerService.Source?.IndexedFileId;
         if (!isHls || fileId is null || !int.TryParse(slug.AsSpan(4), out var trackIndex))
-        {
-            TrySwitchSubtitleTrack(slug, attempt: 0);
-            return;
-        }
+            return TrySwitchSubtitleTrack(slug, attempt: 0);
 
         // HLS: keep text disabled so audio/video start now. Warm the sidecar VTT in the
         // background, then select the Exo text rendition only once the server can serve it.
@@ -2144,6 +2147,7 @@ public partial class BlazorPage
         var cts = new CancellationTokenSource();
         _androidSubtitleWarmCts = cts;
         _ = WarmAndroidHlsSubtitleThenSelectAsync(fileId.Value, trackIndex, slug, cts);
+        return AndroidExoTrackOverridePolicy.SubtitleBind.Deferred;
     }
 
     private async Task WarmAndroidHlsSubtitleThenSelectAsync(
@@ -2211,11 +2215,11 @@ public partial class BlazorPage
         }
     }
 
-    private void TrySwitchSubtitleTrack(string? slug, int attempt)
+    private AndroidExoTrackOverridePolicy.SubtitleBind TrySwitchSubtitleTrack(string? slug, int attempt)
     {
         var player = GetPlayer(NativePlayer);
         if (player is null)
-            return;
+            return AndroidExoTrackOverridePolicy.SubtitleBind.Pending;
 
         if (slug is null)
         {
@@ -2226,21 +2230,61 @@ public partial class BlazorPage
                 .Build();
             player.TrackSelectionParameters = disableParams;
             NativeVideoDebug.Log("SelectTextTrack off");
+            return AndroidExoTrackOverridePolicy.SubtitleBind.Cleared;
+        }
+
+        // setMediaSource updates the playlist before the new groups exist. Selecting now
+        // would stick an override on the previous episode and the next onTracksChanged
+        // would be ignored once the URL lock was taken.
+        if (!TracksBelongToCurrentSource(player))
+        {
+            ScheduleSubtitleRetry(slug, attempt, "wait media item");
+            return AndroidExoTrackOverridePolicy.SubtitleBind.Pending;
+        }
+
+        if (!TryFindTextTrack(player, slug, out var group, out var trackIndex) || group is null)
+        {
+            var tracks = player.CurrentTracks;
+            var waiting = tracks?.Groups is null || tracks.Groups.Size() == 0;
+            ScheduleSubtitleRetry(slug, attempt, waiting ? "wait tracks" : "no match");
+            return AndroidExoTrackOverridePolicy.SubtitleBind.Pending;
+        }
+
+        SelectTextTrack(player, group, trackIndex);
+        return AndroidExoTrackOverridePolicy.SubtitleBind.Applied;
+    }
+
+    private void ScheduleSubtitleRetry(string slug, int attempt, string reason)
+    {
+        if (attempt >= 5 || NativePlayer.Handler?.PlatformView is not Android.Views.View view)
+        {
+            NativeVideoDebug.Log("SelectTextTrack abort " + reason + " slug=" + slug);
             return;
         }
 
+        NativeVideoDebug.Log("SelectTextTrack retry " + reason + " attempt=" + attempt);
+        view.PostDelayed(() => TrySwitchSubtitleTrack(slug, attempt + 1), 250);
+    }
+
+    private bool TracksBelongToCurrentSource(IPlayer player)
+    {
+        var url = _playerService.Source?.Url;
+        if (string.IsNullOrEmpty(url))
+            return false;
+
+        if (!TryGetMediaItemUri(player.CurrentMediaItem, out var mediaUri))
+            return true;
+
+        return AndroidExoTrackOverridePolicy.MediaItemMatchesSource(mediaUri, url);
+    }
+
+    private bool TryFindTextTrack(IPlayer player, string slug, out Tracks.Group? group, out int trackIndex)
+    {
+        group = null;
+        trackIndex = 0;
         var tracks = player.CurrentTracks;
         if (tracks?.Groups is null || tracks.Groups.Size() == 0)
-        {
-            if (attempt < 5 && NativePlayer.Handler?.PlatformView is Android.Views.View platformView)
-            {
-                NativeVideoDebug.Log("SelectTextTrack retry wait tracks attempt=" + attempt);
-                platformView.PostDelayed(() => TrySwitchSubtitleTrack(slug, attempt + 1), 250);
-            }
-            else
-                NativeVideoDebug.Log("SelectTextTrack abort no tracks slug=" + slug);
-            return;
-        }
+            return false;
 
         // Each HLS #EXT-X-MEDIA:TYPE=SUBTITLES creates its own TrackGroup with 1 track.
         var textGroupIndex = 0;
@@ -2260,36 +2304,32 @@ public partial class BlazorPage
 
         for (var i = 0; i < tracks.Groups.Size(); i++)
         {
-            var group = (Tracks.Group)tracks.Groups.Get(i)!;
-            if (group.Type != C.TrackTypeText)
+            var candidate = (Tracks.Group)tracks.Groups.Get(i)!;
+            if (candidate.Type != C.TrackTypeText)
                 continue;
 
-            for (var j = 0; j < group.Length; j++)
+            for (var j = 0; j < candidate.Length; j++)
             {
-                var format = group.GetTrackFormat(j);
+                var format = candidate.GetTrackFormat(j);
                 if (format?.Label == slug || format?.Id == slug)
                 {
-                    SelectTextTrack(player, group, j);
-                    return;
+                    group = candidate;
+                    trackIndex = j;
+                    return true;
                 }
             }
 
             if (targetTextGroupOrder == textGroupIndex)
             {
-                SelectTextTrack(player, group, 0);
-                return;
+                group = candidate;
+                trackIndex = 0;
+                return true;
             }
 
             textGroupIndex++;
         }
 
-        if (attempt < 5 && NativePlayer.Handler?.PlatformView is Android.Views.View view)
-        {
-            NativeVideoDebug.Log("SelectTextTrack retry no match slug=" + slug + " attempt=" + attempt);
-            view.PostDelayed(() => TrySwitchSubtitleTrack(slug, attempt + 1), 250);
-        }
-        else
-            NativeVideoDebug.Log("SelectTextTrack miss slug=" + slug);
+        return false;
     }
 
     private static void TryDisableAndroidTextTrack(IPlayer player)
@@ -2409,28 +2449,181 @@ public partial class BlazorPage
     }
 
 
+    private void ScheduleAndroidSubtitleEnsure()
+    {
+        if (_androidSubtitleEnsureSeenGeneration == _androidSubtitleEnsureGeneration)
+            return;
+
+        _androidSubtitleEnsureSeenGeneration = _androidSubtitleEnsureGeneration;
+        EnsureAndroidTextTrackSelected("first-frame");
+
+        var generation = _androidSubtitleEnsureGeneration;
+        if (NativePlayer.Handler?.PlatformView is not Android.Views.View platformView)
+            return;
+
+        platformView.PostDelayed(
+            () =>
+            {
+                if (generation != _androidSubtitleEnsureGeneration)
+                    return;
+                EnsureAndroidTextTrackSelected("first-frame-delay");
+            },
+            500);
+    }
+
+    private void EnsureAndroidTextTrackSelected(string reason)
+    {
+        if (!_playerService.IsVisible || string.IsNullOrEmpty(_playerService.Source?.Url))
+            return;
+
+        if (_androidSubtitleWarmCts is not null)
+            return;
+
+        var url = _playerService.Source.Url;
+        var player = GetPlayer(NativePlayer);
+        if (player is null)
+            return;
+
+        if (TryGetMediaItemUri(player.CurrentMediaItem, out var mediaUri)
+            && !AndroidExoTrackOverridePolicy.MediaItemMatchesSource(mediaUri, url))
+            return;
+
+        if (IsDesiredTextTrackSelected(player))
+            return;
+
+        if (_androidSubtitleEnsureAttempts >= 2)
+            return;
+
+        _androidSubtitleEnsureAttempts++;
+        NativeVideoDebug.Log(
+            "TrackOverride ensure reason=" + reason + " attempt=" + _androidSubtitleEnsureAttempts);
+        _directTrackOverrideUrl = null;
+        _appliedTrackGroupSignature = null;
+        ApplySelectedTrackOverrides();
+    }
+
+    private bool IsDesiredTextTrackSelected(IPlayer player)
+    {
+        var selected = _playerService.SelectedSubtitleTrack;
+        if (selected is not { IsTextBased: true })
+        {
+            if (selected is not null)
+                return true;
+
+            return !AnyTextTrackSelected(player);
+        }
+
+        if (!TracksBelongToCurrentSource(player))
+            return false;
+
+        if (!TryFindTextTrack(player, "sub-" + selected.Index.ToString(System.Globalization.CultureInfo.InvariantCulture), out var group, out var trackIndex)
+            || group is null)
+            return false;
+
+        try
+        {
+            return group.IsTrackSelected(trackIndex);
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static bool AnyTextTrackSelected(IPlayer player)
+    {
+        var tracks = player.CurrentTracks;
+        if (tracks?.Groups is null)
+            return false;
+
+        for (var i = 0; i < tracks.Groups.Size(); i++)
+        {
+            var group = (Tracks.Group)tracks.Groups.Get(i)!;
+            if (group.Type != C.TrackTypeText)
+                continue;
+
+            for (var j = 0; j < group.Length; j++)
+            {
+                if (group.IsTrackSelected(j))
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static string? BuildCurrentTrackGroupSignature(IPlayer? player)
+    {
+        var tracks = player?.CurrentTracks;
+        if (tracks?.Groups is null || tracks.Groups.Size() == 0)
+            return null;
+
+        var signature = "";
+        for (var i = 0; i < tracks.Groups.Size(); i++)
+        {
+            var group = (Tracks.Group)tracks.Groups.Get(i)!;
+            var hash = Java.Lang.JavaSystem.IdentityHashCode(group.MediaTrackGroup);
+            signature = string.Concat(
+                signature,
+                ((int)group.Type).ToString(System.Globalization.CultureInfo.InvariantCulture),
+                ":",
+                hash.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                ";");
+        }
+
+        return signature;
+    }
+
     private void ApplySelectedTrackOverrides()
     {
         if (!_playerService.IsVisible || string.IsNullOrEmpty(_playerService.Source?.Url))
             return;
 
         var url = _playerService.Source.Url;
-        if (_directTrackOverrideUrl == url)
+        var player = GetPlayer(NativePlayer);
+        if (player is not null
+            && TryGetMediaItemUri(player.CurrentMediaItem, out var mediaUri)
+            && !AndroidExoTrackOverridePolicy.MediaItemMatchesSource(mediaUri, url))
+        {
+            _directTrackOverrideUrl = null;
+            _appliedTrackGroupSignature = null;
+            NativeVideoDebug.Log("TrackOverride wait media item");
             return;
+        }
+
+        var signature = BuildCurrentTrackGroupSignature(player);
+        if (!AndroidExoTrackOverridePolicy.ShouldApplyTrackOverrides(
+                _directTrackOverrideUrl,
+                _appliedTrackGroupSignature,
+                url,
+                signature))
+        {
+            if (string.IsNullOrEmpty(signature))
+            {
+                _directTrackOverrideUrl = null;
+                _appliedTrackGroupSignature = null;
+            }
+
+            return;
+        }
 
         if (_playerService.SelectedAudioTrack is { } audio)
             OnSwitchAudioTrack($"audio-{audio.Index}");
 
-        if (_playerService.SelectedSubtitleTrack is { IsTextBased: true } sub)
-            OnSwitchSubtitleTrack($"sub-{sub.Index}");
-        else if (_playerService.SelectedSubtitleTrack is null)
-            OnSwitchSubtitleTrack(null);
+        var subtitleBind = _playerService.SelectedSubtitleTrack switch
+        {
+            { IsTextBased: true } sub => BeginAndroidSubtitleSelection(
+                "sub-" + sub.Index.ToString(System.Globalization.CultureInfo.InvariantCulture)),
+            null => BeginAndroidSubtitleSelection(null),
+            _ => AndroidExoTrackOverridePolicy.SubtitleBind.Cleared
+        };
 
-        // Only lock after we actually had track groups to select against.
-        var player = GetPlayer(NativePlayer);
-        var tracks = player?.CurrentTracks;
-        if (tracks?.Groups is not null && tracks.Groups.Size() > 0)
-            _directTrackOverrideUrl = url;
+        if (!AndroidExoTrackOverridePolicy.ShouldRememberTrackOverride(subtitleBind))
+            return;
+
+        _directTrackOverrideUrl = url;
+        _appliedTrackGroupSignature = signature;
+        NativeVideoDebug.Log("TrackOverride bound " + subtitleBind);
     }
 
     private void ApplyDirectPlayTrackOverrides() => ApplySelectedTrackOverrides();
