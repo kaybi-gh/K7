@@ -272,10 +272,21 @@ internal static class MauiSessionBootstrap
         if (windows is null || windows.Count == 0)
             return;
 
+        // A window that is not on screen (phone locked in a pocket while Android Auto binds
+        // the service, activity recreated in the background) does not paint: waiting for it
+        // stalled every car browse and play request for the whole timeout.
+        if (!AppLifecycleGate.IsForeground)
+            return;
+
+        // The long wait protects the TV cold start (first paint can take 10 s+ there).
+        var timeout = DeviceInfo.Idiom == DeviceIdiom.TV
+            ? TimeSpan.FromSeconds(30)
+            : TimeSpan.FromSeconds(6);
+
         try
         {
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            cts.CancelAfter(TimeSpan.FromSeconds(30));
+            cts.CancelAfter(timeout);
             await FirstPaintSignal.WaitAsync(cts.Token);
         }
         catch (OperationCanceledException)

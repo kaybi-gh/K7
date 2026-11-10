@@ -1189,7 +1189,8 @@ public class K7MediaLibraryService : MediaLibraryService,
                 return;
 
             Log.Warn(Tag, "Radio playlist handoff timed out; enabling refill sync");
-            TryCompleteRadioPlaylistHandoff(requireItems: false);
+            // ExoPlayer must only be touched on the main looper.
+            await MainThread.InvokeOnMainThreadAsync(() => TryCompleteRadioPlaylistHandoff(requireItems: false));
         });
     }
 
@@ -1296,7 +1297,7 @@ public class K7MediaLibraryService : MediaLibraryService,
 
             if (_radioAwaitingMedia3Playlist)
             {
-                TryCompleteRadioPlaylistHandoff();
+                await MainThread.InvokeOnMainThreadAsync(() => TryCompleteRadioPlaylistHandoff());
                 continue;
             }
 
@@ -1631,8 +1632,14 @@ public class K7MediaLibraryService : MediaLibraryService,
             // Thread pool: started from OnCreate, the chain (refresh grant, device init, music
             // session, their HTTP / JSON) otherwise continues on the main-thread context and
             // JITs there (2.4 s stall on a 32-bit TV box).
-            await Task.Run(() => MauiSessionBootstrap.EnsureReadyAsync(services));
-            UpdateAuthHeaders();
+            await Task.Run(async () =>
+            {
+                await MauiSessionBootstrap.EnsureReadyAsync(services);
+                // The restore can adopt a stored session without raising AccessTokenChanged:
+                // drop the token read at OnCreate, off the main thread.
+                _cachedAccessToken = null;
+                UpdateAuthHeaders();
+            });
         }
         catch (Exception ex)
         {
@@ -1741,7 +1748,10 @@ public class K7MediaLibraryService : MediaLibraryService,
             var services = IPlatformApplication.Current?.Services;
             var deviceStorage = services?.GetService<IDeviceStorageService>();
             token = deviceStorage?.Get(K7.Shared.PreferenceKeys.ACCESS_TOKEN);
-            _cachedAccessToken = token ?? string.Empty;
+            // Never cache "no token": a read that lands before the session restore would
+            // leave ExoPlayer without a Bearer until the next token rotation.
+            if (!string.IsNullOrEmpty(token))
+                _cachedAccessToken = token;
             MauiStartupTrace.Mark("MediaLibrary-token-read");
         }
 
@@ -2278,9 +2288,18 @@ public class K7MediaLibraryService : MediaLibraryService,
 
                     // Block OnSourceChanged while resolving so Media3 owns the first SetMediaItem.
                     _syncingFromExoPlayer = true;
-                    var queueItems = await _mediaBrowseService!.GetPlayableItemsAsync(mediaId);
-                    if (isRadio && _audioPlayerService is { Queue.Count: > 0 })
-                        queueItems = _audioPlayerService.Queue.ToArray();
+                    // A radio starts the shared queue itself (PlayRadioAsync): that raises
+                    // IAudioPlayerService events the Blazor UI listens to, so run it on the
+                    // main thread like PlayTracksAsync below, not on this worker.
+                    var queueItems = isRadio
+                        ? await MainThread.InvokeOnMainThreadAsync(async () =>
+                        {
+                            var started = await _mediaBrowseService!.GetPlayableItemsAsync(mediaId);
+                            return _audioPlayerService is { Queue.Count: > 0 }
+                                ? (IReadOnlyList<AudioQueueItem>)_audioPlayerService.Queue.ToArray()
+                                : started;
+                        })
+                        : await _mediaBrowseService!.GetPlayableItemsAsync(mediaId);
 
                     Log.Info(Tag, $"OnAddMediaItems: GetPlayableItemsAsync({mediaId}) returned {queueItems.Count} tracks");
 
