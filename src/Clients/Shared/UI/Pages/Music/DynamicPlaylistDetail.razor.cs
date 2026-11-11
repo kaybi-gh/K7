@@ -50,6 +50,8 @@ public partial class DynamicPlaylistDetail
         }
     }
 
+    private void ToggleColumnPicker() => _dataTable?.ToggleColumnPicker();
+
     private Task LoadItemsAsync()
     {
         _loadCts?.Cancel();

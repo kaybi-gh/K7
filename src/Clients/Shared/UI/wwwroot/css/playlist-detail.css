@@ -161,24 +161,29 @@
 }
 
 .playlist-detail-page.is-header-compact > .browse-view {
-    padding-top: var(--space-3);
+    padding-top: 0;
     min-height: 0;
     z-index: 0;
 }
 
+/* Grid/list keep a little air under the compact header. Table must stay flush so sticky
+   thead sits against the minimized header (browse-view itself does not scroll). */
 .playlist-detail-page.is-header-compact .k7-virtual-grid,
 .playlist-detail-page.is-header-compact .browse-view-simple-grid,
 .playlist-detail-page.is-header-compact .k7-virtual-list,
-.playlist-detail-page.is-header-compact .k7-data-table-scroll,
 .playlist-detail-page.is-header-compact .browse-view-list {
     padding-top: var(--space-3);
+}
+
+.playlist-detail-page.is-header-compact .k7-data-table-scroll {
+    padding-top: 0;
 }
 
 .playlist-detail-page.is-header-compact .browse-view-toolbar {
     position: relative;
     z-index: 21;
     align-items: flex-start;
-    margin-top: calc(-1 * (40px + var(--space-2) + var(--space-3)));
+    margin-top: -40px;
     margin-bottom: 0;
     padding-block: 0;
     padding-inline: 0;
@@ -254,6 +259,26 @@ html.platform-tv .playlist-detail-page.is-header-compact .playlist-header-cover 
 .collapsible-detail-shell.is-header-compact .k7-back-btn {
     top: var(--space-1);
     left: var(--space-3);
+}
+
+/* Global on purpose: CollectionDetailPage / MySpace tables reuse this class outside
+   LibraryTableMediaTitle, and scoped ::deep misses when the browse class is on the same node. */
+.library-table-title {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+}
+
+.library-table-title > .text-sm,
+.library-table-title > p {
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+    flex: 1;
 }
 
 .library-table-title .k7-cover-mosaic.collection-table-cover,
@@ -423,7 +448,7 @@ html.platform-tv .playlist-detail-page.is-header-compact .playlist-header-cover 
     }
 
     .detail-header-host.playlist-detail-page > .browse-view {
-        padding-top: var(--space-3);
+        padding-top: 0;
         min-height: 0;
         z-index: 0;
     }
@@ -431,9 +456,12 @@ html.platform-tv .playlist-detail-page.is-header-compact .playlist-header-cover 
     .detail-header-host .k7-virtual-grid,
     .detail-header-host .browse-view-simple-grid,
     .detail-header-host .k7-virtual-list,
-    .detail-header-host .k7-data-table-scroll,
     .detail-header-host .browse-view-list {
         padding-top: var(--space-3);
+    }
+
+    .detail-header-host .k7-data-table-scroll {
+        padding-top: 0;
     }
 
     .detail-header-host .playlist-header-cover {
@@ -470,7 +498,7 @@ html.platform-tv .playlist-detail-page.is-header-compact .playlist-header-cover 
         position: relative;
         z-index: 21;
         align-items: flex-start;
-        margin-top: calc(-1 * (40px + var(--space-2) + var(--space-3)));
+        margin-top: -40px;
         margin-bottom: 0;
         padding-block: 0;
         padding-inline: 0;
@@ -484,5 +512,146 @@ html.platform-tv .playlist-detail-page.is-header-compact .playlist-header-cover 
     .detail-header-host .browse-view-toolbar-end {
         pointer-events: auto;
         height: 40px;
+    }
+}
+
+/* Table mode of the playlist and collection detail pages (standard and dynamic) spans the
+   whole page width: it bleeds past the .playlist-detail-page padding and the first and
+   last cells keep that gutter as inner padding. Global on purpose: tables and lists are
+   rendered inside child components, out of reach of the pages' scoped CSS. The doubled
+   host class outranks the components' own scoped padding. */
+.detail-header-host.playlist-detail-page .k7-data-table {
+    margin-inline: calc(-1 * var(--space-4));
+    width: calc(100% + 2 * var(--space-4));
+}
+
+.detail-header-host.playlist-detail-page .k7-data-table-scroll,
+.detail-header-host.playlist-detail-page .k7-virtual-list {
+    padding-inline: 0;
+    /* A reserved gutter leaves an empty strip on the right when nothing scrolls. */
+    scrollbar-gutter: auto;
+}
+
+.detail-header-host.playlist-detail-page .k7-data-table-el th:first-child,
+.detail-header-host.playlist-detail-page .k7-data-table-el td:first-child {
+    padding-inline-start: var(--space-4);
+}
+
+.detail-header-host.playlist-detail-page .k7-data-table-el th:last-child,
+.detail-header-host.playlist-detail-page .k7-data-table-el td:last-child {
+    padding-inline-end: var(--space-4);
+}
+
+/* List mode looks like the library group list: rounded rows inside the page gutter (the
+   page padding is the gutter, so the list adds none on the left).
+   List and grid scrollers reach the window edge on the right so the scrollbar sits there,
+   not on the content edge where the A-Z index is. The right padding gives back that
+   gutter, plus the index width when it is shown, so the content does not move. */
+.detail-header-host.playlist-detail-page .k7-virtual-list,
+.detail-header-host.playlist-detail-page .k7-virtual-grid {
+    margin-right: calc(-1 * var(--space-4));
+}
+
+.detail-header-host.playlist-detail-page .browse-view .browse-view-surfaces .k7-virtual-list {
+    padding-right: calc(var(--browse-jump-index-inset, 0px) + var(--space-4));
+}
+
+.detail-header-host.playlist-detail-page .browse-view .browse-view-surfaces .k7-virtual-grid {
+    padding-right: calc(16px + var(--browse-jump-index-inset, 0px) + var(--space-4));
+}
+
+/* The index sits on the content edge, i.e. one page gutter from the window edge like on
+   the library group page (its own offset would add to the page padding). */
+.detail-header-host.playlist-detail-page .k7-jump-index {
+    right: 0;
+}
+
+/* The compact header overlaps the top 40px of the browse surfaces (its toolbar is pulled
+   up into the pinned bar): start the index below it. */
+.detail-header-host.playlist-detail-page.is-header-compact .k7-jump-index {
+    top: calc(40px + var(--space-2));
+}
+
+/* Track table host of the playlist and dynamic playlist pages. */
+.playlist-tracklist {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.playlist-item-unavailable {
+    opacity: 0.55;
+}
+
+.playlist-tracklist-title {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    min-width: 0;
+    width: 100%;
+}
+
+.playlist-tracklist-cover {
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+}
+
+.playlist-tracklist-cover--placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-bg-gray);
+    border-radius: var(--radius-sm);
+    color: var(--color-text-muted);
+}
+
+.playlist-tracklist-name,
+.playlist-tracklist-cell {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+}
+
+.playlist-tracklist-name {
+    flex: 1;
+    font-size: var(--text-sm);
+}
+
+/* Collections: sort and view modes share the line of the header actions instead of taking
+   a row of their own, when there is room. The header actions sit on the bottom edge of the
+   header and keep an empty strip on their right, and the controls bar is pulled up into
+   that strip. The compact header has its own rules. Playlists have no such bar: their
+   column picker button lives with the header actions. */
+@media (min-width: 1100px) {
+    .playlist-detail-page:not(.is-header-compact):has(.browse-view-toolbar) .playlist-header {
+        grid-template-rows: auto 1fr;
+        margin-bottom: var(--space-3);
+    }
+
+    .playlist-detail-page:not(.is-header-compact):has(.browse-view-toolbar) .playlist-header-actions {
+        align-self: end;
+        min-height: 40px;
+        padding-inline-end: 20rem;
+    }
+
+    .playlist-detail-page:not(.is-header-compact) .browse-view-toolbar {
+        position: relative;
+        z-index: 1;
+        align-items: center;
+        height: 40px;
+        min-height: 40px;
+        margin-top: calc(-40px - var(--space-3));
+        margin-bottom: var(--space-3);
+        padding-block: 0;
+        padding-inline: 0;
+        pointer-events: none;
+        background: transparent;
+    }
+
+    .playlist-detail-page:not(.is-header-compact) .browse-view-toolbar-end {
+        pointer-events: auto;
     }
 }

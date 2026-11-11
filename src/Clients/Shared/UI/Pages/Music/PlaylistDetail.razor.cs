@@ -9,7 +9,6 @@ using K7.Shared.Dtos.Entities;
 using K7.Shared.Dtos.Entities.Playlists;
 using K7.Shared.Dtos.Requests;
 using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Components.Web;
 
 namespace K7.Clients.Shared.UI.Pages.Music;
 
@@ -35,7 +34,6 @@ public partial class PlaylistDetail
 
     private PlaylistDto? _playlist;
     private List<PlaylistItemViewModel> _items = [];
-    private List<PlaylistBrowseRow> _browseRows = [];
     private IReadOnlyList<string> _headerPreviewUrls = [];
     private double _totalDuration;
     private bool _loading = true;
@@ -44,7 +42,6 @@ public partial class PlaylistDetail
     private bool _canTrackProgress;
     private bool _canSetWatchState;
     private bool _showUnavailable;
-    private BrowseView<PlaylistBrowseRow>? _browseView;
     private K7DataTable<PlaylistItemViewModel>? _dataTable;
     private string? _activeSortKey = "order";
     private K7SortDirection _activeSortDirection = K7SortDirection.Ascending;
@@ -53,24 +50,6 @@ public partial class PlaylistDetail
 
     private bool _isMusicPlaylist => _playlist?.MediaType is MediaType.MusicTrack;
     private bool _showHeaderPlaceholder => _items.Count == 0;
-    private bool ShowPosterGrid =>
-        _playlist?.MediaType is MediaType.Movie or MediaType.SerieEpisode;
-
-    private MediaCardVariant GridCardVariant =>
-        _playlist is null
-            ? MediaCardVariant.Poster
-            : MediaCardLayout.VariantForBrowseMediaType(_playlist.MediaType);
-
-    private float? GridAspectRatio =>
-        ShowPosterGrid ? MediaCardLayout.GridAspectRatio(GridCardVariant) : null;
-
-    private int GridItemWidth => MediaCardLayout.GridItemWidth(GridCardVariant);
-
-    internal sealed record PlaylistBrowseRow(PlaylistItemViewModel Item, int Index)
-    {
-        public bool IsAlternate => Index % 2 == 1;
-    }
-
     protected override async Task OnParametersSetAsync()
     {
         _canTrackProgress = await FeatureAccess.HasCapabilityAsync(Capability.CanResumePlayback);
@@ -83,6 +62,8 @@ public partial class PlaylistDetail
         if (_playlist is not null)
             await LoadItemsAsync();
     }
+
+    private void ToggleColumnPicker() => _dataTable?.ToggleColumnPicker();
 
     private Task LoadItemsAsync()
     {
@@ -98,7 +79,6 @@ public partial class PlaylistDetail
         _loadingItems = true;
         _itemsComplete = false;
         _items = [];
-        RebuildBrowseRows();
         StateHasChanged();
 
         var playlistId = Guid.Parse(Id);
@@ -115,7 +95,6 @@ public partial class PlaylistDetail
                     break;
 
                 _items.AddRange(result.Items.Select(ToViewModel));
-                RebuildBrowseRows();
                 _totalDuration = _items.Sum(i => i.Duration);
 
                 if (pageNumber == 1)
@@ -126,8 +105,6 @@ public partial class PlaylistDetail
 
                 if (_dataTable is not null)
                     await _dataTable.RefreshAsync();
-                if (_browseView is not null)
-                    await _browseView.RefreshAsync();
                 StateHasChanged();
 
                 if (!result.HasNextPage)
@@ -149,8 +126,6 @@ public partial class PlaylistDetail
         _itemsComplete = true;
         if (_dataTable is not null)
             await _dataTable.RefreshAsync();
-        if (_browseView is not null)
-            await _browseView.RefreshAsync();
         StateHasChanged();
     }
 
@@ -200,6 +175,7 @@ public partial class PlaylistDetail
         {
             "title" => desc ? query.OrderByDescending(i => i.Title) : query.OrderBy(i => i.Title),
             "artist" => desc ? query.OrderByDescending(i => i.ArtistName) : query.OrderBy(i => i.ArtistName),
+            "album" => desc ? query.OrderByDescending(i => i.AlbumTitle) : query.OrderBy(i => i.AlbumTitle),
             "duration" => desc ? query.OrderByDescending(i => i.Duration) : query.OrderBy(i => i.Duration),
             _ => desc ? query.OrderByDescending(i => i.Order) : query.OrderBy(i => i.Order)
         };
@@ -214,16 +190,6 @@ public partial class PlaylistDetail
 
         if (_dataTable is not null)
             await _dataTable.RefreshAsync();
-    }
-
-    private void OnColumnPickerRequested() =>
-        _dataTable?.ToggleColumnPicker();
-
-    private void RebuildBrowseRows()
-    {
-        _browseRows = _items
-            .Select((item, index) => new PlaylistBrowseRow(item, index))
-            .ToList();
     }
 
     private PlaylistItemViewModel ToViewModel(PlaylistItemDto item) => new()
@@ -280,14 +246,6 @@ public partial class PlaylistDetail
             },
             _ => null
         };
-
-    private static MediaCardVariant GetCardVariant(MediaCardViewModel item) =>
-        item.Kind == MediaCardKind.Episode ? MediaCardVariant.Backdrop : MediaCardVariant.Poster;
-
-    private EventCallback GetActivationCallback(PlaylistItemViewModel item) =>
-        GetItemHref(item) is null
-            ? EventCallback.Factory.Create(this, () => OnItemActivated(item))
-            : default;
 
     private void OnItemWatchStateChanged(MediaCardViewModel? vm)
     {
@@ -376,12 +334,6 @@ public partial class PlaylistDetail
             NavigationManager.NavigateTo(href);
     }
 
-    private async Task OnListKeyDown(KeyboardEventArgs e, PlaylistItemViewModel item)
-    {
-        if (e.Key is "Enter" or " ")
-            await OnItemActivated(item);
-    }
-
     private List<AudioQueueItem> BuildQueueItems()
     {
         return _items
@@ -420,7 +372,6 @@ public partial class PlaylistDetail
         {
             await K7ServerService.RemovePlaylistItemAsync(Guid.Parse(Id), item.Id);
             _items.Remove(item);
-            RebuildBrowseRows();
             _totalDuration = _items.Sum(i => i.Duration);
             if (_playlist is not null)
                 _playlist = _playlist with { ItemCount = _items.Count };
