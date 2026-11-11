@@ -3,6 +3,7 @@ using K7.Server.Application.Common.Mappings;
 using K7.Server.Application.Features.Playlists.Queries.GetPlaylistItems;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Medias;
+using K7.Server.Domain.Entities.Metadatas.Files;
 using K7.Server.Domain.Entities.Playlists;
 using K7.Server.Domain.Entities.Users;
 using K7.Server.Domain.Enums;
@@ -91,5 +92,78 @@ public class GetPlaylistItemsWithPaginationQueryHandlerTests
         var dto = result.Items.Should().ContainSingle().Which.ToPlaylistItemDto();
         dto.UserState.Should().NotBeNull();
         dto.UserState!.IsCompleted.Should().BeTrue();
+    }
+
+    [Test]
+    public async Task Handle_ShouldExposeTheTrackDuration_WhenTheFileHasAudioMetadata()
+    {
+        var groupId = Guid.NewGuid();
+        var libraryId = Guid.NewGuid();
+        _context.LibraryGroups.Add(new LibraryGroup
+        {
+            Id = groupId,
+            Title = "Music",
+            MediaType = LibraryMediaType.Music
+        });
+        _context.Libraries.Add(new Library
+        {
+            Id = libraryId,
+            LibraryGroupId = groupId,
+            Title = "Lib",
+            MediaType = LibraryMediaType.Music,
+            RootPath = "/media",
+            MetadataProviderName = "musicbrainz",
+            MetadataLanguage = "fr",
+            MetadataFallbackLanguage = "en"
+        });
+
+        var albumId = Guid.NewGuid();
+        _context.Medias.Add(new MusicAlbum { Id = albumId, Title = "Album" });
+        var track = new MusicTrack { Id = Guid.NewGuid(), Title = "Track", AlbumId = albumId };
+        track.IndexedFiles.Add(new IndexedFile
+        {
+            Id = Guid.NewGuid(),
+            LibraryId = libraryId,
+            MediaId = track.Id,
+            Name = "Track",
+            Extension = ".mp3",
+            Path = "/media/Track.mp3",
+            Hash = 1,
+            Size = 1,
+            FileMetadata = new AudioFileMetadata
+            {
+                Container = "mp3",
+                Duration = TimeSpan.FromSeconds(200)
+            }
+        });
+        _context.Medias.Add(track);
+
+        var playlistId = Guid.NewGuid();
+        _context.Playlists.Add(new Playlist
+        {
+            Id = playlistId,
+            Title = "Tracks",
+            MediaType = MediaType.MusicTrack,
+            UserId = _userId
+        });
+        _context.PlaylistItems.Add(new PlaylistItem
+        {
+            Id = Guid.NewGuid(),
+            PlaylistId = playlistId,
+            MediaId = track.Id,
+            Order = 0
+        });
+        await _context.SaveChangesAsync();
+        _context.ChangeTracker.Clear();
+
+        var result = await _handler.Handle(new GetPlaylistItemsWithPaginationQuery
+        {
+            PlaylistId = playlistId,
+            PageNumber = 1,
+            PageSize = 50
+        }, CancellationToken.None);
+
+        var dto = result.Items.Should().ContainSingle().Which.ToPlaylistItemDto();
+        dto.Duration.Should().Be(200);
     }
 }

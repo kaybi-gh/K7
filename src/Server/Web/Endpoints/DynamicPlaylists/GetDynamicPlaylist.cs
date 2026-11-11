@@ -15,8 +15,8 @@ public class GetDynamicPlaylist : IEndpoint
 
         endpointRouteBuilder.MapGet("/api/dynamic-playlists/{id}", async ([FromServices] ISender sender, Guid id, CancellationToken cancellationToken) =>
         {
-            var dynamicPlaylist = await sender.Send(new GetDynamicPlaylistQuery(id), cancellationToken);
-            return dynamicPlaylist.ToDynamicPlaylistDto();
+            var details = await sender.Send(new GetDynamicPlaylistQuery(id), cancellationToken);
+            return details.Playlist.ToDynamicPlaylistDto(details.ItemCount);
         })
         .RequireAuthorization(Policies.UserOrAbove)
         .WithName(type.Name)

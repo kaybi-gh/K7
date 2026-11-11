@@ -57,7 +57,7 @@ public static class PlaylistMappings
 
     extension(DynamicPlaylist domain)
     {
-        public DynamicPlaylistDto ToDynamicPlaylistDto() => new()
+        public DynamicPlaylistDto ToDynamicPlaylistDto(int? itemCount = null) => new()
         {
             Id = domain.Id,
             Title = domain.Title,
@@ -69,7 +69,7 @@ public static class PlaylistMappings
             OrderBy = domain.OrderBy,
             OrderDescending = domain.OrderDescending,
             CoverPicture = domain.CoverPicture?.ToMetadataPictureDto(),
-            ItemCount = domain.Items.Count,
+            ItemCount = itemCount ?? domain.Items.Count,
             LastEvaluatedAt = domain.LastEvaluatedAt,
             Created = domain.Created,
             LastModified = domain.LastModified,

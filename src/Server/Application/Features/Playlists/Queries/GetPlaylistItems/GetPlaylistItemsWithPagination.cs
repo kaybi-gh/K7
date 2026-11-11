@@ -41,6 +41,7 @@ public class GetPlaylistItemsWithPaginationQueryHandler(IApplicationDbContext co
                     .ThenInclude(p => p.Variants)
             .Include(i => i.Media)
                 .ThenInclude(m => m.IndexedFiles)
+                    .ThenInclude(f => f.FileMetadata)
             .Include(i => i.Media)
                 .ThenInclude(m => m.PersonRoles)
                     .ThenInclude(r => r.Person)
