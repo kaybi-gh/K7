@@ -40,6 +40,19 @@ public class GenerateMetadataPictureVariantsCommandHandler : IRequestHandler<Gen
         _taskExecutionContext = taskExecutionContext;
     }
 
+    private const string LocalPictureVariantsFolder = "LocalPictures";
+
+    private bool IsUnderMetadataRoot(string path)
+    {
+        // No metadata root configured: nowhere else to write, keep the source folder.
+        if (string.IsNullOrEmpty(_pathsConfiguration.Metadatas))
+            return true;
+
+        var root = Path.GetFullPath(_pathsConfiguration.Metadatas)
+            .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
+        return Path.GetFullPath(path).StartsWith(root, StringComparison.OrdinalIgnoreCase);
+    }
+
     public async Task Handle(GenerateMetadataPictureVariantsCommand request, CancellationToken cancellationToken)
     {
         var picture = await _context.MetadataPictures
@@ -69,7 +82,15 @@ public class GenerateMetadataPictureVariantsCommandHandler : IRequestHandler<Gen
 
         var sourcePath = picture.LocalPath;
         var isSvgOriginal = _imageProcessor.IsSvgFile(sourcePath);
-        var directory = Path.GetDirectoryName(sourcePath)!;
+        // A picture that lives in a library folder (cover.jpg next to the tracks) is read-only
+        // for K7: its variants go under the metadata root and the original is never converted
+        // or deleted. Only files K7 downloaded itself are rewritten in place.
+        var isManagedSource = IsUnderMetadataRoot(sourcePath);
+        var directory = isManagedSource
+            ? Path.GetDirectoryName(sourcePath)!
+            : Path.Combine(_pathsConfiguration.Metadatas, LocalPictureVariantsFolder);
+        if (!isManagedSource)
+            Directory.CreateDirectory(directory);
         var existingSizes = picture.Variants.Select(v => v.Size).ToHashSet();
 
         if (picture.OriginalWidth is null || picture.OriginalHeight is null)
@@ -141,7 +162,7 @@ public class GenerateMetadataPictureVariantsCommandHandler : IRequestHandler<Gen
             }
         }
 
-        if (!isSvgOriginal && !sourcePath.EndsWith(".webp", StringComparison.OrdinalIgnoreCase))
+        if (isManagedSource && !isSvgOriginal && !sourcePath.EndsWith(".webp", StringComparison.OrdinalIgnoreCase))
         {
             var webpPath = Path.ChangeExtension(sourcePath, ".webp");
             try
