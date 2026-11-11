@@ -3,6 +3,7 @@ using K7.Server.Application.Common.Mappings;
 using K7.Server.Application.Common.Models;
 using K7.Server.Application.Common.QueryExtensions;
 using K7.Server.Application.Common.Security;
+using K7.Server.Application.Common.Services;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities.Medias;
 using K7.Shared.Dtos.Entities.Medias;
@@ -17,7 +18,7 @@ public record GetSimilarMediaQuery : IRequest<List<LiteMediaDto>>
     public int PageSize { get; init; } = PagingDefaults.DefaultPageSize;
 }
 
-public class GetSimilarMediaQueryHandler(IApplicationDbContext context)
+public class GetSimilarMediaQueryHandler(IApplicationDbContext context, IUser currentUser)
     : IRequestHandler<GetSimilarMediaQuery, List<LiteMediaDto>>
 {
     public async Task<List<LiteMediaDto>> Handle(GetSimilarMediaQuery request, CancellationToken cancellationToken)
@@ -58,16 +59,24 @@ public class GetSimilarMediaQueryHandler(IApplicationDbContext context)
         if (matchedMediaIds.Count == 0)
             return [];
 
-        var items = await context.Medias
+        var userId = currentUser.Id;
+        var query = context.Medias
             .AsNoTracking()
             .Where(m => matchedMediaIds.Contains(m.Id))
             .IncludeMetadataTagsForMapping()
             .Include(m => m.Pictures)
                 .ThenInclude(p => p.Variants)
             .Include(m => m.Ratings)
-            .Include(m => m.UserMediaStates)
+            .AsQueryable();
+
+        if (userId is { } stateUserId)
+            query = query.Include(m => m.UserMediaStates.Where(s => s.UserId == stateUserId));
+
+        var items = await query
             .AsSplitQuery()
             .ToListAsync(cancellationToken);
+
+        MediaRatingScope.ScopeToUser(items, userId);
 
         var itemsById = items.ToDictionary(m => m.Id);
         return matchedMediaIds

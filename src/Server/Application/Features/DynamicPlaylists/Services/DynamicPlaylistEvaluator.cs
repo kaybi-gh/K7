@@ -34,7 +34,7 @@ public static class DynamicPlaylistEvaluator
     {
         query = query.Where(m => m.Type == mediaType);
         query = MediaRuleEvaluator.ApplyFilter(query, ruleFilter, userId);
-        query = ApplyOrdering(query, orderBy, orderDescending);
+        query = ApplyOrdering(query, orderBy, orderDescending, userId);
 
         if (limit is > 0)
             query = query.Take(limit.Value);
@@ -45,7 +45,8 @@ public static class DynamicPlaylistEvaluator
     private static IQueryable<BaseMedia> ApplyOrdering(
         IQueryable<BaseMedia> query,
         DynamicPlaylistOrderBy orderBy,
-        bool desc)
+        bool desc,
+        Guid userId)
     {
         return orderBy switch
         {
@@ -66,8 +67,8 @@ public static class DynamicPlaylistEvaluator
                 ? query.OrderByDescending(m => m.UserMediaStates.Sum(s => s.PlayCount))
                 : query.OrderBy(m => m.UserMediaStates.Sum(s => s.PlayCount)),
             DynamicPlaylistOrderBy.Rating => desc
-                ? query.OrderByDescending(m => m.Ratings.Where(r => r.Source == RatingSource.LocalUser).Select(r => r.Value).FirstOrDefault())
-                : query.OrderBy(m => m.Ratings.Where(r => r.Source == RatingSource.LocalUser).Select(r => r.Value).FirstOrDefault()),
+                ? query.OrderByDescending(m => m.Ratings.OfType<UserRating>().Where(r => r.UserId == userId).Select(r => r.Value).FirstOrDefault())
+                : query.OrderBy(m => m.Ratings.OfType<UserRating>().Where(r => r.UserId == userId).Select(r => r.Value).FirstOrDefault()),
             DynamicPlaylistOrderBy.LastPlayed => desc
                 ? query.OrderByDescending(m => m.UserMediaStates.Max(s => s.LastInteractedAt))
                 : query.OrderBy(m => m.UserMediaStates.Max(s => s.LastInteractedAt)),

@@ -123,6 +123,8 @@ public class GetPersonQueryHandler(IApplicationDbContext context, IUser currentU
 
         Guard.Against.NotFound(request.Id, entity);
 
+        MediaRatingScope.ScopeToUser(entity.Roles.Select(r => r.Media), currentUser.Id);
+
         HashSet<Guid>? excludedLibraryIds = null;
         if (currentUser.Id is { } userId)
         {

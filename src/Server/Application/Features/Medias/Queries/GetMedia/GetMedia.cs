@@ -143,6 +143,9 @@ public class GetMediaQueryHandler(
 
         Guard.Against.NotFound(request.Id, entity);
 
+        // Never send other users' ratings: the DTO carries the whole ratings list.
+        MediaRatingScope.ScopeToUser(entity, userId);
+
         if (userId is { } exclusionUserId)
             await MediaGraphExclusionFilter.ApplyAsync(context, entity, exclusionUserId, cancellationToken);
 

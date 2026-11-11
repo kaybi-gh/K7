@@ -1,4 +1,5 @@
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Common.Services;
 using K7.Server.Application.Common.Mappings;
 using K7.Server.Application.Common.Models;
 using K7.Server.Application.Features.Restrictions.Services;
@@ -93,6 +94,7 @@ public class GetCollectionItemsWithPaginationQueryHandler(IApplicationDbContext 
         }
 
         var page = await query.PaginatedListAsync(request.PageNumber, request.PageSize);
+        MediaRatingScope.ScopeToUser(page.Items.Select(item => item.Media), userId);
         if (userId is { } id)
         {
             await UserWatchStateAttacher.AttachAsync(

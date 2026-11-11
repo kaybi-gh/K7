@@ -1,6 +1,7 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Mappings;
 using K7.Server.Application.Common.Security;
+using K7.Server.Application.Common.Services;
 using K7.Server.Application.Services;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities.Medias;
@@ -123,6 +124,7 @@ public class GetSimilarMusicArtistsQueryHandler(
             query = query.Include(a => a.UserMediaStates.Where(s => s.UserId == userId.Value));
 
         var artists = await query.ToListAsync(cancellationToken);
+        MediaRatingScope.ScopeToUser(artists, userId);
         return artists.ToDictionary(a => a.Id);
     }
 
@@ -149,6 +151,7 @@ public class GetSimilarMusicArtistsQueryHandler(
             query = query.Include(a => a.UserMediaStates.Where(s => s.UserId == userId.Value));
 
         var artists = await query.ToListAsync(cancellationToken);
+        MediaRatingScope.ScopeToUser(artists, userId);
 
         return artists
             .GroupBy(a => a.Title!, StringComparer.OrdinalIgnoreCase)
