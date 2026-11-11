@@ -64,7 +64,7 @@
     </div>
 
     <div class="data-page-body">
-        <K7DataTable @key="_tableKey" TItem="PlaybackHistoryItemDto" ServerData="LoadServerDataAsync" @ref="_tableRef"
+        <K7DataTable PersistenceKey="stats-playback-history" @key="_tableKey" TItem="PlaybackHistoryItemDto" ServerData="LoadServerDataAsync" @ref="_tableRef"
                      RowHeight="48" ShowToolbar="false" Surface="false" Height="100%"
                      RowClass="@(item => GetRowClass(item))"
                      OnRowClick="OnRowClick">

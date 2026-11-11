@@ -131,6 +131,9 @@ public static class PreferenceKeys
     // Page sidebar (admin / settings)
     public static readonly PreferenceKey<bool> PAGE_SIDEBAR_COLLAPSED = new("PageSidebarCollapsed");
 
+    /// <summary>JSON map: table persistence key -> keys of the columns hidden in its column picker.</summary>
+    public static readonly PreferenceKey<string> DATA_TABLE_HIDDEN_COLUMNS = new("DataTableHiddenColumns");
+
     // Desktop window chrome (MAUI Windows)
     public static readonly PreferenceKey<int> WINDOW_X = new("WindowX");
     public static readonly PreferenceKey<int> WINDOW_Y = new("WindowY");

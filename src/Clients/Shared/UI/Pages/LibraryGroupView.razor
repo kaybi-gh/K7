@@ -137,7 +137,7 @@
         }
     </GridTemplate>
     <TableContent>
-        <K7DataTable TItem="LiteMediaDto"
+        <K7DataTable PersistenceKey="@($"library-{Id}")" TItem="LiteMediaDto"
                      @key="_tableScopeKey"
                      ServerData="LoadTableDataAsync"
                      ActiveSortKey="@_activeSortKey"

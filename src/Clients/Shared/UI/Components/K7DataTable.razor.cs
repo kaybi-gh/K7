@@ -1,6 +1,8 @@
+using System.Text.Json;
 using K7.Clients.Shared.Enums;
 using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
+using K7.Shared;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web.Virtualization;
 using Microsoft.JSInterop;
@@ -14,6 +16,7 @@ public partial class K7DataTable<TItem> : IAsyncDisposable
     [Inject] private ISpatialNavService SpatialNav { get; set; } = default!;
     [Inject] private IJSRuntime JSRuntime { get; set; } = default!;
     [Inject] private ILogger<K7DataTable<TItem>> Logger { get; set; } = default!;
+    [Inject] private IDeviceStorageService DeviceStorage { get; set; } = default!;
     [Parameter] public IList<TItem>? Items { get; set; }
     [Parameter] public Func<K7DataTableState<TItem>, CancellationToken, Task<K7DataTableResult<TItem>>>? ServerData { get; set; }
     [Parameter] public RenderFragment? ChildContent { get; set; }
@@ -27,6 +30,19 @@ public partial class K7DataTable<TItem> : IAsyncDisposable
     [Parameter] public bool Surface { get; set; } = true;
     [Parameter] public bool Striped { get; set; } = true;
     [Parameter] public string? Height { get; set; }
+
+    /// <summary>
+    /// When set, the columns hidden through the column picker are stored on the device
+    /// (IDeviceStorageService) under this key and hidden again on the next visit.
+    /// </summary>
+    [Parameter] public string? PersistenceKey { get; set; }
+
+    /// <summary>
+    /// Minimum width in pixels kept for each column without a fixed width. When set, the table
+    /// gets a minimum width (fixed columns + this value per flexible column) and scrolls
+    /// horizontally on narrow screens instead of drawing the columns on top of each other.
+    /// </summary>
+    [Parameter] public int? FlexColumnMinWidth { get; set; }
     [Parameter] public Func<TItem, string?>? RowId { get; set; }
     [Parameter] public Func<TItem, string?>? RowClass { get; set; }
 
@@ -44,6 +60,8 @@ public partial class K7DataTable<TItem> : IAsyncDisposable
     private DotNetObjectReference<LayerCloseCallback>? _columnPickerCloseRef;
     private IJSObjectReference? _browseViewModule;
     private bool _keyNavInitialized;
+    private HashSet<string>? _storedHiddenColumns;
+    private string? _storedHiddenColumnsKey;
     private bool _disposed;
     private bool _needsRender = true;
     private bool _pendingVirtualizeRefresh;
@@ -230,6 +248,11 @@ public partial class K7DataTable<TItem> : IAsyncDisposable
     {
         if (!_columns.Contains(column))
         {
+            // Applied as the column registers, before the first render: no flash of a
+            // column the user had hidden.
+            if (column.Hideable && column.IsVisible && StoredHiddenColumns.Contains(column.ColumnKey))
+                column.SetVisible(false);
+
             _columns.Add(column);
             UpdateColumnCaches();
             _needsRender = true;
@@ -250,6 +273,10 @@ public partial class K7DataTable<TItem> : IAsyncDisposable
         if (_virtualizeRef is not null)
         {
             await _virtualizeRef.RefreshDataAsync();
+            // RefreshDataAsync reloads the rows but does not render them: without this the
+            // table keeps showing the old rows (removed item still listed) until a scroll.
+            _needsRender = true;
+            StateHasChanged();
             return;
         }
 
@@ -338,6 +365,64 @@ public partial class K7DataTable<TItem> : IAsyncDisposable
         UpdateColumnCaches();
         _needsRender = true;
         StateHasChanged();
+        SaveHiddenColumns();
+    }
+
+    private HashSet<string> StoredHiddenColumns
+    {
+        get
+        {
+            // The key can change while the component is reused (another library group).
+            if (_storedHiddenColumns is not null && _storedHiddenColumnsKey == PersistenceKey)
+                return _storedHiddenColumns;
+
+            _storedHiddenColumnsKey = PersistenceKey;
+            _storedHiddenColumns = PersistenceKey is { } key && ReadHiddenColumnsMap().TryGetValue(key, out var hidden)
+                ? [.. hidden]
+                : [];
+            return _storedHiddenColumns;
+        }
+    }
+
+    internal bool IsStoredHidden(string columnKey) => StoredHiddenColumns.Contains(columnKey);
+
+    private Dictionary<string, string[]> ReadHiddenColumnsMap()
+    {
+        try
+        {
+            var json = DeviceStorage.Get(PreferenceKeys.DATA_TABLE_HIDDEN_COLUMNS);
+            return string.IsNullOrEmpty(json)
+                ? []
+                : JsonSerializer.Deserialize<Dictionary<string, string[]>>(json) ?? [];
+        }
+        catch (JsonException)
+        {
+            return [];
+        }
+    }
+
+    private void SaveHiddenColumns()
+    {
+        if (PersistenceKey is not { } key)
+            return;
+
+        // Columns switched off by their Visible parameter keep whatever was stored for them.
+        var hidden = _hideableColumns
+            .Where(column => column.VisibleParameter
+                ? !column.IsVisible
+                : StoredHiddenColumns.Contains(column.ColumnKey))
+            .Select(column => column.ColumnKey)
+            .Distinct()
+            .ToArray();
+        _storedHiddenColumns = [.. hidden];
+
+        var map = ReadHiddenColumnsMap();
+        if (hidden.Length == 0)
+            map.Remove(key);
+        else
+            map[key] = hidden;
+
+        DeviceStorage.Set(PreferenceKeys.DATA_TABLE_HIDDEN_COLUMNS, JsonSerializer.Serialize(map));
     }
 
     private string GetSortIcon(K7DataColumn<TItem> column)
@@ -382,6 +467,28 @@ public partial class K7DataTable<TItem> : IAsyncDisposable
             }
 
             return string.Join("; ", parts);
+        }
+    }
+
+    private string? TableStyle
+    {
+        get
+        {
+            if (FlexColumnMinWidth is not { } flexMinWidth)
+                return null;
+
+            var minWidth = 0d;
+            foreach (var column in _visibleColumns)
+            {
+                minWidth += column.Width is { } width
+                    && width.EndsWith("px", StringComparison.Ordinal)
+                    && double.TryParse(width.AsSpan(0, width.Length - 2), System.Globalization.NumberStyles.Float,
+                        System.Globalization.CultureInfo.InvariantCulture, out var pixels)
+                    ? pixels
+                    : flexMinWidth;
+            }
+
+            return FormattableString.Invariant($"min-width: {minWidth}px");
         }
     }
 

@@ -8,6 +8,12 @@ public partial class K7DataColumn<TItem>
     [CascadingParameter] public K7DataTable<TItem> DataTable { get; set; } = default!;
 
     [Parameter, EditorRequired] public string Title { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Stable identifier used to remember the column visibility. Defaults to the sort key,
+    /// then the title (which changes with the language).
+    /// </summary>
+    [Parameter] public string? Key { get; set; }
     [Parameter] public string? SortKey { get; set; }
     [Parameter] public string? Width { get; set; }
     [Parameter] public bool Hideable { get; set; } = true;
@@ -19,18 +25,29 @@ public partial class K7DataColumn<TItem>
 
     internal bool IsVisible { get; set; } = true;
 
+    internal string ColumnKey => Key ?? SortKey ?? Title;
+
+    /// <summary>The Visible parameter, as opposed to the picker state in IsVisible.</summary>
+    internal bool VisibleParameter => _visibleParameter;
+
+    private bool _visibleParameter = true;
+
     protected override void OnInitialized()
     {
+        _visibleParameter = Visible;
         IsVisible = Visible;
         DataTable.AddColumn(this);
     }
 
     protected override void OnParametersSet()
     {
-        if (IsVisible == Visible)
+        // Only react when the parent changes Visible. Comparing with IsVisible re-showed a
+        // column on the very render that followed its toggle in the column picker.
+        if (_visibleParameter == Visible)
             return;
 
-        IsVisible = Visible;
+        _visibleParameter = Visible;
+        IsVisible = Visible && !(Hideable && DataTable.IsStoredHidden(ColumnKey));
         DataTable.InvalidateLayout();
     }
 

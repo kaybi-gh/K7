@@ -93,6 +93,19 @@
 .k7-icon-btn--active { color: var(--color-accent-text); }
 .k7-icon-btn--error { color: var(--color-error); }
 
+/* Shared by LibraryBrowseRowActions and PlaylistItemRowActions (global: reused class). */
+.library-browse-row-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex-shrink: 0;
+}
+.track-context-menu {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
 /* ── Back Button ─────────────────────────────────────────────────────────────── */
 .k7-back-btn {
   position: absolute;
@@ -1670,7 +1683,7 @@ hr.k7-menu-divider { border: none; border-top: 1px solid var(--color-border); ma
 .data-page-toolbar__end {
   display: flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: var(--space-2);
   flex-shrink: 0;
   margin-left: auto;
 }

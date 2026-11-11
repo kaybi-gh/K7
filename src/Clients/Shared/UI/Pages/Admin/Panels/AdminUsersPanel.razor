@@ -62,7 +62,7 @@
         else
         {
             <div class="users-desktop">
-                <K7DataTable TItem="UserDto" Items="_users" RowHeight="60" @ref="_tableRef"
+                <K7DataTable PersistenceKey="admin-users" TItem="UserDto" Items="_users" RowHeight="60" @ref="_tableRef"
                              ShowToolbar="false" Surface="false" Height="100%"
                              RowId="@(u => $"user-{u.Id}")" RowClass="@(u => GetUserRowClass(u))"
                              OnRowClick="OnUserRowClick">

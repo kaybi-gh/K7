@@ -59,9 +59,33 @@
 .browse-view:has(.k7-jump-index) ::deep .k7-virtual-grid,
 .browse-view:has(.k7-jump-index) ::deep .k7-virtual-list,
 .browse-view:has(.k7-jump-index) .browse-view-simple-grid,
-.browse-view:has(.k7-jump-index) .browse-view-list,
-.browse-view:has(.k7-jump-index) ::deep .k7-data-table-scroll {
+.browse-view:has(.k7-jump-index) .browse-view-list {
     padding-right: calc(16px + var(--browse-jump-index-inset));
+}
+
+/* Tables span the whole browse view: the gutter moves from the scroll container to the
+   first and last cells, so row backgrounds reach both edges (and run under the A-Z jump
+   index, which only pushes the last cell content away). */
+.browse-view ::deep .k7-data-table-scroll {
+    padding-inline: 0;
+    scrollbar-gutter: auto;
+}
+
+@media (min-width: 600px) {
+    .browse-view ::deep .k7-data-table-el th:first-child,
+    .browse-view ::deep .k7-data-table-el td:first-child {
+        padding-inline-start: var(--space-4);
+    }
+
+    .browse-view ::deep .k7-data-table-el th:last-child,
+    .browse-view ::deep .k7-data-table-el td:last-child {
+        padding-inline-end: var(--space-4);
+    }
+
+    .browse-view:has(.k7-jump-index) ::deep .k7-data-table-el th:last-child,
+    .browse-view:has(.k7-jump-index) ::deep .k7-data-table-el td:last-child {
+        padding-inline-end: calc(var(--space-4) + var(--browse-jump-index-inset));
+    }
 }
 
 .browse-view-toolbar {
@@ -89,14 +113,14 @@
 .browse-view-toolbar-end {
     display: flex;
     align-items: center;
-    gap: 2px;
+    gap: var(--space-2);
     flex-shrink: 0;
 }
 
 .browse-view-toolbar-actions {
     display: inline-flex;
     align-items: center;
-    gap: 2px;
+    gap: var(--space-2);
     flex-shrink: 0;
 }
 
@@ -398,7 +422,7 @@
 .my-space-library-browse ::deep .browse-view-toolbar-actions {
     display: inline-flex;
     align-items: center;
-    gap: 2px;
+    gap: var(--space-2);
     height: 40px;
     flex: 0 0 auto;
     margin-left: auto;
@@ -635,9 +659,13 @@
     .browse-view:has(.k7-jump-index) ::deep .k7-virtual-grid,
     .browse-view:has(.k7-jump-index) ::deep .k7-virtual-list,
     .browse-view:has(.k7-jump-index) .browse-view-simple-grid,
-    .browse-view:has(.k7-jump-index) .browse-view-list,
-    .browse-view:has(.k7-jump-index) ::deep .k7-data-table-scroll {
+    .browse-view:has(.k7-jump-index) .browse-view-list {
         padding-right: calc(var(--space-3) + var(--browse-jump-index-inset));
+    }
+
+    .browse-view:has(.k7-jump-index) ::deep .k7-data-table-el th:last-child,
+    .browse-view:has(.k7-jump-index) ::deep .k7-data-table-el td:last-child {
+        padding-inline-end: calc(var(--space-2) + var(--browse-jump-index-inset));
     }
 
     .browse-view-toolbar-end {
