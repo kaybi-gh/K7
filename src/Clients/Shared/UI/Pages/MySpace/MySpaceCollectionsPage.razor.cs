@@ -355,7 +355,7 @@ public partial class MySpaceCollectionsPage : IAsyncDisposable
     }
 
     private string GetOwnerLabel(MySpaceCollectionBrowseItem item) =>
-        item.Owner is { } owner ? MySpaceSharedBrowseHelper.FormatOwner(owner) : "-";
+        item.Owner is { } owner ? MySpaceSharedBrowseHelper.FormatOwner(owner) : L["OwnerMe"];
 
     private sealed record MySpaceCollectionsFilterState(int Sort, bool ShowShared = false);
 }

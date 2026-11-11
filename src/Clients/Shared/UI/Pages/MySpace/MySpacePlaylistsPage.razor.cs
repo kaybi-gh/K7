@@ -404,7 +404,7 @@ public partial class MySpacePlaylistsPage : IAsyncDisposable
         lastListenedAt is { } lastListened ? FormatLastListened(lastListened) : "-";
 
     private string GetOwnerLabel(MySpacePlaylistBrowseItem item) =>
-        item.Owner is { } owner ? MySpaceSharedBrowseHelper.FormatOwner(owner) : "-";
+        item.Owner is { } owner ? MySpaceSharedBrowseHelper.FormatOwner(owner) : L["OwnerMe"];
 
     private string GetItemLabel(MediaType mediaType) => mediaType switch
     {
