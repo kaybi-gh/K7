@@ -131,6 +131,32 @@ else
             <K7Divider />
 
             <section class="d-flex flex-col gap-4">
+                <h6>@L["NextEpisodeSection"]</h6>
+
+                <K7Select Label="@L["NextEpisodeBehavior"]" @bind-Value="_settings.NextEpisodeBehavior" TValue="NextEpisodeBehavior">
+                    <K7SelectItem Value="NextEpisodeBehavior.PlayAfterCountdown" Text="@L["NextEpisodePlayAfterCountdown"]">@L["NextEpisodePlayAfterCountdown"]</K7SelectItem>
+                    <K7SelectItem Value="NextEpisodeBehavior.WaitForChoice" Text="@L["NextEpisodeWaitForChoice"]">@L["NextEpisodeWaitForChoice"]</K7SelectItem>
+                    <K7SelectItem Value="NextEpisodeBehavior.ClosePlayer" Text="@L["NextEpisodeClosePlayer"]">@L["NextEpisodeClosePlayer"]</K7SelectItem>
+                </K7Select>
+                <span class="text-sm video-playback-hint">@L["NextEpisodeBehaviorHint"]</span>
+
+                @if (_settings.NextEpisodeBehavior == NextEpisodeBehavior.PlayAfterCountdown)
+                {
+                    <K7Select Label="@L["InactivityPrompt"]" @bind-Value="_settings.InactivityPromptAfterEpisodes" TValue="int">
+                        <K7SelectItem Value="0" Text="@L["InactivityPromptDisabled"]">@L["InactivityPromptDisabled"]</K7SelectItem>
+                        @foreach (var count in InactivityPromptChoices)
+                        {
+                            var label = string.Format(L["InactivityPromptAfterEpisodes"], count);
+                            <K7SelectItem Value="@count" Text="@label">@label</K7SelectItem>
+                        }
+                    </K7Select>
+                    <span class="text-sm video-playback-hint">@L["InactivityPromptHint"]</span>
+                }
+            </section>
+
+            <K7Divider />
+
+            <section class="d-flex flex-col gap-4">
                 <h6>@L["TrailersSection"]</h6>
                 <K7Switch Label="@L["OpenTrailersExternally"]" @bind-Value="_settings.OpenTrailersExternally" />
                 <span class="text-sm video-playback-hint">@L["OpenTrailersExternallyHint"]</span>

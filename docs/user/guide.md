@@ -108,7 +108,7 @@ The administrator can set **server-wide defaults**; yours override them (reset a
 
 | Page | Highlights |
 |---|---|
-| Settings -> Video playback | Intro/outro skip, short skip back/forward duration, subtitle appearance, resume / continue-watching, completion threshold (marks watched; also drives home recommendations and watch stats), seekbar thumbnails, chapter markers, open trailers in YouTube (native apps and TV). On the Android/iOS/Windows apps: per-device audio passthrough (Dolby/DTS over HDMI) and, on Android TV, playback buffer size, HDMI auto frame rate (disabled / scale on TV / scale on device), and Dolby Vision (native / play as HDR10). On the Windows app: optional **MPC-HC / MPC-BE** external player (see below) |
+| Settings -> Video playback | Intro/outro skip, next-episode auto-play and the "still watching?" prompt, short skip back/forward duration, subtitle appearance, resume / continue-watching, completion threshold (marks watched; also drives home recommendations and watch stats), seekbar thumbnails, chapter markers, open trailers in YouTube (native apps and TV). On the Android/iOS/Windows apps: per-device audio passthrough (Dolby/DTS over HDMI) and, on Android TV, playback buffer size, HDMI auto frame rate (disabled / scale on TV / scale on device), and Dolby Vision (native / play as HDR10). On the Windows app: optional **MPC-HC / MPC-BE** external player (see below) |
 | Track selection | Preferred audio languages (including Original language), when to show subtitles (Off, Forced only, Full, Hearing impaired), and **Remember audio and subtitle tracks** (on by default): keeps your last choice per movie or per series and reapplies it on the next play (scoped to the active shared profile when one is on, otherwise personal) |
 | Settings -> Audio playback | Music preferences: loudness normalization, equalizer, crossfade, autoplay, streaming quality, player behavior, resume / completion threshold. **Remember music session** (on by default) restores this device paused. The Sessions page lists live playback and saved music queues |
 | Settings -> Scrobbling | Connect Last.fm, ListenBrainz, Trakt, or a webhook (Yamtrack, Floppy, Ryot, BetaSeries, custom). ListenBrainz tokens: listenbrainz.org/settings/. Self-hosted webhooks use URLs like `https://yamtrack.yourdomain.tld/webhook/jellyfin/{token}`. Yamtrack / Floppy / Ryot / BetaSeries are movies and episodes only. BetaSeries marks watched on completion only (needs IMDb for movies, TVDB for episodes) and does not show in-progress - API token from betaseries.com/compte/plex. Needs the CanScrobble capability (on for User and Admin). The administrator can turn scrobbling off for the whole server under Admin -> Scrobbling. Shared profile watches scrobble to every member's own accounts. Offline music keeps the profile that was active and scrobbles it when the device is back online. OpenSubsonic plays scrobble only the user who owns the app password |
@@ -142,6 +142,22 @@ hidden). Enter / Select skips. After a few seconds the floating button hides, bu
 keeps skip available and focusable until the intro/outro chapter ends. Hiding the controls starts a
 fresh floating window so skip does not disappear with the transport bar. Auto-skip jumps to the end
 of the chapter with no button. Disabled does nothing.
+
+When an episode ends and a next one exists, K7 shows the next-episode offer (replay, play now,
+dismiss). By default the next episode starts after a 15 s countdown. Any key, tap, or pointer
+move on the offer stops the countdown. **Settings -> Video playback -> When an episode ends**
+picks what happens:
+
+- **Play the next one after a countdown** (default).
+- **Offer the next one without a countdown**: the offer stays on screen until you choose.
+- **Close the player**: no offer, same as after a movie or the last episode.
+
+**Ask if you are still watching** (off by default, countdown mode only) replaces the countdown
+with a "Still watching?" confirmation after 2 to 5 episodes played in a row without any
+interaction with the player. Starting an episode yourself, or touching the player while it plays,
+restarts the count. Without an answer within 2 minutes the player closes, so the device can go
+to sleep. Both settings follow your account across devices (server default under
+Admin -> Video playback).
 
 Skip outro that runs to the end of the file ends the episode (next-episode offer / autoplay) instead
 of parking on the last frame of the credits. Seeking the playhead to the end of the file does the

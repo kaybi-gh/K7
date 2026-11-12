@@ -19701,6 +19701,9 @@
           }
         }
       },
+      "NextEpisodeBehavior": {
+        "type": "integer"
+      },
       "NotificationEventDescriptorDto": {
         "required": [
           "eventTypeName",
@@ -24100,6 +24103,17 @@
               "null",
               "boolean"
             ]
+          },
+          "nextEpisodeBehavior": {
+            "$ref": "#/components/schemas/NextEpisodeBehavior"
+          },
+          "inactivityPromptAfterEpisodes": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
           }
         }
       },

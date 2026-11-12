@@ -87,6 +87,13 @@
     letter-spacing: 0.01em;
 }
 
+.nep-still-watching-title {
+    font-size: var(--text-lg);
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.95);
+    text-align: center;
+}
+
 .nep-autoplay-footer ::deep .nep-autoplay-bar.k7-progress {
     height: 6px;
     background: rgba(255, 255, 255, 0.18);

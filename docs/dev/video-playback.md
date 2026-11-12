@@ -144,7 +144,13 @@ edge, and nav system gestures are not stolen. Dedicated
 TV remote Rewind / Fast-forward keys are intercepted in `MainActivity.DispatchKeyEvent` (they are
 not D-pad events) and skip by the configured SkipBack / SkipForward durations even when chrome is
 visible. Hold scrubs. When playback reaches the end, a series episode with a successor shows
-the next-episode offer. A movie
+the next-episode offer. `VideoPlayerSettingsDto.NextEpisodeBehavior` picks the outcome:
+`PlayAfterCountdown` (default), `WaitForChoice` (offer without countdown) or `ClosePlayer` (no
+offer). In countdown mode `InactivityPromptAfterEpisodes` (0 = off) swaps the countdown for a
+"still watching?" prompt: `InactivityPromptTracker` (shared by `NextEpisodeOverlay` and the
+native overlay) counts the episodes started by the countdown and resets on any player input or
+on an episode the user started themself. An unanswered prompt closes the player after 2 minutes
+(`StillWatchingTimeoutSeconds` in both overlays). A movie
 or last episode closes the player. Closing native chrome on Android/iOS restores the hero:
 Play when present (movie, serie, episode pages), otherwise the season episode card that
 had focus, and Embla carousels keep the snap from before the WebView was hidden (otherwise

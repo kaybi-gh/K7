@@ -29,4 +29,14 @@ public sealed record VideoPlayerSettingsDto
     /// and reuse it on the next play.
     /// </summary>
     public bool? RememberTrackSelection { get; set; }
+
+    /// <summary>What happens when an episode ends and a next one exists.</summary>
+    public NextEpisodeBehavior NextEpisodeBehavior { get; set; } = NextEpisodeBehavior.PlayAfterCountdown;
+
+    /// <summary>
+    /// Number of episodes auto-played in a row without any user interaction before the
+    /// next-episode offer asks whether the user is still watching instead of counting down.
+    /// 0 disables the prompt. Only applies to <see cref="NextEpisodeBehavior.PlayAfterCountdown"/>.
+    /// </summary>
+    public int InactivityPromptAfterEpisodes { get; set; }
 }

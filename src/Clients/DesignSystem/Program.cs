@@ -116,6 +116,7 @@ builder.Services.AddSingleton<IExploreGroupStore, ExploreGroupStore>();
 builder.Services.AddSingleton<ICustomNavStore, CustomNavStore>();
 builder.Services.AddSingleton<ILibraryGroupContextStore, LibraryGroupContextStore>();
 builder.Services.AddScoped<PlaybackProgressTracker>();
+builder.Services.AddScoped<InactivityPromptTracker>();
 builder.Services.AddScoped<AudioPlaybackProgressTracker>();
 builder.Services.AddScoped<ISyncPlayMediaLoader, SyncPlayMediaLoader>();
 builder.Services.AddScoped<SyncPlayPlaybackHandler>();

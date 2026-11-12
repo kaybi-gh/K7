@@ -28,6 +28,12 @@ internal static class NativeStrings
     public static string AutoPlayIn(int seconds) =>
         IsFrench ? $"Lecture automatique dans {seconds}s" : $"Playing next in {seconds}s";
 
+    public static string StillWatching => IsFrench ? "Toujours là ?" : "Still watching?";
+    public static string StillWatchingHint =>
+        IsFrench
+            ? "La lecture automatique est en pause. Sans réponse, le lecteur se fermera dans 2 minutes."
+            : "Auto-play is paused. Without an answer, the player closes in 2 minutes.";
+
     public static string WatchTogether => IsFrench ? "Regarder ensemble" : "Watch together";
     public static string LeaveGroup => IsFrench ? "Quitter le groupe" : "Leave group";
     public static string WaitingForOthers => IsFrench ? "En attente des autres..." : "Waiting for others...";

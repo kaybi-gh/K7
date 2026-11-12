@@ -58,4 +58,14 @@
   <data name="Reset" xml:space="preserve"><value>Reset</value></data>
   <data name="SaveSuccess" xml:space="preserve"><value>Server preferences saved</value></data>
   <data name="ResetSuccess" xml:space="preserve"><value>Server preferences reset</value></data>
+  <data name="NextEpisodeSection" xml:space="preserve"><value>Next episode</value></data>
+  <data name="NextEpisodeBehavior" xml:space="preserve"><value>When an episode ends</value></data>
+  <data name="NextEpisodeBehaviorHint" xml:space="preserve"><value>Applies when a next episode exists. After the last episode or a movie, the player closes.</value></data>
+  <data name="NextEpisodePlayAfterCountdown" xml:space="preserve"><value>Play the next one after a countdown</value></data>
+  <data name="NextEpisodeWaitForChoice" xml:space="preserve"><value>Offer the next one without a countdown</value></data>
+  <data name="NextEpisodeClosePlayer" xml:space="preserve"><value>Close the player</value></data>
+  <data name="InactivityPrompt" xml:space="preserve"><value>Ask if you are still watching</value></data>
+  <data name="InactivityPromptHint" xml:space="preserve"><value>After several episodes played in a row without any interaction, the countdown is replaced by a confirmation.</value></data>
+  <data name="InactivityPromptDisabled" xml:space="preserve"><value>Never</value></data>
+  <data name="InactivityPromptAfterEpisodes" xml:space="preserve"><value>After {0} episodes</value></data>
 </root>

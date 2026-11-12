@@ -78,6 +78,7 @@ public sealed partial class NativeVideoPlayerOverlay
 
     private void OnDoubleTapped(bool isRight)
     {
+        _inactivityTracker.RegisterUserActivity();
         if (!IsPhoneOrTablet() || IsNextEpisodeVisible)
             return;
 

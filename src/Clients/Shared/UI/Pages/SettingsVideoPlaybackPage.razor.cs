@@ -32,6 +32,8 @@ public partial class SettingsVideoPlaybackPage
         string MpcExtraArgs,
         string MpcLibraryPathsJson);
 
+    private static readonly int[] InactivityPromptChoices = [2, 3, 4, 5];
+
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
     [Inject] private IStringLocalizer<SharedResource> S { get; set; } = default!;
     [Inject] private IUserPreferencesService UserPreferencesService { get; set; } = default!;

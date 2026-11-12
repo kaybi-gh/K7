@@ -5,5 +5,11 @@ public class UpdateDefaultVideoPlayerSettingsCommandValidator : AbstractValidato
     public UpdateDefaultVideoPlayerSettingsCommandValidator()
     {
         RuleFor(x => x.Settings).NotNull();
+        RuleFor(x => x.Settings.NextEpisodeBehavior)
+            .IsInEnum()
+            .When(x => x.Settings is not null);
+        RuleFor(x => x.Settings.InactivityPromptAfterEpisodes)
+            .InclusiveBetween(0, 10)
+            .When(x => x.Settings is not null);
     }
 }

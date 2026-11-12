@@ -51,7 +51,7 @@
                                 <i class="ph ph-film-slate"></i>
                             </div>
                         }
-                        <K7Button style="z-index: 1" StartIcon="@Phosphor.Play" OnClick="PlayNextAsync" Color="primary">@L["PlayNow"]</K7Button>
+                        <K7Button style="z-index: 1" StartIcon="@Phosphor.Play" OnClick="PlayNextNowAsync" Color="primary">@L["PlayNow"]</K7Button>
                     </div>
                     <div class="nep-card-info">
                         <span class="nep-card-badge nep-card-badge--accent">@L["NextEpisode"]</span>
@@ -75,7 +75,14 @@
 
         </div>
 
-        @if (ShowAutoplayProgress && nextEp is not null)
+        @if (ShowStillWatchingPrompt && nextEp is not null)
+        {
+            <div class="nep-autoplay-footer">
+                <p class="nep-still-watching-title">@L["StillWatching"]</p>
+                <p class="nep-autoplay-label">@L["StillWatchingHint"]</p>
+            </div>
+        }
+        else if (ShowAutoplayProgress && nextEp is not null)
         {
             <div class="nep-autoplay-footer">
                 <K7ProgressBar Value="@AutoplayProgressPercent" Class="nep-autoplay-bar" />

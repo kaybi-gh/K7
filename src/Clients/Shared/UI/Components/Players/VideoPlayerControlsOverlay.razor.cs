@@ -228,6 +228,7 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
 
     private void OnKeyDown(KeyboardEventArgs e)
     {
+        InactivityTracker.RegisterUserActivity();
         // preventDefault for arrows is handled in JS capture phase (navigation.js)
         // to avoid Blazor render-cycle lag blocking Enter click synthesis on MAUI.
         // Android TV WebView sends empty Code for remote keys; fall back to Key.
@@ -464,6 +465,7 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
     public void OnRemoteSelect()
     {
         if (_disposed) return;
+        InactivityTracker.RegisterUserActivity();
         if (_isMenuOpen) return;
 
         if (!_showOverlay)
@@ -489,6 +491,7 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
     public void OnRemoteSkipDirection(int direction)
     {
         if (_disposed || _isMenuOpen) return;
+        InactivityTracker.RegisterUserActivity();
         if (_showOverlay) return;
 
         var delta = direction < 0 ? -GetSkipBackSeconds() : GetSkipForwardSeconds();
@@ -600,6 +603,8 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
     {
         if (_disposed || _isMenuOpen)
             return;
+
+        InactivityTracker.RegisterUserActivity();
 
         if (_showOverlay)
         {
@@ -896,6 +901,7 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
 
     private void OnOverlayTap()
     {
+        InactivityTracker.RegisterUserActivity();
         // No implicit Play() here: a play() while VHS is still joining restarts the
         // seek. The chrome stays visible while Buffering so the Play button is reachable
         // when Firefox blocked autoplay (the click gesture is lost during GetStreamUri).
@@ -921,6 +927,8 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
             return;
         }
 
+        InactivityTracker.RegisterUserActivity();
+
         if (_showOverlay)
         {
             ResetOverlayTimeout();
@@ -934,6 +942,7 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
 
     private async Task OnTouchStart(TouchEventArgs e)
     {
+        InactivityTracker.RegisterUserActivity();
         if (e.Touches.Length != 1) return;
         var touch = e.Touches[0];
         _touchStartX = touch.ClientX;

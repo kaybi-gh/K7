@@ -92,6 +92,7 @@ builder.Services.AddSingleton<AutoplayService>();
 builder.Services.AddSingleton<IMusicRadioPlaybackService, MusicRadioPlaybackService>();
 builder.Services.AddSingleton<IMediaPlayerService, MediaPlayerService>();
 builder.Services.AddSingleton<PlaybackProgressTracker>();
+builder.Services.AddSingleton<InactivityPromptTracker>();
 builder.Services.AddSingleton<AudioPlaybackProgressTracker>();
 builder.Services.AddSingleton<K7HubClient>();
 builder.Services.AddSingleton<IVideoPlayerSettingsHubEvents>(sp => sp.GetRequiredService<K7HubClient>());

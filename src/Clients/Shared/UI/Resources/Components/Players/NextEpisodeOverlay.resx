@@ -26,4 +26,6 @@
   <data name="Replay" xml:space="preserve"><value>Regarder a nouveau</value></data>
   <data name="CurrentEpisode" xml:space="preserve"><value>Episode regarde</value></data>
   <data name="NoMoreEpisodes" xml:space="preserve"><value>Plus d'episodes</value></data>
+  <data name="StillWatching" xml:space="preserve"><value>Toujours là ?</value></data>
+  <data name="StillWatchingHint" xml:space="preserve"><value>La lecture automatique est en pause. Sans réponse, le lecteur se fermera dans 2 minutes.</value></data>
 </root>

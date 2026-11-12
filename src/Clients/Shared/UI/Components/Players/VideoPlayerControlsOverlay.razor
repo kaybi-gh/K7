@@ -20,6 +20,7 @@
 @inject ISyncPlayService SyncPlay
 @inject IUserPreferencesService UserPreferencesService
 @inject IMediaService MediaService
+@inject InactivityPromptTracker InactivityTracker
 @inject IStringLocalizer<SharedResource> S
 
 <div class="video-controls-overlay @(IsOverlayVisible ? "controls-visible" : "controls-hidden")" tabindex="0" @ref="_overlayRef"

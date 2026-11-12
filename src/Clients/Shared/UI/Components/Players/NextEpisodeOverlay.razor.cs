@@ -4,8 +4,11 @@ using K7.Clients.Shared.Services;
 using K7.Clients.Shared.UI.Components;
 using K7.Server.Domain.Enums;
 using K7.Shared;
+using K7.Shared.Dtos;
 using K7.Shared.Dtos.Entities.Medias;
 using K7.Shared.Dtos.Entities.Metadatas.Files;
+using K7.Shared.Enums;
+using K7.Shared.Interfaces;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 
@@ -18,16 +21,19 @@ public partial class NextEpisodeOverlay : IDisposable
     [Parameter] public int DemoCountdown { get; set; }
     [Parameter] public string? DemoCurrentStillUrl { get; set; }
     [Parameter] public LiteSerieEpisodeDto? DemoCurrentEpisode { get; set; }
+    [Parameter] public bool DemoStillWatching { get; set; }
 
     [Inject] private IPlayerService PlayerService { get; set; } = default!;
     [Inject] private IMediaService MediaService { get; set; } = default!;
     [Inject] private IK7ServerService ApiClient { get; set; } = default!;
-    [Inject] private IDeviceStorageService DeviceStorage { get; set; } = default!;
     [Inject] private PlaybackProgressTracker PlaybackProgressTracker { get; set; } = default!;
     [Inject] private IFeatureAccessService FeatureAccess { get; set; } = default!;
     [Inject] private ISpatialNavService SpatialNav { get; set; } = default!;
+    [Inject] private IUserPreferencesService UserPreferencesService { get; set; } = default!;
+    [Inject] private InactivityPromptTracker InactivityTracker { get; set; } = default!;
 
     private const int AutoPlayCountdownSeconds = 15;
+    private const int StillWatchingTimeoutSeconds = 120;
 
     private LiteSerieEpisodeDto? _nextEpisode;
     private string? _stillUrl;
@@ -43,9 +49,13 @@ public partial class NextEpisodeOverlay : IDisposable
     private bool _layerActive;
     private ElementReference _overlayRef;
     private DotNetObjectReference<LayerCloseCallback>? _closeCallbackRef;
-    private string _behavior = "AutoPlay";
+    private bool _stillWatchingPrompt;
+    private Timer? _stillWatchingTimer;
 
-    private bool ShowAutoplayProgress => DemoCountdown > 0 || (_countdownActive && _behavior == "AutoPlay");
+    private bool ShowStillWatchingPrompt => DemoStillWatching || _stillWatchingPrompt;
+
+    private bool ShowAutoplayProgress =>
+        !ShowStillWatchingPrompt && (DemoCountdown > 0 || _countdownActive);
 
     private int CountdownDurationSeconds => DemoCountdown > 0 ? DemoCountdown : _countdownDurationSeconds;
 
@@ -57,7 +67,6 @@ public partial class NextEpisodeOverlay : IDisposable
 
     protected override void OnInitialized()
     {
-        _behavior = DeviceStorage.Get(PreferenceKeys.NEXT_EPISODE_BEHAVIOR, "AutoPlay") ?? "AutoPlay";
         PlayerService.PlaybackStateChanged += OnPlaybackStateChanged;
     }
 
@@ -109,7 +118,8 @@ public partial class NextEpisodeOverlay : IDisposable
 
     private async Task HandlePlaybackEndedAsync()
     {
-        if (_behavior == "Off")
+        var settings = await GetVideoPlayerSettingsAsync();
+        if (settings.NextEpisodeBehavior == NextEpisodeBehavior.ClosePlayer)
         {
             await ClosePlayerAfterEndAsync();
             return;
@@ -163,14 +173,36 @@ public partial class NextEpisodeOverlay : IDisposable
             _nextEpisode.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Still)?
                 .GetUri(MetadataPictureDisplayHelper.SizeFor(ImageDisplayRole.Hero))?.OriginalString)?.AbsoluteUri;
 
+        var autoPlay = settings.NextEpisodeBehavior == NextEpisodeBehavior.PlayAfterCountdown;
+        _stillWatchingPrompt = autoPlay
+            && InactivityTracker.ShouldPrompt(settings.InactivityPromptAfterEpisodes, episodeId.Value);
         _visible = true;
 
-        if (_behavior == "AutoPlay")
+        if (_stillWatchingPrompt)
+        {
+            StartStillWatchingTimeout();
+        }
+        else if (autoPlay)
         {
             StartAutoplayCountdown(AutoPlayCountdownSeconds);
         }
 
         await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task<VideoPlayerSettingsDto> GetVideoPlayerSettingsAsync()
+    {
+        if (PlayerService.VideoPlayerUxSettings is { } applied)
+            return applied;
+
+        try
+        {
+            return await UserPreferencesService.GetEffectiveVideoPlayerSettingsAsync();
+        }
+        catch
+        {
+            return new VideoPlayerSettingsDto();
+        }
     }
 
     private void StartAutoplayCountdown(int seconds)
@@ -183,8 +215,48 @@ public partial class NextEpisodeOverlay : IDisposable
         _countdownTimer = new Timer(OnCountdownTick, null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
     }
 
+    /// <summary>
+    /// Nobody answered the "still watching?" prompt: close the player so the device can sleep
+    /// instead of holding the ended episode on screen all night.
+    /// </summary>
+    private void StartStillWatchingTimeout()
+    {
+        _stillWatchingTimer?.Dispose();
+        _stillWatchingTimer = new Timer(
+            OnStillWatchingTimeout,
+            null,
+            TimeSpan.FromSeconds(StillWatchingTimeoutSeconds),
+            Timeout.InfiniteTimeSpan);
+    }
+
+    private void StopStillWatchingTimeout()
+    {
+        _stillWatchingTimer?.Dispose();
+        _stillWatchingTimer = null;
+    }
+
+    private void OnStillWatchingTimeout(object? state) => OnStillWatchingTimeoutAsync().FireAndForget();
+
+    private async Task OnStillWatchingTimeoutAsync()
+    {
+        if (_disposed)
+            return;
+
+        await InvokeAsync(async () =>
+        {
+            // The user answered (or moved) between the timer firing and this dispatch.
+            if (_stillWatchingTimer is null || !_stillWatchingPrompt)
+                return;
+
+            await Dismiss();
+            StateHasChanged();
+        });
+    }
+
     private void OnOverlayActivity()
     {
+        InactivityTracker.RegisterUserActivity();
+        StopStillWatchingTimeout();
         PauseCountdown();
     }
 
@@ -213,7 +285,7 @@ public partial class NextEpisodeOverlay : IDisposable
             _countdownTimer?.Dispose();
             _countdownTimer = null;
             _countdownActive = false;
-            await InvokeAsync(async () => await PlayNextAsync());
+            await InvokeAsync(async () => await PlayNextAsync(automatic: true));
             return;
         }
 
@@ -222,6 +294,7 @@ public partial class NextEpisodeOverlay : IDisposable
 
     private Task ReplayAsync()
     {
+        InactivityTracker.RegisterUserActivity();
         PauseCountdown();
         Reset();
         PlayerService.Seek(0);
@@ -230,13 +303,19 @@ public partial class NextEpisodeOverlay : IDisposable
         return Task.CompletedTask;
     }
 
-    private async Task PlayNextAsync()
+    private Task PlayNextNowAsync() => PlayNextAsync(automatic: false);
+
+    private async Task PlayNextAsync(bool automatic)
     {
         if (_nextEpisode is null) return;
 
         PauseCountdown();
 
         var nextEpisodeId = _nextEpisode.Id;
+        if (automatic)
+            InactivityTracker.RegisterAutoAdvance(nextEpisodeId);
+        else
+            InactivityTracker.RegisterUserActivity();
         var serieId = PlaybackProgressTracker.CurrentSerieId;
 
         Reset();
@@ -304,6 +383,8 @@ public partial class NextEpisodeOverlay : IDisposable
         _countdownDurationSeconds = 0;
         _countdownActive = false;
         _countdownPaused = false;
+        _stillWatchingPrompt = false;
+        StopStillWatchingTimeout();
     }
 
     private async Task PopLayerAsync()
@@ -331,6 +412,7 @@ public partial class NextEpisodeOverlay : IDisposable
 
         PlayerService.PlaybackStateChanged -= OnPlaybackStateChanged;
         _countdownTimer?.Dispose();
+        _stillWatchingTimer?.Dispose();
         _closeCallbackRef?.Dispose();
         if (_layerActive)
         {

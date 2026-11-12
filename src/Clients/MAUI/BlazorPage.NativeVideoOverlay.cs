@@ -56,7 +56,8 @@ public partial class BlazorPage
             services.GetService<IDeviceStorageService>(),
             services.GetService<K7HubClient>(),
             _remoteControlForChrome,
-            services.GetService<RemotePlaybackLauncher>());
+            services.GetService<RemotePlaybackLauncher>(),
+            services.GetService<InactivityPromptTracker>());
 
         _nativeOverlay.ZIndex = 5;
         _nativeOverlay.HorizontalOptions = LayoutOptions.Fill;

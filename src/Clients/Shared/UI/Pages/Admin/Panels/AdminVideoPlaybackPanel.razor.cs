@@ -15,6 +15,8 @@ public partial class AdminVideoPlaybackPanel
         TrackSelectionPreferencesDto Preferences,
         Guid? LibraryId);
 
+    private static readonly int[] InactivityPromptChoices = [2, 3, 4, 5];
+
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
     [Inject] private IStringLocalizer<SharedResource> S { get; set; } = default!;
     [Inject] private IServerPreferencesService ServerPreferencesService { get; set; } = default!;

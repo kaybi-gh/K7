@@ -92,4 +92,14 @@
   <data name="MpcLibraryServerRoot" xml:space="preserve"><value>Racine serveur</value></data>
   <data name="MpcLibraryWindowsRoot" xml:space="preserve"><value>Dossier Windows</value></data>
   <data name="MpcLibraryWindowsPlaceholder" xml:space="preserve"><value>Ex: K:\movies, \\NAS\movies</value></data>
+  <data name="NextEpisodeSection" xml:space="preserve"><value>Épisode suivant</value></data>
+  <data name="NextEpisodeBehavior" xml:space="preserve"><value>À la fin d'un épisode</value></data>
+  <data name="NextEpisodeBehaviorHint" xml:space="preserve"><value>S'applique quand un épisode suivant existe. Après le dernier épisode ou un film, le lecteur se ferme.</value></data>
+  <data name="NextEpisodePlayAfterCountdown" xml:space="preserve"><value>Lancer le suivant après un décompte</value></data>
+  <data name="NextEpisodeWaitForChoice" xml:space="preserve"><value>Proposer le suivant sans décompte</value></data>
+  <data name="NextEpisodeClosePlayer" xml:space="preserve"><value>Fermer le lecteur</value></data>
+  <data name="InactivityPrompt" xml:space="preserve"><value>Demander si vous regardez toujours</value></data>
+  <data name="InactivityPromptHint" xml:space="preserve"><value>Après plusieurs épisodes enchaînés sans aucune interaction, le décompte est remplacé par une confirmation.</value></data>
+  <data name="InactivityPromptDisabled" xml:space="preserve"><value>Jamais</value></data>
+  <data name="InactivityPromptAfterEpisodes" xml:space="preserve"><value>Après {0} épisodes</value></data>
 </root>

@@ -300,6 +300,7 @@ public static partial class MauiProgram
         builder.Services.AddSingleton<ICustomNavStore, CustomNavStore>();
         builder.Services.AddSingleton<ILibraryGroupContextStore, LibraryGroupContextStore>();
         builder.Services.AddSingleton<PlaybackProgressTracker>();
+        builder.Services.AddSingleton<InactivityPromptTracker>();
         builder.Services.AddSingleton<AudioPlaybackProgressTracker>();
 
         // Offline playback services

@@ -44,7 +44,6 @@ public static class PreferenceKeys
     public static readonly PreferenceKey<long> LAST_PROFILE_SELECT_AT = new("LastProfileSelectAt");
     public static readonly PreferenceKey<string> SHARED_PROFILES_CACHE = new("SharedProfilesCache");
     public static readonly PreferenceKey<string> PINNED_SHARED_PROFILE_IDS = new("PinnedSharedProfileIds");
-    public static readonly PreferenceKey<string> NEXT_EPISODE_BEHAVIOR = new("NextEpisodeBehavior");
     public static readonly PreferenceKey<long> MAX_DOWNLOAD_STORAGE_BYTES = new("MaxDownloadStorageBytes");
     public static readonly PreferenceKey<long> MAX_CACHE_STORAGE_BYTES = new("MaxCacheStorageBytes");
     public static readonly PreferenceKey<bool> DOWNLOAD_ALLOW_MOBILE_DATA = new("DownloadAllowMobileData");

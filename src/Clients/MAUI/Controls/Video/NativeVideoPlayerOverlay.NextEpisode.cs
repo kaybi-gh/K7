@@ -1,9 +1,11 @@
 using K7.Clients.Shared.Helpers;
 using K7.Server.Domain.Enums;
 using K7.Shared;
+using K7.Shared.Dtos;
 using K7.Shared.Dtos.Entities;
 using K7.Shared.Dtos.Entities.Medias;
 using K7.Shared.Dtos.Entities.Metadatas.Files;
+using K7.Shared.Enums;
 using Microsoft.Maui.Controls.Shapes;
 
 namespace K7.Clients.MAUI.Controls.Video;
@@ -16,6 +18,7 @@ namespace K7.Clients.MAUI.Controls.Video;
 public sealed partial class NativeVideoPlayerOverlay
 {
     private const int AutoPlayCountdownSeconds = 15;
+    private const int StillWatchingTimeoutSeconds = 120;
 
     private readonly Grid _nextEpisodeOverlay = new();
     private readonly Image _nepCurrentStill = new() { Aspect = Aspect.AspectFill };
@@ -28,7 +31,6 @@ public sealed partial class NativeVideoPlayerOverlay
 
     private LiteSerieEpisodeDto? _nextEpisode;
     private LiteSerieEpisodeDto? _nepCurrentEpisode;
-    private string _nepBehavior = "AutoPlay";
     private int _nepCountdownSeconds;
     private int _nepCountdownDuration;
     /// <summary>Bumped to cancel pending still-load / countdown loops.</summary>
@@ -73,7 +75,7 @@ public sealed partial class NativeVideoPlayerOverlay
         var cards = new HorizontalStackLayout { Spacing = 16, HorizontalOptions = LayoutOptions.Center, VerticalOptions = LayoutOptions.Center };
 
         _nepReplayCard = BuildNepCard(_nepCurrentStill, _nepCurrentInfo, NativeStrings.Replay, NativePlayerGlyphs.Rewind, () => _ = ReplayCurrentEpisodeAsync(), primary: false);
-        _nepPlayCard = BuildNepCard(_nepNextStill, _nepNextInfo, NativeStrings.PlayNow, NativePlayerGlyphs.Play, () => _ = PlayNextEpisodeAsync(), primary: true);
+        _nepPlayCard = BuildNepCard(_nepNextStill, _nepNextInfo, NativeStrings.PlayNow, NativePlayerGlyphs.Play, () => _ = PlayNextEpisodeAsync(automatic: false), primary: true);
         cards.Children.Add(_nepReplayCard);
         cards.Children.Add(_nepPlayCard);
         Grid.SetRow(cards, 0);
@@ -285,7 +287,7 @@ public sealed partial class NativeVideoPlayerOverlay
                 _ = ReplayCurrentEpisodeAsync();
                 break;
             case 1:
-                _ = PlayNextEpisodeAsync();
+                _ = PlayNextEpisodeAsync(automatic: false);
                 break;
             default:
                 _ = DismissNextEpisodeAsync();
@@ -314,7 +316,8 @@ public sealed partial class NativeVideoPlayerOverlay
         if (_mediaService is null || _progressTracker is null)
             return false;
 
-        if (_nepBehavior == "Off" || _advancingToNextEpisode)
+        var settings = _videoSettings ?? _player.VideoPlayerUxSettings ?? new VideoPlayerSettingsDto();
+        if (settings.NextEpisodeBehavior == NextEpisodeBehavior.ClosePlayer || _advancingToNextEpisode)
             return false;
 
         var serieId = _progressTracker.CurrentSerieId;
@@ -393,8 +396,23 @@ public sealed partial class NativeVideoPlayerOverlay
             _nepLastCardFocus = 1;
             SetNepFocusIndex(1); // Default TV focus on Play Next
 
-            if (_nepBehavior == "AutoPlay")
+            var autoPlay = settings.NextEpisodeBehavior == NextEpisodeBehavior.PlayAfterCountdown;
+            var stillWatchingPrompt = autoPlay && _inactivityTracker.ShouldPrompt(
+                settings.InactivityPromptAfterEpisodes,
+                episodeId.Value);
+
+            if (stillWatchingPrompt)
             {
+                _nepProgressBar.IsVisible = false;
+                _nepCountdownLabel.Text =
+                    NativeStrings.StillWatching + Environment.NewLine + NativeStrings.StillWatchingHint;
+                _nepAutoplayFooter.IsVisible = true;
+                // Bumps the epoch too, so a countdown left over from a previous offer cannot tick.
+                _ = RunStillWatchingTimeoutAsync();
+            }
+            else if (autoPlay)
+            {
+                _nepProgressBar.IsVisible = true;
                 _nepAutoplayFooter.IsVisible = true;
                 _nepCountdownDuration = AutoPlayCountdownSeconds;
                 _nepCountdownSeconds = AutoPlayCountdownSeconds;
@@ -402,7 +420,11 @@ public sealed partial class NativeVideoPlayerOverlay
                 _ = RunNepCountdownAsync(AutoPlayCountdownSeconds);
             }
             else
+            {
+                // Bump the epoch so a countdown left over from a previous offer cannot tick.
+                StopNepCountdownTimer();
                 _nepAutoplayFooter.IsVisible = false;
+            }
 
             NativeVideoDebug.Log("NextEpisode modal open focus=Play");
             _ = LoadNepStillsAsync(currentStillUrl, nextStillUrl);
@@ -507,12 +529,40 @@ public sealed partial class NativeVideoPlayerOverlay
 
                 _nepCountdownSeconds = 0;
                 UpdateNepCountdownUi();
-                _ = PlayNextEpisodeAsync();
+                _ = PlayNextEpisodeAsync(automatic: true);
             });
         }
         catch
         {
             // Epoch bump / dismiss cancels the loop.
+        }
+    }
+
+    /// <summary>
+    /// Nobody answered the "still watching?" prompt: close the player so the device can sleep
+    /// instead of holding the ended episode on screen all night. Any key or action on the
+    /// offer bumps <see cref="_nepOfferEpoch"/> and cancels it.
+    /// </summary>
+    private async Task RunStillWatchingTimeoutAsync()
+    {
+        var epoch = ++_nepOfferEpoch;
+
+        try
+        {
+            await Task.Delay(TimeSpan.FromSeconds(StillWatchingTimeoutSeconds)).ConfigureAwait(false);
+
+            await MainThread.InvokeOnMainThreadAsync(() =>
+            {
+                if (epoch != _nepOfferEpoch || !IsNextEpisodeVisible)
+                    return;
+
+                NativeVideoDebug.Log("NextEpisode still-watching timeout: closing player");
+                _ = DismissNextEpisodeAsync();
+            });
+        }
+        catch
+        {
+            // Epoch bump / dismiss cancels the wait.
         }
     }
 
@@ -526,6 +576,7 @@ public sealed partial class NativeVideoPlayerOverlay
 
     private Task ReplayCurrentEpisodeAsync()
     {
+        _inactivityTracker.RegisterUserActivity();
         PauseNextEpisodeCountdown();
         ResetNextEpisodeState();
         _player.Seek(0);
@@ -533,7 +584,7 @@ public sealed partial class NativeVideoPlayerOverlay
         return Task.CompletedTask;
     }
 
-    private async Task PlayNextEpisodeAsync()
+    private async Task PlayNextEpisodeAsync(bool automatic)
     {
         if (_advancingToNextEpisode
             || _nextEpisode is null
@@ -546,6 +597,10 @@ public sealed partial class NativeVideoPlayerOverlay
         PauseNextEpisodeCountdown();
         var nextEpisodeId = _nextEpisode.Id;
         var serieId = _progressTracker.CurrentSerieId;
+        if (automatic)
+            _inactivityTracker.RegisterAutoAdvance(nextEpisodeId);
+        else
+            _inactivityTracker.RegisterUserActivity();
         ResetNextEpisodeState();
 
         _progressTracker.StopTracking();

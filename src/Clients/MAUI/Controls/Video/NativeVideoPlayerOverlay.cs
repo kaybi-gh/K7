@@ -166,6 +166,7 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
     private IReadOnlyList<MediaSegmentDto>? _segments;
     private SkipSegmentPresenter.State _skipState;
     private VideoPlayerSettingsDto? _videoSettings;
+    private readonly InactivityPromptTracker _inactivityTracker;
     private bool _showChapterTicks = true;
     private Guid? _segmentsMediaId;
     private bool _handlingPlaybackEnded;
@@ -194,9 +195,11 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
         IDeviceStorageService? deviceStorage = null,
         K7HubClient? hubClient = null,
         IRemoteControlService? remoteControl = null,
-        RemotePlaybackLauncher? remotePlayback = null)
+        RemotePlaybackLauncher? remotePlayback = null,
+        InactivityPromptTracker? inactivityTracker = null)
     {
         _player = player;
+        _inactivityTracker = inactivityTracker ?? new InactivityPromptTracker();
         _deviceService = deviceService;
         _mediaService = mediaService;
         _prefs = prefs;
@@ -569,6 +572,7 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
     /// <summary>TV / keyboard Back. Returns true when consumed.</summary>
     public bool HandleBack()
     {
+        _inactivityTracker.RegisterUserActivity();
         if (_castPanelOpen)
         {
             SetCastPanelOpen(false);
@@ -646,6 +650,7 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
     public bool HandleKey(string key, bool isKeyUp = false)
     {
         key = key.ToLowerInvariant();
+        _inactivityTracker.RegisterUserActivity();
         if (!isKeyUp)
             NativeVideoDebug.Log(
                 "HandleKey key=" + key
@@ -1764,6 +1769,7 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
 
     private void OnBackgroundTapped(object? sender, TappedEventArgs e)
     {
+        _inactivityTracker.RegisterUserActivity();
         if (_inputModalActive || IsNextEpisodeVisible)
             return;
 
@@ -2183,6 +2189,7 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
             return;
         }
 
+        _inactivityTracker.RegisterUserActivity();
         if (ReferenceEquals(button, _playPauseButton))
             TogglePlayPause();
         else if (ReferenceEquals(button, _volumeButton))
@@ -2502,6 +2509,7 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
         if (!IsVisible || !IsDesktopLike() || _inputModalActive || IsNextEpisodeVisible)
             return;
 
+        _inactivityTracker.RegisterUserActivity();
 #if WINDOWS
         Platforms.Windows.WindowsIdleCursor.Show();
 #endif
@@ -2625,18 +2633,6 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
         }
 
         ApplySkipSegmentOnMainThread();
-
-        if (_deviceStorage is not null)
-        {
-            try
-            {
-                _nepBehavior = _deviceStorage.Get(PreferenceKeys.NEXT_EPISODE_BEHAVIOR, "AutoPlay") ?? "AutoPlay";
-            }
-            catch
-            {
-                _nepBehavior = "AutoPlay";
-            }
-        }
     }
 
 #if ANDROID || WINDOWS || LINUX

@@ -26,4 +26,6 @@
   <data name="Replay" xml:space="preserve"><value>Watch again</value></data>
   <data name="CurrentEpisode" xml:space="preserve"><value>Watched episode</value></data>
   <data name="NoMoreEpisodes" xml:space="preserve"><value>No more episodes</value></data>
+  <data name="StillWatching" xml:space="preserve"><value>Still watching?</value></data>
+  <data name="StillWatchingHint" xml:space="preserve"><value>Auto-play is paused. Without an answer, the player closes in 2 minutes.</value></data>
 </root>
