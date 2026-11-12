@@ -75,16 +75,6 @@
     flex: 1;
 }
 
-.video-container.native-overlay {
-    /* Cover the detail page until MediaElement is Playing. Transparent too early shows the
-       Movie page through the HUD; leaving black after Playing covers TextureView (audio-only). */
-    background-color: #000;
-}
-
-body.native-player-playing .video-container.native-overlay {
-    background-color: transparent;
-}
-
 /* video.js's own video-js.min.css sets .video-js.vjs-fill to the same 100% width/height with
    equal specificity; !important guarantees we win regardless of stylesheet load order. */
 .video-container ::deep .video-js {

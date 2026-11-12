@@ -60,23 +60,6 @@
     );
 }
 
-:global([data-theme="default-light"]) .media-page-content:not(.media-page-content--full-wash) {
-    background: linear-gradient(
-        to bottom,
-        color-mix(in srgb, var(--media-content-top-color) 88%, transparent) 0,
-        var(--media-content-top-color) 72px,
-        var(--media-content-bottom-color) 100%
-    );
-}
-
-:global([data-theme="default-light"]) .media-page-content {
-    --media-content-bottom-vignette: color-mix(in srgb, var(--color-surface) 82%, white);
-}
-
-:global([data-theme="default-light"]) .media-page-content--tinted {
-    --media-content-bottom-vignette: color-mix(in srgb, var(--media-content-top-color) 68%, white);
-}
-
 @media (max-width: 599.98px) {
     .media-page-content:not(.media-page-content--full-wash) {
         --media-content-fade-height: 0px;

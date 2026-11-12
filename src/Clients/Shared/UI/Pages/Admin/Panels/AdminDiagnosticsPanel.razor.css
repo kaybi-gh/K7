@@ -9,37 +9,6 @@
     padding: var(--space-4);
 }
 
-.diagnostics-dashboard__header {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: var(--space-3);
-    flex-wrap: wrap;
-}
-
-.diagnostics-dashboard__title-block {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-1);
-    min-width: 0;
-}
-
-.diagnostics-dashboard__title-block h5 {
-    margin: 0;
-}
-
-.diagnostics-dashboard__subtitle {
-    margin: 0;
-    color: var(--color-text-muted);
-}
-
-.diagnostics-dashboard__actions {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    flex-wrap: wrap;
-}
-
 .diagnostics-dashboard__section {
     display: flex;
     flex-direction: column;

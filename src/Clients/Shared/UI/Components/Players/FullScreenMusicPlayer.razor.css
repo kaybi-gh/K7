@@ -379,14 +379,6 @@
     overflow: hidden;
 }
 
-.queue-header {
-    display: flex;
-    align-items: baseline;
-    gap: 8px;
-    padding: 8px 0 16px;
-    flex-shrink: 0;
-}
-
 ::deep .queue-tabs {
     flex-shrink: 0;
     margin-bottom: 12px;
@@ -410,16 +402,6 @@
     text-align: center;
     color: rgba(255, 255, 255, 0.4);
     font-size: var(--text-sm);
-}
-
-.queue-title {
-    font-size: var(--text-lg);
-    font-weight: 600;
-}
-
-.queue-count {
-    font-size: var(--text-sm);
-    opacity: 0.5;
 }
 
 .queue-list {
@@ -538,10 +520,6 @@
 
 ::deep .queue-item-remove:hover {
     opacity: 1 !important;
-}
-
-:global(html.platform-tv) ::deep .queue-item-remove {
-    opacity: 1;
 }
 
 /* Phone: cover under header, details stacked (controls follow content - not pinned to bottom). */

@@ -109,27 +109,6 @@
     border-color: var(--k7-primary);
 }
 
-.downloads-filter-chip {
-    padding: 6px 14px;
-    border-radius: 16px;
-    border: 1px solid var(--k7-outline-variant);
-    background: transparent;
-    color: var(--color-text-secondary);
-    font-size: var(--font-size-sm);
-    cursor: pointer;
-    transition: all 0.15s;
-}
-
-.downloads-filter-chip:hover {
-    background: var(--k7-surface-hover);
-}
-
-.downloads-filter-chip--active {
-    background: var(--k7-primary);
-    color: var(--k7-on-primary);
-    border-color: var(--k7-primary);
-}
-
 .downloads-storage {
     padding: 16px;
     border-radius: 12px;

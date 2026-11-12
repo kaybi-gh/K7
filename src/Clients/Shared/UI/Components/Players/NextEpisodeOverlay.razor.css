@@ -68,47 +68,6 @@
     color: rgba(255, 255, 255, 0.15);
 }
 
-/* Action buttons on the still */
-.nep-action-btn {
-    position: relative;
-    z-index: 1;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    background: rgba(255, 255, 255, 0.14);
-    border: 1.5px solid rgba(255, 255, 255, 0.35);
-    border-radius: var(--radius-full);
-    color: white;
-    font-size: var(--text-sm);
-    font-weight: 600;
-    padding: 10px 22px;
-    cursor: pointer;
-    transition: background var(--duration-fast), transform var(--duration-fast);
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
-    white-space: nowrap;
-}
-
-.nep-action-btn i {
-    font-size: var(--text-lg);
-}
-
-.nep-action-btn:hover {
-    background: rgba(255, 255, 255, 0.26);
-    transform: scale(1.04);
-}
-
-.nep-action-btn--primary {
-    background: var(--color-accent);
-    border-color: transparent;
-}
-
-.nep-action-btn--primary:hover {
-    background: var(--color-accent);
-    filter: brightness(1.12);
-    transform: scale(1.04);
-}
-
 /* Autoplay countdown footer (DeviceActivation-style, full cards width) */
 .nep-autoplay-footer {
     display: flex;
@@ -186,23 +145,6 @@
 
 .nep-card-empty-state i {
     font-size: var(--text-3xl);
-}
-
-/* Dismiss button */
-.nep-dismiss-btn {
-    background: transparent;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: var(--radius-full);
-    color: rgba(255, 255, 255, 0.6);
-    font-size: var(--text-sm);
-    padding: 7px 24px;
-    cursor: pointer;
-    transition: border-color var(--duration-fast), color var(--duration-fast);
-}
-
-.nep-dismiss-btn:hover {
-    border-color: rgba(255, 255, 255, 0.45);
-    color: white;
 }
 
 @keyframes nep-fade-in {

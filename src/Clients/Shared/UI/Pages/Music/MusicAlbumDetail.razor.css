@@ -16,10 +16,6 @@
     flex-shrink: 0;
 }
 
-::deep .album-detail-wash {
-    height: 100%;
-}
-
 .album-header {
     position: relative;
     z-index: 2;

@@ -1,17 +1,3 @@
-::deep .my-space-library-item-link {
-    display: inline-flex;
-    align-items: center;
-    min-width: 0;
-    color: inherit;
-    text-decoration: none;
-}
-
-::deep .my-space-library-item-link:focus-visible {
-    outline: 2px solid var(--color-accent);
-    outline-offset: 2px;
-    border-radius: var(--radius-sm);
-}
-
 .my-space-select-item {
     position: relative;
     isolation: isolate;

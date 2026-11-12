@@ -317,7 +317,3 @@
     display: none;
   }
 }
-
-:global(html.platform-tv) .playback-settings-back--compact {
-  display: inline-flex;
-}

@@ -175,15 +175,3 @@
         padding: var(--space-2);
     }
 }
-
-:global(html.platform-tv) .k7-data-table-el tbody tr.k7-data-table-row {
-    min-height: 56px;
-}
-
-:global(html.platform-tv) .k7-data-table-el tbody tr.k7-data-table-row:focus-visible {
-    outline-width: 3px;
-}
-
-:global(html.platform-tv) .k7-data-table-sort-btn:hover {
-    background: none;
-}

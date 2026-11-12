@@ -95,21 +95,3 @@
         font-size: var(--text-sm);
     }
 }
-
-:global(html.platform-tv) .library-item-card:hover .library-item-card__cover::after,
-:global(html.platform-tv) .library-item-card:focus-within .library-item-card__cover::after {
-    opacity: 0;
-}
-
-:global(html.platform-tv) .library-item-card:focus-visible .library-item-card__cover::after {
-    opacity: 1;
-}
-
-:global(html.platform-tv) .library-item-card:hover,
-:global(html.platform-tv) .library-item-card:focus-within {
-    border-color: var(--color-border);
-}
-
-:global(html.platform-tv) .library-item-card:focus-visible {
-    border-color: var(--color-accent-text);
-}

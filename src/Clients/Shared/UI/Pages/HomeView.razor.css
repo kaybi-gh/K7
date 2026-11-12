@@ -11,18 +11,6 @@
     --carousel-margin-start: 40px;
 }
 
-:global(html.platform-tv) .home-page,
-.home-page--tv {
-    height: 100%;
-    max-height: 100%;
-    padding-top: 0;
-    padding-bottom: 0;
-    gap: 0;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-}
-
 .home-page--tv ::deep .vertical-carousel {
     flex: 0 0 auto;
     margin-top: auto;

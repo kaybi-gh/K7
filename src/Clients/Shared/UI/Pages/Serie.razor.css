@@ -133,10 +133,6 @@
     }
 }
 
-:global(html.platform-tv) .serie-hero.media-hero {
-    gap: var(--space-6);
-}
-
 @media (max-width: 599.98px) {
     .serie-logo:not(.k7-img-wrap--custom-fallback) {
         max-width: none;

@@ -117,15 +117,6 @@
     color: var(--color-accent);
 }
 
-:global(html.platform-tv) .page-sidebar ::deep .nav-link.focusable:focus,
-:global(html.platform-tv) .page-sidebar ::deep .nav-link.focusable:focus-visible,
-:global(html.platform-tv) .page-sidebar ::deep .nav-link.focusable:focus-within,
-:global(html.platform-tv) .page-sidebar ::deep .nav-group-toggle.focusable:focus,
-:global(html.platform-tv) .page-sidebar ::deep .nav-group-toggle.focusable:focus-visible,
-:global(html.platform-tv) .page-sidebar ::deep .nav-group-toggle.focusable:focus-within {
-    outline-width: 3px;
-}
-
 .page-sidebar ::deep .nav-link .nav-icon,
 .page-sidebar ::deep .nav-group-toggle .nav-icon {
     display: inline-flex;

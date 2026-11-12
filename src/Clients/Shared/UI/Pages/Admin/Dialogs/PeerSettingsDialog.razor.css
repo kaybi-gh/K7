@@ -2,13 +2,6 @@
     margin-bottom: 1rem;
 }
 
-.peer-settings__toggle {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    cursor: pointer;
-}
-
 .peer-settings__section {
     margin-top: 1rem;
 }
@@ -27,27 +20,6 @@
     overflow: hidden;
     max-height: 200px;
     overflow-y: auto;
-}
-
-.peer-settings__list-row {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.4rem;
-    padding: 0.6rem 0.75rem;
-    transition: background 0.15s;
-}
-
-.peer-settings__list-row:nth-child(even) {
-    background: var(--color-surface-hover, rgba(255, 255, 255, 0.04));
-}
-
-.peer-settings__list-row:hover {
-    background: var(--color-surface-hover, rgba(255, 255, 255, 0.08));
-}
-
-.peer-settings__sub-row {
-    margin-inline-start: 1.5rem;
 }
 
 .peer-settings__empty {

@@ -49,11 +49,3 @@
         padding: var(--space-3);
     }
 }
-
-:global(html.platform-tv) .k7-virtual-list-item:hover {
-    background: none;
-}
-
-:global(html.platform-tv) .k7-virtual-list-item--alt:hover {
-    background: var(--color-surface-variant, color-mix(in srgb, var(--color-text) 3%, transparent));
-}

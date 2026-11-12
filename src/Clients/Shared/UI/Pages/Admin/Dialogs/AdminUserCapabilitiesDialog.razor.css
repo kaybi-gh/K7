@@ -4,38 +4,6 @@
     margin-bottom: 0.75rem;
 }
 
-.exclusions__list {
-    border: 1px solid var(--color-border, rgba(255, 255, 255, 0.12));
-    border-radius: 6px;
-    overflow: hidden;
-    max-height: 300px;
-    overflow-y: auto;
-}
-
-.exclusions__row {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.6rem 0.75rem;
-    cursor: pointer;
-    transition: background 0.15s;
-}
-
-.exclusions__row:nth-child(even) {
-    background: var(--color-surface-hover, rgba(255, 255, 255, 0.04));
-}
-
-.exclusions__row:hover {
-    background: var(--color-surface-hover, rgba(255, 255, 255, 0.08));
-}
-
-.exclusions__row input[type="checkbox"] {
-    width: 1rem;
-    height: 1rem;
-    flex-shrink: 0;
-    accent-color: var(--color-accent-text);
-}
-
 .exclusions__name {
     font-size: var(--text-sm);
     white-space: nowrap;

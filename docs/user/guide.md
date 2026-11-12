@@ -261,7 +261,7 @@ While a shared profile is active:
 
 Optional. The admin connects a self-hosted [AudioMuse AI](https://github.com/NeptuneHub/AudioMuse-AI) under Admin -> Music intelligence (**disabled by default**). When off, AI features are hidden.
 
-When on: similar radios and sonic paths under **Music -> Radio**, intelligent search in the library, similar tracks in the music player, and smart playlists from a text prompt. **Similar discovery** starts from your favorites (and most-played tracks if you have no favorites) and queues neighbors you have not rated yet (track, album, or artist). **Random discovery** hides tracks you already rated, including tracks whose album or artist you rated. Basic radios (random, time capsule, recently added) work without AudioMuse.
+When on: similar radios and sonic paths in the **Radios** row of a music library (Explore), intelligent search in the library, similar tracks in the music player, and smart playlists from a text prompt. **Similar discovery** starts from your favorites (and most-played tracks if you have no favorites) and queues neighbors you have not rated yet (track, album, or artist). **Random discovery** hides tracks you already rated, including tracks whose album or artist you rated. Basic radios (random, time capsule, recently added) work without AudioMuse.
 
 ### Music session
 

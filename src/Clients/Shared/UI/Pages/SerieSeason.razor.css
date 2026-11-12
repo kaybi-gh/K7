@@ -13,10 +13,6 @@
     text-shadow: none;
 }
 
-::deep .season-detail-wash {
-    height: 100%;
-}
-
 .season-detail-page ::deep .media-logo-title {
     color: var(--color-text);
     text-shadow: none;
