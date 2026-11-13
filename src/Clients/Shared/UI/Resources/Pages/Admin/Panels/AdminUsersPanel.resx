@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -22,20 +22,18 @@
   <data name="Title" xml:space="preserve"><value>Utilisateurs</value></data>
   <data name="Subtitle" xml:space="preserve"><value>Comptes autorisés à se connecter à ce serveur.</value></data>
   <data name="Empty" xml:space="preserve"><value>Aucun utilisateur</value></data>
-  <data name="HeaderUser" xml:space="preserve"><value>Utilisateur</value></data>
   <data name="ThisUser" xml:space="preserve"><value>Vous</value></data>
   <data name="HeaderRole" xml:space="preserve"><value>Rôle</value></data>
   <data name="HeaderActive" xml:space="preserve"><value>Actif</value></data>
   <data name="HeaderCreatedAt" xml:space="preserve"><value>Créé le</value></data>
-  <data name="HeaderActions" xml:space="preserve"><value>Actions</value></data>
   <data name="RoleAdministrator" xml:space="preserve"><value>Administrateur</value></data>
   <data name="RoleUser" xml:space="preserve"><value>Utilisateur</value></data>
-  <data name="AriaCapabilities" xml:space="preserve"><value>Capacités</value></data>
-  <data name="AriaLibraries" xml:space="preserve"><value>Bibliothèques</value></data>
-  <data name="AriaHiddenMedia" xml:space="preserve"><value>Médias masqués</value></data>
-  <data name="AriaRestrictionProfile" xml:space="preserve"><value>Profil de restriction</value></data>
-  <data name="AriaPlaybackHistory" xml:space="preserve"><value>Historique de lecture</value></data>
-  <data name="AriaDelete" xml:space="preserve"><value>Supprimer</value></data>
+  <data name="ActionCapabilities" xml:space="preserve"><value>Capacités du compte</value></data>
+  <data name="ActionLibraries" xml:space="preserve"><value>Accès aux bibliothèques</value></data>
+  <data name="ActionHiddenMedia" xml:space="preserve"><value>Médias masqués pour ce compte</value></data>
+  <data name="ActionRestrictions" xml:space="preserve"><value>Restrictions de contenu</value></data>
+  <data name="ActionPlaybackHistory" xml:space="preserve"><value>Voir l'historique de lecture</value></data>
+  <data name="ActionDelete" xml:space="preserve"><value>Supprimer le compte</value></data>
   <data name="RoleUpdated" xml:space="preserve"><value>Rôle de {0} mis à jour.</value></data>
   <data name="UserActivated" xml:space="preserve"><value>{0} activé.</value></data>
   <data name="UserDeactivated" xml:space="preserve"><value>{0} désactivé.</value></data>
@@ -44,19 +42,19 @@
   <data name="DeleteFallbackName" xml:space="preserve"><value>cet utilisateur</value></data>
   <data name="DeleteUserTitle" xml:space="preserve"><value>Supprimer l'utilisateur</value></data>
   <data name="UserDeleted" xml:space="preserve"><value>Utilisateur supprimé.</value></data>
-  <data name="LibraryAccessTitle" xml:space="preserve"><value>Accès aux librairies</value></data>
-  <data name="LibraryAccessUpdated" xml:space="preserve"><value>Accès aux librairies mis à jour.</value></data>
+  <data name="LibraryAccessTitle" xml:space="preserve"><value>Accès aux bibliothèques</value></data>
+  <data name="LibraryAccessUpdated" xml:space="preserve"><value>Accès aux bibliothèques mis à jour.</value></data>
   <data name="HiddenMediaTitle" xml:space="preserve"><value>Médias masqués</value></data>
   <data name="HiddenMediaUpdated" xml:space="preserve"><value>Médias masqués mis à jour.</value></data>
   <data name="RestrictionProfileTitle" xml:space="preserve"><value>Profil de restriction</value></data>
   <data name="RestrictionProfileUpdated" xml:space="preserve"><value>Profil de restriction mis à jour.</value></data>
   <data name="CreateUserTitle" xml:space="preserve"><value>Créer un utilisateur</value></data>
   <data name="UserCreated" xml:space="preserve"><value>Utilisateur {0} créé.</value></data>
-  <data name="AriaMerge" xml:space="preserve"><value>Fusionner</value></data>
+  <data name="ActionMerge" xml:space="preserve"><value>Fusionner avec un autre compte</value></data>
   <data name="AriaCreateUser" xml:space="preserve"><value>Créer un utilisateur</value></data>
   <data name="MergeUserTitle" xml:space="preserve"><value>Fusionner l'utilisateur</value></data>
   <data name="UserMerged" xml:space="preserve"><value>Utilisateur fusionné avec succès.</value></data>
-  <data name="AriaResetPassword" xml:space="preserve"><value>Réinitialiser le mot de passe</value></data>
+  <data name="ActionResetPassword" xml:space="preserve"><value>Réinitialiser le mot de passe</value></data>
   <data name="ResetPasswordTitle" xml:space="preserve"><value>Réinitialiser le mot de passe</value></data>
   <data name="PasswordReset" xml:space="preserve"><value>Mot de passe de {0} réinitialisé.</value></data>
   <data name="Select" xml:space="preserve"><value>Sélectionner</value></data>
@@ -69,5 +67,16 @@
   <data name="DeleteSelectedSuccess" xml:space="preserve"><value>{0} utilisateur(s) supprimé(s)</value></data>
   <data name="DeleteSelectedError" xml:space="preserve"><value>Impossible de supprimer les utilisateurs sélectionnés</value></data>
   <data name="DeleteSelectedPartial" xml:space="preserve"><value>{0} supprimé(s), {1} en échec</value></data>
+  <data name="SearchPlaceholder" xml:space="preserve"><value>Rechercher un utilisateur</value></data>
+  <data name="NoMatch" xml:space="preserve"><value>Aucun utilisateur ne correspond.</value></data>
+  <data name="Inactive" xml:space="preserve"><value>Inactif</value></data>
+  <data name="SectionAccess" xml:space="preserve"><value>Accès et restrictions</value></data>
+  <data name="SectionAccount" xml:space="preserve"><value>Compte</value></data>
+  <data name="BadgeCustomized" xml:space="preserve"><value>{0} modifiée(s)</value></data>
+  <data name="BadgeLibrariesBlocked" xml:space="preserve"><value>{0} bloquée(s)</value></data>
+  <data name="BadgeProfileApplied" xml:space="preserve"><value>Profil appliqué</value></data>
+  <data name="BadgeAgeLimit" xml:space="preserve"><value>Limite d'âge</value></data>
+  <data name="UserOnline" xml:space="preserve"><value>En ligne</value></data>
+  <data name="UserOffline" xml:space="preserve"><value>Hors ligne</value></data>
 </root>
 

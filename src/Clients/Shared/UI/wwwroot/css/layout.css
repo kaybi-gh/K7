@@ -143,7 +143,6 @@ html.platform-tv .app-shell--custom-nav {
     .app-main:has(.music-mini-player) .page-scrollable:not(:has(.k7-virtual-grid)):not(:has(.k7-virtual-list)):not(:has(.k7-data-table-scroll)):not(:has(.browse-view-table)):not(:has(.browse-view-list)):not(:has(.browse-view-simple-grid))::after,
     .app-main:has(.music-mini-player) .page-content:not(:has(> .full-bleed-page)):not(:has(> .admin-data-page)):not(:has(.settings-form-page))::after,
     .app-main:has(.music-mini-player) .page-sidebar-scroll::after,
-    .app-main:has(.music-mini-player) .users-mobile::after,
     .app-main:has(.music-mini-player) .k7-virtual-grid::after,
     .app-main:has(.music-mini-player) .k7-virtual-list::after,
     .app-main:has(.music-mini-player) .k7-data-table-scroll::after,

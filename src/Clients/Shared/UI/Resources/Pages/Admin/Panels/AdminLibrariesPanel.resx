@@ -26,9 +26,7 @@
   <data name="EmptyDescription" xml:space="preserve"><value>Créez votre première librairie pour commencer à organiser vos médias.</value></data>
   <data name="CreateLibrary" xml:space="preserve"><value>Créer une librairie</value></data>
   <data name="AriaIndex" xml:space="preserve"><value>Scanner les fichiers</value></data>
-  <data name="AriaRematch" xml:space="preserve"><value>Réidentifier les fichiers</value></data>
   <data name="AriaRefreshMetadata" xml:space="preserve"><value>Rafraîchir les métadonnées</value></data>
-  <data name="AriaUserAccess" xml:space="preserve"><value>Accès utilisateurs</value></data>
   <data name="NewLibraryTitle" xml:space="preserve"><value>Nouvelle librairie</value></data>
   <data name="IndexStarted" xml:space="preserve"><value>Indexation de « {0} » lancée.</value></data>
   <data name="RematchDialogTitle" xml:space="preserve"><value>Réidentifier les fichiers</value></data>
@@ -41,9 +39,6 @@
   <data name="RefreshMetadataStarted" xml:space="preserve"><value>Rafraîchissement des métadonnées de « {0} » lancé.</value></data>
   <data name="RefreshMetadataNone" xml:space="preserve"><value>Aucun média à rafraîchir dans « {0} ».</value></data>
   <data name="AccessTitle" xml:space="preserve"><value>Accès - {0}</value></data>
-  <data name="MoreActions" xml:space="preserve"><value>Plus d'actions</value></data>
-  <data name="AriaEdit" xml:space="preserve"><value>Modifier</value></data>
-  <data name="AriaDelete" xml:space="preserve"><value>Supprimer</value></data>
   <data name="EditTitle" xml:space="preserve"><value>Modifier - {0}</value></data>
   <data name="LibraryUpdated" xml:space="preserve"><value>Bibliothèque mise à jour.</value></data>
   <data name="DeleteDialogTitle" xml:space="preserve"><value>Supprimer la librairie</value></data>
@@ -61,5 +56,24 @@
   <data name="StatTracks" xml:space="preserve"><value>piste(s)</value></data>
   <data name="ScanProgressFormat" xml:space="preserve"><value>Scan : {0}/{1} ({2})</value></data>
   <data name="ScanProgressIndeterminate" xml:space="preserve"><value>Scan : {0}...</value></data>
+  <data name="SearchPlaceholder" xml:space="preserve"><value>Rechercher une bibliothèque</value></data>
+  <data name="NoMatch" xml:space="preserve"><value>Aucune bibliothèque ne correspond à la recherche.</value></data>
+  <data name="ChipScanning" xml:space="preserve"><value>Scan en cours</value></data>
+  <data name="ChipScanningPercent" xml:space="preserve"><value>Scan {0} %</value></data>
+  <data name="ChipUnreachable" xml:space="preserve"><value>Injoignable</value></data>
+  <data name="ChipRemote" xml:space="preserve"><value>Distante</value></data>
+  <data name="FieldType" xml:space="preserve"><value>Type de média</value></data>
+  <data name="FieldFolder" xml:space="preserve"><value>Dossier</value></data>
+  <data name="FieldPeerServer" xml:space="preserve"><value>Serveur d'origine</value></data>
+  <data name="FieldPeerState" xml:space="preserve"><value>État du serveur d'origine</value></data>
+  <data name="FieldContent" xml:space="preserve"><value>Contenu</value></data>
+  <data name="SectionManage" xml:space="preserve"><value>Réglages et accès</value></data>
+  <data name="SectionMaintenance" xml:space="preserve"><value>Maintenance</value></data>
+  <data name="ActionEdit" xml:space="preserve"><value>Modifier les réglages de la bibliothèque</value></data>
+  <data name="ActionUserAccess" xml:space="preserve"><value>Gérer l'accès des utilisateurs</value></data>
+  <data name="ActionIssues" xml:space="preserve"><value>Voir les problèmes détectés</value></data>
+  <data name="ActionRematch" xml:space="preserve"><value>Réidentifier tous les fichiers</value></data>
+  <data name="ActionDelete" xml:space="preserve"><value>Supprimer la bibliothèque</value></data>
+  <data name="FieldGroup" xml:space="preserve"><value>Groupe</value></data>
 </root>
 

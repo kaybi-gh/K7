@@ -1,0 +1,110 @@
+.k7-entity-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    min-height: 3.5rem;
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid transparent;
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.k7-entity-row:hover {
+    background: var(--color-surface-hover);
+}
+
+.k7-entity-row:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.k7-entity-row--active {
+    background: var(--color-surface-2);
+    border-color: var(--color-border);
+}
+
+.k7-entity-row--checked {
+    background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+}
+
+.k7-entity-row__check {
+    display: flex;
+    flex-shrink: 0;
+    color: var(--color-text-secondary);
+}
+
+.k7-entity-row--checked .k7-entity-row__check {
+    color: var(--color-accent-text);
+}
+
+.k7-entity-row__leading {
+    display: flex;
+    flex-shrink: 0;
+    color: var(--color-text-secondary);
+}
+
+.k7-entity-row__leading--dimmed {
+    opacity: 0.5;
+}
+
+.k7-entity-row__text {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.k7-entity-row__title,
+.k7-entity-row__subtitle {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.k7-entity-row__title {
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+    color: var(--color-text);
+}
+
+.k7-entity-row__subtitle {
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+}
+
+.k7-entity-row__trailing {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: var(--space-1);
+    flex-shrink: 0;
+    max-width: 45%;
+}
+
+.k7-entity-row__caret {
+    display: flex;
+    flex-shrink: 0;
+    color: var(--color-text-muted);
+}
+
+.k7-entity-row--highlighted {
+    animation: k7-entity-row-highlight 3s ease-out;
+}
+
+@keyframes k7-entity-row-highlight {
+    0% { background-color: color-mix(in srgb, var(--color-accent) 25%, transparent); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .k7-entity-row--highlighted {
+        animation: none;
+    }
+}

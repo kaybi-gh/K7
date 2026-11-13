@@ -1,111 +1,203 @@
 @page "/admin/libraries"
+@page "/admin/libraries/{LibraryId:guid}"
 @layout AdminLayout
 @using K7.Shared.Dtos.Entities
 @implements IDisposable
 @inject IStringLocalizer<AdminLibrariesPanel> L
 @inject IStringLocalizer<SharedResource> S
 
-<BrowseView TItem="LibraryDto"
-            Items="_libraryItems"
-            Loading="_isLoading"
-            DefaultItemWidth="560"
-            DefaultSpacing="16"
-            GridItemAspectRatio="null"
-            SingleColumnOnMobile="true"
-            ShowBackToTop="false"
-            PersistenceKey="admin-libraries">
-    <ToolbarContent>
-        <AdminPageHeader Title="@L["Title"]" Subtitle="@L["Subtitle"]">
-            <Actions>
-                <SettingsMirrorLink />
-                <K7Button Variant="filled" Color="primary" StartIcon="@Phosphor.Plus" OnClick="OpenCreateDialog">
-                    @L["NewLibrary"]
-                </K7Button>
-            </Actions>
-        </AdminPageHeader>
-    </ToolbarContent>
-    <GridTemplate Context="library">
-        <K7Paper Outlined="true" Elevation="0" Class="admin-entity-card">
-            <div class="library-card">
-            <div class="library-card__header">
-                <K7Icon Icon="@GetMediaTypeIcon(library.MediaType)" IconSize="@K7IconSize.Sm" Color="primary" Class="library-card__icon" />
-                <span class="library-card__name">@library.Title</span>
-                <K7Chip Size="sm" Color="default" Class="library-card__type">@GetMediaTypeLabel(library.MediaType)</K7Chip>
-            </div>
-            <div class="library-card__path">
-                @if (library.PeerServerBaseUrl is not null)
-                {
-                    <K7Icon Icon="@Phosphor.Globe" IconSize="@K7IconSize.Sm" />
-                    <span>@library.PeerServerBaseUrl</span>
-                }
-                else
-                {
-                    <K7Icon Icon="@Phosphor.Folder" IconSize="@K7IconSize.Sm" />
-                    <span>@library.RootPath</span>
-                }
-            </div>
-            @{
-                var stats = GetStats(library.Id);
-            }
-            @if (stats is not null)
-            {
-                <div class="library-card__stats">
-                    <K7Chip Size="sm">@stats.FileCount @L["StatFiles"]</K7Chip>
-                    @foreach (var entry in GetOrderedMediaCounts(library.Id))
-                    {
-                        <K7Chip Size="sm">@entry.Value @GetMediaTypeCountLabel(entry.Key)</K7Chip>
-                    }
-                </div>
-            }
-            @{
-                var issueCount = GetIssueCount(library.Id);
-            }
-            @if (issueCount > 0)
-            {
-                <K7Chip Size="sm" Color="warning" Class="library-card__issues" OnClick="@(() => NavigateToDiagnostics(library.Id))">
-                    <K7Icon Icon="@Phosphor.Warning" IconSize="@K7IconSize.Sm" />
-                    @string.Format(L["IssueCount"], issueCount)
-                </K7Chip>
-            }
-            @if (GetScanProgress(library.Id) is { } scanProgress)
-            {
-                <div class="library-card__scan-progress">
-                    <span class="library-card__scan-label">@FormatScanProgress(scanProgress)</span>
-                    @if (scanProgress.Total > 0)
-                    {
-                        <K7ProgressBar Value="@GetScanProgressValue(scanProgress)" />
-                    }
-                    else
-                    {
-                        <K7ProgressBar Indeterminate="true" />
-                    }
-                </div>
-            }
-            <div class="library-card__actions admin-entity-card__footer">
-                @if (library.PeerServerId is null)
-                {
-                    <K7Button Variant="text" Size="sm" StartIcon="@Phosphor.ArrowClockwise" OnClick="@(() => IndexLibrary(library))">@L["AriaIndex"]</K7Button>
-                }
-                <K7Button Variant="text" Size="sm" StartIcon="@Phosphor.Pencil" OnClick="@(() => OpenEditDialog(library))">@L["AriaEdit"]</K7Button>
-                <K7Menu>
-                    <ActivatorContent>
-                        <K7IconButton Icon="@Phosphor.DotsThreeVertical" Size="sm" AriaLabel="@L["MoreActions"]" />
-                    </ActivatorContent>
-                    <ChildContent>
-                        <K7MenuItem Icon="@Phosphor.Users" OnClick="@(() => OpenUsersDialog(library))">@L["AriaUserAccess"]</K7MenuItem>
-                        @if (library.PeerServerId is null)
-                        {
-                            <K7MenuItem Icon="@Phosphor.ArrowsClockwise" OnClick="@(() => RefreshLibraryMetadata(library))">@L["AriaRefreshMetadata"]</K7MenuItem>
-                            <K7MenuItem Class="k7-menu-item--warning" Icon="@Phosphor.MagnifyingGlass" OnClick="@(() => RematchLibrary(library))">@L["AriaRematch"]</K7MenuItem>
-                            <K7MenuItem Class="k7-menu-item--error" Icon="@Phosphor.Trash" OnClick="@(() => DeleteLibrary(library))">@L["AriaDelete"]</K7MenuItem>
-                        }
-                    </ChildContent>
-                </K7Menu>
-            </div>
-            </div>
-        </K7Paper>
-    </GridTemplate>
-    <EmptyContent>
+@* List on the left, the selected library's sheet on the right. Narrow screens and TV show the
+   list, then the sheet as its own screen (same shell as the settings pages). *@
+<div class="libraries-page" aria-live="polite">
+    @if (_isLoading)
+    {
+        <div class="admin-page-intro">
+            <AdminPageHeader Title="@L["Title"]" Subtitle="@L["Subtitle"]" />
+        </div>
+        <K7ProgressBar Indeterminate="true" />
+    }
+    else if (_libraryItems.Count == 0)
+    {
+        <div class="admin-page-intro">
+            <AdminPageHeader Title="@L["Title"]" Subtitle="@L["Subtitle"]">
+                <Actions>
+                    <SettingsMirrorLink />
+                    <K7Button Variant="filled" Color="primary" StartIcon="@Phosphor.Plus" OnClick="OpenCreateDialog">
+                        @L["NewLibrary"]
+                    </K7Button>
+                </Actions>
+            </AdminPageHeader>
+        </div>
         <K7EmptyState Icon="@Phosphor.VideoCamera" Title="@L["Empty"]" Subtitle="@L["EmptyDescription"]" />
-    </EmptyContent>
-</BrowseView>
+    }
+    else
+    {
+        var selectedLibrary = SelectedLibrary;
+        var filteredLibraries = FilteredLibraries;
+
+        <K7SettingsSplit IndexLabel="@L["Title"]"
+                         WideIndex="true"
+                         DetailTitle="@(selectedLibrary?.Title ?? "")"
+                         BackHref="@BasePath"
+                         DetailOpen="IsLibraryOpen">
+            <Header>
+                <div class="admin-page-intro">
+                    <AdminPageHeader Title="@L["Title"]" Subtitle="@L["Subtitle"]">
+                        <Actions>
+                            <K7ResultCount Count="_libraryItems.Count" />
+                            <SettingsMirrorLink />
+                            <K7Button Variant="filled" Color="primary" StartIcon="@Phosphor.Plus" OnClick="OpenCreateDialog">
+                                @L["NewLibrary"]
+                            </K7Button>
+                        </Actions>
+                    </AdminPageHeader>
+                </div>
+            </Header>
+            <Index>
+                <K7TextField TValue="string"
+                             Value="@_search"
+                             ValueChanged="@(value => _search = value ?? "")"
+                             Immediate="true"
+                             Placeholder="@L["SearchPlaceholder"]"
+                             AdornmentIcon="@Phosphor.MagnifyingGlass"
+                             Class="libraries-search" />
+
+                @if (filteredLibraries.Count == 0)
+                {
+                    <p class="libraries-list-empty">@L["NoMatch"]</p>
+                }
+
+                @foreach (var library in filteredLibraries)
+                {
+                    var rowScan = GetScanProgress(library.Id);
+                    var rowIssues = GetIssueCount(library.Id);
+                    <K7EntityRow @key="library.Id"
+                                 Id="@($"library-{library.Id}")"
+                                 Title="@library.Title"
+                                 Subtitle="@GetRowSubtitle(library)"
+                                 Href="@($"{BasePath}/{library.Id}")"
+                                 Active="@(library.Id == selectedLibrary?.Id)"
+                                 Dimmed="@(library.PeerReachable == false)">
+                        <Leading>
+                            <K7Icon Icon="@GetMediaTypeIcon(library.MediaType)" IconSize="@K7IconSize.Md" />
+                        </Leading>
+                        <Trailing>
+                            @if (rowScan is not null)
+                            {
+                                <K7Chip Size="sm" Variant="filled" Color="primary">@FormatScanChip(rowScan)</K7Chip>
+                            }
+                            @if (rowIssues > 0)
+                            {
+                                <K7Chip Size="sm" Color="warning">@string.Format(L["IssueCount"], rowIssues)</K7Chip>
+                            }
+                            @if (library.PeerReachable == false)
+                            {
+                                <K7Chip Size="sm" Color="default">@L["ChipUnreachable"]</K7Chip>
+                            }
+                            else if (library.PeerServerId is not null)
+                            {
+                                <K7Chip Size="sm" Color="default">@L["ChipRemote"]</K7Chip>
+                            }
+                        </Trailing>
+                    </K7EntityRow>
+                }
+            </Index>
+            <Detail>
+                @if (selectedLibrary is not null)
+                {
+                    var library = selectedLibrary;
+                    var isLocal = library.PeerServerId is null;
+                    var stats = GetStats(library.Id);
+                    var issueCount = GetIssueCount(library.Id);
+                    var scanProgress = GetScanProgress(library.Id);
+
+                    @if (scanProgress is not null)
+                    {
+                        <div class="library-sheet__scan-progress">
+                            <span class="library-sheet__scan-label">@FormatScanProgress(scanProgress)</span>
+                            @if (scanProgress.Total > 0)
+                            {
+                                <K7ProgressBar Value="@GetScanProgressValue(scanProgress)" />
+                            }
+                            else
+                            {
+                                <K7ProgressBar Indeterminate="true" />
+                            }
+                        </div>
+                    }
+
+                    <div>
+                        <K7SettingRow Label="@L["FieldType"]">
+                            <K7Chip Size="sm" Color="default">@GetMediaTypeLabel(library.MediaType)</K7Chip>
+                        </K7SettingRow>
+                        @if (isLocal)
+                        {
+                            <K7SettingRow Label="@L["FieldFolder"]">
+                                <span class="library-sheet__value library-sheet__value--path">@(library.RootPath ?? "-")</span>
+                            </K7SettingRow>
+                        }
+                        else
+                        {
+                            <K7SettingRow Label="@L["FieldPeerServer"]">
+                                <span class="library-sheet__value library-sheet__value--path">@(library.PeerServerBaseUrl ?? library.PeerServerName ?? "-")</span>
+                            </K7SettingRow>
+                            @if (library.PeerReachable == false)
+                            {
+                                <K7SettingRow Label="@L["FieldPeerState"]">
+                                    <K7Chip Size="sm" Color="warning">@L["ChipUnreachable"]</K7Chip>
+                                </K7SettingRow>
+                            }
+                        }
+                        @if (stats is not null)
+                        {
+                            <K7SettingRow Label="@L["FieldContent"]">
+                                <span class="library-sheet__stats">
+                                    <K7Chip Size="sm">@stats.FileCount @L["StatFiles"]</K7Chip>
+                                    @foreach (var entry in GetOrderedMediaCounts(library.Id))
+                                    {
+                                        <K7Chip Size="sm">@entry.Value @GetMediaTypeCountLabel(entry.Key)</K7Chip>
+                                    }
+                                </span>
+                            </K7SettingRow>
+                        }
+                    </div>
+
+                    @* A shortcut, not a fact about the library: last, as a link line to the group's sheet. *@
+                    @if (GetGroupTitle(library) is { } groupTitle)
+                    {
+                        <h6 class="library-sheet__heading">@L["FieldGroup"]</h6>
+                        <div class="library-sheet__actions">
+                            <K7EntityRow Title="@groupTitle"
+                                         Href="@($"/admin/library-groups/{library.LibraryGroupId}")">
+                                <Leading>
+                                    <K7Icon Icon="@Phosphor.SquaresFour" IconSize="@K7IconSize.Md" />
+                                </Leading>
+                            </K7EntityRow>
+                        </div>
+                    }
+
+                    <h6 class="library-sheet__heading">@L["SectionManage"]</h6>
+                    <div class="library-sheet__actions">
+                        <K7SheetAction Icon="@Phosphor.Pencil" Label="@L["ActionEdit"]" OnClick="@(() => OpenEditDialog(library))" />
+                        <K7SheetAction Icon="@Phosphor.Users" Label="@L["ActionUserAccess"]" OnClick="@(() => OpenUsersDialog(library))" />
+                        @if (issueCount > 0)
+                        {
+                            <K7SheetAction Icon="@Phosphor.Warning" Label="@L["ActionIssues"]" Badges="GetIssueBadges(library.Id)" OnClick="@(() => NavigateToDiagnostics(library.Id))" />
+                        }
+                    </div>
+
+                    @if (isLocal)
+                    {
+                        <h6 class="library-sheet__heading">@L["SectionMaintenance"]</h6>
+                        <div class="library-sheet__actions">
+                            <K7SheetAction Icon="@Phosphor.ArrowClockwise" Label="@L["AriaIndex"]" OnClick="@(() => IndexLibrary(library))" />
+                            <K7SheetAction Icon="@Phosphor.ArrowsClockwise" Label="@L["AriaRefreshMetadata"]" OnClick="@(() => RefreshLibraryMetadata(library))" />
+                            <K7SheetAction Icon="@Phosphor.MagnifyingGlass" Label="@L["ActionRematch"]" OnClick="@(() => RematchLibrary(library))" />
+                            <K7SheetAction Icon="@Phosphor.Trash" Label="@L["ActionDelete"]" Danger="true" OnClick="@(() => DeleteLibrary(library))" />
+                        </div>
+                    }
+                }
+            </Detail>
+        </K7SettingsSplit>
+    }
+</div>

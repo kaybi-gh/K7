@@ -1,3 +1,4 @@
+using System.Text.Json;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.UI.Components;
 using K7.Clients.Shared.UI.Helpers;
@@ -17,14 +18,24 @@ public partial class AdminNotificationsPanel : IAsyncDisposable
     [Inject] private IStringLocalizer<EditNotificationRuleDialog> EventL { get; set; } = default!;
     [Inject] private ISpatialNavService SpatialNav { get; set; } = default!;
 
+    private const string BasePath = "/admin/notifications";
+
     private bool _isLoading = true;
     private List<NotificationRuleDto> _rules = [];
     private List<NotificationEventDescriptorDto> _availableEvents = [];
-    private K7DataTable<NotificationRuleDto>? _tableRef;
     private bool _selectionMode;
     private bool _deleting;
     private readonly HashSet<Guid> _selectedIds = [];
     private SelectionModeKeyboardBinder? _selectionKeys;
+
+    /// <summary>Rule whose sheet is open. Null shows the list (plus a default sheet on wide screens).</summary>
+    [Parameter] public Guid? RuleId { get; set; }
+
+    /// <summary>The rule from the address, else the first of the list.</summary>
+    private NotificationRuleDto? SelectedRule =>
+        _rules.FirstOrDefault(r => r.Id == RuleId) ?? _rules.FirstOrDefault();
+
+    private bool IsRuleOpen => RuleId is not null && _rules.Any(r => r.Id == RuleId);
 
     private int SelectedCount => _selectedIds.Count;
     private bool AllSelected => _rules.Count > 0 && _selectedIds.Count == _rules.Count;
@@ -74,6 +85,48 @@ public partial class AdminNotificationsPanel : IAsyncDisposable
         return result;
     }
 
+    private string GetAllEventDisplayNames(IReadOnlyList<string> eventTypeNames) =>
+        string.Join(", ", eventTypeNames.Select(LocalizeEventTypeName));
+
+    private static string GetProviderIcon(NotificationRuleDto rule) =>
+        string.Equals(rule.ProviderType, "Webhook", StringComparison.OrdinalIgnoreCase)
+            ? Phosphor.WebhooksLogo
+            : Phosphor.Bell;
+
+    /// <summary>
+    /// Host of the webhook address. The full address is not shown: it often carries a secret token.
+    /// </summary>
+    private static string? GetDestination(NotificationRuleDto rule)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(rule.ProviderConfig);
+            if (doc.RootElement.ValueKind == JsonValueKind.Object
+                && doc.RootElement.TryGetProperty("url", out var urlProp)
+                && urlProp.ValueKind == JsonValueKind.String
+                && Uri.TryCreate(urlProp.GetString()?.Trim(), UriKind.Absolute, out var uri)
+                && !string.IsNullOrEmpty(uri.Host))
+            {
+                return uri.Host;
+            }
+        }
+        catch (JsonException)
+        {
+        }
+
+        return null;
+    }
+
+    private string GetScheduleSummary(NotificationRuleDto rule) =>
+        rule.ScheduleWindows.Count == 0
+            ? L["ScheduleAlways"]
+            : string.Format(L["ScheduleWindowCount"], rule.ScheduleWindows.Count);
+
+    private IReadOnlyList<string> GetEditBadges(NotificationRuleDto rule) =>
+        rule.RuleFilter is { Items.Count: > 0 }
+            ? [L["BadgeConditions"]]
+            : [];
+
     private string LocalizeEventTypeName(string eventTypeName)
     {
         var descriptor = _availableEvents.FirstOrDefault(e => e.EventTypeName == eventTypeName);
@@ -107,6 +160,7 @@ public partial class AdminNotificationsPanel : IAsyncDisposable
                 RuleFilter = rule.RuleFilter,
                 ScheduleWindows = rule.ScheduleWindows,
                 CooldownSeconds = rule.CooldownSeconds,
+                BatchDebounceSeconds = rule.BatchDebounceSeconds,
                 IsEnabled = enabled
             });
             Snackbar.Add(enabled ? L["NotificationEnabled"] : L["NotificationDisabled"], K7Severity.Success);
@@ -207,7 +261,6 @@ public partial class AdminNotificationsPanel : IAsyncDisposable
     {
         _selectionMode = true;
         _selectedIds.Clear();
-        _tableRef?.InvalidateLayout();
         _ = _selectionKeys?.SetEnabledAsync(true);
     }
 
@@ -218,7 +271,7 @@ public partial class AdminNotificationsPanel : IAsyncDisposable
 
         _selectionMode = false;
         _selectedIds.Clear();
-        _tableRef?.InvalidateLayout();
+        StateHasChanged();
         _ = _selectionKeys?.SetEnabledAsync(false);
     }
 
@@ -226,8 +279,6 @@ public partial class AdminNotificationsPanel : IAsyncDisposable
     {
         if (!_selectedIds.Remove(id))
             _selectedIds.Add(id);
-
-        _tableRef?.Rerender();
     }
 
     private void ToggleSelectAll()
@@ -236,8 +287,6 @@ public partial class AdminNotificationsPanel : IAsyncDisposable
             _selectedIds.Clear();
         else
             SelectAll();
-
-        _tableRef?.Rerender();
     }
 
     private void SelectAll()
@@ -261,16 +310,10 @@ public partial class AdminNotificationsPanel : IAsyncDisposable
             return;
 
         SelectAll();
-        _tableRef?.Rerender();
+        StateHasChanged();
     }
 
     private bool IsSelected(Guid id) => _selectedIds.Contains(id);
-
-    private void OnRuleRowClick(NotificationRuleDto rule)
-    {
-        if (_selectionMode)
-            ToggleSelection(rule.Id);
-    }
 
     private async Task ConfirmDeleteSelectedAsync()
     {

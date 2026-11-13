@@ -1,106 +1,158 @@
 @page "/admin/notifications"
+@page "/admin/notifications/{RuleId:guid}"
 @layout AdminLayout
 @using K7.Shared.Dtos.Notifications
 @inject IStringLocalizer<AdminNotificationsPanel> L
 @inject IStringLocalizer<SharedResource> S
 @implements IAsyncDisposable
 
-<div class="full-bleed-page notifications-page">
-    <div class="admin-page-intro">
-        <AdminPageHeader Title="@(_selectionMode ? string.Format(L["SelectedCount"], SelectedCount) : L["Title"])"
-                         Subtitle="@L["Subtitle"]">
-            <Actions>
-        @if (_selectionMode)
-        {
-                <K7Button Variant="text" OnClick="ToggleSelectAll" Disabled="@(_rules.Count == 0 || _deleting)">
-                    @(AllSelected ? L["DeselectAll"] : L["SelectAll"])
-                </K7Button>
-                <K7Button Variant="filled"
-                          Color="error"
-                          StartIcon="@Phosphor.Trash"
-                          OnClick="ConfirmDeleteSelectedAsync"
-                          Disabled="@(SelectedCount == 0 || _deleting)"
-                          AriaLabel="@L["DeleteSelected"]">
-                    @L["DeleteSelected"]
-                </K7Button>
-                <K7Button Variant="text" OnClick="ExitSelectionMode" Disabled="@_deleting" AriaLabel="@S["Cancel"]">
-                    @S["Cancel"]
-                </K7Button>
-        }
-        else
-        {
-                @if (!_isLoading && _rules.Count > 0)
-                {
-                    <K7ResultCount Count="_rules.Count" />
-                    <K7IconButton Icon="@Phosphor.ListChecks"
-                                  OnClick="EnterSelectionMode"
-                                  AriaLabel="@L["Select"]" />
-                }
-                <K7Button Variant="filled" Color="primary" StartIcon="@Phosphor.Plus"
-                           OnClick="OpenCreateDialog" aria-label="@L["AriaCreate"]">
-                    @L["CreateRule"]
-                </K7Button>
-        }
-            </Actions>
-        </AdminPageHeader>
-    </div>
+@* List on the left, the selected rule's sheet on the right. Narrow screens and TV show the list,
+   then the sheet as its own screen (same shell as the settings pages). *@
+<div class="notifications-page" aria-live="polite">
+    @if (_isLoading)
+    {
+        <div class="admin-page-intro">
+            <AdminPageHeader Title="@L["Title"]" Subtitle="@L["Subtitle"]" />
+        </div>
+        <K7ProgressBar Indeterminate="true" />
+    }
+    else if (_rules.Count == 0)
+    {
+        <div class="admin-page-intro">
+            <AdminPageHeader Title="@L["Title"]" Subtitle="@L["Subtitle"]">
+                <Actions>
+                    <K7Button Variant="filled" Color="primary" StartIcon="@Phosphor.Plus"
+                              OnClick="OpenCreateDialog" aria-label="@L["AriaCreate"]">
+                        @L["CreateRule"]
+                    </K7Button>
+                </Actions>
+            </AdminPageHeader>
+        </div>
+        <K7EmptyState Icon="@Phosphor.Bell" Title="@L["Empty"]" Subtitle="@L["EmptyHint"]" />
+    }
+    else
+    {
+        var selectedRule = SelectedRule;
 
-    <div class="data-page-body" aria-live="polite">
-        @if (_isLoading)
-        {
-            <K7ProgressBar Indeterminate="true" />
-        }
-        else if (_rules.Count == 0)
-        {
-            <K7EmptyState Icon="@Phosphor.Bell" Title="@L["Empty"]" Subtitle="@L["EmptyHint"]" />
-        }
-        else
-        {
-            <K7DataTable TItem="NotificationRuleDto" Items="_rules" RowHeight="60" @ref="_tableRef"
-                         ShowToolbar="false" Surface="false" Height="100%"
-                         RowId="@(r => $"rule-{r.Id}")"
-                         RowClass="@(r => IsSelected(r.Id) ? "is-selected" : null)"
-                         OnRowClick="OnRuleRowClick">
-                <K7DataColumn TItem="NotificationRuleDto" Title="" Width="48px" Visible="@_selectionMode" Hideable="false" VisibleOnMobile="true">
-                    <CellTemplate>
-                        @{
-                            var selected = IsSelected(context.Id);
+        <K7SettingsSplit IndexLabel="@L["Title"]"
+                         WideIndex="true"
+                         DetailTitle="@(selectedRule?.Name ?? "")"
+                         BackHref="@BasePath"
+                         DetailOpen="IsRuleOpen">
+            <Header>
+                <div class="admin-page-intro">
+                    <AdminPageHeader Title="@(_selectionMode ? string.Format(L["SelectedCount"], SelectedCount) : L["Title"])"
+                                     Subtitle="@L["Subtitle"]">
+                        <Actions>
+                            @if (_selectionMode)
+                            {
+                                <K7Button Variant="text" OnClick="ToggleSelectAll" Disabled="@_deleting">
+                                    @(AllSelected ? L["DeselectAll"] : L["SelectAll"])
+                                </K7Button>
+                                <K7Button Variant="filled"
+                                          Color="error"
+                                          StartIcon="@Phosphor.Trash"
+                                          OnClick="ConfirmDeleteSelectedAsync"
+                                          Disabled="@(SelectedCount == 0 || _deleting)"
+                                          AriaLabel="@L["DeleteSelected"]">
+                                    @L["DeleteSelected"]
+                                </K7Button>
+                                <K7Button Variant="text" OnClick="ExitSelectionMode" Disabled="@_deleting" AriaLabel="@S["Cancel"]">
+                                    @S["Cancel"]
+                                </K7Button>
+                            }
+                            else
+                            {
+                                <K7ResultCount Count="_rules.Count" />
+                                <K7IconButton Icon="@Phosphor.ListChecks"
+                                              OnClick="EnterSelectionMode"
+                                              AriaLabel="@L["Select"]" />
+                                <K7Button Variant="filled" Color="primary" StartIcon="@Phosphor.Plus"
+                                          OnClick="OpenCreateDialog" aria-label="@L["AriaCreate"]">
+                                    @L["CreateRule"]
+                                </K7Button>
+                            }
+                        </Actions>
+                    </AdminPageHeader>
+                </div>
+            </Header>
+            <Index>
+                @foreach (var rule in _rules)
+                {
+                    <K7EntityRow @key="rule.Id"
+                                 Id="@($"rule-{rule.Id}")"
+                                 Title="@rule.Name"
+                                 Subtitle="@GetEventDisplayNames(rule.EventTypeNames)"
+                                 Href="@($"{BasePath}/{rule.Id}")"
+                                 OnClick="@(_selectionMode ? EventCallback.Factory.Create(this, () => ToggleSelection(rule.Id)) : default)"
+                                 Checked="@(_selectionMode ? IsSelected(rule.Id) : null)"
+                                 Active="@(!_selectionMode && rule.Id == selectedRule?.Id)"
+                                 Dimmed="@(!rule.IsEnabled)">
+                        <Leading>
+                            <K7Icon Icon="@GetProviderIcon(rule)" IconSize="@K7IconSize.Md" />
+                        </Leading>
+                        <Trailing>
+                            <K7Chip Size="sm" Color="default">@rule.ProviderType</K7Chip>
+                            @if (!rule.IsEnabled)
+                            {
+                                <K7Chip Size="sm" Color="default">@L["Disabled"]</K7Chip>
+                            }
+                        </Trailing>
+                    </K7EntityRow>
+                }
+            </Index>
+            <Detail>
+                @if (selectedRule is not null)
+                {
+                    var rule = selectedRule;
+                    var destination = GetDestination(rule);
+
+                    <div>
+                        <K7SettingRow Label="@L["HeaderEnabled"]">
+                            <K7Switch AriaLabel="@L["HeaderEnabled"]"
+                                      Value="@rule.IsEnabled"
+                                      ValueChanged="@(v => OnToggleEnabled(rule, v))" />
+                        </K7SettingRow>
+                        <K7SettingRow Label="@L["FieldEvents"]">
+                            <span class="rule-sheet__value">@GetAllEventDisplayNames(rule.EventTypeNames)</span>
+                        </K7SettingRow>
+                        <K7SettingRow Label="@L["HeaderProvider"]">
+                            <K7Chip Size="sm" Color="default">@rule.ProviderType</K7Chip>
+                        </K7SettingRow>
+                        @if (destination is not null)
+                        {
+                            <K7SettingRow Label="@L["FieldDestination"]">
+                                <span class="rule-sheet__value">@destination</span>
+                            </K7SettingRow>
                         }
-                        <span class="k7-select-check @(selected ? "is-selected" : null)" aria-hidden="true">
-                            <K7Icon Icon="@(selected ? Phosphor.Fill.CheckCircle : Phosphor.Circle)" IconSize="@K7IconSize.Md" />
-                        </span>
-                    </CellTemplate>
-                </K7DataColumn>
-                <K7DataColumn TItem="NotificationRuleDto" Title="@L["HeaderName"]" Hideable="false">
-                    <CellTemplate>
-                        <div class="d-flex flex-col">
-                            <p>@context.Name</p>
-                            <span class="text-caption" style="color: var(--color-text-muted);">@GetEventDisplayNames(context.EventTypeNames)</span>
-                        </div>
-                    </CellTemplate>
-                </K7DataColumn>
-                <K7DataColumn TItem="NotificationRuleDto" Title="@L["HeaderProvider"]" Width="120px">
-                    <CellTemplate>
-                        <K7Chip Size="sm" Color="default">@context.ProviderType</K7Chip>
-                    </CellTemplate>
-                </K7DataColumn>
-                <K7DataColumn TItem="NotificationRuleDto" Title="@L["HeaderEnabled"]" Width="100px" Hideable="false" Visible="@(!_selectionMode)">
-                    <CellTemplate>
-                        <K7Switch Value="@context.IsEnabled"
-                                   ValueChanged="@(v => OnToggleEnabled(context, v))"
-                                   Disabled="@_selectionMode" />
-                    </CellTemplate>
-                </K7DataColumn>
-                <K7DataColumn TItem="NotificationRuleDto" Title="@L["HeaderActions"]" Width="140px" Hideable="false" Visible="@(!_selectionMode)">
-                    <CellTemplate>
-                        <div class="d-flex">
-                            <K7IconButton Icon="@Phosphor.PaperPlaneTilt" OnClick="@(() => TestRule(context))" AriaLabel="@L["AriaTest"]" />
-                            <K7IconButton Icon="@Phosphor.PencilSimple" OnClick="@(() => OpenEditDialog(context))" AriaLabel="@L["AriaEdit"]" />
-                            <K7IconButton Icon="@Phosphor.Trash" Color="error" OnClick="@(() => ConfirmDelete(context))" AriaLabel="@L["AriaDelete"]" />
-                        </div>
-                    </CellTemplate>
-                </K7DataColumn>
-            </K7DataTable>
-        }
-    </div>
+                        <K7SettingRow Label="@L["FieldSchedule"]">
+                            <span class="rule-sheet__value">@GetScheduleSummary(rule)</span>
+                        </K7SettingRow>
+                        @if (rule.CooldownSeconds is > 0)
+                        {
+                            <K7SettingRow Label="@L["FieldCooldown"]">
+                                <span class="rule-sheet__value">@string.Format(L["SecondsValue"], rule.CooldownSeconds)</span>
+                            </K7SettingRow>
+                        }
+                        @if (rule.BatchDebounceSeconds is > 0)
+                        {
+                            <K7SettingRow Label="@L["FieldBatching"]">
+                                <span class="rule-sheet__value">@string.Format(L["SecondsValue"], rule.BatchDebounceSeconds)</span>
+                            </K7SettingRow>
+                        }
+                        <K7SettingRow Label="@L["FieldLastModified"]">
+                            <span class="rule-sheet__value">@rule.LastModified.LocalDateTime.ToString("dd/MM/yyyy HH:mm")</span>
+                        </K7SettingRow>
+                    </div>
+
+                    <h6 class="rule-sheet__heading">@L["HeaderActions"]</h6>
+                    <div class="rule-sheet__actions">
+                        <K7SheetAction Icon="@Phosphor.PaperPlaneTilt" Label="@L["ActionTest"]" OnClick="@(() => TestRule(rule))" />
+                        <K7SheetAction Icon="@Phosphor.PencilSimple" Label="@L["ActionEdit"]" Badges="GetEditBadges(rule)" OnClick="@(() => OpenEditDialog(rule))" />
+                        <K7SheetAction Icon="@Phosphor.Trash" Label="@L["ActionDelete"]" Danger="true" OnClick="@(() => ConfirmDelete(rule))" />
+                    </div>
+                }
+            </Detail>
+        </K7SettingsSplit>
+    }
 </div>

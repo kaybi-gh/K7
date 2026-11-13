@@ -12,6 +12,7 @@ namespace K7.Clients.Shared.UI.Pages.Admin.Panels;
 public partial class AdminDevicesPanel : IAsyncDisposable
 {
     [Inject] private IDeviceApiService K7ServerService { get; set; } = default!;
+    [Inject] private IUserAdminService UserService { get; set; } = default!;
     [Inject] private IDeviceStorageService DeviceStorageService { get; set; } = default!;
     [Inject] private IK7DialogService DialogService { get; set; } = default!;
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
@@ -19,6 +20,7 @@ public partial class AdminDevicesPanel : IAsyncDisposable
     [Inject] private IJSRuntime JSRuntime { get; set; } = default!;
     [Inject] private ISpatialNavService SpatialNav { get; set; } = default!;
 
+    private const string BasePath = "/admin/devices";
     private const int PageSize = 100;
 
     private bool _isLoading = true;
@@ -30,7 +32,37 @@ public partial class AdminDevicesPanel : IAsyncDisposable
     private bool _deleting;
     private readonly HashSet<Guid> _selectedIds = [];
     private List<DeviceDto> _deviceItems = [];
+    private string _search = "";
+    private Dictionary<Guid, string> _userNames = [];
     private SelectionModeKeyboardBinder? _selectionKeys;
+
+    /// <summary>Device whose sheet is open. Null shows the list (plus a default sheet on wide screens).</summary>
+    [Parameter] public Guid? DeviceId { get; set; }
+
+    private List<DeviceDto> FilteredDevices
+    {
+        get
+        {
+            var search = _search.Trim();
+            if (search.Length == 0)
+                return _deviceItems;
+
+            return _deviceItems
+                .Where(d => GetDeviceName(d).Contains(search, StringComparison.OrdinalIgnoreCase)
+                    || GetDeviceTypeLabel(d.DeviceType).Contains(search, StringComparison.OrdinalIgnoreCase)
+                    || GetDeviceSummary(d).Contains(search, StringComparison.OrdinalIgnoreCase)
+                    || GetUserNames(d).Contains(search, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+    }
+
+    /// <summary>The device from the address, else the one a link pointed at, else the first of the list.</summary>
+    private DeviceDto? SelectedDevice =>
+        _deviceItems.FirstOrDefault(d => d.Id == DeviceId)
+        ?? _deviceItems.FirstOrDefault(d => d.Id == _focusedDeviceId)
+        ?? FilteredDevices.FirstOrDefault();
+
+    private bool IsDeviceOpen => DeviceId is not null && _deviceItems.Any(d => d.Id == DeviceId);
 
     private int SelectedCount => _selectedIds.Count;
     private bool AllSelected => _deviceItems.Count > 0 && _selectedIds.Count == _deviceItems.Count;
@@ -43,7 +75,7 @@ public partial class AdminDevicesPanel : IAsyncDisposable
             onSelectAll: () => _ = InvokeAsync(OnSelectionSelectAll));
 
         _currentDeviceId = DeviceStorageService.Get(PreferenceKeys.DEVICE_ID);
-        await LoadDevicesAsync();
+        await Task.WhenAll(LoadDevicesAsync(), LoadUserNamesAsync());
         ParseFocusParam();
     }
 
@@ -59,6 +91,20 @@ public partial class AdminDevicesPanel : IAsyncDisposable
         {
             _shouldScrollToFocused = false;
             await JSRuntime.InvokeVoidAsync("K7.scrollToElement", $"device-{_focusedDeviceId}");
+        }
+    }
+
+    /// <summary>Devices only carry user ids: names come from the user list, for display and search.</summary>
+    private async Task LoadUserNamesAsync()
+    {
+        try
+        {
+            var users = await UserService.GetUsersAsync();
+            _userNames = users.ToDictionary(u => u.Id, u => u.UserName ?? u.Email ?? "");
+        }
+        catch
+        {
+            // Best effort: the list falls back to a user count.
         }
     }
 
@@ -147,8 +193,12 @@ public partial class AdminDevicesPanel : IAsyncDisposable
 
     private void ExitSelectionMode()
     {
+        if (!_selectionMode)
+            return;
+
         _selectionMode = false;
         _selectedIds.Clear();
+        StateHasChanged();
         _ = _selectionKeys?.SetEnabledAsync(false);
     }
 
@@ -190,6 +240,7 @@ public partial class AdminDevicesPanel : IAsyncDisposable
             return;
 
         SelectAll();
+        StateHasChanged();
     }
 
     private bool IsSelected(Guid id) => _selectedIds.Contains(id);
@@ -271,27 +322,70 @@ public partial class AdminDevicesPanel : IAsyncDisposable
         _ => Phosphor.Devices,
     };
 
-    private IReadOnlyList<string> GetDeviceFacts(DeviceDto device)
+    private string GetDeviceName(DeviceDto device) =>
+        string.IsNullOrWhiteSpace(device.DeviceName) ? L["UnknownDevice"] : device.DeviceName;
+
+    /// <summary>Names of the device's users, or their count when names could not be loaded.</summary>
+    private string GetUserNames(DeviceDto device)
     {
-        var facts = new List<string>
+        if (device.Users.Count == 0)
+            return "";
+
+        var names = device.Users
+            .Select(u => _userNames.GetValueOrDefault(u.Id, ""))
+            .Where(name => name.Length > 0)
+            .ToList();
+
+        return names.Count > 0
+            ? string.Join(", ", names)
+            : string.Format(L["UserCount"], device.Users.Count);
+    }
+
+    /// <summary>Secondary line of the list: who uses the device and when it was last seen.</summary>
+    private string GetRowSummary(DeviceDto device)
+    {
+        var users = GetUserNames(device);
+        var lastSeen = device.LastSeen.LocalDateTime.ToString("g");
+        return users.Length > 0 ? $"{users} - {lastSeen}" : lastSeen;
+    }
+
+    /// <summary>Searchable description: browser or client, system, last activity.</summary>
+    private string GetDeviceSummary(DeviceDto device)
+    {
+        var parts = new List<string>(3)
         {
-            GetDeviceTypeLabel(device.DeviceType),
-            GetClientTypeLabel(device.ClientType)
+            device.WebDeviceDetails is not null
+                ? GetBrowserLabel(device.WebDeviceDetails.Browser)
+                : GetClientTypeLabel(device.ClientType)
         };
 
-        if (device.WebDeviceDetails is not null)
-            facts.Add(GetBrowserLabel(device.WebDeviceDetails.Browser));
+        var system = GetSystemLabel(device);
+        if (system is not null)
+            parts.Add(system);
 
-        var os = $"{device.OperatingSystem} {device.OperatingSystemVersion}".Trim();
-        if (!string.IsNullOrEmpty(os))
-            facts.Add(os);
+        parts.Add(device.LastSeen.LocalDateTime.ToString("g"));
 
+        return string.Join(" - ", parts);
+    }
+
+    private static string? GetSystemLabel(DeviceDto device)
+    {
+        var name = device.OperatingSystem == K7.Server.Domain.Enums.OperatingSystem.Unknown
+            ? ""
+            : device.OperatingSystem.ToString();
+        var system = $"{name} {device.OperatingSystemVersion}".Trim();
+        return system.Length == 0 ? null : system;
+    }
+
+    private static string? GetScreenLabel(DeviceDto device)
+    {
         if (device.DisplayResolutionWidth > 0 && device.DisplayResolutionHeight > 0)
-            facts.Add($"{device.DisplayResolutionWidth:0}x{device.DisplayResolutionHeight:0}");
-        else if (device.DisplayScreenWidth > 0 && device.DisplayScreenHeight > 0)
-            facts.Add($"{device.DisplayScreenWidth:0}x{device.DisplayScreenHeight:0}");
+            return $"{device.DisplayResolutionWidth:0}x{device.DisplayResolutionHeight:0}";
 
-        return facts;
+        if (device.DisplayScreenWidth > 0 && device.DisplayScreenHeight > 0)
+            return $"{device.DisplayScreenWidth:0}x{device.DisplayScreenHeight:0}";
+
+        return null;
     }
 
     private string GetDeviceTypeLabel(DeviceType deviceType) => deviceType switch
@@ -312,24 +406,13 @@ public partial class AdminDevicesPanel : IAsyncDisposable
         _ => L["UnknownDevice"]
     };
 
-    private static string GetBrowserLabel(Browser browser) => browser switch
+    private string GetBrowserLabel(Browser browser) => browser switch
     {
         Browser.Chrome => "Chrome",
         Browser.Firefox => "Firefox",
         Browser.Edge => "Edge",
         Browser.Safari => "Safari",
         Browser.Opera => "Opera",
-        _ => "Browser"
+        _ => L["ClientTypeWeb"]
     };
-
-    private static string GetDeviceClass(bool isCurrent, bool isFocused)
-    {
-        return (isCurrent, isFocused) switch
-        {
-            (true, true) => "current-device device-highlighted",
-            (true, false) => "current-device",
-            (false, true) => "device-highlighted",
-            _ => ""
-        };
-    }
 }

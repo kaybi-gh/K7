@@ -1,0 +1,22 @@
+@namespace K7.Clients.Shared.UI.Components
+
+<button type="button"
+        class="k7-sheet-action focusable @(Danger ? "k7-sheet-action--danger" : null) @Class"
+        disabled="@Disabled"
+        @onclick="OnClick">
+    @if (!string.IsNullOrEmpty(Icon))
+    {
+        <K7Icon Icon="@Icon" />
+    }
+    <span class="k7-sheet-action__label">@Label</span>
+    @if (Badges is { Count: > 0 })
+    {
+        <span class="k7-sheet-action__badges">
+            @foreach (var badge in Badges)
+            {
+                <K7Chip Size="sm" Color="default">@badge</K7Chip>
+            }
+        </span>
+    }
+    <K7Icon Icon="@Phosphor.CaretRight" IconSize="@K7IconSize.Sm" />
+</button>

@@ -78,6 +78,13 @@ controls across a wide screen:
   counterpart on the same sub-page (pairs listed in `SettingsMirror`). The link towards the
   admin only shows to accounts with `CanAccessAdmin`. Register a new pair when adding a
   settings page that has server defaults.
+- Admin lists of items (users, devices, restriction profiles, notification rules) use the same
+  shell instead of a table: `K7EntityRow` lines as the index (visual, title, secondary line,
+  state chips), the selected item's sheet as the detail, at its own address
+  (`/admin/users/{id}`). The sheet shows fields as `K7SettingRow`s and what can be done as
+  `K7SheetAction` lines whose badges say what is already set. Row menus and inline controls
+  move to the sheet, so every action is reachable with a remote. Libraries and library groups
+  follow the same shell: the scan of a library is an action of its sheet.
 - `K7SettingRow`: one setting per line, label and hint on the left, compact control on the right.
   Sliders and text fields go in a `settings-field-group` between rows.
 - `K7OptionList`: short single choices shown in full instead of a select.

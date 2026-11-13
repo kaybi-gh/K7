@@ -1,6 +1,24 @@
-.notifications-page .data-page-body ::deep .k7-data-table-scroll {
-    overflow-x: auto;
-    overflow-y: auto;
-    scrollbar-gutter: auto;
-    padding: 0;
+.notifications-page {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+/* ---- Sheet of the selected rule ---- */
+
+.rule-sheet__value {
+    font-size: var(--text-sm);
+    color: var(--color-text-secondary);
+    text-align: end;
+    overflow-wrap: anywhere;
+}
+
+.rule-sheet__heading {
+    margin: var(--space-5) 0 var(--space-2);
+}
+
+.rule-sheet__actions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
 }

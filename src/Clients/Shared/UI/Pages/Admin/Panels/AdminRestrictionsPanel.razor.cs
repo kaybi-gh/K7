@@ -9,7 +9,6 @@ using K7.Shared.Dtos.Restrictions;
 using K7.Shared.Dtos.Requests;
 using K7.Shared.Dtos.Rules;
 using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.Localization;
 
 namespace K7.Clients.Shared.UI.Pages.Admin.Panels;
@@ -23,12 +22,24 @@ public partial class AdminRestrictionsPanel : IAsyncDisposable
     [Inject] private IStringLocalizer<LibraryBrowseFilters> BrowseL { get; set; } = default!;
     [Inject] private ISpatialNavService SpatialNav { get; set; } = default!;
 
+    private const string BasePath = "/admin/restrictions";
+    private const int SummaryRuleCount = 3;
+
     private bool _loading = true;
     private List<ContentRestrictionProfileDto> _profiles = [];
     private bool _selectionMode;
     private bool _deleting;
     private readonly HashSet<Guid> _selectedIds = [];
     private SelectionModeKeyboardBinder? _selectionKeys;
+
+    /// <summary>Profile whose sheet is open. Null shows the list (plus a default sheet on wide screens).</summary>
+    [Parameter] public Guid? ProfileId { get; set; }
+
+    /// <summary>The profile from the address, else the first of the list.</summary>
+    private ContentRestrictionProfileDto? SelectedProfile =>
+        _profiles.FirstOrDefault(p => p.Id == ProfileId) ?? _profiles.FirstOrDefault();
+
+    private bool IsProfileOpen => ProfileId is not null && _profiles.Any(p => p.Id == ProfileId);
 
     private int SelectedCount => _selectedIds.Count;
     private bool AllSelected => _profiles.Count > 0 && _selectedIds.Count == _profiles.Count;
@@ -77,6 +88,7 @@ public partial class AdminRestrictionsPanel : IAsyncDisposable
     {
         _selectionMode = false;
         _selectedIds.Clear();
+        StateHasChanged();
         _ = _selectionKeys?.SetEnabledAsync(false);
     }
 
@@ -118,17 +130,10 @@ public partial class AdminRestrictionsPanel : IAsyncDisposable
             return;
 
         SelectAll();
+        StateHasChanged();
     }
 
     private bool IsSelected(Guid id) => _selectedIds.Contains(id);
-
-    private void OnSelectKeyDown(KeyboardEventArgs e, Guid id)
-    {
-        if (e.Key is not ("Enter" or " "))
-            return;
-
-        ToggleSelection(id);
-    }
 
     private async Task OpenCreateDialog()
     {
@@ -270,6 +275,47 @@ public partial class AdminRestrictionsPanel : IAsyncDisposable
         else
             Snackbar.Add(string.Format(L["DeleteSelectedPartial"], count - failed, failed), K7Severity.Warning);
     }
+
+    /// <summary>Conditions of the filter, nested groups included, in reading order.</summary>
+    private static List<ConditionRuleItemDto> GetConditions(RuleGroupDto filter)
+    {
+        var conditions = new List<ConditionRuleItemDto>();
+        CollectConditions(filter.Items, conditions);
+        return conditions;
+    }
+
+    private static void CollectConditions(IReadOnlyList<RuleGroupItemDto> items, List<ConditionRuleItemDto> conditions)
+    {
+        foreach (var item in items)
+        {
+            if (item is ConditionRuleItemDto condition)
+                conditions.Add(condition);
+            else if (item is NestedGroupItemDto group)
+                CollectConditions(group.Items, conditions);
+        }
+    }
+
+    /// <summary>One line for the list: the first rules, then how many are left.</summary>
+    private string GetRulesSummary(ContentRestrictionProfileDto profile)
+    {
+        var rules = GetConditions(profile.RuleFilter);
+        if (rules.Count == 0)
+            return L["NoRules"];
+
+        var summary = string.Join(", ", rules.Take(SummaryRuleCount).Select(FormatRule));
+        return rules.Count > SummaryRuleCount
+            ? string.Format(L["RulesSummaryMore"], summary, rules.Count - SummaryRuleCount)
+            : summary;
+    }
+
+    private IReadOnlyList<string> GetRuleBadges(ContentRestrictionProfileDto profile)
+    {
+        var count = GetConditions(profile.RuleFilter).Count;
+        return count > 0 ? [string.Format(L["BadgeRules"], count)] : [];
+    }
+
+    private IReadOnlyList<string> GetUserBadges(ContentRestrictionProfileDto profile) =>
+        profile.UserCount > 0 ? [string.Format(L["ChipUsers"], profile.UserCount)] : [];
 
     private string FormatRule(ConditionRuleItemDto rule)
     {

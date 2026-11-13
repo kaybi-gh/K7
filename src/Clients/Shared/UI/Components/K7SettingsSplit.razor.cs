@@ -39,5 +39,11 @@ public partial class K7SettingsSplit
     /// <summary>Save indicator shown beside <see cref="Footer"/> on pages that save on change.</summary>
     [Parameter] public SettingsSaveState SaveState { get; set; }
 
+    /// <summary>
+    /// Gives the index more room on wide screens, for lists of items whose lines carry a
+    /// secondary text and chips (<see cref="K7EntityRow"/>) rather than short section names.
+    /// </summary>
+    [Parameter] public bool WideIndex { get; set; }
+
     [Parameter] public string Class { get; set; } = "";
 }

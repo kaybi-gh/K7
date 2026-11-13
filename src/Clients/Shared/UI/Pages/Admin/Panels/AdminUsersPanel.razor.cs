@@ -26,9 +26,11 @@ public partial class AdminUsersPanel : IAsyncDisposable
     [Inject] private K7HubClient HubClient { get; set; } = default!;
     [Inject] private ISpatialNavService SpatialNav { get; set; } = default!;
 
+    private const string BasePath = "/admin/users";
+
     private bool _isLoading = true;
     private List<UserDto> _users = [];
-    private K7DataTable<UserDto>? _tableRef;
+    private string _search = "";
     private Guid? _currentUserId;
     private Guid? _highlightedUserId;
     private bool _shouldScrollToHighlighted;
@@ -37,6 +39,32 @@ public partial class AdminUsersPanel : IAsyncDisposable
     private bool _deleting;
     private readonly HashSet<Guid> _selectedIds = [];
     private SelectionModeKeyboardBinder? _selectionKeys;
+
+    /// <summary>User whose sheet is open. Null shows the list (plus a default sheet on wide screens).</summary>
+    [Parameter] public Guid? UserId { get; set; }
+
+    private List<UserDto> FilteredUsers
+    {
+        get
+        {
+            var search = _search.Trim();
+            if (search.Length == 0)
+                return _users;
+
+            return _users
+                .Where(u => (u.UserName?.Contains(search, StringComparison.OrdinalIgnoreCase) ?? false)
+                    || (u.Email?.Contains(search, StringComparison.OrdinalIgnoreCase) ?? false))
+                .ToList();
+        }
+    }
+
+    /// <summary>The user from the address, else the one a link pointed at, else the first of the list.</summary>
+    private UserDto? SelectedUser =>
+        _users.FirstOrDefault(u => u.Id == UserId)
+        ?? _users.FirstOrDefault(u => u.Id == _highlightedUserId)
+        ?? FilteredUsers.FirstOrDefault();
+
+    private bool IsUserOpen => UserId is not null && _users.Any(u => u.Id == UserId);
 
     private int SelectedCount => _selectedIds.Count;
     private IEnumerable<UserDto> SelectableUsers => _users.Where(CanDeleteUser);
@@ -121,39 +149,35 @@ public partial class AdminUsersPanel : IAsyncDisposable
     private bool IsCurrentUser(UserDto user) =>
         _currentUserId is not null && user.Id == _currentUserId;
 
-    private string? GetUserRowClass(UserDto user)
+    private IReadOnlyList<string> GetCapabilityBadges(UserDto user) =>
+        user.CapabilityOverrides.Count > 0
+            ? [string.Format(L["BadgeCustomized"], user.CapabilityOverrides.Count)]
+            : [];
+
+    private IReadOnlyList<string> GetLibraryBadges(UserDto user)
     {
-        var highlight = GetUserHighlightClass(user);
-        if (_selectionMode && IsSelected(user.Id))
-            return string.IsNullOrEmpty(highlight) ? "is-selected" : $"{highlight} is-selected";
-        return highlight;
+        var blocked = user.LibraryExclusions.Count(e => e.IsAdminExcluded);
+        return blocked > 0 ? [string.Format(L["BadgeLibrariesBlocked"], blocked)] : [];
     }
 
-    private string GetUserCardClass(UserDto user)
+    private static IReadOnlyList<string> GetHiddenMediaBadges(UserDto user)
     {
-        var highlight = GetUserHighlightClass(user) ?? string.Empty;
-        if (_selectionMode && IsSelected(user.Id))
-            return string.IsNullOrEmpty(highlight) ? "is-selected" : $"{highlight} is-selected";
-        return highlight;
+        var hidden = user.MediaExclusions.Count(e => e.IsAdminExcluded);
+        return hidden > 0 ? [hidden.ToString()] : [];
     }
 
-    private string? GetUserHighlightClass(UserDto user)
+    private IReadOnlyList<string> GetRestrictionBadges(UserDto user)
     {
-        var isCurrent = IsCurrentUser(user);
-        var isHighlighted = user.Id == _highlightedUserId;
-        return (isCurrent, isHighlighted) switch
-        {
-            (true, true) => "current-user row-highlighted",
-            (true, false) => "current-user",
-            (false, true) => "row-highlighted",
-            _ => null
-        };
+        var badges = new List<string>(2);
+        if (user.ContentRestrictionProfileId is not null)
+            badges.Add(L["BadgeProfileApplied"]);
+        if (user.AgeRestrictionEnabled)
+            badges.Add(L["BadgeAgeLimit"]);
+        return badges;
     }
 
     private void NavigateToPlaybackHistory(UserDto user) =>
         NavigationManager.NavigateTo($"/admin/playback-history?userId={user.Id}");
-
-    private void OnColumnPickerClick() => _tableRef?.ToggleColumnPicker();
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -298,7 +322,6 @@ public partial class AdminUsersPanel : IAsyncDisposable
     {
         _selectionMode = true;
         _selectedIds.Clear();
-        _tableRef?.InvalidateLayout();
         _ = _selectionKeys?.SetEnabledAsync(true);
     }
 
@@ -309,7 +332,7 @@ public partial class AdminUsersPanel : IAsyncDisposable
 
         _selectionMode = false;
         _selectedIds.Clear();
-        _tableRef?.InvalidateLayout();
+        StateHasChanged();
         _ = _selectionKeys?.SetEnabledAsync(false);
     }
 
@@ -321,8 +344,6 @@ public partial class AdminUsersPanel : IAsyncDisposable
 
         if (!_selectedIds.Remove(id))
             _selectedIds.Add(id);
-
-        _tableRef?.Rerender();
     }
 
     private void ToggleSelectAll()
@@ -331,8 +352,6 @@ public partial class AdminUsersPanel : IAsyncDisposable
             _selectedIds.Clear();
         else
             SelectAll();
-
-        _tableRef?.Rerender();
     }
 
     private void SelectAll()
@@ -356,16 +375,10 @@ public partial class AdminUsersPanel : IAsyncDisposable
             return;
 
         SelectAll();
-        _tableRef?.Rerender();
+        StateHasChanged();
     }
 
     private bool IsSelected(Guid id) => _selectedIds.Contains(id);
-
-    private void OnUserRowClick(UserDto user)
-    {
-        if (_selectionMode)
-            ToggleSelection(user.Id);
-    }
 
     private async Task ConfirmDeleteSelectedAsync()
     {

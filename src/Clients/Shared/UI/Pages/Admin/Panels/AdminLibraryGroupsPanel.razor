@@ -1,57 +1,26 @@
 @page "/admin/library-groups"
+@page "/admin/library-groups/{GroupId:guid}"
 @layout AdminLayout
+@using K7.Server.Domain.Enums
 @using K7.Shared.Dtos.Entities
 @inject IStringLocalizer<AdminLibraryGroupsPanel> L
 @inject IStringLocalizer<SharedResource> S
 
-<BrowseView TItem="LibraryGroupDto"
-            Items="_groups"
-            Loading="_isLoading"
-            DefaultItemWidth="320"
-            DefaultSpacing="16"
-            GridItemAspectRatio="null"
-            SingleColumnOnMobile="true"
-            ShowBackToTop="false"
-            PersistenceKey="admin-library-groups">
-    <ToolbarContent>
-        <AdminPageHeader Title="@L["Title"]" Subtitle="@L["Subtitle"]" />
-    </ToolbarContent>
-    <GridTemplate Context="group">
-        <K7Paper Outlined="true" Elevation="0" Class="admin-entity-card">
-            <div class="group-card">
-                <div class="group-card__header d-flex align-center gap-2">
-                    <K7Icon Icon="@GetGroupIcon(group)"  IconSize="@K7IconSize.Sm" Class="group-card__icon" />
-                    <span class="group-card__name">@group.Title</span>
-                    <K7Chip Size="sm" Color="default" Class="group-card__type">@GetMediaTypeLabel(group.MediaType)</K7Chip>
-                </div>
-                @{
-                    var libraryTitles = GetLibraryTitles(group);
-                }
-                @if (libraryTitles.Count > 0)
-                {
-                    <div class="group-card__libraries">
-                        @foreach (var libraryTitle in libraryTitles)
-                        {
-                            <K7Chip Size="sm">@libraryTitle</K7Chip>
-                        }
-                    </div>
-                }
-                else
-                {
-                    <p class="group-card__libraries-empty">@L["NoLibraries"]</p>
-                }
-                <div class="group-card__actions admin-entity-card__footer">
-                    <K7Button Variant="text" Size="sm" StartIcon="@Phosphor.PencilSimple" OnClick="@(() => OpenEditDialog(group))">
-                        @L["Edit"]
-                    </K7Button>
-                    <K7Button Variant="text" Size="sm" Color="error" StartIcon="@Phosphor.Trash" OnClick="@(() => ConfirmDelete(group))">
-                        @S["Delete"]
-                    </K7Button>
-                </div>
-            </div>
-        </K7Paper>
-    </GridTemplate>
-    <EmptyContent>
+@* List on the left, the selected group's sheet on the right. Narrow screens and TV show the
+   list, then the sheet as its own screen (same shell as the users page). *@
+<div class="library-groups-page" aria-live="polite">
+    @if (_isLoading)
+    {
+        <div class="admin-page-intro">
+            <AdminPageHeader Title="@L["Title"]" Subtitle="@L["Subtitle"]" />
+        </div>
+        <K7ProgressBar Indeterminate="true" />
+    }
+    else if (Groups.Count == 0)
+    {
+        <div class="admin-page-intro">
+            <AdminPageHeader Title="@L["Title"]" Subtitle="@L["Subtitle"]" />
+        </div>
         <K7EmptyState Icon="@Phosphor.Folders" Title="@L["Empty"]" Subtitle="@L["EmptyDescription"]">
             <ActionContent>
                 <K7Button Variant="filled" Color="primary" StartIcon="@Phosphor.Plus" OnClick="GoToLibraries">
@@ -59,5 +28,104 @@
                 </K7Button>
             </ActionContent>
         </K7EmptyState>
-    </EmptyContent>
-</BrowseView>
+    }
+    else
+    {
+        var selectedGroup = SelectedGroup;
+
+        <K7SettingsSplit IndexLabel="@L["Title"]"
+                         WideIndex="true"
+                         DetailTitle="@(selectedGroup?.Title ?? "")"
+                         BackHref="@BasePath"
+                         DetailOpen="IsGroupOpen">
+            <Header>
+                <div class="admin-page-intro">
+                    <AdminPageHeader Title="@L["Title"]" Subtitle="@L["Subtitle"]">
+                        <Actions>
+                            <K7ResultCount Count="Groups.Count" />
+                        </Actions>
+                    </AdminPageHeader>
+                </div>
+            </Header>
+            <Index>
+                @foreach (var group in Groups)
+                {
+                    <K7EntityRow @key="group.Id"
+                                 Title="@group.Title"
+                                 Subtitle="@GetLibrariesSummary(group)"
+                                 Href="@($"{BasePath}/{group.Id}")"
+                                 Active="@(group.Id == selectedGroup?.Id)"
+                                 Dimmed="@(group.LibraryIds.Count == 0)">
+                        <Leading>
+                            <K7Icon Icon="@GetGroupIcon(group)" IconSize="@K7IconSize.Md" />
+                        </Leading>
+                        <Trailing>
+                            <K7Chip Size="sm" Color="default">@GetMediaTypeLabel(group.MediaType)</K7Chip>
+                            @if (group.ExploreTapAction == ExploreTapAction.Browse)
+                            {
+                                <K7Chip Size="sm" Color="default">@L["TapActionBrowse"]</K7Chip>
+                            }
+                        </Trailing>
+                    </K7EntityRow>
+                }
+            </Index>
+            <Detail>
+                @if (selectedGroup is not null)
+                {
+                    var group = selectedGroup;
+                    var libraries = GetLibraries(group);
+
+                    var cardColors = LibraryGroupCardColors.GetRgbaColors(group.MediaType, group.CardColor);
+
+                    @* The card as users see it in Explore, before any edit. *@
+                    <div class="group-sheet__preview">
+                        <K7CategoryCard Title="@group.Title"
+                                        Description="@(group.Description ?? "")"
+                                        Icon="@GetGroupIcon(group)"
+                                        GradientStart="@cardColors.GradientStart"
+                                        IconColor="@cardColors.IconColor"
+                                        ImageUrl="@GetCoverUrl(group)"
+                                        CardColor="@(group.CardColor ?? LibraryGroupCardColors.GetDefaultHex(group.MediaType))" />
+                    </div>
+
+                    <div>
+                        <K7SettingRow Label="@L["FieldType"]">
+                            <K7Chip Size="sm" Color="default">@GetMediaTypeLabel(group.MediaType)</K7Chip>
+                        </K7SettingRow>
+                        <K7SettingRow Label="@L["FieldTapAction"]" Hint="@L["FieldTapActionHint"]">
+                            <span class="group-sheet__value">@GetTapActionLabel(group.ExploreTapAction)</span>
+                        </K7SettingRow>
+                    </div>
+
+                    <h6 class="group-sheet__heading">@L["FieldLibraries"]</h6>
+                    @if (libraries.Count == 0)
+                    {
+                        <p class="group-sheet__value">@L["NoLibraries"]</p>
+                    }
+                    else
+                    {
+                        <div class="group-sheet__actions">
+                            @foreach (var library in libraries)
+                            {
+                                <K7EntityRow @key="library.Id"
+                                             Title="@library.Title"
+                                             Subtitle="@GetMediaTypeLabel(library.MediaType)"
+                                             Href="@($"/admin/libraries/{library.Id}")">
+                                    <Leading>
+                                        <K7Icon Icon="@GetMediaTypeIcon(library.MediaType)" IconSize="@K7IconSize.Md" />
+                                    </Leading>
+                                </K7EntityRow>
+                            }
+                        </div>
+                    }
+
+                    <h6 class="group-sheet__heading">@L["SectionActions"]</h6>
+                    <div class="group-sheet__actions">
+                        <K7SheetAction Icon="@Phosphor.PencilSimple" Label="@L["ActionEdit"]" OnClick="@(() => OpenEditDialog(group))" />
+                        <K7SheetAction Icon="@Phosphor.Trash" Label="@L["ActionDelete"]" Badges="GetLibraryBadges(group)" Danger="true" OnClick="@(() => ConfirmDelete(group))" />
+                    </div>
+                }
+            </Detail>
+        </K7SettingsSplit>
+    }
+</div>

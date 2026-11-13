@@ -16,6 +16,10 @@
     padding: var(--space-4);
 }
 
+.k7-settings-split--wide-index .k7-settings-split__panes {
+    grid-template-columns: minmax(0, 30rem) minmax(0, 56rem);
+}
+
 .k7-settings-split__index {
     grid-area: index;
     display: flex;

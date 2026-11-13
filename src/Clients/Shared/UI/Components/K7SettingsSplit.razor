@@ -1,6 +1,6 @@
 @namespace K7.Clients.Shared.UI.Components
 
-<div class="k7-settings-split @(DetailOpen ? "k7-settings-split--detail-open" : "") @Class">
+<div class="k7-settings-split @(DetailOpen ? "k7-settings-split--detail-open" : "") @(WideIndex ? "k7-settings-split--wide-index" : "") @Class">
     @if (Header is not null)
     {
         <div class="k7-settings-split__intro">

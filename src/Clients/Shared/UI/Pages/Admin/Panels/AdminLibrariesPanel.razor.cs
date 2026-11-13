@@ -23,15 +23,46 @@ public partial class AdminLibrariesPanel : IDisposable
     [Inject] private IHomeFeedStore HomeFeedStore { get; set; } = default!;
     [Inject] private ILogger<AdminLibrariesPanel> Logger { get; set; } = default!;
 
+    private const string BasePath = "/admin/libraries";
+
     private bool _isLoading = true;
+    private string _search = "";
     private List<LibraryDto>? _libraries;
+    private Dictionary<Guid, string> _groupTitles = [];
     private Dictionary<Guid, int> _libraryIssueCountMap = [];
     private Dictionary<Guid, LibraryStatisticsDto> _libraryStatsMap = [];
     private Dictionary<Guid, IReadOnlyList<KeyValuePair<MediaType, int>>> _orderedMediaCountsMap = [];
     private readonly Dictionary<Guid, LibraryScanProgressState> _scanProgressMap = new();
     private readonly CancellationTokenSource _cts = new();
 
+    /// <summary>Library whose sheet is open. Null shows the list (plus a default sheet on wide screens).</summary>
+    [Parameter] public Guid? LibraryId { get; set; }
+
     private IList<LibraryDto> _libraryItems => _libraries ?? [];
+
+    private IList<LibraryDto> FilteredLibraries
+    {
+        get
+        {
+            var search = _search.Trim();
+            if (search.Length == 0)
+                return _libraryItems;
+
+            return _libraryItems
+                .Where(l => l.Title.Contains(search, StringComparison.OrdinalIgnoreCase)
+                    || (l.RootPath?.Contains(search, StringComparison.OrdinalIgnoreCase) ?? false)
+                    || (l.PeerServerName?.Contains(search, StringComparison.OrdinalIgnoreCase) ?? false)
+                    || GetMediaTypeLabel(l.MediaType).Contains(search, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+    }
+
+    /// <summary>The library from the address, else the first of the list.</summary>
+    private LibraryDto? SelectedLibrary =>
+        _libraryItems.FirstOrDefault(l => l.Id == LibraryId)
+        ?? FilteredLibraries.FirstOrDefault();
+
+    private bool IsLibraryOpen => LibraryId is not null && _libraryItems.Any(l => l.Id == LibraryId);
 
     protected override async Task OnInitializedAsync()
     {
@@ -75,6 +106,28 @@ public partial class AdminLibrariesPanel : IDisposable
             ? string.Format(L["ScanProgressFormat"], progress.Processed, progress.Total, progress.Phase)
             : string.Format(L["ScanProgressIndeterminate"], progress.Phase);
 
+    private string FormatScanChip(LibraryScanProgressState progress) =>
+        progress.Total > 0
+            ? string.Format(L["ChipScanningPercent"], (int)GetScanProgressValue(progress))
+            : L["ChipScanning"];
+
+    private string GetRowSubtitle(LibraryDto library)
+    {
+        var type = GetMediaTypeLabel(library.MediaType);
+        var stats = GetStats(library.Id);
+        if (stats is not null)
+            return $"{type} - {stats.FileCount} {L["StatFiles"]}";
+
+        var source = library.PeerServerId is null ? library.RootPath : library.PeerServerName ?? library.PeerServerBaseUrl;
+        return string.IsNullOrEmpty(source) ? type : $"{type} - {source}";
+    }
+
+    private IReadOnlyList<string> GetIssueBadges(Guid libraryId)
+    {
+        var count = GetIssueCount(libraryId);
+        return count > 0 ? [string.Format(L["IssueCount"], count)] : [];
+    }
+
     private sealed record LibraryScanProgressState(int Processed, int Total, string Phase);
 
     private async Task LoadLibraries()
@@ -96,9 +149,26 @@ public partial class AdminLibrariesPanel : IDisposable
         LoadSecondaryDataAsync().FireAndForget(Logger);
     }
 
+    /// <summary>Group names, to link each library to its group.</summary>
+    private async Task LoadGroupTitles()
+    {
+        try
+        {
+            var groups = await K7ServerService.GetLibraryGroupsAsync();
+            _groupTitles = groups.ToDictionary(g => g.Id, g => g.Title);
+        }
+        catch
+        {
+            // Best effort: the sheet just omits the group line.
+        }
+    }
+
+    private string? GetGroupTitle(LibraryDto library) =>
+        _groupTitles.GetValueOrDefault(library.LibraryGroupId) is { Length: > 0 } title ? title : null;
+
     private async Task LoadSecondaryDataAsync()
     {
-        await Task.WhenAll(LoadIssueCounts(), LoadStatistics());
+        await Task.WhenAll(LoadIssueCounts(), LoadStatistics(), LoadGroupTitles());
         await InvokeAsync(StateHasChanged);
     }
 
@@ -302,7 +372,7 @@ public partial class AdminLibrariesPanel : IDisposable
             { x => x.AutoScanIntervalHours, library.AutoScanIntervalHours }
         };
 
-        var options = new K7DialogOptions { MaxWidth = K7DialogMaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
+        var options = new K7DialogOptions { MaxWidth = K7DialogMaxWidth.Medium, FullWidth = true, CloseOnEscapeKey = true };
         var dialog = await DialogService.ShowAsync<EditLibraryDialog>(string.Format(L["EditTitle"], library.Title), parameters, options);
         var result = await dialog.Result;
 

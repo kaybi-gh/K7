@@ -58,7 +58,19 @@
   <data name="DeleteSelectedSuccess" xml:space="preserve"><value>{0} profile(s) deleted</value></data>
   <data name="DeleteSelectedError" xml:space="preserve"><value>Could not delete the selected profiles</value></data>
   <data name="DeleteSelectedPartial" xml:space="preserve"><value>{0} deleted, {1} failed</value></data>
-  <data name="ActionPreview" xml:space="preserve"><value>View media</value></data>
-  <data name="ActionEdit" xml:space="preserve"><value>Edit</value></data>
+  <data name="ActionPreview" xml:space="preserve"><value>View the media blocked by this profile</value></data>
+  <data name="ActionEdit" xml:space="preserve"><value>Edit the name and rules</value></data>
+  <data name="ActionDelete" xml:space="preserve"><value>Delete this profile</value></data>
+  <data name="NoAttachedUsers" xml:space="preserve"><value>No user attached</value></data>
+  <data name="ChipUsers" xml:space="preserve"><value>{0} user(s)</value></data>
+  <data name="ChipUnused" xml:space="preserve"><value>Unused</value></data>
+  <data name="BadgeRules" xml:space="preserve"><value>{0} rule(s)</value></data>
+  <data name="FieldMatch" xml:space="preserve"><value>Blocking</value></data>
+  <data name="FieldMatchHint" xml:space="preserve"><value>A media is hidden when it matches</value></data>
+  <data name="FieldUsers" xml:space="preserve"><value>Users</value></data>
+  <data name="FieldRules" xml:space="preserve"><value>Rules</value></data>
+  <data name="NoRules" xml:space="preserve"><value>No rules</value></data>
+  <data name="RulesSummaryMore" xml:space="preserve"><value>{0} (+{1})</value></data>
+  <data name="SectionActions" xml:space="preserve"><value>Actions</value></data>
 </root>
 

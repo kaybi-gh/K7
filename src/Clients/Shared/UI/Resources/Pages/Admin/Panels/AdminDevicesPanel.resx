@@ -22,7 +22,6 @@
   <data name="Title" xml:space="preserve"><value>Appareils</value></data>
   <data name="Subtitle" xml:space="preserve"><value>Clients qui se sont connectés à ce serveur.</value></data>
   <data name="NoDevices" xml:space="preserve"><value>Aucun appareil trouvé.</value></data>
-  <data name="DeviceCount" xml:space="preserve"><value>{0} appareil(s)</value></data>
   <data name="UnknownDevice" xml:space="preserve"><value>Appareil inconnu</value></data>
   <data name="LastSeen" xml:space="preserve"><value>Dernière activité</value></data>
   <data name="UserCount" xml:space="preserve"><value>{0} utilisateur(s)</value></data>
@@ -50,4 +49,11 @@
   <data name="DeleteSelectedSuccess" xml:space="preserve"><value>{0} appareil(s) supprimé(s)</value></data>
   <data name="DeleteSelectedError" xml:space="preserve"><value>Impossible de supprimer les appareils sélectionnés</value></data>
   <data name="DeleteSelectedPartial" xml:space="preserve"><value>{0} supprimé(s), {1} en échec</value></data>
+  <data name="SearchPlaceholder" xml:space="preserve"><value>Rechercher un appareil ou un utilisateur</value></data>
+  <data name="NoMatch" xml:space="preserve"><value>Aucun appareil ne correspond.</value></data>
+  <data name="FieldClient" xml:space="preserve"><value>Client</value></data>
+  <data name="FieldBrowser" xml:space="preserve"><value>Navigateur</value></data>
+  <data name="FieldSystem" xml:space="preserve"><value>Système</value></data>
+  <data name="FieldScreen" xml:space="preserve"><value>Écran</value></data>
+  <data name="FieldUsers" xml:space="preserve"><value>Utilisateurs</value></data>
 </root>

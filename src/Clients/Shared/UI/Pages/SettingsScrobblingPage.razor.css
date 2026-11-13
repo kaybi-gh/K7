@@ -1,137 +1,30 @@
 .scrobbling-page {
     display: flex;
     flex-direction: column;
-    flex: 1 0 auto;
-    width: 100%;
-    min-width: 0;
-    min-height: 0;
-    container-type: inline-size;
-    container-name: scrobbling;
-}
-
-@container scrobbling (max-width: 42rem) {
-    .scrobbling-page .admin-page-header {
-        align-items: flex-start;
-        flex-wrap: wrap;
-    }
-
-    .scrobbling-page .admin-page-header__actions {
-        width: 100%;
-        justify-content: flex-start;
-    }
-}
-
-.scrobble-account {
-    min-width: 0;
-    max-width: 100%;
-    container-type: inline-size;
-    container-name: scrobble-account;
-}
-
-.scrobble-account__row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--space-3);
     min-width: 0;
 }
 
-.scrobble-account__identity {
-    min-width: 0;
-}
-
-.scrobble-account__name {
-    font-weight: var(--font-semibold);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.scrobble-account__provider {
-    font-size: var(--text-xs);
-    line-height: 1.4;
+.scrobbling-intro {
+    margin: var(--space-3) 0 0;
+    font-size: var(--text-sm);
     color: var(--color-text-muted);
 }
 
-.scrobble-account__actions {
+/* ---- Sheet of the selected account ---- */
+
+.scrobbler-sheet__value {
+    font-size: var(--text-sm);
+    color: var(--color-text-secondary);
+    text-align: end;
+    overflow-wrap: anywhere;
+}
+
+.scrobbler-sheet__heading {
+    margin: var(--space-5) 0 var(--space-2);
+}
+
+.scrobbler-sheet__actions {
     display: flex;
-    align-items: center;
-    flex-shrink: 0;
-    gap: var(--space-4);
-    padding-inline-end: 0.5rem;
-}
-
-.scrobble-account__actions ::deep .k7-switch-wrap {
-    margin: 0;
-    gap: 0;
-    height: 2.5rem;
-}
-
-.scrobble-account__actions ::deep .k7-btn {
-    margin: 0;
-    height: 2.5rem;
-    min-height: 2.5rem;
-}
-
-.scrobble-account__actions ::deep .k7-icon-btn {
-    width: 2.5rem;
-    height: 2.5rem;
-    margin: 0;
-    margin-inline: -0.5rem;
-    flex: 0 0 2.5rem;
-}
-
-@container scrobble-account (max-width: 22rem) {
-    .scrobble-account__row {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-
-    .scrobble-account__actions {
-        flex-shrink: 1;
-        flex-wrap: wrap;
-        max-width: 100%;
-    }
-}
-
-.scrobble-select-item {
-  display: flex;
-  align-items: stretch;
-  gap: var(--space-3);
-  width: 100%;
-  padding: 0;
-  margin: 0;
-  border: none;
-  background: transparent;
-  text-align: left;
-  cursor: pointer;
-  color: inherit;
-  font: inherit;
-}
-
-.scrobble-select-item__check {
-  display: inline-flex;
-  align-items: center;
-  color: var(--color-text-secondary);
-  flex-shrink: 0;
-  padding-left: var(--space-1);
-}
-
-.scrobble-select-item.is-selected .scrobble-select-item__check {
-  color: var(--color-accent-text);
-}
-
-.scrobble-select-item__paper {
-  flex: 1;
-  padding: var(--space-4);
-}
-
-.scrobble-select-item.is-selected ::deep .scrobble-select-item__paper {
-  border-color: var(--color-accent-text);
-}
-
-.scrobble-select-item:focus-visible {
-  outline: 2px solid var(--color-accent);
-  outline-offset: 2px;
-  border-radius: var(--radius-md, 8px);
+    flex-direction: column;
+    gap: var(--space-1);
 }

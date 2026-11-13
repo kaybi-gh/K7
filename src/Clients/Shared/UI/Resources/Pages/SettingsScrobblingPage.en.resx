@@ -11,7 +11,6 @@
   <data name="DisabledHint" xml:space="preserve"><value>Your account does not have this capability, or an administrator turned it off.</value></data>
   <data name="EmptyTitle" xml:space="preserve"><value>No accounts</value></data>
   <data name="EmptyHint" xml:space="preserve"><value>Add a service to scrobble your playback.</value></data>
-  <data name="Test" xml:space="preserve"><value>Test</value></data>
   <data name="TestOk" xml:space="preserve"><value>Test succeeded</value></data>
   <data name="TestFail" xml:space="preserve"><value>Test failed</value></data>
   <data name="TestFailedWithError" xml:space="preserve"><value>Test failed: {0}</value></data>
@@ -32,4 +31,16 @@
   <data name="DeleteAccountTitle" xml:space="preserve"><value>Delete account</value></data>
   <data name="DeleteAccountMessage" xml:space="preserve"><value>Delete account "{0}"? This cannot be undone.</value></data>
   <data name="AccountDeleted" xml:space="preserve"><value>Account deleted</value></data>
+  <data name="FieldEnabled" xml:space="preserve"><value>Account enabled</value></data>
+  <data name="FieldService" xml:space="preserve"><value>Service</value></data>
+  <data name="FieldDestination" xml:space="preserve"><value>Destination</value></data>
+  <data name="FieldMediaTypes" xml:space="preserve"><value>Content sent</value></data>
+  <data name="FieldNowPlaying" xml:space="preserve"><value>Now playing sent</value></data>
+  <data name="FieldCreated" xml:space="preserve"><value>Added on</value></data>
+  <data name="MediaTypeMovie" xml:space="preserve"><value>Movies</value></data>
+  <data name="MediaTypeEpisode" xml:space="preserve"><value>Episodes</value></data>
+  <data name="MediaTypeMusic" xml:space="preserve"><value>Music</value></data>
+  <data name="ActionTest" xml:space="preserve"><value>Send a test to this service</value></data>
+  <data name="ActionEdit" xml:space="preserve"><value>Edit this account</value></data>
+  <data name="ActionDelete" xml:space="preserve"><value>Delete this account</value></data>
 </root>

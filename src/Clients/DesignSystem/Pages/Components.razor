@@ -378,6 +378,32 @@
         </div>
     </section>
 
+    <section id="k7-entity-row" class="ds-section">
+        <h2>K7EntityRow / K7SheetAction</h2>
+        <p class="ds-description">Admin lists of items (users, devices, rules): <code>K7EntityRow</code> is one two-level line (visual, title, secondary line, state chips) linking to the item's sheet, used as the <code>Index</code> of <code>K7SettingsSplit</code>. With <code>OnClick</code> it becomes a button and <code>Checked</code> shows a selection mark. The sheet lists what can be done as <code>K7SheetAction</code> lines, with <code>Badges</code> saying what is already set.</p>
+        <div class="ds-preview ds-preview--column">
+            <K7EntityRow Title="alice" Subtitle="alice@example.com" Href="/components#k7-entity-row" Active="true">
+                <Leading><K7Avatar Size="sm" Letter="A" /></Leading>
+                <Trailing>
+                    <K7Chip Size="sm" Variant="filled" Color="primary">You</K7Chip>
+                    <K7Chip Size="sm" Color="default">Administrator</K7Chip>
+                </Trailing>
+            </K7EntityRow>
+            <K7EntityRow Title="bob" Subtitle="bob@example.com" Href="/components#k7-entity-row" Dimmed="true">
+                <Leading><K7Avatar Size="sm" Letter="B" /></Leading>
+                <Trailing><K7Chip Size="sm" Color="default">Inactive</K7Chip></Trailing>
+            </K7EntityRow>
+            <K7EntityRow Title="carol" Subtitle="Selection mode" Checked="true" OnClick="@(() => { })">
+                <Leading><K7Avatar Size="sm" Letter="C" /></Leading>
+            </K7EntityRow>
+        </div>
+        <div class="ds-preview ds-preview--column">
+            <K7SheetAction Icon="@Phosphor.VideoCamera" Label="Library access" Badges="@(new[] { "1 blocked" })" />
+            <K7SheetAction Icon="@Phosphor.Shield" Label="Content restrictions" Badges="@(new[] { "Profile applied", "Age limit" })" />
+            <K7SheetAction Icon="@Phosphor.Trash" Label="Delete the account" Danger="true" />
+        </div>
+    </section>
+
     <section id="k7-setting-row" class="ds-section">
         <h2>K7SettingRow</h2>
         <p class="ds-description">One setting per line: label and hint on the left, a compact control on the right. Selects keep a fixed width instead of stretching. <code>Stacked</code> puts the control under the label (option lists, sliders). Under 600px, anything wider than a switch drops under its label.</p>

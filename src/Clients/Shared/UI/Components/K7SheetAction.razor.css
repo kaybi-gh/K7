@@ -1,0 +1,43 @@
+.k7-sheet-action {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 2.75rem;
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid transparent;
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--color-text);
+    font: inherit;
+    font-size: var(--text-sm);
+    text-align: left;
+    cursor: pointer;
+}
+
+.k7-sheet-action:hover {
+    background: var(--color-surface-hover);
+}
+
+.k7-sheet-action:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.k7-sheet-action__label {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.k7-sheet-action__badges {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: var(--space-1);
+    flex-shrink: 0;
+}
+
+.k7-sheet-action--danger {
+    color: var(--color-error);
+}

@@ -30,8 +30,17 @@
   <data name="TypeMovies" xml:space="preserve"><value>Movies</value></data>
   <data name="TypeSeries" xml:space="preserve"><value>Series</value></data>
   <data name="TypeMusic" xml:space="preserve"><value>Music</value></data>
-  <data name="Edit" xml:space="preserve"><value>Edit</value></data>
   <data name="Empty" xml:space="preserve"><value>No library groups</value></data>
   <data name="EmptyDescription" xml:space="preserve"><value>Groups are created automatically when you add a library.</value></data>
   <data name="CreateLibrary" xml:space="preserve"><value>Create a library</value></data>
+  <data name="FieldType" xml:space="preserve"><value>Media type</value></data>
+  <data name="FieldLibraries" xml:space="preserve"><value>Libraries in this group</value></data>
+  <data name="TapActionBrowse" xml:space="preserve"><value>Browse</value></data>
+  <data name="SectionActions" xml:space="preserve"><value>Actions</value></data>
+  <data name="ActionDelete" xml:space="preserve"><value>Delete this group</value></data>
+  <data name="BadgeLibraries" xml:space="preserve"><value>{0} library(ies)</value></data>
+  <data name="ActionEdit" xml:space="preserve"><value>Edit the group</value></data>
+  <data name="FieldTapAction" xml:space="preserve"><value>Tap action</value></data>
+  <data name="FieldTapActionHint" xml:space="preserve"><value>What opens when this group is picked in Explore.</value></data>
+  <data name="TapActionSuggestions" xml:space="preserve"><value>Suggestions</value></data>
 </root>

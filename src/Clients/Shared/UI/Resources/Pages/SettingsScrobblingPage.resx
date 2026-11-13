@@ -11,7 +11,6 @@
   <data name="DisabledHint" xml:space="preserve"><value>Votre compte n'a pas cette capacité, ou l'administrateur l'a désactivée.</value></data>
   <data name="EmptyTitle" xml:space="preserve"><value>Aucun compte</value></data>
   <data name="EmptyHint" xml:space="preserve"><value>Ajoutez un service pour scrobbler vos lectures.</value></data>
-  <data name="Test" xml:space="preserve"><value>Tester</value></data>
   <data name="TestOk" xml:space="preserve"><value>Test réussi</value></data>
   <data name="TestFail" xml:space="preserve"><value>Test échoué</value></data>
   <data name="TestFailedWithError" xml:space="preserve"><value>Test échoué : {0}</value></data>
@@ -32,4 +31,16 @@
   <data name="DeleteAccountTitle" xml:space="preserve"><value>Supprimer le compte</value></data>
   <data name="DeleteAccountMessage" xml:space="preserve"><value>Supprimer le compte "{0}" ? Cette action est irréversible.</value></data>
   <data name="AccountDeleted" xml:space="preserve"><value>Compte supprimé</value></data>
+  <data name="FieldEnabled" xml:space="preserve"><value>Compte activé</value></data>
+  <data name="FieldService" xml:space="preserve"><value>Service</value></data>
+  <data name="FieldDestination" xml:space="preserve"><value>Destination</value></data>
+  <data name="FieldMediaTypes" xml:space="preserve"><value>Contenus envoyés</value></data>
+  <data name="FieldNowPlaying" xml:space="preserve"><value>Lecture en cours envoyée</value></data>
+  <data name="FieldCreated" xml:space="preserve"><value>Ajouté le</value></data>
+  <data name="MediaTypeMovie" xml:space="preserve"><value>Films</value></data>
+  <data name="MediaTypeEpisode" xml:space="preserve"><value>Épisodes</value></data>
+  <data name="MediaTypeMusic" xml:space="preserve"><value>Musique</value></data>
+  <data name="ActionTest" xml:space="preserve"><value>Envoyer un test à ce service</value></data>
+  <data name="ActionEdit" xml:space="preserve"><value>Modifier ce compte</value></data>
+  <data name="ActionDelete" xml:space="preserve"><value>Supprimer ce compte</value></data>
 </root>

@@ -1,284 +1,207 @@
 @page "/admin/users"
+@page "/admin/users/{UserId:guid}"
 @layout AdminLayout
 @using K7.Shared.Dtos.Users
 @inject IStringLocalizer<AdminUsersPanel> L
 @inject IStringLocalizer<SharedResource> S
 @implements IAsyncDisposable
 
-<div class="full-bleed-page">
-    <div class="admin-page-intro">
-        <AdminPageHeader Title="@(_selectionMode ? string.Format(L["SelectedCount"], SelectedCount) : L["Title"])"
-                         Subtitle="@L["Subtitle"]">
-            <Actions>
-                @if (_selectionMode)
+@* List on the left, the selected user's sheet on the right. Narrow screens and TV show the list,
+   then the sheet as its own screen (same shell as the settings pages). *@
+<div class="users-page" aria-live="polite">
+    @if (_isLoading)
+    {
+        <div class="admin-page-intro">
+            <AdminPageHeader Title="@L["Title"]" Subtitle="@L["Subtitle"]" />
+        </div>
+        <K7ProgressBar Indeterminate="true" />
+    }
+    else
+    {
+        var selectedUser = SelectedUser;
+
+        <K7SettingsSplit IndexLabel="@L["Title"]"
+                         WideIndex="true"
+                         DetailTitle="@(selectedUser?.UserName ?? selectedUser?.Email ?? "")"
+                         BackHref="@BasePath"
+                         DetailOpen="IsUserOpen">
+            <Header>
+                <div class="admin-page-intro">
+                    <AdminPageHeader Title="@(_selectionMode ? string.Format(L["SelectedCount"], SelectedCount) : L["Title"])"
+                                     Subtitle="@L["Subtitle"]">
+                        <Actions>
+                            @if (_selectionMode)
+                            {
+                                <K7Button Variant="text" OnClick="ToggleSelectAll" Disabled="@(!HasSelectableUsers || _deleting)">
+                                    @(AllSelected ? L["DeselectAll"] : L["SelectAll"])
+                                </K7Button>
+                                <K7Button Variant="filled"
+                                          Color="error"
+                                          StartIcon="@Phosphor.Trash"
+                                          OnClick="ConfirmDeleteSelectedAsync"
+                                          Disabled="@(SelectedCount == 0 || _deleting)"
+                                          AriaLabel="@L["DeleteSelected"]">
+                                    @L["DeleteSelected"]
+                                </K7Button>
+                                <K7Button Variant="text" OnClick="ExitSelectionMode" Disabled="@_deleting" AriaLabel="@S["Cancel"]">
+                                    @S["Cancel"]
+                                </K7Button>
+                            }
+                            else
+                            {
+                                @if (_users.Count > 0)
+                                {
+                                    <K7ResultCount Count="_users.Count" />
+                                    <K7IconButton Icon="@Phosphor.ListChecks"
+                                                  OnClick="EnterSelectionMode"
+                                                  Disabled="@(!HasSelectableUsers)"
+                                                  AriaLabel="@L["Select"]" />
+                                }
+                                <K7Button Variant="filled" Color="primary" StartIcon="@Phosphor.UserPlus"
+                                          OnClick="OpenCreateUserDialog" aria-label="@L["AriaCreateUser"]">
+                                    @L["CreateUserTitle"]
+                                </K7Button>
+                            }
+                        </Actions>
+                    </AdminPageHeader>
+                </div>
+            </Header>
+            <Index>
+                <K7TextField TValue="string"
+                             Value="@_search"
+                             ValueChanged="@(value => _search = value ?? "")"
+                             Immediate="true"
+                             Placeholder="@L["SearchPlaceholder"]"
+                             AdornmentIcon="@Phosphor.MagnifyingGlass"
+                             Class="users-search" />
+
+                @if (_users.Count == 0)
                 {
-                    <K7Button Variant="text" OnClick="ToggleSelectAll" Disabled="@(!HasSelectableUsers || _deleting)">
-                        @(AllSelected ? L["DeselectAll"] : L["SelectAll"])
-                    </K7Button>
-                    <K7Button Variant="filled"
-                              Color="error"
-                              StartIcon="@Phosphor.Trash"
-                              OnClick="ConfirmDeleteSelectedAsync"
-                              Disabled="@(SelectedCount == 0 || _deleting)"
-                              AriaLabel="@L["DeleteSelected"]">
-                        @L["DeleteSelected"]
-                    </K7Button>
-                    <K7Button Variant="text" OnClick="ExitSelectionMode" Disabled="@_deleting" AriaLabel="@S["Cancel"]">
-                        @S["Cancel"]
-                    </K7Button>
+                    <p class="users-list-empty">@L["Empty"]</p>
+                }
+                else if (FilteredUsers.Count == 0)
+                {
+                    <p class="users-list-empty">@L["NoMatch"]</p>
+                }
+
+                @foreach (var user in FilteredUsers)
+                {
+                    var selected = IsSelected(user.Id);
+                    <K7EntityRow @key="user.Id"
+                                 Id="@($"user-{user.Id}")"
+                                 Title="@(user.UserName ?? "-")"
+                                 Subtitle="@(user.Email ?? "-")"
+                                 Href="@($"{BasePath}/{user.Id}")"
+                                 OnClick="@(_selectionMode ? EventCallback.Factory.Create(this, () => ToggleSelection(user.Id)) : default)"
+                                 Disabled="@(_selectionMode && !CanDeleteUser(user))"
+                                 Checked="@(_selectionMode ? selected : null)"
+                                 Active="@(!_selectionMode && user.Id == selectedUser?.Id)"
+                                 Highlighted="@(user.Id == _highlightedUserId)"
+                                 Dimmed="@(!user.IsActive)">
+                        <Leading>
+                            <K7Avatar Size="sm" Image="@user.AvatarUrl"
+                                      Letter="@(user.UserName?[..1].ToUpperInvariant() ?? "?")"
+                                      UserId="@user.Id">
+                                <span class="connection-badge connection-badge--@GetPresenceBadgeClass(user)"
+                                      title="@GetPresenceTitle(user)"
+                                      aria-label="@GetPresenceTitle(user)"></span>
+                            </K7Avatar>
+                        </Leading>
+                        <Trailing>
+                            @if (IsCurrentUser(user))
+                            {
+                                <K7Chip Size="sm" Variant="filled" Color="primary">@L["ThisUser"]</K7Chip>
+                            }
+                            @if (user.IsGuest)
+                            {
+                                <K7Chip Size="sm" Color="default">@S["Guest"]</K7Chip>
+                            }
+                            else if (user.Role == Roles.Administrator)
+                            {
+                                <K7Chip Size="sm" Color="default">@L["RoleAdministrator"]</K7Chip>
+                            }
+                            @if (!user.IsActive)
+                            {
+                                <K7Chip Size="sm" Color="default">@L["Inactive"]</K7Chip>
+                            }
+                        </Trailing>
+                    </K7EntityRow>
+                }
+            </Index>
+            <Detail>
+                @if (selectedUser is null)
+                {
+                    <p class="users-list-empty">@L["Empty"]</p>
                 }
                 else
                 {
-                    @if (!_isLoading && _users.Count > 0)
-                    {
-                        <K7ResultCount Count="_users.Count" />
-                        <K7IconButton Icon="@Phosphor.Columns" OnClick="OnColumnPickerClick" AriaLabel="@S["ToggleColumns"]" />
-                        <K7IconButton Icon="@Phosphor.ListChecks"
-                                      OnClick="EnterSelectionMode"
-                                      Disabled="@(!HasSelectableUsers)"
-                                      AriaLabel="@L["Select"]" />
-                    }
-                    <K7Button Class="users-toolbar-create" Variant="filled" Color="primary" StartIcon="@Phosphor.UserPlus"
-                              OnClick="OpenCreateUserDialog" aria-label="@L["AriaCreateUser"]">
-                        @L["CreateUserTitle"]
-                    </K7Button>
-                }
-            </Actions>
-        </AdminPageHeader>
-    </div>
+                    var user = selectedUser;
 
-    <div class="data-page-body" aria-live="polite">
-        @if (_isLoading)
-        {
-            <K7ProgressBar Indeterminate="true" />
-        }
-        else if (_users.Count == 0)
-        {
-            <div class="users-empty-state">
-                <K7Icon Name="users"  IconSize="@K7IconSize.Lg" Color="secondary" />
-                <h6 Color="secondary">@L["Empty"]</h6>
-            </div>
-        }
-        else
-        {
-            <div class="users-desktop">
-                <K7DataTable PersistenceKey="admin-users" TItem="UserDto" Items="_users" RowHeight="60" @ref="_tableRef"
-                             ShowToolbar="false" Surface="false" Height="100%"
-                             RowId="@(u => $"user-{u.Id}")" RowClass="@(u => GetUserRowClass(u))"
-                             OnRowClick="OnUserRowClick">
-                    <K7DataColumn TItem="UserDto" Title="" Width="48px" Visible="@_selectionMode" Hideable="false" VisibleOnMobile="true">
-                        <CellTemplate>
-                            @if (CanDeleteUser(context))
-                            {
-                                var selected = IsSelected(context.Id);
-                                <span class="k7-select-check @(selected ? "is-selected" : null)" aria-hidden="true">
-                                    <K7Icon Icon="@(selected ? Phosphor.Fill.CheckCircle : Phosphor.Circle)" IconSize="@K7IconSize.Md" />
-                                </span>
-                            }
-                        </CellTemplate>
-                    </K7DataColumn>
-                    <K7DataColumn TItem="UserDto" Title="@L["HeaderUser"]" Hideable="false">
-                        <CellTemplate>
-                            <div class="d-flex align-center gap-2 @(!context.IsActive ? "user-inactive" : "")">
-                                <K7Avatar Size="sm" Image="@context.AvatarUrl"
-                                          Letter="@(context.UserName?[..1].ToUpperInvariant() ?? "?")"
-                                          UserId="@context.Id">
-                                    <span class="connection-badge connection-badge--@GetPresenceBadgeClass(context)"
-                                          title="@GetPresenceTitle(context)"
-                                          aria-label="@GetPresenceTitle(context)"></span>
-                                </K7Avatar>
-                                <div class="d-flex flex-col user-identity">
-                                    <div class="user-identity-title">
-                                        <p>@(context.UserName ?? "-")</p>
-                                        @if (IsCurrentUser(context))
-                                        {
-                                            <K7Chip Size="sm" Variant="filled" Color="primary">@L["ThisUser"]</K7Chip>
-                                        }
-                                    </div>
-                                    <span class="text-caption user-email">@(context.Email ?? "-")</span>
-                                </div>
-                            </div>
-                        </CellTemplate>
-                    </K7DataColumn>
-                    <K7DataColumn TItem="UserDto" Title="@L["HeaderRole"]" Hideable="false" Width="180px">
-                        <CellTemplate>
-                            @if (context.IsGuest)
+                    <div class="user-sheet__identity @(!user.IsActive ? "user-inactive" : "")">
+                        <K7Avatar Size="md" Image="@user.AvatarUrl"
+                                  Letter="@(user.UserName?[..1].ToUpperInvariant() ?? "?")"
+                                  UserId="@user.Id" />
+                        <div class="user-sheet__identity-text">
+                            <span class="user-email">@(user.Email ?? "-")</span>
+                            <span class="user-sheet__presence">
+                                <span class="connection-badge connection-badge--@GetPresenceBadgeClass(user)" aria-hidden="true"></span>
+                                @GetPresenceTitle(user)
+                            </span>
+                        </div>
+                        @if (IsCurrentUser(user))
+                        {
+                            <K7Chip Size="sm" Variant="filled" Color="primary">@L["ThisUser"]</K7Chip>
+                        }
+                    </div>
+
+                    <div>
+                        <K7SettingRow Label="@L["HeaderRole"]">
+                            @if (user.IsGuest)
                             {
                                 <K7Chip Size="sm" Color="default">@S["Guest"]</K7Chip>
                             }
                             else
                             {
-                                <K7Select TValue="string" Value="@context.Role" ValueChanged="@(role => OnRoleChanged(context, role))"
-                                          Variant="outlined" Disabled="@_selectionMode">
+                                <K7Select TValue="string" Value="@user.Role" ValueChanged="@(role => OnRoleChanged(user, role))"
+                                          Variant="outlined">
                                     <K7SelectItem Value="@Roles.Administrator" Text="@L["RoleAdministrator"]">@L["RoleAdministrator"]</K7SelectItem>
                                     <K7SelectItem Value="@Roles.User" Text="@L["RoleUser"]">@L["RoleUser"]</K7SelectItem>
                                 </K7Select>
                             }
-                        </CellTemplate>
-                    </K7DataColumn>
-                    <K7DataColumn TItem="UserDto" Title="@L["HeaderActive"]" Hideable="false" Width="80px">
-                        <CellTemplate>
-                            <K7Switch Value="@context.IsActive"
-                                      ValueChanged="@(v => OnToggleActive(context, v))"
-                                      Disabled="@_selectionMode" />
-                        </CellTemplate>
-                    </K7DataColumn>
-                    <K7DataColumn TItem="UserDto" Title="@L["HeaderCreatedAt"]" Width="160px" Property="@(u => u.Created.LocalDateTime.ToString("dd/MM/yyyy HH:mm"))" VisibleOnMobile="false" />
-                    <K7DataColumn TItem="UserDto" Title="@L["HeaderActions"]" Width="112px" Hideable="false" Visible="@(!_selectionMode)">
-                        <CellTemplate>
-                            <K7Menu Title="@L["HeaderActions"]">
-                                <ActivatorContent>
-                                    <K7IconButton Icon="@Phosphor.DotsThreeVertical" AriaLabel="@L["HeaderActions"]" />
-                                </ActivatorContent>
-                                <ChildContent>
-                                    @if (!context.IsGuest)
-                                    {
-                                        <K7MenuItem Icon="@Phosphor.Sliders" OnClick="@(() => OpenCapabilitiesDialog(context))">@L["AriaCapabilities"]</K7MenuItem>
-                                    }
-                                    <K7MenuItem Icon="@Phosphor.VideoCamera" OnClick="@(() => OpenLibraryExclusionsDialog(context))">@L["AriaLibraries"]</K7MenuItem>
-                                    <K7MenuItem Icon="@Phosphor.EyeSlash" OnClick="@(() => OpenMediaExclusionsDialog(context))">@L["AriaHiddenMedia"]</K7MenuItem>
-                                    <K7MenuItem Icon="@Phosphor.Shield" OnClick="@(() => OpenRestrictionProfileDialog(context))">@L["AriaRestrictionProfile"]</K7MenuItem>
-                                    <K7MenuItem Icon="@Phosphor.ClockCounterClockwise" OnClick="@(() => NavigateToPlaybackHistory(context))">@L["AriaPlaybackHistory"]</K7MenuItem>
-                                    @if (!context.IsGuest && context.Id != _currentUserId)
-                                    {
-                                        <K7MenuItem Icon="@Phosphor.Key" OnClick="@(() => OpenResetPasswordDialog(context))">@L["AriaResetPassword"]</K7MenuItem>
-                                        <K7MenuItem Icon="@Phosphor.GitMerge" OnClick="@(() => OpenMergeUserDialog(context))">@L["AriaMerge"]</K7MenuItem>
-                                        <K7MenuItem Icon="@Phosphor.Trash" OnClick="@(() => ConfirmDelete(context))">@L["AriaDelete"]</K7MenuItem>
-                                    }
-                                </ChildContent>
-                            </K7Menu>
-                        </CellTemplate>
-                    </K7DataColumn>
-                </K7DataTable>
-            </div>
+                        </K7SettingRow>
+                        <K7SettingRow Label="@L["HeaderActive"]">
+                            <K7Switch AriaLabel="@L["HeaderActive"]"
+                                      Value="@user.IsActive"
+                                      ValueChanged="@(v => OnToggleActive(user, v))" />
+                        </K7SettingRow>
+                        <K7SettingRow Label="@L["HeaderCreatedAt"]">
+                            <span class="user-sheet__value">@user.Created.LocalDateTime.ToString("dd/MM/yyyy HH:mm")</span>
+                        </K7SettingRow>
+                    </div>
 
-            <div class="users-mobile">
-                @foreach (var user in _users)
-                {
-                    var selected = IsSelected(user.Id);
-                    var canDelete = CanDeleteUser(user);
-                    @if (_selectionMode && canDelete)
+                    <h6 class="user-sheet__heading">@L["SectionAccess"]</h6>
+                    <div class="user-sheet__actions">
+                        @if (!user.IsGuest)
+                        {
+                            <K7SheetAction Icon="@Phosphor.Sliders" Label="@L["ActionCapabilities"]" Badges="GetCapabilityBadges(user)" OnClick="@(() => OpenCapabilitiesDialog(user))" />
+                        }
+                        <K7SheetAction Icon="@Phosphor.VideoCamera" Label="@L["ActionLibraries"]" Badges="GetLibraryBadges(user)" OnClick="@(() => OpenLibraryExclusionsDialog(user))" />
+                        <K7SheetAction Icon="@Phosphor.EyeSlash" Label="@L["ActionHiddenMedia"]" Badges="GetHiddenMediaBadges(user)" OnClick="@(() => OpenMediaExclusionsDialog(user))" />
+                        <K7SheetAction Icon="@Phosphor.Shield" Label="@L["ActionRestrictions"]" Badges="GetRestrictionBadges(user)" OnClick="@(() => OpenRestrictionProfileDialog(user))" />
+                        <K7SheetAction Icon="@Phosphor.ClockCounterClockwise" Label="@L["ActionPlaybackHistory"]" OnClick="@(() => NavigateToPlaybackHistory(user))" />
+                    </div>
+
+                    @if (!user.IsGuest && user.Id != _currentUserId)
                     {
-                        <button type="button"
-                                class="users-select-card focusable @(selected ? "is-selected" : null)"
-                                id="@($"user-{user.Id}")"
-                                @onclick="@(() => ToggleSelection(user.Id))">
-                            <span class="users-select-card__check" aria-hidden="true">
-                                <K7Icon Icon="@(selected ? Phosphor.Fill.CheckCircle : Phosphor.Circle)" IconSize="@K7IconSize.Md" />
-                            </span>
-                            <K7Paper Outlined="true" Class="@GetUserCardClass(user)">
-                                <div class="user-card-header">
-                                    <div class="d-flex align-center gap-2 user-card-identity @(!user.IsActive ? "user-inactive" : "")">
-                                        <K7Avatar Size="sm" Image="@user.AvatarUrl"
-                                                  Letter="@(user.UserName?[..1].ToUpperInvariant() ?? "?")"
-                                                  UserId="@user.Id">
-                                            <span class="connection-badge connection-badge--@GetPresenceBadgeClass(user)"
-                                                  title="@GetPresenceTitle(user)"
-                                                  aria-label="@GetPresenceTitle(user)"></span>
-                                        </K7Avatar>
-                                        <div class="d-flex flex-col user-card-info">
-                                            <div class="user-identity-title">
-                                                <p>@(user.UserName ?? "-")</p>
-                                                @if (IsCurrentUser(user))
-                                                {
-                                                    <K7Chip Size="sm" Variant="filled" Color="primary">@L["ThisUser"]</K7Chip>
-                                                }
-                                            </div>
-                                            <span class="text-caption user-email">@(user.Email ?? "-")</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="user-card-footer">
-                                    <div class="user-card-role">
-                                        @if (user.IsGuest)
-                                        {
-                                            <K7Chip Size="sm" Color="default">@S["Guest"]</K7Chip>
-                                        }
-                                        else
-                                        {
-                                            <K7Chip Size="sm" Color="default">@(user.Role == Roles.Administrator ? L["RoleAdministrator"] : L["RoleUser"])</K7Chip>
-                                        }
-                                    </div>
-                                    <div class="user-card-active">
-                                        <span class="text-caption" Color="secondary">@L["HeaderActive"]</span>
-                                        <span class="text-sm">@(user.IsActive ? S["Yes"] : S["No"])</span>
-                                    </div>
-                                </div>
-                            </K7Paper>
-                        </button>
-                    }
-                    else
-                    {
-                        <K7Paper Outlined="true" id="@($"user-{user.Id}")" Class="@GetUserCardClass(user)">
-                            <div class="user-card-header">
-                                <div class="d-flex align-center gap-2 user-card-identity @(!user.IsActive ? "user-inactive" : "")">
-                                    <K7Avatar Size="sm" Image="@user.AvatarUrl"
-                                              Letter="@(user.UserName?[..1].ToUpperInvariant() ?? "?")"
-                                              UserId="@user.Id">
-                                        <span class="connection-badge connection-badge--@GetPresenceBadgeClass(user)"
-                                              title="@GetPresenceTitle(user)"
-                                              aria-label="@GetPresenceTitle(user)"></span>
-                                    </K7Avatar>
-                                    <div class="d-flex flex-col user-card-info">
-                                        <div class="user-identity-title">
-                                            <p>@(user.UserName ?? "-")</p>
-                                            @if (IsCurrentUser(user))
-                                            {
-                                                <K7Chip Size="sm" Variant="filled" Color="primary">@L["ThisUser"]</K7Chip>
-                                            }
-                                        </div>
-                                        <span class="text-caption user-email">@(user.Email ?? "-")</span>
-                                    </div>
-                                </div>
-                                @if (!_selectionMode)
-                                {
-                                    <K7Menu Title="@L["HeaderActions"]">
-                                        <ActivatorContent>
-                                            <K7IconButton Icon="@Phosphor.DotsThreeVertical" AriaLabel="@L["HeaderActions"]" />
-                                        </ActivatorContent>
-                                        <ChildContent>
-                                            @if (!user.IsGuest)
-                                            {
-                                                <K7MenuItem Icon="@Phosphor.Sliders" OnClick="@(() => OpenCapabilitiesDialog(user))">@L["AriaCapabilities"]</K7MenuItem>
-                                            }
-                                            <K7MenuItem Icon="@Phosphor.VideoCamera" OnClick="@(() => OpenLibraryExclusionsDialog(user))">@L["AriaLibraries"]</K7MenuItem>
-                                            <K7MenuItem Icon="@Phosphor.EyeSlash" OnClick="@(() => OpenMediaExclusionsDialog(user))">@L["AriaHiddenMedia"]</K7MenuItem>
-                                            <K7MenuItem Icon="@Phosphor.Shield" OnClick="@(() => OpenRestrictionProfileDialog(user))">@L["AriaRestrictionProfile"]</K7MenuItem>
-                                            <K7MenuItem Icon="@Phosphor.ClockCounterClockwise" OnClick="@(() => NavigateToPlaybackHistory(user))">@L["AriaPlaybackHistory"]</K7MenuItem>
-                                            @if (!user.IsGuest && user.Id != _currentUserId)
-                                            {
-                                                <K7MenuItem Icon="@Phosphor.Key" OnClick="@(() => OpenResetPasswordDialog(user))">@L["AriaResetPassword"]</K7MenuItem>
-                                                <K7MenuItem Icon="@Phosphor.GitMerge" OnClick="@(() => OpenMergeUserDialog(user))">@L["AriaMerge"]</K7MenuItem>
-                                                <K7MenuItem Icon="@Phosphor.Trash" OnClick="@(() => ConfirmDelete(user))">@L["AriaDelete"]</K7MenuItem>
-                                            }
-                                        </ChildContent>
-                                    </K7Menu>
-                                }
-                            </div>
-                            <div class="user-card-footer">
-                                <div class="user-card-role">
-                                    @if (user.IsGuest)
-                                    {
-                                        <K7Chip Size="sm" Color="default">@S["Guest"]</K7Chip>
-                                    }
-                                    else
-                                    {
-                                        <K7Select TValue="string" Value="@user.Role" ValueChanged="@(role => OnRoleChanged(user, role))"
-                                                  Variant="outlined" Disabled="@_selectionMode">
-                                            <K7SelectItem Value="@Roles.Administrator" Text="@L["RoleAdministrator"]">@L["RoleAdministrator"]</K7SelectItem>
-                                            <K7SelectItem Value="@Roles.User" Text="@L["RoleUser"]">@L["RoleUser"]</K7SelectItem>
-                                        </K7Select>
-                                    }
-                                </div>
-                                <div class="user-card-active">
-                                    <span class="text-caption" Color="secondary">@L["HeaderActive"]</span>
-                                    <K7Switch Value="@user.IsActive" ValueChanged="@(v => OnToggleActive(user, v))" Disabled="@_selectionMode" />
-                                </div>
-                            </div>
-                        </K7Paper>
+                        <h6 class="user-sheet__heading">@L["SectionAccount"]</h6>
+                        <div class="user-sheet__actions">
+                            <K7SheetAction Icon="@Phosphor.Key" Label="@L["ActionResetPassword"]" OnClick="@(() => OpenResetPasswordDialog(user))" />
+                            <K7SheetAction Icon="@Phosphor.GitMerge" Label="@L["ActionMerge"]" OnClick="@(() => OpenMergeUserDialog(user))" />
+                            <K7SheetAction Icon="@Phosphor.Trash" Label="@L["ActionDelete"]" Danger="true" OnClick="@(() => ConfirmDelete(user))" />
+                        </div>
                     }
                 }
-            </div>
-        }
-    </div>
+            </Detail>
+        </K7SettingsSplit>
+    }
 </div>

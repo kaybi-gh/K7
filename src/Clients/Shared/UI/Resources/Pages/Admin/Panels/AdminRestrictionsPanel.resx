@@ -58,7 +58,19 @@
   <data name="DeleteSelectedSuccess" xml:space="preserve"><value>{0} profil(s) supprimé(s)</value></data>
   <data name="DeleteSelectedError" xml:space="preserve"><value>Impossible de supprimer les profils sélectionnés</value></data>
   <data name="DeleteSelectedPartial" xml:space="preserve"><value>{0} supprimé(s), {1} en échec</value></data>
-  <data name="ActionPreview" xml:space="preserve"><value>Voir les médias</value></data>
-  <data name="ActionEdit" xml:space="preserve"><value>Modifier</value></data>
+  <data name="ActionPreview" xml:space="preserve"><value>Voir les médias bloqués par ce profil</value></data>
+  <data name="ActionEdit" xml:space="preserve"><value>Modifier le nom et les règles</value></data>
+  <data name="ActionDelete" xml:space="preserve"><value>Supprimer ce profil</value></data>
+  <data name="NoAttachedUsers" xml:space="preserve"><value>Aucun utilisateur rattaché</value></data>
+  <data name="ChipUsers" xml:space="preserve"><value>{0} utilisateur(s)</value></data>
+  <data name="ChipUnused" xml:space="preserve"><value>Inutilisé</value></data>
+  <data name="BadgeRules" xml:space="preserve"><value>{0} règle(s)</value></data>
+  <data name="FieldMatch" xml:space="preserve"><value>Blocage</value></data>
+  <data name="FieldMatchHint" xml:space="preserve"><value>Un média est masqué quand il correspond à</value></data>
+  <data name="FieldUsers" xml:space="preserve"><value>Utilisateurs</value></data>
+  <data name="FieldRules" xml:space="preserve"><value>Règles</value></data>
+  <data name="NoRules" xml:space="preserve"><value>Aucune règle</value></data>
+  <data name="RulesSummaryMore" xml:space="preserve"><value>{0} (+{1})</value></data>
+  <data name="SectionActions" xml:space="preserve"><value>Actions</value></data>
 </root>
 

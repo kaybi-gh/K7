@@ -1,126 +1,171 @@
 @page "/admin/devices"
+@page "/admin/devices/{DeviceId:guid}"
 @layout AdminLayout
-@using K7.Clients.Shared.Enums
 @using K7.Shared.Dtos.Devices
 @inject IStringLocalizer<AdminDevicesPanel> L
 @inject IStringLocalizer<SharedResource> S
 
-<div class="admin-devices-page">
-<BrowseView TItem="DeviceDto" Items="_deviceItems" Loading="_isLoading" Class="admin-devices-browse"
-            DefaultMode="BrowseViewMode.List" ListItemHeight="152" ShowBackToTop="false">
-    <ToolbarContent>
-        <AdminPageHeader Title="@(_selectionMode ? string.Format(L["SelectedCount"], SelectedCount) : L["Title"])"
-                         Subtitle="@L["Subtitle"]">
-            <Actions>
-                @if (_selectionMode)
+@* List on the left, the selected device's sheet on the right. Narrow screens and TV show the list,
+   then the sheet as its own screen (same shell as the settings pages). *@
+<div class="devices-page" aria-live="polite">
+    @if (_isLoading)
+    {
+        <div class="admin-page-intro">
+            <AdminPageHeader Title="@L["Title"]" Subtitle="@L["Subtitle"]" />
+        </div>
+        <K7ProgressBar Indeterminate="true" />
+    }
+    else
+    {
+        var selectedDevice = SelectedDevice;
+        var filteredDevices = FilteredDevices;
+
+        <K7SettingsSplit IndexLabel="@L["Title"]"
+                         WideIndex="true"
+                         DetailTitle="@(selectedDevice is null ? "" : GetDeviceName(selectedDevice))"
+                         BackHref="@BasePath"
+                         DetailOpen="IsDeviceOpen">
+            <Header>
+                <div class="admin-page-intro">
+                    <AdminPageHeader Title="@(_selectionMode ? string.Format(L["SelectedCount"], SelectedCount) : L["Title"])"
+                                     Subtitle="@L["Subtitle"]">
+                        <Actions>
+                            @if (_selectionMode)
+                            {
+                                <K7Button Variant="text" OnClick="ToggleSelectAll" Disabled="@(_deviceItems.Count == 0 || _deleting)">
+                                    @(AllSelected ? L["DeselectAll"] : L["SelectAll"])
+                                </K7Button>
+                                <K7Button Variant="filled"
+                                          Color="error"
+                                          StartIcon="@Phosphor.Trash"
+                                          OnClick="ConfirmDeleteSelectedAsync"
+                                          Disabled="@(SelectedCount == 0 || _deleting)"
+                                          AriaLabel="@L["DeleteSelected"]">
+                                    @L["DeleteSelected"]
+                                </K7Button>
+                                <K7Button Variant="text" OnClick="ExitSelectionMode" Disabled="@_deleting" AriaLabel="@S["Cancel"]">
+                                    @S["Cancel"]
+                                </K7Button>
+                            }
+                            else
+                            {
+                                @if (_devices?.TotalCount is int deviceCount)
+                                {
+                                    <K7ResultCount Count="deviceCount" />
+                                }
+                                <K7IconButton Icon="@Phosphor.ListChecks"
+                                              OnClick="EnterSelectionMode"
+                                              Disabled="@(_deviceItems.Count == 0)"
+                                              AriaLabel="@L["Select"]" />
+                            }
+                        </Actions>
+                    </AdminPageHeader>
+                </div>
+            </Header>
+            <Index>
+                <K7TextField TValue="string"
+                             Value="@_search"
+                             ValueChanged="@(value => _search = value ?? "")"
+                             Immediate="true"
+                             Placeholder="@L["SearchPlaceholder"]"
+                             AdornmentIcon="@Phosphor.MagnifyingGlass"
+                             Class="devices-search" />
+
+                @if (_deviceItems.Count == 0)
                 {
-                    <K7Button Variant="text" OnClick="ToggleSelectAll" Disabled="@(_deviceItems.Count == 0 || _deleting)">
-                        @(AllSelected ? L["DeselectAll"] : L["SelectAll"])
-                    </K7Button>
-                    <K7Button Variant="filled"
-                              Color="error"
-                              StartIcon="@Phosphor.Trash"
-                              OnClick="ConfirmDeleteSelectedAsync"
-                              Disabled="@(SelectedCount == 0 || _deleting)"
-                              AriaLabel="@L["DeleteSelected"]">
-                        @L["DeleteSelected"]
-                    </K7Button>
-                    <K7Button Variant="text" OnClick="ExitSelectionMode" Disabled="@_deleting" AriaLabel="@S["Cancel"]">
-                        @S["Cancel"]
-                    </K7Button>
+                    <p class="devices-list-empty">@L["NoDevices"]</p>
+                }
+                else if (filteredDevices.Count == 0)
+                {
+                    <p class="devices-list-empty">@L["NoMatch"]</p>
+                }
+
+                @foreach (var device in filteredDevices)
+                {
+                    var isCurrent = IsCurrentDevice(device);
+                    var selected = IsSelected(device.Id);
+                    <K7EntityRow @key="device.Id"
+                                 Id="@($"device-{device.Id}")"
+                                 Title="@GetDeviceName(device)"
+                                 Subtitle="@GetRowSummary(device)"
+                                 Href="@($"{BasePath}/{device.Id}")"
+                                 OnClick="@(_selectionMode ? EventCallback.Factory.Create(this, () => ToggleSelection(device.Id)) : default)"
+                                 Disabled="@(_selectionMode && _deleting)"
+                                 Checked="@(_selectionMode ? selected : null)"
+                                 Active="@(!_selectionMode && device.Id == selectedDevice?.Id)"
+                                 Highlighted="@(device.Id == _focusedDeviceId)">
+                        <Leading>
+                            <K7Icon Icon="@GetDeviceIcon(device.DeviceType)" IconSize="@K7IconSize.Md" Color="@(isCurrent ? "primary" : "default")" />
+                        </Leading>
+                        <Trailing>
+                            @if (isCurrent)
+                            {
+                                <K7Chip Size="sm" Variant="filled" Color="primary">@L["ThisDevice"]</K7Chip>
+                            }
+                        </Trailing>
+                    </K7EntityRow>
+                }
+            </Index>
+            <Detail>
+                @if (selectedDevice is null)
+                {
+                    <p class="devices-list-empty">@L["NoDevices"]</p>
                 }
                 else
                 {
-                    @if (_devices?.TotalCount is int deviceCount)
-                    {
-                        <K7ResultCount Count="deviceCount" />
-                    }
-                    <K7IconButton Icon="@Phosphor.ListChecks"
-                                  OnClick="EnterSelectionMode"
-                                  Disabled="@(_deviceItems.Count == 0)"
-                                  AriaLabel="@L["Select"]" />
-                }
-            </Actions>
-        </AdminPageHeader>
-    </ToolbarContent>
-    <EmptyContent>
-        <K7Paper Class="d-flex flex-col pa-8">
-            <K7Icon Icon="@Phosphor.MonitorPlay" IconSize="@K7IconSize.Lg" Color="secondary" />
-            <p Color="secondary">@L["NoDevices"]</p>
-        </K7Paper>
-    </EmptyContent>
-    <ListTemplate Context="device">
-        @{
-            var isCurrent = IsCurrentDevice(device);
-            var isFocused = device.Id == _focusedDeviceId;
-            var selected = IsSelected(device.Id);
-        }
-        <div class="device-list-item">
-            @if (_selectionMode)
-            {
-                <button type="button"
-                        class="device-select-item focusable @(selected ? "is-selected" : null)"
-                        @onclick="@(() => ToggleSelection(device.Id))">
-                    <span class="device-select-item__check" aria-hidden="true">
-                        <K7Icon Icon="@(selected ? Phosphor.Fill.CheckCircle : Phosphor.Circle)" IconSize="@K7IconSize.Md" />
-                    </span>
-                    <K7Paper id="@($"device-{device.Id}")" Outlined="true" Elevation="0" Class="@($"{GetDeviceClass(isCurrent, isFocused)} device-card-paper admin-entity-card")">
-                        <div class="device-card">
-                            <div class="device-card__header">
-                                <K7Icon Icon="@GetDeviceIcon(device.DeviceType)" IconSize="@K7IconSize.Sm" Color="@(isCurrent ? "primary" : "default")" Class="device-card__icon" />
-                                <span class="device-card__name">@(device.DeviceName ?? L["UnknownDevice"])</span>
-                                @if (device.Users.Count > 0)
-                                {
-                                    <K7Chip Size="sm" Class="device-card__users">@string.Format(L["UserCount"], device.Users.Count)</K7Chip>
-                                }
-                                @if (isCurrent)
-                                {
-                                    <K7Chip Size="sm" Variant="filled" Color="primary" Class="device-card__current">@L["ThisDevice"]</K7Chip>
-                                }
-                            </div>
-                            <div class="device-card__facts">
-                                @foreach (var fact in GetDeviceFacts(device))
-                                {
-                                    <K7Chip Size="sm">@fact</K7Chip>
-                                }
-                            </div>
-                            <div class="device-card__footer admin-entity-card__footer">
-                                <span class="device-card__lastseen">@L["LastSeen"] @device.LastSeen.LocalDateTime.ToString("g")</span>
-                            </div>
+                    var device = selectedDevice;
+                    var isCurrent = IsCurrentDevice(device);
+                    var system = GetSystemLabel(device);
+                    var screen = GetScreenLabel(device);
+
+                    <div class="device-sheet__identity">
+                        <K7Icon Icon="@GetDeviceIcon(device.DeviceType)" IconSize="@K7IconSize.Lg" Color="@(isCurrent ? "primary" : "default")" />
+                        <div class="device-sheet__identity-text">
+                            <span class="device-sheet__type">@GetDeviceTypeLabel(device.DeviceType)</span>
+                            <span class="device-sheet__lastseen">@L["LastSeen"] @device.LastSeen.LocalDateTime.ToString("g")</span>
                         </div>
-                    </K7Paper>
-                </button>
-            }
-            else
-            {
-                <K7Paper id="@($"device-{device.Id}")" Outlined="true" Elevation="0" Class="@($"{GetDeviceClass(isCurrent, isFocused)} device-card-paper admin-entity-card")">
-                    <div class="device-card">
-                        <div class="device-card__header">
-                            <K7Icon Icon="@GetDeviceIcon(device.DeviceType)" IconSize="@K7IconSize.Sm" Color="@(isCurrent ? "primary" : "default")" Class="device-card__icon" />
-                            <span class="device-card__name">@(device.DeviceName ?? L["UnknownDevice"])</span>
-                            @if (device.Users.Count > 0)
-                            {
-                                <K7Chip Size="sm" Class="device-card__users">@string.Format(L["UserCount"], device.Users.Count)</K7Chip>
-                            }
-                            @if (isCurrent)
-                            {
-                                <K7Chip Size="sm" Variant="filled" Color="primary" Class="device-card__current">@L["ThisDevice"]</K7Chip>
-                            }
-                        </div>
-                        <div class="device-card__facts">
-                            @foreach (var fact in GetDeviceFacts(device))
-                            {
-                                <K7Chip Size="sm">@fact</K7Chip>
-                            }
-                        </div>
-                        <div class="device-card__footer admin-entity-card__footer">
-                            <span class="device-card__lastseen">@L["LastSeen"] @device.LastSeen.LocalDateTime.ToString("g")</span>
-                            <K7Button Variant="text" Size="sm" Color="error" StartIcon="@Phosphor.Trash" OnClick="@(() => DeleteDeviceAsync(device))">@L["DeleteDevice"]</K7Button>
-                        </div>
+                        @if (isCurrent)
+                        {
+                            <K7Chip Size="sm" Variant="filled" Color="primary">@L["ThisDevice"]</K7Chip>
+                        }
                     </div>
-                </K7Paper>
-            }
-        </div>
-    </ListTemplate>
-</BrowseView>
+
+                    <div>
+                        <K7SettingRow Label="@L["FieldClient"]">
+                            <span class="device-sheet__value">@GetClientTypeLabel(device.ClientType)</span>
+                        </K7SettingRow>
+                        @if (device.WebDeviceDetails is not null)
+                        {
+                            <K7SettingRow Label="@L["FieldBrowser"]">
+                                <span class="device-sheet__value">@GetBrowserLabel(device.WebDeviceDetails.Browser)</span>
+                            </K7SettingRow>
+                        }
+                        @if (system is not null)
+                        {
+                            <K7SettingRow Label="@L["FieldSystem"]">
+                                <span class="device-sheet__value">@system</span>
+                            </K7SettingRow>
+                        }
+                        @if (screen is not null)
+                        {
+                            <K7SettingRow Label="@L["FieldScreen"]">
+                                <span class="device-sheet__value">@screen</span>
+                            </K7SettingRow>
+                        }
+                        <K7SettingRow Label="@L["FieldUsers"]">
+                            <span class="device-sheet__value">@(device.Users.Count == 0 ? "-" : GetUserNames(device))</span>
+                        </K7SettingRow>
+                    </div>
+
+                    <div class="device-sheet__actions">
+                        <K7SheetAction Icon="@Phosphor.Trash"
+                                       Label="@L["DeleteDevice"]"
+                                       Danger="true"
+                                       Disabled="@_deleting"
+                                       OnClick="@(() => DeleteDeviceAsync(device))" />
+                    </div>
+                }
+            </Detail>
+        </K7SettingsSplit>
+    }
 </div>

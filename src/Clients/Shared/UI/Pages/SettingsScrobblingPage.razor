@@ -1,4 +1,5 @@
 @page "/settings/scrobbling"
+@page "/settings/scrobbling/{AccountId:guid}"
 @layout SettingsLayout
 @using K7.Server.Domain.Enums
 @using K7.Clients.Shared.UI.Pages.Dialogs
@@ -12,105 +13,158 @@
 
 <PageTitle>@L["PageTitle"]</PageTitle>
 
-<div class="scrobbling-page">
-<div class="admin-page-intro">
-    <AdminPageHeader Title="@(_selectionMode ? string.Format(L["SelectedCount"], SelectedCount) : L["PageTitle"])" Subtitle="@L["Subtitle"]">
-        <Actions>
-            <SettingsMirrorLink />
-            @if (_canScrobble && !_loading && _selectionMode)
+@* List on the left, the selected account's sheet on the right. Narrow screens and TV show the list,
+   then the sheet as its own screen (same shell as the other settings pages). *@
+<div class="scrobbling-page" aria-live="polite">
+    @if (!_canScrobble || _loading || _accounts.Count == 0)
+    {
+        <div class="admin-page-intro">
+            <AdminPageHeader Title="@L["PageTitle"]" Subtitle="@L["Subtitle"]">
+                <Actions>
+                    <SettingsMirrorLink />
+                    @if (_canScrobble && !_loading)
+                    {
+                        <K7Button StartIcon="@Phosphor.Plus" Variant="filled" Color="primary" OnClick="ShowCreateDialog">
+                            @S["Create"]
+                        </K7Button>
+                    }
+                </Actions>
+            </AdminPageHeader>
+            @if (_canScrobble && !_loading)
             {
-                <K7Button Variant="text" OnClick="ToggleSelectAll" Disabled="@(_accounts.Count == 0 || _deleting)">
-                    @(AllSelected ? L["DeselectAll"] : L["SelectAll"])
-                </K7Button>
-                <K7Button Variant="filled"
-                          Color="error"
-                          StartIcon="@Phosphor.Trash"
-                          OnClick="ConfirmDeleteSelectedAsync"
-                          Disabled="@(SelectedCount == 0 || _deleting)"
-                          AriaLabel="@L["DeleteSelected"]">
-                    @L["DeleteSelected"]
-                </K7Button>
-                <K7Button Variant="text" OnClick="ExitSelectionMode" Disabled="@_deleting" AriaLabel="@S["Cancel"]">
-                    @S["Cancel"]
-                </K7Button>
+                <p class="scrobbling-intro">@L["Intro"]</p>
             }
-            else if (_canScrobble && !_loading)
-            {
-                @if (_accounts.Count > 0)
-                {
-                    <K7IconButton Icon="@Phosphor.ListChecks"
-                                  OnClick="EnterSelectionMode"
-                                  AriaLabel="@L["Select"]" />
-                }
-                <K7Button StartIcon="@Phosphor.Plus" Variant="filled" Color="primary" OnClick="ShowCreateDialog">
-                    @S["Create"]
-                </K7Button>
-            }
-        </Actions>
-    </AdminPageHeader>
-</div>
+        </div>
 
-<div class="settings-form-page">
-    <div class="settings-form-page__body pa-4 d-flex flex-col gap-4">
         @if (!_canScrobble)
         {
             <K7EmptyState Icon="@Phosphor.Broadcast" Title="@L["DisabledTitle"]" Subtitle="@L["DisabledHint"]" />
         }
         else if (_loading)
         {
-            <K7Spinner />
+            <K7ProgressBar Indeterminate="true" />
         }
         else
         {
-            <p class="text-sm" style="color: var(--color-text-muted);">@L["Intro"]</p>
+            <K7EmptyState Icon="@Phosphor.Broadcast" Title="@L["EmptyTitle"]" Subtitle="@L["EmptyHint"]" />
+        }
+    }
+    else
+    {
+        var selectedAccount = SelectedAccount;
 
-            @if (_accounts.Count == 0)
-            {
-                <K7EmptyState Icon="@Phosphor.Broadcast" Title="@L["EmptyTitle"]" Subtitle="@L["EmptyHint"]" />
-            }
-            else
-            {
+        <K7SettingsSplit IndexLabel="@L["PageTitle"]" WideIndex="true"
+                         DetailTitle="@(selectedAccount is null ? "" : GetAccountName(selectedAccount))"
+                         BackHref="@BasePath"
+                         DetailOpen="IsAccountOpen">
+            <Header>
+                <div class="admin-page-intro">
+                    <AdminPageHeader Title="@(_selectionMode ? string.Format(L["SelectedCount"], SelectedCount) : L["PageTitle"])"
+                                     Subtitle="@L["Subtitle"]">
+                        <Actions>
+                            <SettingsMirrorLink />
+                            @if (_selectionMode)
+                            {
+                                <K7Button Variant="text" OnClick="ToggleSelectAll" Disabled="@(_accounts.Count == 0 || _deleting)">
+                                    @(AllSelected ? L["DeselectAll"] : L["SelectAll"])
+                                </K7Button>
+                                <K7Button Variant="filled"
+                                          Color="error"
+                                          StartIcon="@Phosphor.Trash"
+                                          OnClick="ConfirmDeleteSelectedAsync"
+                                          Disabled="@(SelectedCount == 0 || _deleting)"
+                                          AriaLabel="@L["DeleteSelected"]">
+                                    @L["DeleteSelected"]
+                                </K7Button>
+                                <K7Button Variant="text" OnClick="ExitSelectionMode" Disabled="@_deleting" AriaLabel="@S["Cancel"]">
+                                    @S["Cancel"]
+                                </K7Button>
+                            }
+                            else
+                            {
+                                <K7IconButton Icon="@Phosphor.ListChecks"
+                                              OnClick="EnterSelectionMode"
+                                              AriaLabel="@L["Select"]" />
+                                <K7Button StartIcon="@Phosphor.Plus" Variant="filled" Color="primary" OnClick="ShowCreateDialog">
+                                    @S["Create"]
+                                </K7Button>
+                            }
+                        </Actions>
+                    </AdminPageHeader>
+                    <p class="scrobbling-intro">@L["Intro"]</p>
+                </div>
+            </Header>
+            <Index>
                 @foreach (var account in _accounts)
                 {
-                    var selected = IsSelected(account.Id);
-                    @if (_selectionMode)
-                    {
-                        <button type="button"
-                                class="scrobble-select-item focusable @(selected ? "is-selected" : null)"
-                                @onclick="@(() => ToggleSelection(account.Id))">
-                            <span class="scrobble-select-item__check" aria-hidden="true">
-                                <K7Icon Icon="@(selected ? Phosphor.Fill.CheckCircle : Phosphor.Circle)" IconSize="@K7IconSize.Md" />
-                            </span>
-                            <K7Paper Outlined="true" Elevation="0" Class="admin-surface-card scrobble-select-item__paper">
-                                <div class="d-flex align-center justify-between gap-3">
-                                    <div>
-                                        <div class="text-bold">@(account.DisplayName ?? LocalizeProvider(account.Provider))</div>
-                                        <div class="text-caption" style="color: var(--color-text-muted);">@LocalizeProvider(account.Provider)</div>
-                                    </div>
-                                </div>
-                            </K7Paper>
-                        </button>
-                    }
-                    else
-                    {
-                        <K7Paper Outlined="true" Elevation="0" Class="admin-surface-card scrobble-account">
-                            <div class="scrobble-account__row">
-                                <div class="scrobble-account__identity">
-                                    <div class="scrobble-account__name">@(account.DisplayName ?? LocalizeProvider(account.Provider))</div>
-                                    <div class="scrobble-account__provider">@LocalizeProvider(account.Provider)</div>
-                                </div>
-                                <div class="scrobble-account__actions">
-                                    <K7Switch Value="account.IsEnabled" ValueChanged="v => ToggleAsync(account, v)" />
-                                    <K7Button Variant="outlined" Size="sm" OnClick="() => TestAsync(account)">@L["Test"]</K7Button>
-                                    <K7IconButton Icon="@Phosphor.PencilSimple" AriaLabel="@L["EditTitle"]" OnClick="() => ShowEditDialog(account)" />
-                                    <K7IconButton Icon="@Phosphor.Trash" Color="error" AriaLabel="@S["Delete"]" OnClick="() => ConfirmDeleteAsync(account)" />
-                                </div>
-                            </div>
-                        </K7Paper>
-                    }
+                    <K7EntityRow @key="account.Id"
+                                 Id="@($"scrobbler-{account.Id}")"
+                                 Title="@GetAccountName(account)"
+                                 Subtitle="@GetAccountSummary(account)"
+                                 Href="@($"{BasePath}/{account.Id}")"
+                                 OnClick="@(_selectionMode ? EventCallback.Factory.Create(this, () => ToggleSelection(account.Id)) : default)"
+                                 Checked="@(_selectionMode ? IsSelected(account.Id) : null)"
+                                 Active="@(!_selectionMode && account.Id == selectedAccount?.Id)"
+                                 Dimmed="@(!account.IsEnabled)">
+                        <Leading>
+                            <K7Icon Icon="@GetProviderIcon(account.Provider)" IconSize="@K7IconSize.Md" />
+                        </Leading>
+                        <Trailing>
+                            @if (!account.IsEnabled)
+                            {
+                                <K7Chip Size="sm" Color="default">@S["Disabled"]</K7Chip>
+                            }
+                        </Trailing>
+                    </K7EntityRow>
                 }
-            }
-        }
-    </div>
-</div>
+            </Index>
+            <Detail>
+                @if (selectedAccount is not null)
+                {
+                    var account = selectedAccount;
+                    var mediaTypes = GetMediaTypeNames(account);
+                    var destination = GetDestination(account);
+
+                    <div>
+                        <K7SettingRow Label="@L["FieldEnabled"]">
+                            <K7Switch AriaLabel="@L["FieldEnabled"]"
+                                      Value="@account.IsEnabled"
+                                      ValueChanged="@(v => ToggleAsync(account, v))" />
+                        </K7SettingRow>
+                        <K7SettingRow Label="@L["FieldService"]">
+                            <span class="scrobbler-sheet__value">@LocalizeProvider(account.Provider)</span>
+                        </K7SettingRow>
+                        @if (destination is not null)
+                        {
+                            <K7SettingRow Label="@L["FieldDestination"]">
+                                <span class="scrobbler-sheet__value">@destination</span>
+                            </K7SettingRow>
+                        }
+                        @if (mediaTypes.Length > 0)
+                        {
+                            <K7SettingRow Label="@L["FieldMediaTypes"]">
+                                <span class="scrobbler-sheet__value">@mediaTypes</span>
+                            </K7SettingRow>
+                        }
+                        @if (!IsWebhook(account))
+                        {
+                            <K7SettingRow Label="@L["FieldNowPlaying"]">
+                                <span class="scrobbler-sheet__value">@(account.IncludeNowPlaying ? S["Yes"] : S["No"])</span>
+                            </K7SettingRow>
+                        }
+                        <K7SettingRow Label="@L["FieldCreated"]">
+                            <span class="scrobbler-sheet__value">@account.Created.LocalDateTime.ToString("dd/MM/yyyy HH:mm")</span>
+                        </K7SettingRow>
+                    </div>
+
+                    <h6 class="scrobbler-sheet__heading">@S["Actions"]</h6>
+                    <div class="scrobbler-sheet__actions">
+                        <K7SheetAction Icon="@Phosphor.PaperPlaneTilt" Label="@L["ActionTest"]" OnClick="@(() => TestAsync(account))" />
+                        <K7SheetAction Icon="@Phosphor.PencilSimple" Label="@L["ActionEdit"]" OnClick="@(() => ShowEditDialog(account))" />
+                        <K7SheetAction Icon="@Phosphor.Trash" Label="@L["ActionDelete"]" Danger="true" OnClick="@(() => ConfirmDeleteAsync(account))" />
+                    </div>
+                }
+            </Detail>
+        </K7SettingsSplit>
+    }
 </div>

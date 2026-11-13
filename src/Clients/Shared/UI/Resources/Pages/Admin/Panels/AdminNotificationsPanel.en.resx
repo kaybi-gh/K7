@@ -25,14 +25,10 @@
   <data name="EmptyHint" xml:space="preserve"><value>Create a rule to receive notifications when events occur on your server.</value></data>
   <data name="CreateRule" xml:space="preserve"><value>Create rule</value></data>
   <data name="EditRule" xml:space="preserve"><value>Edit rule</value></data>
-  <data name="HeaderName" xml:space="preserve"><value>Name</value></data>
   <data name="HeaderProvider" xml:space="preserve"><value>Provider</value></data>
   <data name="HeaderEnabled" xml:space="preserve"><value>Enabled</value></data>
   <data name="HeaderActions" xml:space="preserve"><value>Actions</value></data>
   <data name="AriaCreate" xml:space="preserve"><value>Create notification rule</value></data>
-  <data name="AriaTest" xml:space="preserve"><value>Test notification</value></data>
-  <data name="AriaEdit" xml:space="preserve"><value>Edit rule</value></data>
-  <data name="AriaDelete" xml:space="preserve"><value>Delete rule</value></data>
   <data name="RuleCreated" xml:space="preserve"><value>Rule created successfully</value></data>
   <data name="RuleUpdated" xml:space="preserve"><value>Rule updated</value></data>
   <data name="RuleDeleted" xml:space="preserve"><value>Rule deleted</value></data>
@@ -53,4 +49,18 @@
   <data name="DeleteSelectedSuccess" xml:space="preserve"><value>{0} rule(s) deleted</value></data>
   <data name="DeleteSelectedError" xml:space="preserve"><value>Could not delete the selected rules</value></data>
   <data name="DeleteSelectedPartial" xml:space="preserve"><value>{0} deleted, {1} failed</value></data>
+  <data name="Disabled" xml:space="preserve"><value>Disabled</value></data>
+  <data name="FieldEvents" xml:space="preserve"><value>Events</value></data>
+  <data name="FieldDestination" xml:space="preserve"><value>Destination</value></data>
+  <data name="FieldSchedule" xml:space="preserve"><value>Time windows</value></data>
+  <data name="FieldCooldown" xml:space="preserve"><value>Cooldown</value></data>
+  <data name="FieldBatching" xml:space="preserve"><value>Media batching</value></data>
+  <data name="FieldLastModified" xml:space="preserve"><value>Last modified</value></data>
+  <data name="ScheduleAlways" xml:space="preserve"><value>Always</value></data>
+  <data name="ScheduleWindowCount" xml:space="preserve"><value>{0} time window(s)</value></data>
+  <data name="SecondsValue" xml:space="preserve"><value>{0} s</value></data>
+  <data name="BadgeConditions" xml:space="preserve"><value>Conditions</value></data>
+  <data name="ActionTest" xml:space="preserve"><value>Send a test notification</value></data>
+  <data name="ActionEdit" xml:space="preserve"><value>Edit the rule</value></data>
+  <data name="ActionDelete" xml:space="preserve"><value>Delete the rule</value></data>
 </root>
