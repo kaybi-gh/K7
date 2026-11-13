@@ -20,5 +20,8 @@
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
   <data name="SelectUsers" xml:space="preserve"><value>Sélectionnez les utilisateurs pour lesquels « {0} » doit être masqué.</value></data>
+  <data name="SearchPlaceholder" xml:space="preserve"><value>Rechercher un utilisateur</value></data>
+  <data name="NoMatch" xml:space="preserve"><value>Aucun utilisateur ne correspond.</value></data>
+  <data name="HiddenForCount" xml:space="preserve"><value>Masqué pour {0} utilisateur(s) sur {1}</value></data>
 </root>
 

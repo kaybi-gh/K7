@@ -1,0 +1,48 @@
+.exclude-users-dialog {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.exclude-users-dialog__intro,
+.exclude-users-dialog__empty,
+.exclude-users-dialog__count {
+    margin: 0;
+    font-size: var(--text-sm);
+    color: var(--color-text-secondary);
+}
+
+.exclude-users-dialog__count {
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+}
+
+/* Taller than the default list: this dialog is nothing but the list. */
+.exclude-users-dialog ::deep .exclude-users-dialog__list {
+    max-height: min(50vh, 24rem);
+}
+
+.exclude-users-dialog__text {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.exclude-users-dialog__name,
+.exclude-users-dialog__email {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.exclude-users-dialog__name {
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+    color: var(--color-text);
+}
+
+.exclude-users-dialog__email {
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+}

@@ -16,18 +16,38 @@ public partial class ExcludeMediaForUsersDialog
     private bool _loading = true;
     private bool _saving;
     private List<UserExclusionState> _userStates = [];
+    private string _search = "";
+
+    private List<UserExclusionState> FilteredStates
+    {
+        get
+        {
+            var search = _search.Trim();
+            if (search.Length == 0)
+                return _userStates;
+
+            return _userStates
+                .Where(s => GetName(s.User).Contains(search, StringComparison.OrdinalIgnoreCase)
+                    || (s.User.Email?.Contains(search, StringComparison.OrdinalIgnoreCase) ?? false))
+                .ToList();
+        }
+    }
+
+    private int HiddenCount => _userStates.Count(s => s.Excluded);
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
             var users = await K7ServerService.GetUsersAsync();
-            _userStates = users.Select(u => new UserExclusionState
-            {
-                User = u,
-                Excluded = u.MediaExclusions.Any(e => e.MediaId == MediaId && e.IsAdminExcluded),
-                OriginalExcluded = u.MediaExclusions.Any(e => e.MediaId == MediaId && e.IsAdminExcluded)
-            }).ToList();
+            _userStates = users
+                .OrderBy(u => u.UserName ?? u.Email, StringComparer.CurrentCultureIgnoreCase)
+                .Select(u => new UserExclusionState
+                {
+                    User = u,
+                    Excluded = u.MediaExclusions.Any(e => e.MediaId == MediaId && e.IsAdminExcluded),
+                    OriginalExcluded = u.MediaExclusions.Any(e => e.MediaId == MediaId && e.IsAdminExcluded)
+                }).ToList();
         }
         catch
         {
@@ -35,6 +55,11 @@ public partial class ExcludeMediaForUsersDialog
         }
         _loading = false;
     }
+
+    private static string GetName(UserDto user) =>
+        !string.IsNullOrEmpty(user.UserName) ? user.UserName
+        : !string.IsNullOrEmpty(user.Email) ? user.Email
+        : "-";
 
     private void Cancel() => Dialog.Cancel();
 

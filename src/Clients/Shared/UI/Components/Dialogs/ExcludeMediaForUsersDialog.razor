@@ -1,37 +1,64 @@
+@using K7.Shared.Dtos.Users
 @inject IStringLocalizer<ExcludeMediaForUsersDialog> L
 @inject IStringLocalizer<SharedResource> S
 
-<div class="k7-dialog-content">
-        @if (_loading)
+<div class="k7-dialog-content exclude-users-dialog">
+    @if (_loading)
+    {
+        <K7ProgressBar Indeterminate="true" />
+    }
+    else
+    {
+        <p class="exclude-users-dialog__intro">
+            @string.Format(L["SelectUsers"], MediaTitle)
+        </p>
+
+        <K7TextField TValue="string"
+                     Value="@_search"
+                     ValueChanged="@(value => _search = value ?? "")"
+                     Immediate="true"
+                     Placeholder="@L["SearchPlaceholder"]"
+                     AdornmentIcon="@Phosphor.MagnifyingGlass" />
+
+        @if (FilteredStates.Count == 0)
         {
-            <K7ProgressBar Indeterminate="true" />
+            <p class="exclude-users-dialog__empty">@L["NoMatch"]</p>
         }
         else
         {
-            <p class="text-sm mb-3" Color="secondary">
-                @string.Format(L["SelectUsers"], MediaTitle)
-            </p>
-            <div class="d-flex flex-col">
-                @foreach (var entry in _userStates)
-                {
-                    <div class="d-flex align-center justify-between">
-                        <div class="d-flex flex-col">
-                            <p class="text-sm">@(entry.User.UserName ?? entry.User.Email ?? "-")</p>
-                            @if (entry.User.IsGuest)
-                            {
-                                <span class="text-caption" Color="secondary">@S["Guest"]</span>
-                            }
-                        </div>
-                        <K7Switch Value="@entry.Excluded" ValueChanged="@(v => entry.Excluded = v)" />
-                    </div>
-                }
-            </div>
+            <K7CheckboxList TItem="UserExclusionState"
+                            Items="FilteredStates"
+                            IsChecked="@(entry => entry.Excluded)"
+                            CheckedChanged="@(change => change.Item.Excluded = change.Checked)"
+                            Class="exclude-users-dialog__list">
+                <ItemTemplate Context="entry">
+                    <K7Avatar Size="sm" Image="@entry.User.AvatarUrl"
+                              Letter="@(GetName(entry.User)[..1].ToUpperInvariant())"
+                              UserId="@entry.User.Id" />
+                    <span class="exclude-users-dialog__text">
+                        <span class="exclude-users-dialog__name">@GetName(entry.User)</span>
+                        @if (!string.IsNullOrEmpty(entry.User.Email) && entry.User.Email != GetName(entry.User))
+                        {
+                            <span class="exclude-users-dialog__email">@entry.User.Email</span>
+                        }
+                    </span>
+                    @if (entry.User.IsGuest)
+                    {
+                        <K7Chip Size="sm" Color="default">@S["Guest"]</K7Chip>
+                    }
+                </ItemTemplate>
+            </K7CheckboxList>
         }
-    </div>
-    <div class="k7-dialog-actions">
-        <K7Button OnClick="Cancel">@S["Cancel"]</K7Button>
-        <K7Button Color="primary" Variant="filled" OnClick="Submit" Disabled="_saving">
-            @if (_saving) { <K7Spinner Size="sm" /> }
-            @S["Save"]
-        </K7Button>
-    </div>
+
+        <p class="exclude-users-dialog__count" aria-live="polite">
+            @string.Format(L["HiddenForCount"], HiddenCount, _userStates.Count)
+        </p>
+    }
+</div>
+<div class="k7-dialog-actions">
+    <K7Button OnClick="Cancel">@S["Cancel"]</K7Button>
+    <K7Button Color="primary" Variant="filled" OnClick="Submit" Disabled="_saving || _loading">
+        @if (_saving) { <K7Spinner Size="sm" /> }
+        @S["Save"]
+    </K7Button>
+</div>
