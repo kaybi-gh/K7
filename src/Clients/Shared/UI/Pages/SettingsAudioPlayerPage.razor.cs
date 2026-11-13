@@ -1,5 +1,7 @@
+using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Services;
+using K7.Clients.Shared.UI.Components;
 using K7.Clients.Shared.UI.Helpers;
 using K7.Shared;
 using K7.Shared.Dtos;
@@ -8,11 +10,13 @@ using Microsoft.AspNetCore.Components;
 
 namespace K7.Clients.Shared.UI.Pages;
 
-public partial class SettingsAudioPlayerPage
+public partial class SettingsAudioPlayerPage : IDisposable
 {
     private sealed record AudioFormState(
         AudioPlayerSettingsDto Settings,
         AudioPlaybackPolicySettingsDto Policy);
+
+    private const string BasePath = "/settings/audio-player";
 
     private AudioPlayerSettingsDto? _settings;
     private AudioPlaybackPolicySettingsDto? _audioPolicy;
@@ -20,9 +24,30 @@ public partial class SettingsAudioPlayerPage
     private bool _saving;
     private bool _hasUserOverride;
     private readonly SettingsFormTracker<AudioFormState> _formTracker = new();
+    private readonly SettingsAutoSave _autoSave = new();
+    private SettingsSaveState _saveStatus;
+    private bool _disposed;
+
+    /// <summary>Sub-page to show. Null shows the index (plus the first sub-page on wide screens).</summary>
+    [Parameter] public string? Section { get; set; }
 
     [Inject] private IUserPreferencesService UserPreferencesService { get; set; } = default!;
     [Inject] private MusicSessionPersistenceService MusicSessions { get; set; } = default!;
+
+    private IReadOnlyList<SettingsSection> Sections => AudioSettingsSections.Build(L);
+
+    private bool IsSectionOpen => Sections.Any(s => s.Key == Section);
+
+    private string ActiveSection => IsSectionOpen ? Section! : AudioSettingsSections.Loudness;
+
+    private string ActiveSectionTitle => Sections.First(s => s.Key == ActiveSection).Title;
+
+    /// <summary>
+    /// Edits waiting for the debounce already count as saving, so the indicator stays visible
+    /// from the change to the end of the request instead of flashing.
+    /// </summary>
+    private SettingsSaveState CurrentSaveState =>
+        _saveStatus != SettingsSaveState.Failed && IsDirty ? SettingsSaveState.Saving : _saveStatus;
 
     private bool IsDirty =>
         _settings is not null
@@ -30,6 +55,19 @@ public partial class SettingsAudioPlayerPage
         && _formTracker.IsDirty(new AudioFormState(_settings, _audioPolicy));
 
     private bool ResetDisabled => !IsDirty && !_hasUserOverride;
+
+    public void Dispose()
+    {
+        if (_disposed)
+            return;
+
+        _disposed = true;
+        _autoSave.Dispose();
+
+        // Leaving inside the quiet time: send the last change instead of dropping it.
+        if (!_saving && IsDirty)
+            PersistAsync().FireAndForget();
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -50,6 +88,18 @@ public partial class SettingsAudioPlayerPage
         }
 
         _loading = false;
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (_loading || _saving || _disposed || _settings is null || _audioPolicy is null)
+            return;
+
+        var state = new AudioFormState(_settings, _audioPolicy);
+        if (!_formTracker.IsDirty(state))
+            return;
+
+        _autoSave.Schedule(_formTracker.Snapshot(state), () => InvokeAsync(SaveAsync));
     }
 
     private void OnSettingsChanged(AudioPlayerSettingsDto value)
@@ -73,38 +123,64 @@ public partial class SettingsAudioPlayerPage
         _formTracker.Capture(new AudioFormState(_settings, _audioPolicy));
     }
 
-    private void CancelChanges()
-    {
-        if (_settings is null || _audioPolicy is null)
-            return;
-
-        var state = _formTracker.Restore();
-        _settings = state.Settings;
-        _audioPolicy = state.Policy;
-        ApplySettingsToRuntime(_settings);
-    }
-
     private async Task SaveAsync()
     {
         if (_saving || _settings is null || _audioPolicy is null)
             return;
 
+        _autoSave.Cancel();
         _saving = true;
+        _saveStatus = SettingsSaveState.Saving;
+        StateHasChanged();
         try
         {
-            await Task.WhenAll(
-                UserPreferencesService.UpdateUserAudioPlayerSettingsAsync(_settings),
-                UserPreferencesService.UpdateUserAudioPlaybackPolicySettingsAsync(_audioPolicy));
-            ApplySettingsToRuntime(_settings);
-            await MusicSessions.ApplyRememberSettingAsync(_settings.RememberMusicSession != false);
-            CaptureFormState();
+            // Snapshot what is sent: edits made while the request is in flight stay dirty
+            // and trigger the next save.
+            var sentSnapshot = _formTracker.Snapshot(new AudioFormState(_settings, _audioPolicy));
+            var rememberSession = _settings.RememberMusicSession != false;
+            await PersistAsync();
+            await MusicSessions.ApplyRememberSettingAsync(rememberSession);
+            _formTracker.CaptureSnapshot(sentSnapshot);
+            _autoSave.Reset();
             await RefreshOverrideStateAsync();
-            Snackbar.Add(L["Saved"], K7Severity.Success);
+            _saveStatus = SettingsSaveState.Saved;
+        }
+        catch (Exception ex)
+        {
+            _saveStatus = SettingsSaveState.Failed;
+            Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), K7Severity.Error);
         }
         finally
         {
             _saving = false;
+            if (!_disposed)
+                StateHasChanged();
         }
+    }
+
+    private async Task PersistAsync()
+    {
+        if (_settings is null || _audioPolicy is null)
+            return;
+
+        await Task.WhenAll(
+            UserPreferencesService.UpdateUserAudioPlayerSettingsAsync(_settings),
+            UserPreferencesService.UpdateUserAudioPlaybackPolicySettingsAsync(_audioPolicy));
+    }
+
+    private async Task ConfirmResetAsync()
+    {
+        if (_saving)
+            return;
+
+        var confirmed = await DialogService.ShowMessageBoxAsync(
+            S["ResetToDefaultsTitle"],
+            S["ResetToDefaultsMessage"],
+            yesText: S["ResetToDefaults"],
+            cancelText: S["Cancel"]);
+
+        if (confirmed is true)
+            await ResetAsync();
     }
 
     private async Task ResetAsync()
@@ -112,6 +188,8 @@ public partial class SettingsAudioPlayerPage
         if (_saving)
             return;
 
+        _autoSave.Reset();
+        _saveStatus = SettingsSaveState.Idle;
         _saving = true;
         try
         {
@@ -124,6 +202,10 @@ public partial class SettingsAudioPlayerPage
             await MusicSessions.ApplyRememberSettingAsync(_settings.RememberMusicSession != false);
             CaptureFormState();
             await RefreshOverrideStateAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), K7Severity.Error);
         }
         finally
         {

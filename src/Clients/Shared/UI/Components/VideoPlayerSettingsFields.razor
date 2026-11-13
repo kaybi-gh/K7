@@ -1,0 +1,158 @@
+@namespace K7.Clients.Shared.UI.Components
+@using K7.Shared.Enums
+
+@if (Settings is not null)
+{
+    @switch (Section)
+    {
+        case VideoSettingsSections.Seekbar:
+            <K7SettingRow Label="@Localizer["ShowSeekbarThumbnails"]"
+                          Hint="@ThumbnailsHint">
+                <K7Switch AriaLabel="@Localizer["ShowSeekbarThumbnails"]"
+                          @bind-Value="Settings.ShowSeekbarThumbnails"
+                          @bind-Value:after="NotifyChangedAsync" />
+            </K7SettingRow>
+
+            <K7SettingRow Label="@Localizer["ShowChapterTicks"]"
+                          Hint="@ChapterTicksHint">
+                <K7Switch AriaLabel="@Localizer["ShowChapterTicks"]"
+                          @bind-Value="Settings.ShowChapterTicks"
+                          @bind-Value:after="NotifyChangedAsync" />
+            </K7SettingRow>
+
+            <div class="settings-field-group">
+                <K7Slider TValue="int" Min="5" Max="60" Step="5" Immediate="true"
+                          Label="@Localizer["SkipBackDuration"]"
+                          FormatValue="FormatSkipSeconds"
+                          @bind-Value="Settings.SkipBackSeconds"
+                          @bind-Value:after="NotifyChangedAsync" />
+                <K7Slider TValue="int" Min="5" Max="60" Step="5" Immediate="true"
+                          Label="@Localizer["SkipForwardDuration"]"
+                          Hint="@Localizer["SkipDurationHint"]"
+                          FormatValue="FormatSkipSeconds"
+                          @bind-Value="Settings.SkipForwardSeconds"
+                          @bind-Value:after="NotifyChangedAsync" />
+            </div>
+            break;
+
+        case VideoSettingsSections.Skip:
+            <K7SettingRow Label="@Localizer["IntroSkipBehavior"]" Stacked="true">
+                <K7OptionList TValue="IntroSkipBehavior"
+                              Options="SkipBehaviorOptions"
+                              AriaLabel="@Localizer["IntroSkipBehavior"]"
+                              @bind-Value="Settings.IntroSkipBehavior"
+                              @bind-Value:after="NotifyChangedAsync" />
+            </K7SettingRow>
+
+            <K7SettingRow Label="@Localizer["OutroSkipBehavior"]" Stacked="true">
+                <K7OptionList TValue="IntroSkipBehavior"
+                              Options="SkipBehaviorOptions"
+                              AriaLabel="@Localizer["OutroSkipBehavior"]"
+                              @bind-Value="Settings.OutroSkipBehavior"
+                              @bind-Value:after="NotifyChangedAsync" />
+            </K7SettingRow>
+            break;
+
+        case VideoSettingsSections.NextEpisode:
+            <K7SettingRow Label="@Localizer["NextEpisodeBehavior"]" Hint="@Localizer["NextEpisodeBehaviorHint"]" Stacked="true">
+                <K7OptionList TValue="NextEpisodeBehavior"
+                              Options="NextEpisodeBehaviorOptions"
+                              AriaLabel="@Localizer["NextEpisodeBehavior"]"
+                              @bind-Value="Settings.NextEpisodeBehavior"
+                              @bind-Value:after="NotifyChangedAsync" />
+            </K7SettingRow>
+
+            @if (Settings.NextEpisodeBehavior == NextEpisodeBehavior.PlayAfterCountdown)
+            {
+                <K7SettingRow Label="@Localizer["InactivityPrompt"]" Hint="@Localizer["InactivityPromptHint"]">
+                    <K7Select TValue="int"
+                              @bind-Value="Settings.InactivityPromptAfterEpisodes"
+                              @bind-Value:after="NotifyChangedAsync">
+                        <K7SelectItem Value="0" Text="@Localizer["InactivityPromptDisabled"]">@Localizer["InactivityPromptDisabled"]</K7SelectItem>
+                        @foreach (var count in InactivityPromptChoices)
+                        {
+                            var label = string.Format(Localizer["InactivityPromptAfterEpisodes"], count);
+                            <K7SelectItem Value="@count" Text="@label">@label</K7SelectItem>
+                        }
+                    </K7Select>
+                </K7SettingRow>
+            }
+            break;
+
+        case VideoSettingsSections.Trailers:
+            <K7SettingRow Label="@Localizer["OpenTrailersExternally"]" Hint="@Localizer["OpenTrailersExternallyHint"]">
+                <K7Switch AriaLabel="@Localizer["OpenTrailersExternally"]"
+                          @bind-Value="Settings.OpenTrailersExternally"
+                          @bind-Value:after="NotifyChangedAsync" />
+            </K7SettingRow>
+            break;
+
+        case VideoSettingsSections.Subtitles:
+            <SubtitlePreview Family="Settings.SubtitleFontFamily"
+                             Size="Settings.SubtitleFontSize"
+                             FontColor="@Settings.SubtitleFontColor"
+                             BackgroundOpacity="Settings.SubtitleBackgroundOpacity"
+                             ShadowEnabled="Settings.SubtitleShadowEnabled"
+                             ShadowColor="@Settings.SubtitleShadowColor"
+                             ShadowBlur="Settings.SubtitleShadowBlur" />
+
+            <K7SettingRow Label="@Localizer["SubtitleFontFamily"]">
+                <K7Select TValue="SubtitleFontFamily"
+                          @bind-Value="Settings.SubtitleFontFamily"
+                          @bind-Value:after="NotifyChangedAsync">
+                    <K7SelectItem Value="SubtitleFontFamily.Default" Text="@Localizer["FontDefault"]">@Localizer["FontDefault"]</K7SelectItem>
+                    <K7SelectItem Value="SubtitleFontFamily.Manrope" Text="Manrope">Manrope</K7SelectItem>
+                    <K7SelectItem Value="SubtitleFontFamily.Epilogue" Text="Epilogue">Epilogue</K7SelectItem>
+                    <K7SelectItem Value="SubtitleFontFamily.SansSerif" Text="Sans-serif">Sans-serif</K7SelectItem>
+                    <K7SelectItem Value="SubtitleFontFamily.Serif" Text="Serif">Serif</K7SelectItem>
+                    <K7SelectItem Value="SubtitleFontFamily.Monospace" Text="Monospace">Monospace</K7SelectItem>
+                </K7Select>
+            </K7SettingRow>
+
+            <K7SettingRow Label="@Localizer["SubtitleFontSize"]">
+                <K7ButtonGroup TValue="SubtitleFontSize"
+                               Options="SubtitleSizeOptions"
+                               AriaLabel="@Localizer["SubtitleFontSize"]"
+                               @bind-Value="Settings.SubtitleFontSize"
+                               @bind-Value:after="NotifyChangedAsync" />
+            </K7SettingRow>
+
+            <K7SettingRow Label="@Localizer["SubtitleFontColor"]">
+                <K7ColorPicker @bind-Value="Settings.SubtitleFontColor"
+                               @bind-Value:after="NotifyChangedAsync" />
+            </K7SettingRow>
+
+            <div class="settings-field-group">
+                <K7Slider TValue="double" Min="0" Max="1" Step="0.1" Immediate="true"
+                          Label="@Localizer["SubtitleBackgroundOpacity"]"
+                          Hint="@Localizer["SubtitleBackgroundOpacityHint"]"
+                          FormatValue="FormatOpacity"
+                          @bind-Value="Settings.SubtitleBackgroundOpacity"
+                          @bind-Value:after="NotifyChangedAsync" />
+            </div>
+
+            <K7SettingRow Label="@Localizer["SubtitleShadow"]">
+                <K7Switch AriaLabel="@Localizer["SubtitleShadow"]"
+                          @bind-Value="Settings.SubtitleShadowEnabled"
+                          @bind-Value:after="NotifyChangedAsync" />
+            </K7SettingRow>
+
+            @if (Settings.SubtitleShadowEnabled)
+            {
+                <K7SettingRow Label="@Localizer["SubtitleShadowColor"]">
+                    <K7ColorPicker @bind-Value="Settings.SubtitleShadowColor"
+                                   @bind-Value:after="NotifyChangedAsync" />
+                </K7SettingRow>
+
+                <div class="settings-field-group">
+                    <K7Slider TValue="double" Min="0" Max="10" Step="0.5" Immediate="true"
+                              Label="@Localizer["SubtitleShadowBlur"]"
+                              Hint="@Localizer["SubtitleShadowBlurHint"]"
+                              FormatValue="FormatBlur"
+                              @bind-Value="Settings.SubtitleShadowBlur"
+                              @bind-Value:after="NotifyChangedAsync" />
+                </div>
+            }
+            break;
+    }
+}

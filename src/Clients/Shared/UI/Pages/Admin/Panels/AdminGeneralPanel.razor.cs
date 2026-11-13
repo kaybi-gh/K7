@@ -1,20 +1,21 @@
 using K7.Clients.Shared.Models;
 using K7.Clients.Shared.Services.Resources;
+using K7.Clients.Shared.UI.Components;
 using K7.Clients.Shared.UI.Helpers;
 using K7.Shared.Dtos;
 using K7.Shared.Interfaces;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Routing;
 using Microsoft.Extensions.Localization;
 
 namespace K7.Clients.Shared.UI.Pages.Admin.Panels;
 
-public partial class AdminGeneralPanel
+public partial class AdminGeneralPanel : IDisposable
 {
     private sealed record GeneralFormState(
         string Language,
         string ThemeCssDataAttribute,
-        bool PlayThemeSongs,
-        bool MediaLinkPreviewsEnabled);
+        bool PlayThemeSongs);
 
     [Inject] private IServerInfoService ServerInfoService { get; set; } = default!;
     [Inject] private IServerPreferencesService ServerPreferencesService { get; set; } = default!;
@@ -26,20 +27,40 @@ public partial class AdminGeneralPanel
     private bool _playThemeSongs = true;
     private bool _savedPlayThemeSongs = true;
     private bool _mediaLinkPreviewsEnabled = true;
-    private bool _savedMediaLinkPreviewsEnabled = true;
+    private bool _linkPreviewsSaving;
+    private SettingsSaveState _linkPreviewsSaveState;
     private bool _isLoading = true;
     private bool _saving;
     private readonly SettingsFormTracker<GeneralFormState> _formTracker = new();
+
+    /// <summary>Link previews are not part of Interface: own page, under its current or former address.</summary>
+    private bool IsLinkPreviewsPage
+    {
+        get
+        {
+            var path = CustomNavPath.From(NavigationManager);
+            return path.EndsWith("/link-previews", StringComparison.OrdinalIgnoreCase)
+                || path.EndsWith("/general", StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    private bool IsThemeSongs => InterfaceSettingsSections.IsThemeSongs(NavigationManager);
+
+    private string ActiveSection =>
+        IsThemeSongs ? InterfaceSettingsSections.ThemeSongs : InterfaceSettingsSections.Appearance;
 
     private bool IsDirty =>
         _formTracker.IsDirty(new GeneralFormState(
             _defaultLanguage,
             _defaultTheme.CssDataAttribute,
-            _playThemeSongs,
-            _mediaLinkPreviewsEnabled));
+            _playThemeSongs));
+
+    public void Dispose() => NavigationManager.LocationChanged -= OnLocationChanged;
 
     protected override async Task OnInitializedAsync()
     {
+        NavigationManager.LocationChanged += OnLocationChanged;
+
         try
         {
             var serverInfo = await ServerInfoService.GetServerInfoAsync();
@@ -69,10 +90,8 @@ public partial class AdminGeneralPanel
         _formTracker.Capture(new GeneralFormState(
             _defaultLanguage,
             _defaultTheme.CssDataAttribute,
-            _playThemeSongs,
-            _mediaLinkPreviewsEnabled));
+            _playThemeSongs));
         _savedPlayThemeSongs = _playThemeSongs;
-        _savedMediaLinkPreviewsEnabled = _mediaLinkPreviewsEnabled;
     }
 
     private void CancelChanges()
@@ -82,7 +101,6 @@ public partial class AdminGeneralPanel
         _defaultTheme = Themes.FromCssDataAttribute(state.ThemeCssDataAttribute) ?? Themes.DefaultDark;
         _playThemeSongs = state.PlayThemeSongs;
         _videoPlayerSettings.PlayThemeSongs = state.PlayThemeSongs;
-        _mediaLinkPreviewsEnabled = state.MediaLinkPreviewsEnabled;
     }
 
     private void OnDefaultLanguageChanged(string language)
@@ -104,10 +122,36 @@ public partial class AdminGeneralPanel
         StateHasChanged();
     }
 
-    private void OnMediaLinkPreviewsChanged(bool enabled)
+    // Link previews, Appearance and Theme songs are the same page: render again when only the
+    // address changes.
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e) => InvokeAsync(StateHasChanged);
+
+    /// <summary>A single switch: saved as soon as it is flipped, without the Save bar.</summary>
+    private async Task OnMediaLinkPreviewsChangedAsync(bool enabled)
     {
+        if (_linkPreviewsSaving || enabled == _mediaLinkPreviewsEnabled)
+            return;
+
+        _linkPreviewsSaving = true;
         _mediaLinkPreviewsEnabled = enabled;
-        StateHasChanged();
+        _linkPreviewsSaveState = SettingsSaveState.Saving;
+        try
+        {
+            var current = await ServerPreferencesService.GetServerFeatureFlagsAsync();
+            await ServerPreferencesService.UpdateServerFeatureFlagsAsync(
+                current with { MediaLinkPreviewsEnabled = enabled });
+            _linkPreviewsSaveState = SettingsSaveState.Saved;
+        }
+        catch (Exception ex)
+        {
+            _mediaLinkPreviewsEnabled = !enabled;
+            _linkPreviewsSaveState = SettingsSaveState.Failed;
+            Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), K7Severity.Error);
+        }
+        finally
+        {
+            _linkPreviewsSaving = false;
+        }
     }
 
     private async Task SaveAsync()
@@ -122,12 +166,6 @@ public partial class AdminGeneralPanel
             await ServerInfoService.UpdateDefaultThemeAsync(_defaultTheme.CssDataAttribute);
             if (_playThemeSongs != _savedPlayThemeSongs)
                 await ServerPreferencesService.UpdateServerVideoPlayerSettingsAsync(_videoPlayerSettings);
-            if (_mediaLinkPreviewsEnabled != _savedMediaLinkPreviewsEnabled)
-            {
-                var current = await ServerPreferencesService.GetServerFeatureFlagsAsync();
-                await ServerPreferencesService.UpdateServerFeatureFlagsAsync(
-                    current with { MediaLinkPreviewsEnabled = _mediaLinkPreviewsEnabled });
-            }
 
             CaptureFormState();
             Snackbar.Add(L["SaveSuccess"], K7Severity.Success);

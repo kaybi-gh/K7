@@ -1,0 +1,74 @@
+.account-page {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+}
+
+.account-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.account-section__title {
+    margin: 0;
+}
+
+.account-section__title--danger {
+    color: var(--color-error);
+}
+
+.account-identity {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-4);
+    padding: var(--space-2) 0;
+}
+
+.account-identity__actions,
+.account-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}
+
+.account-page ::deep .account-file-input {
+    display: none;
+}
+
+/* Several controls can share the right side of a row (field + Save, two buttons). */
+.account-page ::deep .k7-setting-row__control {
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.account-two-factor-setup {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    max-width: 24rem;
+    padding: var(--space-3) 0;
+    border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.account-hint {
+    margin: 0;
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+}
+
+.recovery-codes-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+    gap: var(--space-1) var(--space-3);
+    margin: var(--space-2) 0;
+    padding: 0;
+    list-style: none;
+}
+
+.recovery-code {
+    font-family: var(--font-mono, monospace);
+    font-size: var(--text-sm);
+}

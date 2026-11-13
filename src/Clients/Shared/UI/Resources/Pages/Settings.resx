@@ -20,8 +20,6 @@
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
   <data name="PageTitle" xml:space="preserve"><value>Paramètres</value></data>
-  <data name="GeneralPageTitle" xml:space="preserve"><value>Général</value></data>
-  <data name="GeneralPageSubtitle" xml:space="preserve"><value>Langue, thème et options de votre compte.</value></data>
   <data name="DarkMode" xml:space="preserve"><value>Mode sombre</value></data>
   <data name="Theme" xml:space="preserve"><value>Thème</value></data>
   <data name="Language" xml:space="preserve"><value>Langue</value></data>
@@ -62,13 +60,11 @@
   <data name="LibrariesPageEmpty" xml:space="preserve"><value>Aucune bibliothèque disponible.</value></data>
   <data name="EmptyStateTitle" xml:space="preserve"><value>Rien à afficher</value></data>
   <data name="EmptyStateSubtitle" xml:space="preserve"><value>Votre bibliothèque est vide, ou aucun contenu ne vous est accessible.</value></data>
-  <data name="LibrariesSaveSuccess" xml:space="preserve"><value>Bibliothèques mises à jour.</value></data>
   <data name="HomePageTitle" xml:space="preserve"><value>Disposition de l'accueil</value></data>
   <data name="HomePageDescription" xml:space="preserve"><value>Votre page d'accueil est personnalisée. Réinitialisez-la pour revenir à la disposition par défaut.</value></data>
   <data name="HomePageDefaultDescription" xml:space="preserve"><value>Vous utilisez la disposition par défaut du serveur.</value></data>
   <data name="HomeResetLayout" xml:space="preserve"><value>Réinitialiser la disposition</value></data>
   <data name="HomeResetSuccess" xml:space="preserve"><value>Disposition réinitialisée.</value></data>
-  <data name="HomeSaveSuccess" xml:space="preserve"><value>Disposition enregistrée.</value></data>
   <data name="PreviewTitle" xml:space="preserve"><value>Aperçu</value></data>
   <data name="PreviewRefresh" xml:space="preserve"><value>Actualiser l'aperçu</value></data>
   <data name="HiddenPageTitle" xml:space="preserve"><value>Masqués</value></data>
@@ -76,15 +72,9 @@
   <data name="HiddenPageEmpty" xml:space="preserve"><value>Vous n'avez masqué aucun média.</value></data>
   <data name="Unhide" xml:space="preserve"><value>Démasquer</value></data>
   <data name="SyncPlayEnabled" xml:space="preserve"><value>Activer les invitations SyncPlay</value></data>
-  <data name="ThemeSongsSection" xml:space="preserve"><value>Thème musical</value></data>
   <data name="PlayThemeSongs" xml:space="preserve"><value>Activer le thème musical</value></data>
   <data name="PlayThemeSongsHint" xml:space="preserve"><value>Joue le thème en fond sur la page série ou film lorsqu'un fichier thème est disponible.</value></data>
   <data name="DisableThemeSongsOnDevice" xml:space="preserve"><value>Désactiver sur ce périphérique</value></data>
   <data name="DisableThemeSongsOnDeviceHint" xml:space="preserve"><value>Coupe le thème uniquement sur cet appareil, même si le thème musical est activé pour votre compte.</value></data>
-  <data name="ServerDefaultsSection" xml:space="preserve"><value>Valeurs du serveur</value></data>
-  <data name="ServerDefaultsHint" xml:space="preserve"><value>Langue, thème et thème musical reprennent les valeurs du serveur. Les réglages de cet appareil restent en place.</value></data>
-  <data name="ResetServerDefaults" xml:space="preserve"><value>Revenir aux valeurs du serveur</value></data>
-  <data name="ResetServerDefaultsTitle" xml:space="preserve"><value>Revenir aux valeurs du serveur</value></data>
-  <data name="ResetServerDefaultsMessage" xml:space="preserve"><value>La langue, le thème et le thème musical reprendront les valeurs du serveur. Les réglages locaux de cet appareil ne sont pas effacés.</value></data>
 </root>
 

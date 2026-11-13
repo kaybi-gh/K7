@@ -1,42 +1,47 @@
-.device-facts {
-    display: grid;
-    grid-template-columns: auto 1fr;
-    gap: var(--space-2) var(--space-4);
-    align-items: baseline;
+.device-page {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
 }
 
-.device-facts__label,
-.device-hint,
-.device-codec-group__title {
+.device-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.device-section__title {
+    margin: 0;
+}
+
+.device-hint {
     margin: 0;
     font-size: var(--text-sm);
     line-height: 1.4;
     color: var(--color-text-secondary);
 }
 
-.device-facts__value {
+.device-value {
     font-size: var(--text-sm);
-    line-height: 1.4;
+    color: var(--color-text-secondary);
 }
 
-.device-section-title {
-    margin: 0;
+/* Codec lines: a narrow name column, then the chips starting on the same left edge on every
+   line. On a narrow screen the chips drop under the name and stay left-aligned. */
+.device-page ::deep .device-codec-row .k7-setting-row__text {
+    flex: 0 0 8rem;
 }
 
-.device-codec-group__title {
-    margin-bottom: var(--space-2);
-    font-weight: var(--font-semibold);
+.device-page ::deep .device-codec-row .k7-setting-row__control {
+    flex: 1 1 16rem;
+    justify-content: flex-start;
 }
 
 .device-codec-chips {
     display: flex;
     flex-wrap: wrap;
+    justify-content: flex-start;
     gap: var(--space-2);
-}
-
-.device-server ::deep .k7-input-adornment,
-.device-server ::deep .k7-input-adornment:hover {
-    color: var(--color-error);
 }
 
 .device-codec-chips ::deep .k7-chip {

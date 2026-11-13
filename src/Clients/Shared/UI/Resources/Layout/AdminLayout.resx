@@ -29,7 +29,7 @@
   <data name="GroupSystem" xml:space="preserve"><value>Santé</value></data>
   <data name="GroupFeatures" xml:space="preserve"><value>Avancé</value></data>
   <data name="GroupIntegrations" xml:space="preserve"><value>Intégrations</value></data>
-  <data name="General" xml:space="preserve"><value>Général</value></data>
+  <data name="Advanced" xml:space="preserve"><value>Avancé</value></data>
   <data name="Libraries" xml:space="preserve"><value>Bibliothèques</value></data>
   <data name="LibraryGroups" xml:space="preserve"><value>Groupes de bibliothèques</value></data>
   <data name="Users" xml:space="preserve"><value>Utilisateurs</value></data>
@@ -39,12 +39,10 @@
   <data name="BackgroundTasks" xml:space="preserve"><value>Tâches de fond</value></data>
   <data name="Diagnostics" xml:space="preserve"><value>Diagnostic</value></data>
   <data name="ActiveStreams" xml:space="preserve"><value>Flux actifs</value></data>
-  <data name="HomeLayout" xml:space="preserve"><value>Disposition de l'accueil</value></data>
-  <data name="CustomNav" xml:space="preserve"><value>Navigation</value></data>
+  <data name="Interface" xml:space="preserve"><value>Interface</value></data>
   <data name="FeatureFlags" xml:space="preserve"><value>Fonctionnalités</value></data>
   <data name="VideoPlayer" xml:space="preserve"><value>Lecteur vidéo</value></data>
   <data name="VideoPlayback" xml:space="preserve"><value>Lecture vidéo</value></data>
-  <data name="Transcoding" xml:space="preserve"><value>Transcodage</value></data>
   <data name="AudioPlayback" xml:space="preserve"><value>Lecture audio</value></data>
   <data name="TrackSelection" xml:space="preserve"><value>Audio et sous-titres</value></data>
   <data name="Federation" xml:space="preserve"><value>Fédération</value></data>

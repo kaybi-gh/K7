@@ -1,0 +1,28 @@
+@namespace K7.Clients.Shared.UI.Components
+@inject IStringLocalizer<SharedResource> S
+
+<span class="k7-save-indicator @Class" aria-live="polite">
+    @switch (State)
+    {
+        case SettingsSaveState.Saving:
+            <span class="k7-save-indicator__icon k7-spin">
+                <K7Icon Icon="@Phosphor.CircleNotch" IconSize="@K7IconSize.Sm" />
+            </span>
+            <span>@S["AutoSaveSaving"]</span>
+            break;
+
+        case SettingsSaveState.Saved:
+            <span class="k7-save-indicator__icon k7-save-indicator__icon--saved">
+                <K7Icon Icon="@Phosphor.Fill.CheckCircle" IconSize="@K7IconSize.Sm" />
+            </span>
+            <span>@S["AutoSaveSaved"]</span>
+            break;
+
+        case SettingsSaveState.Failed:
+            <span class="k7-save-indicator__icon k7-save-indicator__icon--failed">
+                <K7Icon Icon="@Phosphor.WarningCircle" IconSize="@K7IconSize.Sm" />
+            </span>
+            <span>@S["AutoSaveFailed"]</span>
+            break;
+    }
+</span>

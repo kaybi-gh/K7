@@ -1,15 +1,16 @@
 .subtitle-preview {
     width: 100%;
-    max-width: 480px;
+    margin-bottom: var(--space-3);
 }
 
+/* A wide strip, like the bottom of a video frame: full width, just tall enough for two lines. */
 .subtitle-preview__scene {
     position: relative;
     display: flex;
     align-items: flex-end;
     justify-content: center;
     width: 100%;
-    aspect-ratio: 16 / 9;
+    min-height: 7.5rem;
     border-radius: var(--radius-md, 8px);
     background: linear-gradient(to bottom, var(--color-surface) 0%, var(--color-surface-2) 50%, var(--color-bg) 100%);
     overflow: hidden;

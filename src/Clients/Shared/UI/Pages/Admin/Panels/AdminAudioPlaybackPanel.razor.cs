@@ -1,3 +1,4 @@
+using K7.Clients.Shared.UI.Components;
 using K7.Clients.Shared.UI.Helpers;
 using K7.Shared.Dtos;
 using K7.Shared.Interfaces;
@@ -12,6 +13,11 @@ public partial class AdminAudioPlaybackPanel
         AudioPlayerSettingsDto Settings,
         AudioPlaybackPolicySettingsDto Policy);
 
+    private const string BasePath = "/admin/audio-playback";
+
+    /// <summary>Sub-page to show. Null shows the index (plus the first sub-page on wide screens).</summary>
+    [Parameter] public string? Section { get; set; }
+
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
     [Inject] private IStringLocalizer<SharedResource> S { get; set; } = default!;
     [Inject] private IServerPreferencesService ServerPreferencesService { get; set; } = default!;
@@ -22,6 +28,14 @@ public partial class AdminAudioPlaybackPanel
     private bool _saving;
     private bool _hasServerOverride;
     private readonly SettingsFormTracker<AudioFormState> _formTracker = new();
+
+    private IReadOnlyList<SettingsSection> Sections => AudioSettingsSections.Build(La);
+
+    private bool IsSectionOpen => Sections.Any(s => s.Key == Section);
+
+    private string ActiveSection => IsSectionOpen ? Section! : AudioSettingsSections.Loudness;
+
+    private string ActiveSectionTitle => Sections.First(s => s.Key == ActiveSection).Title;
 
     private bool IsDirty =>
         _settings is not null

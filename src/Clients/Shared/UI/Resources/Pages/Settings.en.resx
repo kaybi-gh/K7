@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -20,8 +20,6 @@
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
   <data name="PageTitle" xml:space="preserve"><value>Settings</value></data>
-  <data name="GeneralPageTitle" xml:space="preserve"><value>General</value></data>
-  <data name="GeneralPageSubtitle" xml:space="preserve"><value>Language, theme, and options for your account.</value></data>
   <data name="DarkMode" xml:space="preserve"><value>Dark mode</value></data>
   <data name="Theme" xml:space="preserve"><value>Theme</value></data>
   <data name="Language" xml:space="preserve"><value>Language</value></data>
@@ -62,13 +60,11 @@
   <data name="LibrariesPageEmpty" xml:space="preserve"><value>No libraries available.</value></data>
   <data name="EmptyStateTitle" xml:space="preserve"><value>Nothing to watch</value></data>
   <data name="EmptyStateSubtitle" xml:space="preserve"><value>Your library is empty, or no content is accessible to you.</value></data>
-  <data name="LibrariesSaveSuccess" xml:space="preserve"><value>Libraries updated.</value></data>
   <data name="HomePageTitle" xml:space="preserve"><value>Home layout</value></data>
   <data name="HomePageDescription" xml:space="preserve"><value>Your home page has been customized. Reset it to return to the default layout.</value></data>
   <data name="HomePageDefaultDescription" xml:space="preserve"><value>You are using the server default layout.</value></data>
   <data name="HomeResetLayout" xml:space="preserve"><value>Reset layout</value></data>
   <data name="HomeResetSuccess" xml:space="preserve"><value>Layout reset.</value></data>
-  <data name="HomeSaveSuccess" xml:space="preserve"><value>Layout saved.</value></data>
   <data name="PreviewTitle" xml:space="preserve"><value>Preview</value></data>
   <data name="PreviewRefresh" xml:space="preserve"><value>Refresh preview</value></data>
   <data name="HiddenPageTitle" xml:space="preserve"><value>Hidden</value></data>
@@ -76,15 +72,9 @@
   <data name="HiddenPageEmpty" xml:space="preserve"><value>You haven't hidden any media.</value></data>
   <data name="Unhide" xml:space="preserve"><value>Unhide</value></data>
   <data name="SyncPlayEnabled" xml:space="preserve"><value>Enable SyncPlay invitations</value></data>
-  <data name="ThemeSongsSection" xml:space="preserve"><value>Theme song</value></data>
   <data name="PlayThemeSongs" xml:space="preserve"><value>Enable theme songs</value></data>
   <data name="PlayThemeSongsHint" xml:space="preserve"><value>Plays the theme in the background on series or movie pages when a theme file is available.</value></data>
   <data name="DisableThemeSongsOnDevice" xml:space="preserve"><value>Disable on this device</value></data>
   <data name="DisableThemeSongsOnDeviceHint" xml:space="preserve"><value>Turns off theme songs on this device only, even when theme songs are enabled for your account.</value></data>
-  <data name="ServerDefaultsSection" xml:space="preserve"><value>Server defaults</value></data>
-  <data name="ServerDefaultsHint" xml:space="preserve"><value>Language, theme, and theme songs go back to the server values. Settings stored on this device stay as they are.</value></data>
-  <data name="ResetServerDefaults" xml:space="preserve"><value>Restore server defaults</value></data>
-  <data name="ResetServerDefaultsTitle" xml:space="preserve"><value>Restore server defaults</value></data>
-  <data name="ResetServerDefaultsMessage" xml:space="preserve"><value>Language, theme, and theme songs will match the server again. Local settings on this device are not cleared.</value></data>
 </root>
 

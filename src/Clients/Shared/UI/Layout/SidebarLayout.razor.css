@@ -11,7 +11,7 @@
 }
 
 .page-sidebar {
-    width: var(--page-sidebar-width, 260px);
+    width: var(--page-sidebar-width, 16.25rem);
     min-width: 0;
     flex-shrink: 0;
     background: var(--color-drawer);
@@ -70,6 +70,11 @@
 .page-sidebar:not(.page-sidebar--collapsed) ::deep .nav-label {
     max-width: none;
     overflow: visible;
+    /* Long labels wrap inside the sidebar instead of running past its edge. */
+    min-width: 0;
+    white-space: normal;
+    overflow-wrap: break-word;
+    line-height: 1.25;
 }
 
 /* Menu-style nav links and group toggles share one row layout */

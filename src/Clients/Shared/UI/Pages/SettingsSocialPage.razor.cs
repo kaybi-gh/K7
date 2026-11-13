@@ -4,21 +4,43 @@ using K7.Shared.Dtos.Federation.Social;
 
 namespace K7.Clients.Shared.UI.Pages;
 
-public partial class SettingsSocialPage
+public partial class SettingsSocialPage : IDisposable
 {
     private sealed record SocialFormState(
         FederationPrivacySettingsDto Privacy,
         ReviewPreferencesDto ReviewPreferences);
 
+    private static readonly FederationContentType[] ContentTypes =
+    [
+        FederationContentType.Reviews,
+        FederationContentType.Collections,
+        FederationContentType.Playlists,
+        FederationContentType.DynamicPlaylists,
+        FederationContentType.PlaybackHistory
+    ];
+
     private bool _loading = true;
-    private bool _saving;
     private FederationPrivacySettingsDto _privacy = new();
     private ReviewPreferencesDto _reviewPreferences = new();
     private List<FederationVisibilityGrantDto> _shareGrants = [];
     private List<FederationVisibilityGrantDto> _viewGrants = [];
     private readonly SettingsFormTracker<SocialFormState> _formTracker = new();
+    private readonly SettingsAutoSaveSession<SocialFormState> _autoSave;
 
-    private bool IsDirty => _formTracker.IsDirty(GetFormState());
+    public SettingsSocialPage()
+    {
+        _autoSave = new SettingsAutoSaveSession<SocialFormState>(
+            _formTracker,
+            () => _loading ? null : GetFormState(),
+            PersistAsync,
+            work => InvokeAsync(work),
+            StateHasChanged,
+            ReportError);
+    }
+
+    public void Dispose() => _autoSave.Dispose();
+
+    protected override void OnAfterRender(bool firstRender) => _autoSave.OnAfterRender();
 
     protected override async Task OnInitializedAsync()
     {
@@ -44,18 +66,29 @@ public partial class SettingsSocialPage
 
     private void CaptureFormState() => _formTracker.Capture(GetFormState());
 
-    private void CancelChanges()
-    {
-        var state = _formTracker.Restore();
-        _privacy = state.Privacy;
-        _reviewPreferences = state.ReviewPreferences;
-        _shareGrants = state.Privacy.Share.Grants.ToList();
-        _viewGrants = state.Privacy.View.Grants.ToList();
-        _privacy.Share.Grants = _shareGrants;
-        _privacy.View.Grants = _viewGrants;
-    }
-
     private void OnFormChanged() => StateHasChanged();
+
+    private string GetContentLabel(FederationContentType contentType) => contentType switch
+    {
+        FederationContentType.Reviews => L["Reviews"],
+        FederationContentType.Collections => L["Collections"],
+        FederationContentType.Playlists => L["Playlists"],
+        FederationContentType.DynamicPlaylists => L["DynamicPlaylists"],
+        _ => L["PlaybackHistory"]
+    };
+
+    private VisibilityScope GetScope(FederationContentType contentType, bool share)
+    {
+        var side = share ? _privacy.Share : _privacy.View;
+        return contentType switch
+        {
+            FederationContentType.Reviews => side.Reviews,
+            FederationContentType.Collections => side.Collections,
+            FederationContentType.Playlists => side.Playlists,
+            FederationContentType.DynamicPlaylists => side.DynamicPlaylists,
+            _ => side.PlaybackHistory
+        };
+    }
 
     private void SetShareScope(FederationContentType contentType, VisibilityScope scope, bool share)
     {
@@ -97,28 +130,14 @@ public partial class SettingsSocialPage
         OnFormChanged();
     }
 
-    private async Task SaveAsync()
+    private async Task PersistAsync()
     {
-        if (_saving)
-            return;
-
-        _saving = true;
-        try
-        {
-            _privacy.Share.Grants = _shareGrants;
-            _privacy.View.Grants = _viewGrants;
-            await ReviewService.UpdateFederationPrivacyAsync(_privacy);
-            await ReviewService.UpdateReviewPreferencesAsync(_reviewPreferences);
-            CaptureFormState();
-            Snackbar.Add(L["SaveSuccess"], K7Severity.Success);
-        }
-        catch (Exception ex)
-        {
-            Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), K7Severity.Error);
-        }
-        finally
-        {
-            _saving = false;
-        }
+        _privacy.Share.Grants = _shareGrants;
+        _privacy.View.Grants = _viewGrants;
+        await ReviewService.UpdateFederationPrivacyAsync(_privacy);
+        await ReviewService.UpdateReviewPreferencesAsync(_reviewPreferences);
     }
+
+    private void ReportError(Exception ex) =>
+        Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), K7Severity.Error);
 }

@@ -2,7 +2,7 @@
 @inject IStringLocalizer<SharedResource> S
 @inject IK7DialogService DialogService
 
-<div class="k7-settings-action-bar" @ref="_root">
+<div class="k7-settings-action-bar @(AutoSave ? "k7-settings-action-bar--auto-save" : "") @(IsEmpty ? "k7-settings-action-bar--empty" : "")" @ref="_root">
     @if (ShowResetToDefaults)
     {
         <K7Button Variant="outlined"
@@ -12,25 +12,32 @@
             @S["ResetToDefaults"]
         </K7Button>
     }
-    else
+    else if (!AutoSave)
     {
         <span></span>
     }
 
-    <div class="k7-settings-action-bar__primary">
-        <K7Button Variant="outlined"
-                  Disabled="!IsDirty || IsSaving"
-                  OnClick="OnCancel">
-            @S["Cancel"]
-        </K7Button>
-        <K7Button Color="primary"
-                  Disabled="!IsDirty || IsSaving"
-                  OnClick="OnSave">
-            @if (IsSaving)
-            {
-                <K7Spinner Size="sm" />
-            }
-            @S["Save"]
-        </K7Button>
-    </div>
+    @if (AutoSave)
+    {
+        <K7SaveIndicator State="SaveState" />
+    }
+    else
+    {
+        <div class="k7-settings-action-bar__primary">
+            <K7Button Variant="outlined"
+                      Disabled="!IsDirty || IsSaving"
+                      OnClick="OnCancel">
+                @S["Cancel"]
+            </K7Button>
+            <K7Button Color="primary"
+                      Disabled="!IsDirty || IsSaving"
+                      OnClick="OnSave">
+                @if (IsSaving)
+                {
+                    <K7Spinner Size="sm" />
+                }
+                @S["Save"]
+            </K7Button>
+        </div>
+    }
 </div>

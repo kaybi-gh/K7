@@ -32,7 +32,7 @@ public static class AotProfileTour
         "/my-space", "/my-space/playlists", "/my-space/collections", "/my-space/stats",
         "/my-space/history", "/my-space/hit-parade", "/my-space/reviews",
         "/users", "/sessions",
-        "/settings/account", "/settings/general", "/settings/home-layout", "/settings/navigation",
+        "/settings/account", "/settings/interface/appearance", "/settings/interface/theme-songs", "/settings/interface/home", "/settings/interface/navigation",
         "/settings/audio-player", "/settings/video-playback", "/settings/libraries",
         "/settings/social", "/settings/about",
         "/"

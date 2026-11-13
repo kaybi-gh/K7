@@ -1,340 +1,188 @@
 @page "/settings/video-playback"
+@page "/settings/video-playback/{Section}"
 @layout SettingsLayout
+@implements IDisposable
 @using K7.Shared
 @using K7.Shared.Enums
 @using K7.Clients.Shared.Helpers
 @inject IStringLocalizer<SettingsVideoPlayerPage> L
 @inject IStringLocalizer<SettingsTrackSelectionPage> Lt
 
-<div class="admin-page-intro">
-    <AdminPageHeader Title="@L["PageTitle"]" Subtitle="@L["Subtitle"]" />
-</div>
-
 @if (_loading)
 {
+    <div class="admin-page-intro">
+        <AdminPageHeader Title="@L["PageTitle"]" Subtitle="@L["Subtitle"]">
+            <Actions>
+                <SettingsMirrorLink />
+            </Actions>
+        </AdminPageHeader>
+    </div>
     <div class="d-flex flex-col pa-16">
         <K7Spinner />
     </div>
 }
-else
+else if (_settings is not null && _preferences is not null && _videoPolicy is not null)
 {
-    <div class="settings-form-page">
-        <div class="settings-form-page__body pa-4 d-flex flex-col gap-6">
-        <section id="tracks" class="d-flex flex-col gap-4">
-            <h6>@Lt["SectionTitle"]</h6>
-
-            <K7Select Label="@Lt["Scope"]"
-                      TValue="Guid?"
-                      Value="_selectedLibraryId"
-                      ValueChanged="OnLibraryScopeChanged">
-                <K7SelectItem TValue="Guid?" Value="@((Guid?)null)" Text="@Lt["ScopeGlobal"]">@Lt["ScopeGlobal"]</K7SelectItem>
-                @foreach (var lib in _libraries)
-                {
-                    <K7SelectItem TValue="Guid?" Value="@lib.Id" Text="@lib.Title">@lib.Title</K7SelectItem>
-                }
-            </K7Select>
-
-            @if (_preferences is not null)
+    <K7SettingsSplit IndexLabel="@L["PageTitle"]"
+                     DetailTitle="@ActiveSectionTitle"
+                     BackHref="@BasePath"
+                     DetailOpen="IsSectionOpen"
+                     SaveState="CurrentSaveState">
+        <Header>
+            <div class="admin-page-intro">
+                <AdminPageHeader Title="@L["PageTitle"]" Subtitle="@L["Subtitle"]">
+                    <Actions>
+                        <SettingsMirrorLink />
+                    </Actions>
+                </AdminPageHeader>
+            </div>
+        </Header>
+        <Index>
+            @foreach (var section in Sections)
             {
-                <span class="text-caption video-playback-hint">@Lt["Description"]</span>
-
-                <K7LanguageSelect Label="@Lt["PreferredAudioLanguage"]"
-                                  IncludeOriginalLanguage="true"
-                                  OriginalLanguageLabel="@Lt["OriginalLanguage"]"
-                                  @bind-Value="_preferences.PreferredAudioLanguage" />
-
-                <K7LanguageSelect Label="@Lt["FallbackAudioLanguage"]"
-                                  IncludeOriginalLanguage="true"
-                                  OriginalLanguageLabel="@Lt["OriginalLanguage"]"
-                                  @bind-Value="_preferences.FallbackAudioLanguage" />
-
-                <K7Select Label="@Lt["SubtitleWhenPreferredAudio"]"
-                          @bind-Value="_preferences.SubtitleWhenPreferredAudio"
-                          TValue="SubtitlePreference">
-                    <K7SelectItem Value="SubtitlePreference.Off" Text="@Lt["SubOff"]">@Lt["SubOff"]</K7SelectItem>
-                    <K7SelectItem Value="SubtitlePreference.ForcedOnly" Text="@Lt["SubForcedOnly"]">@Lt["SubForcedOnly"]</K7SelectItem>
-                    <K7SelectItem Value="SubtitlePreference.Full" Text="@Lt["SubFull"]">@Lt["SubFull"]</K7SelectItem>
-                    <K7SelectItem Value="SubtitlePreference.HearingImpaired" Text="@Lt["SubHearingImpaired"]">@Lt["SubHearingImpaired"]</K7SelectItem>
-                </K7Select>
-
-                @if (_preferences.SubtitleWhenPreferredAudio != SubtitlePreference.Off)
-                {
-                    <K7LanguageSelect Label="@Lt["SubtitleLanguageWhenPreferredAudio"]"
-                                      @bind-Value="_preferences.SubtitleLanguageWhenPreferredAudio" />
-                }
-
-                <K7Select Label="@Lt["SubtitleWhenOtherAudio"]"
-                          @bind-Value="_preferences.SubtitleWhenOtherAudio"
-                          TValue="SubtitlePreference">
-                    <K7SelectItem Value="SubtitlePreference.Off" Text="@Lt["SubOff"]">@Lt["SubOff"]</K7SelectItem>
-                    <K7SelectItem Value="SubtitlePreference.ForcedOnly" Text="@Lt["SubForcedOnly"]">@Lt["SubForcedOnly"]</K7SelectItem>
-                    <K7SelectItem Value="SubtitlePreference.Full" Text="@Lt["SubFull"]">@Lt["SubFull"]</K7SelectItem>
-                    <K7SelectItem Value="SubtitlePreference.HearingImpaired" Text="@Lt["SubHearingImpaired"]">@Lt["SubHearingImpaired"]</K7SelectItem>
-                </K7Select>
-
-                @if (_preferences.SubtitleWhenOtherAudio != SubtitlePreference.Off)
-                {
-                    <K7LanguageSelect Label="@Lt["SubtitleLanguageWhenOtherAudio"]"
-                                      @bind-Value="_preferences.SubtitleLanguageWhenOtherAudio" />
-                }
-
-                @if (_settings is not null)
-                {
-                    <K7Switch Label="@Lt["RememberTrackSelection"]"
-                              Value="_settings.RememberTrackSelection != false"
-                              ValueChanged="OnRememberTrackSelectionChanged" />
-                    <span class="text-caption video-playback-hint">@Lt["RememberTrackSelectionHint"]</span>
-                }
+                <K7SettingsNavItem Href="@($"{BasePath}/{section.Key}")"
+                                   Icon="@section.Icon"
+                                   Title="@section.Title"
+                                   Description="@section.Description"
+                                   Active="@(section.Key == ActiveSection)" />
             }
-        </section>
+        </Index>
+        <Footer>
+            <K7Button Variant="outlined"
+                      Color="secondary"
+                      Disabled="_saving || ResetDisabled"
+                      OnClick="ConfirmResetAsync">
+                @S["ResetToDefaults"]
+            </K7Button>
+        </Footer>
+        <Detail>
+            @switch (ActiveSection)
+            {
+                case VideoSettingsSections.Tracks:
+                    <TrackSelectionSettingsFields Preferences="_preferences"
+                                                  Settings="_settings"
+                                                  Libraries="_libraries"
+                                                  SelectedLibraryId="_selectedLibraryId"
+                                                  LibraryScopeChanged="OnLibraryScopeChanged"
+                                                  Changed="StateHasChanged"
+                                                  Localizer="Lt" />
+                    break;
 
-        <K7Divider />
+                case VideoSettingsSections.Resume:
+                    <PlaybackPolicySettingsFields VideoPolicy="_videoPolicy"
+                                                  VideoPolicyChanged="OnVideoPolicyChanged"
+                                                  ShowHeading="false" />
+                    break;
 
-        @if (_settings is not null)
-        {
-            <section class="d-flex flex-col gap-4">
-                <h6>@L["SeekbarSection"]</h6>
+                case VideoSettingsSections.Advanced:
+                    <span class="settings-field-hint">@L["AdvancedSectionHint"]</span>
 
-                <K7Switch Label="@L["ShowSeekbarThumbnails"]" @bind-Value="_settings.ShowSeekbarThumbnails" />
-                <span class="text-caption video-playback-hint">@L["ShowSeekbarThumbnailsHint"]</span>
-                <K7Switch Label="@L["ShowChapterTicks"]" @bind-Value="_settings.ShowChapterTicks" />
-                <span class="text-caption video-playback-hint">@L["ShowChapterTicksHint"]</span>
+                    <K7SettingRow Label="@L["AudioPassthrough"]" Hint="@L["AudioPassthroughHint"]">
+                        <K7Switch AriaLabel="@L["AudioPassthrough"]" @bind-Value="_audioPassthrough" />
+                    </K7SettingRow>
 
-                <K7Slider TValue="int" Min="5" Max="60" Step="5" Immediate="true"
-                          Label="@L["SkipBackDuration"]"
-                          FormatValue="FormatSkipSeconds"
-                          Value="_settings.SkipBackSeconds"
-                          ValueChanged="OnSkipBackSecondsChanged" />
-                <K7Slider TValue="int" Min="5" Max="60" Step="5" Immediate="true"
-                          Label="@L["SkipForwardDuration"]"
-                          FormatValue="FormatSkipSeconds"
-                          Value="_settings.SkipForwardSeconds"
-                          ValueChanged="OnSkipForwardSecondsChanged" />
-                <span class="text-caption video-playback-hint">@L["SkipDurationHint"]</span>
-            </section>
-
-            <K7Divider />
-
-            <section class="d-flex flex-col gap-4">
-                <h6>@L["IntroSkipSection"]</h6>
-
-                <K7Select Label="@L["IntroSkipBehavior"]" @bind-Value="_settings.IntroSkipBehavior" TValue="IntroSkipBehavior">
-                    <K7SelectItem Value="IntroSkipBehavior.ShowButton" Text="@L["ShowButton"]">@L["ShowButton"]</K7SelectItem>
-                    <K7SelectItem Value="IntroSkipBehavior.AutoSkip" Text="@L["AutoSkip"]">@L["AutoSkip"]</K7SelectItem>
-                    <K7SelectItem Value="IntroSkipBehavior.Disabled" Text="@L["Disabled"]">@L["Disabled"]</K7SelectItem>
-                </K7Select>
-
-                <K7Select Label="@L["OutroSkipBehavior"]" @bind-Value="_settings.OutroSkipBehavior" TValue="IntroSkipBehavior">
-                    <K7SelectItem Value="IntroSkipBehavior.ShowButton" Text="@L["ShowButton"]">@L["ShowButton"]</K7SelectItem>
-                    <K7SelectItem Value="IntroSkipBehavior.AutoSkip" Text="@L["AutoSkip"]">@L["AutoSkip"]</K7SelectItem>
-                    <K7SelectItem Value="IntroSkipBehavior.Disabled" Text="@L["Disabled"]">@L["Disabled"]</K7SelectItem>
-                </K7Select>
-            </section>
-
-            <K7Divider />
-
-            <section class="d-flex flex-col gap-4">
-                <h6>@L["NextEpisodeSection"]</h6>
-
-                <K7Select Label="@L["NextEpisodeBehavior"]" @bind-Value="_settings.NextEpisodeBehavior" TValue="NextEpisodeBehavior">
-                    <K7SelectItem Value="NextEpisodeBehavior.PlayAfterCountdown" Text="@L["NextEpisodePlayAfterCountdown"]">@L["NextEpisodePlayAfterCountdown"]</K7SelectItem>
-                    <K7SelectItem Value="NextEpisodeBehavior.WaitForChoice" Text="@L["NextEpisodeWaitForChoice"]">@L["NextEpisodeWaitForChoice"]</K7SelectItem>
-                    <K7SelectItem Value="NextEpisodeBehavior.ClosePlayer" Text="@L["NextEpisodeClosePlayer"]">@L["NextEpisodeClosePlayer"]</K7SelectItem>
-                </K7Select>
-                <span class="text-caption video-playback-hint">@L["NextEpisodeBehaviorHint"]</span>
-
-                @if (_settings.NextEpisodeBehavior == NextEpisodeBehavior.PlayAfterCountdown)
-                {
-                    <K7Select Label="@L["InactivityPrompt"]" @bind-Value="_settings.InactivityPromptAfterEpisodes" TValue="int">
-                        <K7SelectItem Value="0" Text="@L["InactivityPromptDisabled"]">@L["InactivityPromptDisabled"]</K7SelectItem>
-                        @foreach (var count in InactivityPromptChoices)
-                        {
-                            var label = string.Format(L["InactivityPromptAfterEpisodes"], count);
-                            <K7SelectItem Value="@count" Text="@label">@label</K7SelectItem>
-                        }
-                    </K7Select>
-                    <span class="text-caption video-playback-hint">@L["InactivityPromptHint"]</span>
-                }
-            </section>
-
-            <K7Divider />
-
-            <section class="d-flex flex-col gap-4">
-                <h6>@L["TrailersSection"]</h6>
-                <K7Switch Label="@L["OpenTrailersExternally"]" @bind-Value="_settings.OpenTrailersExternally" />
-                <span class="text-caption video-playback-hint">@L["OpenTrailersExternallyHint"]</span>
-            </section>
-
-            <K7Divider />
-
-            <section class="d-flex flex-col gap-4">
-                <h6>@L["SubtitleSection"]</h6>
-
-                <K7Select Label="@L["SubtitleFontFamily"]" @bind-Value="_settings.SubtitleFontFamily" TValue="SubtitleFontFamily">
-                    <K7SelectItem Value="SubtitleFontFamily.Default" Text="@L["FontDefault"]">@L["FontDefault"]</K7SelectItem>
-                    <K7SelectItem Value="SubtitleFontFamily.Manrope" Text="Manrope">Manrope</K7SelectItem>
-                    <K7SelectItem Value="SubtitleFontFamily.Epilogue" Text="Epilogue">Epilogue</K7SelectItem>
-                    <K7SelectItem Value="SubtitleFontFamily.SansSerif" Text="Sans-serif">Sans-serif</K7SelectItem>
-                    <K7SelectItem Value="SubtitleFontFamily.Serif" Text="Serif">Serif</K7SelectItem>
-                    <K7SelectItem Value="SubtitleFontFamily.Monospace" Text="Monospace">Monospace</K7SelectItem>
-                </K7Select>
-
-                <K7Select Label="@L["SubtitleFontSize"]" @bind-Value="_settings.SubtitleFontSize" TValue="SubtitleFontSize">
-                    <K7SelectItem Value="SubtitleFontSize.Small" Text="@L["Small"]">@L["Small"]</K7SelectItem>
-                    <K7SelectItem Value="SubtitleFontSize.Medium" Text="@L["Medium"]">@L["Medium"]</K7SelectItem>
-                    <K7SelectItem Value="SubtitleFontSize.Large" Text="@L["Large"]">@L["Large"]</K7SelectItem>
-                </K7Select>
-
-                <K7ColorPicker Label="@L["SubtitleFontColor"]" @bind-Value="_settings.SubtitleFontColor" />
-
-                <K7Slider TValue="double" Min="0" Max="1" Step="0.1" Immediate="true"
-                          Label="@L["SubtitleBackgroundOpacity"]"
-                          Hint="@L["SubtitleBackgroundOpacityHint"]"
-                          FormatValue="FormatOpacity"
-                          Value="_settings.SubtitleBackgroundOpacity"
-                          ValueChanged="OnSubtitleBackgroundOpacityChanged" />
-
-                <K7Switch Label="@L["SubtitleShadow"]" @bind-Value="_settings.SubtitleShadowEnabled" />
-
-                @if (_settings.SubtitleShadowEnabled)
-                {
-                    <K7ColorPicker Label="@L["SubtitleShadowColor"]" @bind-Value="_settings.SubtitleShadowColor" />
-
-                    <K7Slider TValue="double" Min="0" Max="10" Step="0.5" Immediate="true"
-                              Label="@L["SubtitleShadowBlur"]"
-                              Hint="@L["SubtitleShadowBlurHint"]"
-                              FormatValue="FormatBlur"
-                              Value="_settings.SubtitleShadowBlur"
-                              ValueChanged="OnSubtitleShadowBlurChanged" />
-                }
-
-                <SubtitlePreview Family="_settings.SubtitleFontFamily"
-                                 Size="_settings.SubtitleFontSize"
-                                 FontColor="@_settings.SubtitleFontColor"
-                                 BackgroundOpacity="_settings.SubtitleBackgroundOpacity"
-                                 ShadowEnabled="_settings.SubtitleShadowEnabled"
-                                 ShadowColor="@_settings.SubtitleShadowColor"
-                                 ShadowBlur="_settings.SubtitleShadowBlur" />
-            </section>
-        }
-
-        @if (_settings is not null && _preferences is not null && _videoPolicy is not null)
-        {
-            <K7Divider />
-
-            <PlaybackPolicySettingsFields VideoPolicy="_videoPolicy" VideoPolicyChanged="OnVideoPolicyChanged" />
-        }
-
-        @if (_settings is not null && _showDeviceAdvanced)
-        {
-            <K7Divider />
-
-            <section class="d-flex flex-col gap-4">
-                <h6>@L["AdvancedSection"]</h6>
-                <span class="text-caption video-playback-hint">@L["AdvancedSectionHint"]</span>
-
-                <K7Switch Label="@L["AudioPassthrough"]" @bind-Value="_audioPassthrough" />
-                <span class="text-caption video-playback-hint">@L["AudioPassthroughHint"]</span>
-
-                @if (_showMpcExternal)
-                {
-                    <K7Switch Label="@L["MpcExternalPlayer"]" @bind-Value="_mpcEnabled" />
-                    <span class="text-caption video-playback-hint">@L["MpcExternalPlayerHint"]</span>
-
-                    @if (_mpcEnabled)
+                    @if (_showMpcExternal)
                     {
-                        <K7TextField Label="@L["MpcExePath"]"
-                                     TValue="string"
-                                     @bind-Value="_mpcExePath"
-                                     Variant="outlined"
-                                     Placeholder="@L["MpcExePathPlaceholder"]"
-                                     HelperText="@L["MpcExePathHint"]"
-                                     AdornmentIcon="@Phosphor.File"
-                                     OnAdornmentClick="BrowseMpcExeAsync" />
+                        <K7SettingRow Label="@L["MpcExternalPlayer"]" Hint="@L["MpcExternalPlayerHint"]">
+                            <K7Switch AriaLabel="@L["MpcExternalPlayer"]" @bind-Value="_mpcEnabled" />
+                        </K7SettingRow>
 
-                        <K7TextField Label="@L["MpcWebHost"]"
-                                     TValue="string"
-                                     @bind-Value="_mpcWebHost" />
+                        @if (_mpcEnabled)
+                        {
+                            <div class="settings-field-group">
+                                <K7TextField Label="@L["MpcExePath"]"
+                                             TValue="string"
+                                             @bind-Value="_mpcExePath"
+                                             Variant="outlined"
+                                             Placeholder="@L["MpcExePathPlaceholder"]"
+                                             HelperText="@L["MpcExePathHint"]"
+                                             AdornmentIcon="@Phosphor.File"
+                                             OnAdornmentClick="BrowseMpcExeAsync" />
 
-                        <K7TextField Label="@L["MpcWebPort"]"
-                                     TValue="string"
-                                     @bind-Value="_mpcWebPortText" />
-                        <span class="text-caption video-playback-hint">@L["MpcWebHint"]</span>
+                                <K7TextField Label="@L["MpcWebHost"]"
+                                             TValue="string"
+                                             @bind-Value="_mpcWebHost" />
 
-                        <K7TextField Label="@L["MpcExtraArgs"]"
-                                     TValue="string"
-                                     @bind-Value="_mpcExtraArgs" />
-                        <span class="text-caption video-playback-hint">@L["MpcExtraArgsHint"]</span>
+                                <K7TextField Label="@L["MpcWebPort"]"
+                                             TValue="string"
+                                             @bind-Value="_mpcWebPortText" />
+                                <span class="settings-field-hint">@L["MpcWebHint"]</span>
 
-                        <h6 class="mt-2">@L["MpcLibraryPaths"]</h6>
-                        <K7Alert Severity="K7Severity.Info" Variant="outlined" NoIcon="true">
-                            @L["MpcLibraryPathsFallback"]
-                        </K7Alert>
-                        <div class="mpc-library-map">
-                            <div class="mpc-library-map__header">
-                                <span>@L["MpcLibraryServerRoot"]</span>
-                                <span>@L["MpcLibraryWindowsRoot"]</span>
-                            </div>
-                            @foreach (var library in MpcMappableLibraries)
-                            {
-                                <div class="mpc-library-map__row">
-                                    <div class="mpc-library-map__server">
-                                        <span class="mpc-library-map__title">@library.Title</span>
-                                        <code class="mpc-library-map__path">@(string.IsNullOrWhiteSpace(library.RootPath) ? "—" : library.RootPath)</code>
+                                <K7TextField Label="@L["MpcExtraArgs"]"
+                                             TValue="string"
+                                             @bind-Value="_mpcExtraArgs" />
+                                <span class="settings-field-hint">@L["MpcExtraArgsHint"]</span>
+
+                                <h6 class="mt-2">@L["MpcLibraryPaths"]</h6>
+                                <K7Alert Severity="K7Severity.Info" Variant="outlined" NoIcon="true">
+                                    @L["MpcLibraryPathsFallback"]
+                                </K7Alert>
+                                <div class="mpc-library-map">
+                                    <div class="mpc-library-map__header">
+                                        <span>@L["MpcLibraryServerRoot"]</span>
+                                        <span>@L["MpcLibraryWindowsRoot"]</span>
                                     </div>
-                                    <div class="mpc-library-map__local">
-                                        <K7TextField TValue="string"
-                                                     Variant="outlined"
-                                                     Placeholder="@L["MpcLibraryWindowsPlaceholder"]"
-                                                     AdornmentIcon="@Phosphor.FolderOpen"
-                                                     OnAdornmentClick="@(() => BrowseLibraryFolderAsync(library.Id))"
-                                                     Value="@LibraryLocalRoot(library.Id)"
-                                                     ValueChanged="@(value => SetLibraryLocalRoot(library.Id, value))" />
-                                    </div>
+                                    @foreach (var library in MpcMappableLibraries)
+                                    {
+                                        <div class="mpc-library-map__row">
+                                            <div class="mpc-library-map__server">
+                                                <span class="mpc-library-map__title">@library.Title</span>
+                                                <code class="mpc-library-map__path">@(string.IsNullOrWhiteSpace(library.RootPath) ? "-" : library.RootPath)</code>
+                                            </div>
+                                            <div class="mpc-library-map__local">
+                                                <K7TextField TValue="string"
+                                                             Variant="outlined"
+                                                             Placeholder="@L["MpcLibraryWindowsPlaceholder"]"
+                                                             AdornmentIcon="@Phosphor.FolderOpen"
+                                                             OnAdornmentClick="@(() => BrowseLibraryFolderAsync(library.Id))"
+                                                             Value="@LibraryLocalRoot(library.Id)"
+                                                             ValueChanged="@(value => SetLibraryLocalRoot(library.Id, value))" />
+                                            </div>
+                                        </div>
+                                    }
                                 </div>
-                            }
-                        </div>
+                            </div>
+                        }
                     }
-                }
 
-                @if (_showExoBuffer)
-                {
-                    <K7Select Label="@L["ExoBuffer"]" @bind-Value="_exoBuffer" TValue="ExoVideoBufferSize">
-                        <K7SelectItem Value="@ExoVideoBufferSize.Auto" Text="@L["BufferAuto"]">@L["BufferAuto"]</K7SelectItem>
-                        <K7SelectItem Value="@ExoVideoBufferSize.Default" Text="@L["BufferDefault"]">@L["BufferDefault"]</K7SelectItem>
-                        <K7SelectItem Value="@ExoVideoBufferSize.Large" Text="@L["BufferLarge"]">@L["BufferLarge"]</K7SelectItem>
-                        <K7SelectItem Value="@ExoVideoBufferSize.ExtraLarge" Text="@L["BufferExtraLarge"]">@L["BufferExtraLarge"]</K7SelectItem>
-                    </K7Select>
-                    <span class="text-caption video-playback-hint">@L["ExoBufferHint"]</span>
-                }
+                    @if (_showExoBuffer)
+                    {
+                        <K7SettingRow Label="@L["ExoBuffer"]" Hint="@L["ExoBufferHint"]">
+                            <K7Select @bind-Value="_exoBuffer" TValue="ExoVideoBufferSize">
+                                <K7SelectItem Value="@ExoVideoBufferSize.Auto" Text="@L["BufferAuto"]">@L["BufferAuto"]</K7SelectItem>
+                                <K7SelectItem Value="@ExoVideoBufferSize.Default" Text="@L["BufferDefault"]">@L["BufferDefault"]</K7SelectItem>
+                                <K7SelectItem Value="@ExoVideoBufferSize.Large" Text="@L["BufferLarge"]">@L["BufferLarge"]</K7SelectItem>
+                                <K7SelectItem Value="@ExoVideoBufferSize.ExtraLarge" Text="@L["BufferExtraLarge"]">@L["BufferExtraLarge"]</K7SelectItem>
+                            </K7Select>
+                        </K7SettingRow>
+                    }
 
-                @if (_showHdmiAfr)
-                {
-                    <K7Select Label="@L["HdmiAfr"]" @bind-Value="_hdmiAfr" TValue="HdmiAutoFrameRateMode">
-                        <K7SelectItem Value="@HdmiAutoFrameRateMode.Disabled" Text="@L["HdmiAfrDisabled"]">@L["HdmiAfrDisabled"]</K7SelectItem>
-                        <K7SelectItem Value="@HdmiAutoFrameRateMode.ScaleOnTv" Text="@L["HdmiAfrScaleOnTv"]">@L["HdmiAfrScaleOnTv"]</K7SelectItem>
-                        <K7SelectItem Value="@HdmiAutoFrameRateMode.ScaleOnDevice" Text="@L["HdmiAfrScaleOnDevice"]">@L["HdmiAfrScaleOnDevice"]</K7SelectItem>
-                    </K7Select>
-                    <span class="text-caption video-playback-hint">@L["HdmiAfrHint"]</span>
+                    @if (_showHdmiAfr)
+                    {
+                        <K7SettingRow Label="@L["HdmiAfr"]" Hint="@L["HdmiAfrHint"]">
+                            <K7Select @bind-Value="_hdmiAfr" TValue="HdmiAutoFrameRateMode">
+                                <K7SelectItem Value="@HdmiAutoFrameRateMode.Disabled" Text="@L["HdmiAfrDisabled"]">@L["HdmiAfrDisabled"]</K7SelectItem>
+                                <K7SelectItem Value="@HdmiAutoFrameRateMode.ScaleOnTv" Text="@L["HdmiAfrScaleOnTv"]">@L["HdmiAfrScaleOnTv"]</K7SelectItem>
+                                <K7SelectItem Value="@HdmiAutoFrameRateMode.ScaleOnDevice" Text="@L["HdmiAfrScaleOnDevice"]">@L["HdmiAfrScaleOnDevice"]</K7SelectItem>
+                            </K7Select>
+                        </K7SettingRow>
 
-                    <K7Select Label="@L["DolbyVision"]" @bind-Value="_dvDecode" TValue="DolbyVisionDecodeMode">
-                        <K7SelectItem Value="@DolbyVisionDecodeMode.HevcHdr10" Text="@L["DolbyVisionHevc"]">@L["DolbyVisionHevc"]</K7SelectItem>
-                        <K7SelectItem Value="@DolbyVisionDecodeMode.Native" Text="@L["DolbyVisionNative"]">@L["DolbyVisionNative"]</K7SelectItem>
-                    </K7Select>
-                    <span class="text-caption video-playback-hint">@L["DolbyVisionHint"]</span>
-                }
-            </section>
-        }
-        </div>
+                        <K7SettingRow Label="@L["DolbyVision"]" Hint="@L["DolbyVisionHint"]">
+                            <K7Select @bind-Value="_dvDecode" TValue="DolbyVisionDecodeMode">
+                                <K7SelectItem Value="@DolbyVisionDecodeMode.HevcHdr10" Text="@L["DolbyVisionHevc"]">@L["DolbyVisionHevc"]</K7SelectItem>
+                                <K7SelectItem Value="@DolbyVisionDecodeMode.Native" Text="@L["DolbyVisionNative"]">@L["DolbyVisionNative"]</K7SelectItem>
+                            </K7Select>
+                        </K7SettingRow>
+                    }
+                    break;
 
-        @if (_settings is not null && _preferences is not null && _videoPolicy is not null)
-        {
-            <K7SettingsActionBar IsDirty="IsDirty"
-                                 IsSaving="_saving"
-                                 ResetDisabled="ResetDisabled"
-                                 OnSave="SaveAsync"
-                                 OnCancel="CancelChanges"
-                                 OnResetToDefaults="ResetAsync" />
-        }
-    </div>
+                default:
+                    <VideoPlayerSettingsFields Settings="_settings"
+                                               Section="@ActiveSection"
+                                               Changed="StateHasChanged"
+                                               Localizer="L" />
+                    break;
+            }
+        </Detail>
+    </K7SettingsSplit>
 }

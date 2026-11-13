@@ -365,6 +365,79 @@
         </div>
     </section>
 
+    <section id="k7-save-indicator" class="ds-section">
+        <h2>K7SaveIndicator</h2>
+        <p class="ds-description">State of a settings page that saves on change: spinner while a change waits or is being sent, round check once saved, warning on failure. Personal settings use it instead of Save and Cancel, in the <code>K7SettingsSplit</code> footer or in <code>K7SettingsActionBar</code> with <code>AutoSave</code>.</p>
+        <div class="ds-preview">
+            <K7SaveIndicator State="SettingsSaveState.Saving" />
+            <K7SaveIndicator State="SettingsSaveState.Saved" />
+            <K7SaveIndicator State="SettingsSaveState.Failed" />
+        </div>
+        <div class="ds-preview ds-preview--column">
+            <K7SettingsActionBar AutoSave="true" SaveState="SettingsSaveState.Saved" />
+        </div>
+    </section>
+
+    <section id="k7-setting-row" class="ds-section">
+        <h2>K7SettingRow</h2>
+        <p class="ds-description">One setting per line: label and hint on the left, a compact control on the right. Selects keep a fixed width instead of stretching. <code>Stacked</code> puts the control under the label (option lists, sliders). Under 600px, anything wider than a switch drops under its label.</p>
+        <div class="ds-preview ds-preview--column">
+            <K7SettingRow Label="Seek bar thumbnails" Hint="Preview frames while scrubbing.">
+                <K7Switch AriaLabel="Seek bar thumbnails" @bind-Value="_settingRowSwitch" />
+            </K7SettingRow>
+            <K7SettingRow Label="Subtitle font">
+                <K7Select TValue="string" @bind-Value="_settingRowFont">
+                    <K7SelectItem Value="@("Default")" Text="Default">Default</K7SelectItem>
+                    <K7SelectItem Value="@("Serif")" Text="Serif">Serif</K7SelectItem>
+                </K7Select>
+            </K7SettingRow>
+            <K7SettingRow Label="When an episode ends" Hint="Applies when a next episode exists." Stacked="true">
+                <K7OptionList TValue="string" Options="_optionListOptions" AriaLabel="When an episode ends" @bind-Value="_optionListValue" />
+            </K7SettingRow>
+        </div>
+    </section>
+
+    <section id="k7-option-list" class="ds-section">
+        <h2>K7OptionList</h2>
+        <p class="ds-description">Single choice among a few options, all visible. Prefer it over K7Select for short lists on settings pages: one remote press picks an option, with no popup to open.</p>
+        <div class="ds-preview ds-preview--column">
+            <K7OptionList TValue="string" Options="_optionListOptions" AriaLabel="Next episode" @bind-Value="_optionListValue" />
+            <K7OptionList TValue="string" Options="_optionListOptions" AriaLabel="Disabled" Value="@("wait")" Disabled="true" />
+        </div>
+    </section>
+
+    <section id="k7-settings-split" class="ds-section">
+        <h2>K7SettingsSplit</h2>
+        <p class="ds-description">Long settings page split into an index (<code>K7SettingsNavItem</code>: icon, title, short description) and one sub-page at a time. Wide screens show both side by side. Under 1200px and on TV it behaves like a menu: the index alone, then the sub-page as its own screen (<code>Header</code> hidden, back link on top) once <code>DetailOpen</code> is set. <code>Footer</code> holds page-wide actions such as reset, and <code>SaveState</code> shows a <code>K7SaveIndicator</code> beside them on pages that save on change.</p>
+        <div class="ds-preview ds-preview--column">
+            <K7SettingsSplit IndexLabel="Video playback"
+                             DetailTitle="Next episode"
+                             BackHref="/components#k7-settings-split"
+                             DetailOpen="true"
+                             SaveState="SettingsSaveState.Saved">
+                <Footer>
+                    <K7Button Variant="outlined" Color="secondary">Reset to defaults</K7Button>
+                </Footer>
+                <Index>
+                    <K7SettingsNavItem Href="/components#k7-settings-split" Icon="@Phosphor.Translate" Title="Default tracks" Description="Audio and subtitle languages picked when playback starts" />
+                    <K7SettingsNavItem Href="/components#k7-settings-split" Icon="@Phosphor.Queue" Title="Next episode" Description="Episode auto-play and the still watching prompt" Active="true" />
+                    <K7SettingsNavItem Href="/components#k7-settings-split" Icon="@Phosphor.ClosedCaptioning" Title="Subtitles" Description="Font, size, colors and shadow" />
+                </Index>
+                <Detail>
+                    <K7SettingRow Label="When an episode ends" Stacked="true">
+                        <K7OptionList TValue="string" Options="_optionListOptions" AriaLabel="When an episode ends" @bind-Value="_optionListValue" />
+                    </K7SettingRow>
+                    <K7SettingRow Label="Ask if you are still watching" Hint="After several episodes played in a row without any interaction.">
+                        <K7Select TValue="string" @bind-Value="_settingRowPrompt">
+                            <K7SelectItem Value="@("Never")" Text="Never">Never</K7SelectItem>
+                            <K7SelectItem Value="@("After 3 episodes")" Text="After 3 episodes">After 3 episodes</K7SelectItem>
+                        </K7Select>
+                    </K7SettingRow>
+                </Detail>
+            </K7SettingsSplit>
+        </div>
+    </section>
+
     <section id="k7-checkbox-list" class="ds-section">
         <h2>K7CheckboxList</h2>
         <p class="ds-description">Zebra-striped scrollable checkbox list for multi-selection scenarios (permissions, library access, event selection).</p>
@@ -763,6 +836,18 @@
     private double _brightness = 100;
     private bool _switch1 = true;
     private bool _switch2;
+
+    // Settings rows, option list, settings split
+    private bool _settingRowSwitch = true;
+    private string? _settingRowFont = "Default";
+    private string? _settingRowPrompt = "Never";
+    private string? _optionListValue = "countdown";
+    private static readonly IReadOnlyList<ButtonGroupOption<string>> _optionListOptions =
+    [
+        new("countdown", "Play the next one after a countdown"),
+        new("wait", "Offer the next one without a countdown"),
+        new("close", "Close the player")
+    ];
 
     // CheckboxList
     private static readonly IReadOnlyList<string> _checkboxListItems =

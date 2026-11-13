@@ -21,14 +21,12 @@
   <resheader name="version"><value>2.0</value></resheader>
   <data name="PageTitle" xml:space="preserve"><value>Mon compte</value></data>
   <data name="Subtitle" xml:space="preserve"><value>Profil, avatar et sécurité de votre compte.</value></data>
-  <data name="Avatar" xml:space="preserve"><value>Avatar</value></data>
   <data name="UploadAvatar" xml:space="preserve"><value>Changer</value></data>
   <data name="RemoveAvatar" xml:space="preserve"><value>Supprimer</value></data>
   <data name="AvatarTooLarge" xml:space="preserve"><value>L'image ne doit pas dépasser 2 Mo.</value></data>
   <data name="DisplayName" xml:space="preserve"><value>Nom d'affichage</value></data>
   <data name="ProfileSaved" xml:space="preserve"><value>Profil mis à jour.</value></data>
   <data name="Email" xml:space="preserve"><value>Email</value></data>
-  <data name="EmailOptional" xml:space="preserve"><value>Email (optionnel)</value></data>
   <data name="EmailHelper" xml:space="preserve"><value>Laissez vide si non utilisé</value></data>
   <data name="EmailRequired" xml:space="preserve"><value>L'email est requis.</value></data>
   <data name="PasswordRequired" xml:space="preserve"><value>Le mot de passe est requis.</value></data>
@@ -102,4 +100,6 @@
   <data name="SaveRecoveryCodes" xml:space="preserve"><value>Conservez ces codes de récupération dans un endroit sûr. Chaque code ne peut être utilisé qu'une fois.</value></data>
   <data name="DisableTwoFactorTitle" xml:space="preserve"><value>Désactiver l'authentification à deux facteurs</value></data>
   <data name="DisableTwoFactorConfirm" xml:space="preserve"><value>Êtes-vous sûr de vouloir désactiver l'authentification à deux facteurs ?</value></data>
+  <data name="SectionProfile" xml:space="preserve"><value>Profil</value></data>
+  <data name="SectionSecurity" xml:space="preserve"><value>Sécurité</value></data>
 </root>

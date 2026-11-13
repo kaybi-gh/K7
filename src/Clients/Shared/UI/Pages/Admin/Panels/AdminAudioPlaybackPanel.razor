@@ -1,13 +1,18 @@
 @page "/admin/audio-playback"
+@page "/admin/audio-playback/{Section}"
 @layout AdminLayout
 @inject IStringLocalizer<AdminAudioPlaybackPanel> L
-
-<div class="admin-page-intro">
-    <AdminPageHeader Title="@L["PageTitle"]" Subtitle="@L["DefaultsInfo"]" />
-</div>
+@inject IStringLocalizer<SettingsAudioPlayerPage> La
 
 @if (_loading)
 {
+    <div class="admin-page-intro">
+        <AdminPageHeader Title="@L["PageTitle"]" Subtitle="@L["DefaultsInfo"]">
+            <Actions>
+                <SettingsMirrorLink />
+            </Actions>
+        </AdminPageHeader>
+    </div>
     <div class="d-flex flex-col pa-16">
         <K7Spinner />
     </div>
@@ -15,12 +20,45 @@
 else if (_settings is not null && _audioPolicy is not null)
 {
     <div class="settings-form-page">
-        <div class="settings-form-page__body pa-4 d-flex flex-col gap-6">
-            <AudioPlayerExperienceSettingsFields Settings="_settings" SettingsChanged="OnSettingsChanged" />
-
-            <K7Divider />
-
-            <PlaybackPolicySettingsFields AudioPolicy="_audioPolicy" AudioPolicyChanged="OnAudioPolicyChanged" />
+        <div class="settings-form-page__body">
+            <K7SettingsSplit IndexLabel="@L["PageTitle"]"
+                             DetailTitle="@ActiveSectionTitle"
+                             BackHref="@BasePath"
+                             DetailOpen="IsSectionOpen">
+                <Header>
+                    <div class="admin-page-intro">
+                        <AdminPageHeader Title="@L["PageTitle"]" Subtitle="@L["DefaultsInfo"]">
+                            <Actions>
+                                <SettingsMirrorLink />
+                            </Actions>
+                        </AdminPageHeader>
+                    </div>
+                </Header>
+                <Index>
+                    @foreach (var section in Sections)
+                    {
+                        <K7SettingsNavItem Href="@($"{BasePath}/{section.Key}")"
+                                           Icon="@section.Icon"
+                                           Title="@section.Title"
+                                           Description="@section.Description"
+                                           Active="@(section.Key == ActiveSection)" />
+                    }
+                </Index>
+                <Detail>
+                    @if (ActiveSection == AudioSettingsSections.Tracking)
+                    {
+                        <PlaybackPolicySettingsFields AudioPolicy="_audioPolicy"
+                                                      AudioPolicyChanged="OnAudioPolicyChanged"
+                                                      ShowHeading="false" />
+                    }
+                    else
+                    {
+                        <AudioPlayerExperienceSettingsFields Settings="_settings"
+                                                             SettingsChanged="OnSettingsChanged"
+                                                             Section="@ActiveSection" />
+                    }
+                </Detail>
+            </K7SettingsSplit>
         </div>
 
         <K7SettingsActionBar IsDirty="IsDirty"

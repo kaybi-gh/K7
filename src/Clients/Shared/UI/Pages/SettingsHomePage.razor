@@ -1,3 +1,4 @@
+@page "/settings/interface/home"
 @page "/settings/home-layout"
 @layout SettingsLayout
 @inject IStringLocalizer<Settings> L
@@ -5,46 +6,49 @@
 
 <PageTitle>@L["HomePageTitle"]</PageTitle>
 
-<div class="admin-page-intro">
-    <AdminPageHeader Title="@L["HomePageTitle"]" Subtitle="@L["HomePageDescription"]" />
-</div>
+<div class="settings-form-page settings-form-page--section-actions">
+    <div class="settings-form-page__body">
+        <InterfaceSettingsSplit Section="@InterfaceSettingsSections.Home">
+            @if (_isLoading)
+            {
+                <K7ProgressBar Indeterminate="true" />
+            }
+            else
+            {
+                <div class="d-flex flex-col gap-4">
+                    <p class="settings-field-hint">@L["HomePageDescription"]</p>
 
-@if (_isLoading)
-{
-    <K7ProgressBar Indeterminate="true" />
-}
-else
-{
-    <div class="settings-form-page">
-        <div class="settings-form-page__body d-flex flex-col gap-4 pa-4">
-            <K7SortableList TItem="HomeRowEditModel"
-                            Items="_rows"
-                            ItemKey="@(row => row.Id)"
-                            Disabled="_saving"
-                            Reordered="RenumberRows">
-                <span class="text-sm">@GetRowTitle(context.Title)</span>
-                <K7Switch Value="@context.IsVisible" ValueChanged="@(v => OnRowVisibilityChanged(context, v))" />
-            </K7SortableList>
+                    <K7SortableList TItem="HomeRowEditModel"
+                                    Items="_rows"
+                                    ItemKey="@(row => row.Id)"
+                                    Reordered="RenumberRows">
+                        <span class="text-sm">@GetRowTitle(context.Title)</span>
+                        <K7Switch Value="@context.IsVisible" ValueChanged="@(v => OnRowVisibilityChanged(context, v))" />
+                    </K7SortableList>
 
-            <K7ExpansionPanel>
-                <TitleContent>@L["PreviewTitle"]</TitleContent>
-                <ChildContent>
-                    <div class="d-flex justify-end mb-2">
-                        <K7Button Color="secondary" Variant="text" StartIcon="@Phosphor.ArrowClockwise"
-                                  OnClick="RefreshPreviewAsync" Disabled="_previewLoading">
-                            @L["PreviewRefresh"]
-                        </K7Button>
-                    </div>
-                    <HomeLayoutPreview @ref="_preview" Rows="_rows" />
-                </ChildContent>
-            </K7ExpansionPanel>
-        </div>
-
-        <K7SettingsActionBar IsDirty="IsDirty"
-                             IsSaving="_saving"
-                             ResetDisabled="ResetDisabled"
-                             OnSave="SaveLayout"
-                             OnCancel="CancelChanges"
-                             OnResetToDefaults="ResetLayout" />
+                    <K7ExpansionPanel>
+                        <TitleContent>@L["PreviewTitle"]</TitleContent>
+                        <ChildContent>
+                            <div class="d-flex justify-end mb-2">
+                                <K7Button Color="secondary" Variant="text" StartIcon="@Phosphor.ArrowClockwise"
+                                          OnClick="RefreshPreviewAsync" Disabled="_previewLoading">
+                                    @L["PreviewRefresh"]
+                                </K7Button>
+                            </div>
+                            <HomeLayoutPreview @ref="_preview" Rows="_rows" />
+                        </ChildContent>
+                    </K7ExpansionPanel>
+                </div>
+            }
+        </InterfaceSettingsSplit>
     </div>
-}
+
+    @if (!_isLoading)
+    {
+        <K7SettingsActionBar AutoSave="true"
+                             SaveState="_autoSave.State"
+                             IsSaving="_autoSave.IsBusy"
+                             ResetDisabled="ResetDisabled"
+                             OnResetToDefaults="ResetLayoutAsync" />
+    }
+</div>

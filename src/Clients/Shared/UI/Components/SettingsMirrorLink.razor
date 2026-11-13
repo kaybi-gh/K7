@@ -1,0 +1,14 @@
+@namespace K7.Clients.Shared.UI.Components
+@implements IDisposable
+@inject IStringLocalizer<SettingsMirrorLink> L
+
+@if (_href is not null && (!_toAdmin || _canAccessAdmin))
+{
+    <K7Button Variant="text"
+              Color="secondary"
+              Href="@_href"
+              EndIcon="@Phosphor.ArrowRight"
+              Class="settings-mirror-link">
+        @(_toAdmin ? L["ToServerDefaults"] : L["ToMySettings"])
+    </K7Button>
+}

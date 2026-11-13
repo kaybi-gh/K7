@@ -45,4 +45,5 @@
   <data name="ClearAllPreferencesTitle" xml:space="preserve"><value>Effacer les réglages de cet appareil</value></data>
   <data name="ClearAllPreferencesMessage" xml:space="preserve"><value>Effacer les réglages enregistrés sur cet appareil (lecteur, barre latérale, téléchargements, filtres) ? L'URL du serveur et la connexion restent en place. L'application sera rechargée.</value></data>
   <data name="ClearPreferencesSuccess" xml:space="preserve"><value>Personnalisations locales effacées.</value></data>
+  <data name="ChangeServer" xml:space="preserve"><value>Changer de serveur</value></data>
 </root>

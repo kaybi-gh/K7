@@ -1,71 +1,91 @@
-﻿@page "/admin/general"
+@page "/admin/advanced/link-previews"
+@page "/admin/general"
+@page "/admin/interface"
+@page "/admin/interface/appearance"
+@page "/admin/interface/theme-songs"
 @layout AdminLayout
 @using K7.Clients.Shared.Models
 @using K7.Clients.Shared.Services.Resources
 @inject IStringLocalizer<AdminGeneralPanel> L
 @inject IStringLocalizer<SharedResource> S
+@inject IStringLocalizer<InterfaceSettingsSplit> Li
+@inject IStringLocalizer<AdvancedSettingsSplit> La
+@inject NavigationManager NavigationManager
 
-<PageTitle>@L["PageTitle"]</PageTitle>
+@* Server defaults shown as the Appearance and Theme songs sub-pages of Interface (one form,
+   one Save) and as the Link previews sub-page of Advanced (one switch, saved on change). *@
+<PageTitle>@(IsLinkPreviewsPage ? La["Title"] : Li["Title"])</PageTitle>
 
-<div class="admin-page-intro">
-    <AdminPageHeader Title="@L["PageTitle"]" Subtitle="@L["Subtitle"]" />
-</div>
+<div class="settings-form-page settings-form-page--section-actions">
+    <div class="settings-form-page__body">
+        @if (IsLinkPreviewsPage)
+        {
+            <AdvancedSettingsSplit Section="@AdvancedSettingsSplit.LinkPreviews">
+                @if (_isLoading)
+                {
+                    <K7ProgressBar Indeterminate="true" />
+                }
+                else
+                {
+                    <K7SettingRow Label="@L["MediaLinkPreviews"]" Hint="@L["MediaLinkPreviewsHint"]">
+                        <K7Switch AriaLabel="@L["MediaLinkPreviews"]"
+                                  Value="_mediaLinkPreviewsEnabled"
+                                  ValueChanged="OnMediaLinkPreviewsChangedAsync"
+                                  Disabled="_linkPreviewsSaving" />
+                    </K7SettingRow>
+                }
+            </AdvancedSettingsSplit>
+        }
+        else
+        {
+            <InterfaceSettingsSplit Section="@ActiveSection" Admin="true">
+                @if (_isLoading)
+                {
+                    <K7ProgressBar Indeterminate="true" />
+                }
+                else if (IsThemeSongs)
+                {
+                    <K7SettingRow Label="@L["PlayThemeSongs"]" Hint="@L["PlayThemeSongsHint"]">
+                        <K7Switch AriaLabel="@L["PlayThemeSongs"]"
+                                  Value="_playThemeSongs"
+                                  ValueChanged="OnPlayThemeSongsChanged" />
+                    </K7SettingRow>
+                }
+                else
+                {
+                    <K7SettingRow Label="@L["DefaultTheme"]">
+                        <K7Select TValue="ThemeDefinition"
+                                  Value="_defaultTheme"
+                                  ValueChanged="OnDefaultThemeChanged"
+                                  ToStringFunc="@(t => t?.Name)">
+                            @foreach (var theme in Themes.Collection)
+                            {
+                                <K7SelectItem Value="@theme" Text="@theme.Name">@theme.Name</K7SelectItem>
+                            }
+                        </K7Select>
+                    </K7SettingRow>
+                    <K7SettingRow Label="@L["DefaultLanguage"]">
+                        <K7LanguageSelect Value="@_defaultLanguage"
+                                          ValueChanged="OnDefaultLanguageChanged"
+                                          Languages="SupportedLanguages.Interface" />
+                    </K7SettingRow>
+                }
+            </InterfaceSettingsSplit>
+        }
+    </div>
 
-@if (_isLoading)
-{
-    <K7ProgressBar Indeterminate="true" />
-}
-else
-{
-    <div class="settings-form-page">
-        <div class="settings-form-page__body pa-4 d-flex flex-col gap-6">
-            <section class="d-flex flex-col gap-4">
-                <K7LanguageSelect Value="@_defaultLanguage"
-                                  ValueChanged="OnDefaultLanguageChanged"
-                                  Label="@L["DefaultLanguage"]"
-                                  Languages="SupportedLanguages.Interface" />
-
-                <K7Select TValue="ThemeDefinition"
-                          Label="@L["DefaultTheme"]"
-                          Value="_defaultTheme"
-                          ValueChanged="OnDefaultThemeChanged"
-                          ToStringFunc="@(t => t?.Name)">
-                    @foreach (var theme in Themes.Collection)
-                    {
-                        <K7SelectItem Value="@theme" Text="@theme.Name">@theme.Name</K7SelectItem>
-                    }
-                </K7Select>
-            </section>
-
-            <K7Divider />
-
-            <section class="d-flex flex-col gap-3">
-                <div>
-                    <h6 class="mb-1">@L["ThemeSongsSection"]</h6>
-                    <p class="text-sm" Color="secondary">@L["PlayThemeSongsHint"]</p>
-                </div>
-                <K7Switch Label="@L["PlayThemeSongs"]"
-                          Value="_playThemeSongs"
-                          ValueChanged="OnPlayThemeSongsChanged" />
-            </section>
-
-            <K7Divider />
-
-            <section class="d-flex flex-col gap-3">
-                <div>
-                    <h6 class="mb-1">@L["MediaLinkPreviewsSection"]</h6>
-                    <p class="text-sm" Color="secondary">@L["MediaLinkPreviewsHint"]</p>
-                </div>
-                <K7Switch Label="@L["MediaLinkPreviews"]"
-                          Value="_mediaLinkPreviewsEnabled"
-                          ValueChanged="OnMediaLinkPreviewsChanged" />
-            </section>
-        </div>
-
+    @if (!_isLoading && IsLinkPreviewsPage)
+    {
+        <K7SettingsActionBar AutoSave="true"
+                             SaveState="_linkPreviewsSaveState"
+                             ShowResetToDefaults="false" />
+    }
+    else if (!_isLoading)
+    {
         <K7SettingsActionBar IsDirty="IsDirty"
                              IsSaving="_saving"
                              ShowResetToDefaults="false"
                              OnSave="SaveAsync"
                              OnCancel="CancelChanges" />
-    </div>
-}
+    }
+</div>

@@ -6,12 +6,14 @@ public partial class AdminLayout
     private static readonly string[] MembersRoutes = ["/admin/users", "/admin/devices", "/admin/restrictions", "/admin/authentication"];
     private static readonly string[] ExperienceRoutes =
     [
-        "/admin/general",
+        "/admin/interface",
         "/admin/home-layout",
         "/admin/navigation",
         "/admin/audio-playback",
         "/admin/video-playback",
-        "/admin/transcoding"
+        "/admin/advanced",
+        "/admin/transcoding",
+        "/admin/general"
     ];
     private static readonly string[] ActivityRoutes = ["/admin/playback-history", "/admin/stats"];
     private static readonly string[] SystemRoutes =

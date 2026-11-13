@@ -21,36 +21,55 @@ else
 {
     <div class="settings-form-page">
         <div class="settings-form-page__body pa-4 d-flex flex-col gap-4">
-            <K7Alert Severity="K7Severity.Info" Variant="outlined" NoIcon="true">
-                @L["FederationDirectPeersNote"]
-            </K7Alert>
+            <div class="social-matrix-wrap">
+                <K7SettingRow Label="@L["BlurReviewsForUnwatchedMedia"]">
+                    <K7Switch AriaLabel="@L["BlurReviewsForUnwatchedMedia"]"
+                              @bind-Value="_reviewPreferences.BlurReviewsForUnwatchedMedia" />
+                </K7SettingRow>
 
-            <section class="settings-section d-flex flex-col gap-3">
-                <h6 class="mb-0">@L["ShareTitle"]</h6>
-                <FederationPrivacyScopeField Label="@L["Reviews"]" ContentType="@FederationContentType.Reviews" Value="_privacy.Share.Reviews" ValueChanged="@(v => SetShareScope(FederationContentType.Reviews, v, share: true))" Grants="_shareGrants" GrantsChanged="OnShareGrantsChanged" FormChanged="OnFormChanged" />
-                <FederationPrivacyScopeField Label="@L["Collections"]" ContentType="@FederationContentType.Collections" Value="_privacy.Share.Collections" ValueChanged="@(v => SetShareScope(FederationContentType.Collections, v, share: true))" Grants="_shareGrants" GrantsChanged="OnShareGrantsChanged" FormChanged="OnFormChanged" />
-                <FederationPrivacyScopeField Label="@L["Playlists"]" ContentType="@FederationContentType.Playlists" Value="_privacy.Share.Playlists" ValueChanged="@(v => SetShareScope(FederationContentType.Playlists, v, share: true))" Grants="_shareGrants" GrantsChanged="OnShareGrantsChanged" FormChanged="OnFormChanged" />
-                <FederationPrivacyScopeField Label="@L["DynamicPlaylists"]" ContentType="@FederationContentType.DynamicPlaylists" Value="_privacy.Share.DynamicPlaylists" ValueChanged="@(v => SetShareScope(FederationContentType.DynamicPlaylists, v, share: true))" Grants="_shareGrants" GrantsChanged="OnShareGrantsChanged" FormChanged="OnFormChanged" />
-                <FederationPrivacyScopeField Label="@L["PlaybackHistory"]" ContentType="@FederationContentType.PlaybackHistory" Value="_privacy.Share.PlaybackHistory" ValueChanged="@(v => SetShareScope(FederationContentType.PlaybackHistory, v, share: true))" Grants="_shareGrants" GrantsChanged="OnShareGrantsChanged" FormChanged="OnFormChanged" />
-            </section>
+                @* One line per kind of content, one column per direction. *@
+                <div class="social-matrix" role="table" aria-label="@L["Title"]">
+                    <div class="social-matrix__head" role="row">
+                        <span role="columnheader"></span>
+                        <span role="columnheader">@L["ShareTitle"]</span>
+                        <span role="columnheader">@L["ViewTitle"]</span>
+                    </div>
+                    @foreach (var contentType in ContentTypes)
+                    {
+                        <div class="social-matrix__row" role="row" @key="contentType">
+                            <span class="social-matrix__type" role="rowheader">@GetContentLabel(contentType)</span>
+                            <div class="social-matrix__cell" role="cell">
+                                <span class="social-matrix__cell-label">@L["ShareTitle"]</span>
+                                <K7VisibilityScopeSelect Value="GetScope(contentType, share: true)"
+                                                         ValueChanged="@(scope => SetShareScope(contentType, scope, share: true))" />
+                                @if (GetScope(contentType, share: true) == VisibilityScope.SpecificPeople)
+                                {
+                                    <FederationVisibilityGrantsEditor ContentType="contentType"
+                                                                      Grants="_shareGrants"
+                                                                      GrantsChanged="OnShareGrantsChanged" />
+                                }
+                            </div>
+                            <div class="social-matrix__cell" role="cell">
+                                <span class="social-matrix__cell-label">@L["ViewTitle"]</span>
+                                <K7VisibilityScopeSelect Value="GetScope(contentType, share: false)"
+                                                         ValueChanged="@(scope => SetShareScope(contentType, scope, share: false))" />
+                                @if (GetScope(contentType, share: false) == VisibilityScope.SpecificPeople)
+                                {
+                                    <FederationVisibilityGrantsEditor ContentType="contentType"
+                                                                      Grants="_viewGrants"
+                                                                      GrantsChanged="OnViewGrantsChanged" />
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
 
-            <hr class="k7-divider" />
-
-            <section class="settings-section d-flex flex-col gap-3">
-                <h6 class="mb-0">@L["ViewTitle"]</h6>
-                <K7Switch @bind-Value="_reviewPreferences.BlurReviewsForUnwatchedMedia" Label="@L["BlurReviewsForUnwatchedMedia"]" />
-                <FederationPrivacyScopeField Label="@L["Reviews"]" ContentType="@FederationContentType.Reviews" Value="_privacy.View.Reviews" ValueChanged="@(v => SetShareScope(FederationContentType.Reviews, v, share: false))" Grants="_viewGrants" GrantsChanged="OnViewGrantsChanged" FormChanged="OnFormChanged" />
-                <FederationPrivacyScopeField Label="@L["Collections"]" ContentType="@FederationContentType.Collections" Value="_privacy.View.Collections" ValueChanged="@(v => SetShareScope(FederationContentType.Collections, v, share: false))" Grants="_viewGrants" GrantsChanged="OnViewGrantsChanged" FormChanged="OnFormChanged" />
-                <FederationPrivacyScopeField Label="@L["Playlists"]" ContentType="@FederationContentType.Playlists" Value="_privacy.View.Playlists" ValueChanged="@(v => SetShareScope(FederationContentType.Playlists, v, share: false))" Grants="_viewGrants" GrantsChanged="OnViewGrantsChanged" FormChanged="OnFormChanged" />
-                <FederationPrivacyScopeField Label="@L["DynamicPlaylists"]" ContentType="@FederationContentType.DynamicPlaylists" Value="_privacy.View.DynamicPlaylists" ValueChanged="@(v => SetShareScope(FederationContentType.DynamicPlaylists, v, share: false))" Grants="_viewGrants" GrantsChanged="OnViewGrantsChanged" FormChanged="OnFormChanged" />
-                <FederationPrivacyScopeField Label="@L["PlaybackHistory"]" ContentType="@FederationContentType.PlaybackHistory" Value="_privacy.View.PlaybackHistory" ValueChanged="@(v => SetShareScope(FederationContentType.PlaybackHistory, v, share: false))" Grants="_viewGrants" GrantsChanged="OnViewGrantsChanged" FormChanged="OnFormChanged" />
-            </section>
+                <p class="settings-field-hint social-matrix__note">@L["FederationDirectPeersNote"]</p>
+            </div>
         </div>
 
-        <K7SettingsActionBar IsDirty="IsDirty"
-                             IsSaving="_saving"
-                             ShowResetToDefaults="false"
-                             OnSave="SaveAsync"
-                             OnCancel="CancelChanges" />
+        <K7SettingsActionBar AutoSave="true"
+                             SaveState="_autoSave.State"
+                             ShowResetToDefaults="false" />
     </div>
 }

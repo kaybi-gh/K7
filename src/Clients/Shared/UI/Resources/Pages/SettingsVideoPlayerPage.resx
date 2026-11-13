@@ -102,4 +102,13 @@
   <data name="InactivityPromptHint" xml:space="preserve"><value>Après plusieurs épisodes enchaînés sans aucune interaction, le décompte est remplacé par une confirmation.</value></data>
   <data name="InactivityPromptDisabled" xml:space="preserve"><value>Jamais</value></data>
   <data name="InactivityPromptAfterEpisodes" xml:space="preserve"><value>Après {0} épisodes</value></data>
+  <data name="ResumeSectionTitle" xml:space="preserve"><value>Reprise de lecture</value></data>
+  <data name="TracksSectionDescription" xml:space="preserve"><value>Langues audio et sous-titres choisies au lancement</value></data>
+  <data name="SeekbarSectionDescription" xml:space="preserve"><value>Miniatures, chapitres et durée des sauts</value></data>
+  <data name="IntroSkipSectionDescription" xml:space="preserve"><value>Passer les génériques de début et de fin</value></data>
+  <data name="NextEpisodeSectionDescription" xml:space="preserve"><value>Enchaînement des épisodes et invite d'inactivité</value></data>
+  <data name="TrailersSectionDescription" xml:space="preserve"><value>Où s'ouvrent les bandes-annonces</value></data>
+  <data name="SubtitleSectionDescription" xml:space="preserve"><value>Police, taille, couleurs et ombre</value></data>
+  <data name="ResumeSectionDescription" xml:space="preserve"><value>Reprise, seuil de fin et Continuer à regarder</value></data>
+  <data name="AdvancedSectionDescription" xml:space="preserve"><value>Réglages propres à cet appareil</value></data>
 </root>

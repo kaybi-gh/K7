@@ -9,7 +9,7 @@ using Microsoft.Extensions.Localization;
 
 namespace K7.Clients.Shared.UI.Pages;
 
-public partial class SettingsLibrariesPage
+public partial class SettingsLibrariesPage : IDisposable
 {
     private sealed record TapActionState(Guid GroupId, ExploreTapAction Action);
     private sealed record LibrariesFormState(List<Guid> ExcludedLibraryIds, List<TapActionState> TapActions);
@@ -19,12 +19,23 @@ public partial class SettingsLibrariesPage
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
 
     private bool _loading = true;
-    private bool _saving;
     private List<LibraryGroupDto> _groups = [];
     private List<LibraryDto> _libraries = [];
     private HashSet<Guid> _selfExcludedIds = [];
     private Dictionary<Guid, ExploreTapAction> _tapActions = [];
     private readonly SettingsFormTracker<LibrariesFormState> _formTracker = new();
+    private readonly SettingsAutoSaveSession<LibrariesFormState> _autoSave;
+
+    public SettingsLibrariesPage()
+    {
+        _autoSave = new SettingsAutoSaveSession<LibrariesFormState>(
+            _formTracker,
+            () => _loading ? null : CurrentFormState(),
+            PersistAsync,
+            work => InvokeAsync(work),
+            StateHasChanged,
+            ReportError);
+    }
 
     private IReadOnlyList<ButtonGroupOption<ExploreTapAction>> TapActionOptions =>
     [
@@ -35,6 +46,10 @@ public partial class SettingsLibrariesPage
     private bool IsDirty => _formTracker.IsDirty(CurrentFormState());
 
     private bool ResetDisabled => !IsDirty && _selfExcludedIds.Count == 0 && !HasTapActionOverrides();
+
+    public void Dispose() => _autoSave.Dispose();
+
+    protected override void OnAfterRender(bool firstRender) => _autoSave.OnAfterRender();
 
     protected override async Task OnInitializedAsync()
     {
@@ -90,13 +105,6 @@ public partial class SettingsLibrariesPage
 
     private void CaptureFormState() => _formTracker.Capture(CurrentFormState());
 
-    private void CancelChanges()
-    {
-        var state = _formTracker.Restore();
-        _selfExcludedIds = state.ExcludedLibraryIds.ToHashSet();
-        _tapActions = state.TapActions.ToDictionary(item => item.GroupId, item => item.Action);
-    }
-
     private void ToggleLibrary(Guid libraryId, bool exclude)
     {
         if (exclude)
@@ -123,40 +131,25 @@ public partial class SettingsLibrariesPage
         return overrides;
     }
 
-    private async Task SaveAsync()
+    private async Task PersistAsync()
     {
-        if (_saving || !IsDirty)
-            return;
-
-        _saving = true;
-        try
+        await PreferencesService.UpdateSelfLibraryExclusionsAsync(new UpdateSelfLibraryExclusionsRequest
         {
-            await PreferencesService.UpdateSelfLibraryExclusionsAsync(new UpdateSelfLibraryExclusionsRequest
+            ExcludedLibraryIds = _selfExcludedIds.ToList()
+        });
+
+        var overrides = BuildTapActionOverrides();
+        if (overrides.Count == 0)
+            await PreferencesService.ResetUserGeneralPreferencesAsync();
+        else
+            await PreferencesService.UpdateUserGeneralPreferencesAsync(new GeneralPreferencesDto
             {
-                ExcludedLibraryIds = _selfExcludedIds.ToList()
+                ExploreTapActions = overrides
             });
-
-            var overrides = BuildTapActionOverrides();
-            if (overrides.Count == 0)
-                await PreferencesService.ResetUserGeneralPreferencesAsync();
-            else
-                await PreferencesService.UpdateUserGeneralPreferencesAsync(new GeneralPreferencesDto
-                {
-                    ExploreTapActions = overrides
-                });
-
-            CaptureFormState();
-            Snackbar.Add(L["LibrariesSaveSuccess"], K7Severity.Success);
-        }
-        catch (Exception ex)
-        {
-            Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), K7Severity.Error);
-        }
-        finally
-        {
-            _saving = false;
-        }
     }
+
+    private void ReportError(Exception ex) =>
+        Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), K7Severity.Error);
 
     private async Task ResetToDefaultsAsync()
     {
@@ -164,6 +157,6 @@ public partial class SettingsLibrariesPage
         foreach (var group in _groups)
             _tapActions[group.Id] = group.ExploreTapAction;
 
-        await SaveAsync();
+        await _autoSave.SaveAsync();
     }
 }

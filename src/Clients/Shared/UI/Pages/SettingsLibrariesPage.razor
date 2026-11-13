@@ -8,7 +8,11 @@
 <PageTitle>@L["LibrariesPageTitle"]</PageTitle>
 
 <div class="admin-page-intro">
-    <AdminPageHeader Title="@L["LibrariesPageTitle"]" Subtitle="@L["LibrariesPageDescription"]" />
+    <AdminPageHeader Title="@L["LibrariesPageTitle"]" Subtitle="@L["LibrariesPageDescription"]">
+        <Actions>
+            <SettingsMirrorLink />
+        </Actions>
+    </AdminPageHeader>
 </div>
 
 <div class="settings-form-page">
@@ -63,11 +67,10 @@
 
     @if (!_loading && _libraries.Count > 0)
     {
-        <K7SettingsActionBar IsDirty="IsDirty"
-                             IsSaving="_saving"
+        <K7SettingsActionBar AutoSave="true"
+                             SaveState="_autoSave.State"
+                             IsSaving="_autoSave.IsBusy"
                              ResetDisabled="ResetDisabled"
-                             OnSave="SaveAsync"
-                             OnCancel="CancelChanges"
                              OnResetToDefaults="ResetToDefaultsAsync" />
     }
 </div>

@@ -3,7 +3,10 @@
 @if (VideoPolicy is not null)
 {
     <section class="d-flex flex-col gap-4">
-        <h6>@L["ResumeSection"]</h6>
+        @if (ShowHeading)
+        {
+            <h6>@L["ResumeSection"]</h6>
+        }
         <span class="text-caption video-playback-hint">@L["ResumeSectionHint"]</span>
 
         <K7Slider TValue="int" Min="0" Max="50" Step="1" Immediate="true"
@@ -39,7 +42,10 @@
 @if (AudioPolicy is not null)
 {
     <section class="d-flex flex-col gap-4">
-        <h6>@L["MusicResumeSection"]</h6>
+        @if (ShowHeading)
+        {
+            <h6>@L["MusicResumeSection"]</h6>
+        }
 
         <K7Alert Severity="K7Severity.Info" Variant="outlined" NoIcon="true">
             @L["MusicResumeSectionHint"]

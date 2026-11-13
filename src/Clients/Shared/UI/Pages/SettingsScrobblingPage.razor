@@ -16,6 +16,7 @@
 <div class="admin-page-intro">
     <AdminPageHeader Title="@(_selectionMode ? string.Format(L["SelectedCount"], SelectedCount) : L["PageTitle"])" Subtitle="@L["Subtitle"]">
         <Actions>
+            <SettingsMirrorLink />
             @if (_canScrobble && !_loading && _selectionMode)
             {
                 <K7Button Variant="text" OnClick="ToggleSelectAll" Disabled="@(_accounts.Count == 0 || _deleting)">

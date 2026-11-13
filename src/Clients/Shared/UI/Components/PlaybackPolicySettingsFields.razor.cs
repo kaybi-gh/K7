@@ -10,6 +10,9 @@ public partial class PlaybackPolicySettingsFields
     [Parameter] public AudioPlaybackPolicySettingsDto? AudioPolicy { get; set; }
     [Parameter] public EventCallback<AudioPlaybackPolicySettingsDto> AudioPolicyChanged { get; set; }
 
+    /// <summary>False when the host already shows the section title (settings sub-page).</summary>
+    [Parameter] public bool ShowHeading { get; set; } = true;
+
     private async Task OnVideoChanged(Func<VideoPlaybackPolicySettingsDto, VideoPlaybackPolicySettingsDto> update)
     {
         if (VideoPolicy is null)

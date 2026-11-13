@@ -93,25 +93,33 @@ else
                 </div>
 
                 <div>
-                    <K7TextField TValue="int" Label="@L["RequiredLength"]" Value="_policy.RequiredLength"
-                                 ValueChanged="OnRequiredLengthChanged" Type="number" />
-                    <span class="text-caption mt-1" Color="secondary">@L["RequiredLengthHint"]</span>
-                </div>
+                    <K7SettingRow Label="@L["RequiredLength"]" Hint="@L["RequiredLengthHint"]">
+                        <K7TextField TValue="int" aria-label="@L["RequiredLength"]" Value="_policy.RequiredLength"
+                                     ValueChanged="OnRequiredLengthChanged" Type="number" />
+                    </K7SettingRow>
 
-                <div>
-                    <K7TextField TValue="int" Label="@L["RequiredUniqueChars"]" Value="_policy.RequiredUniqueChars"
-                                 ValueChanged="OnRequiredUniqueCharsChanged" Type="number" />
-                    <span class="text-caption mt-1" Color="secondary">@L["RequiredUniqueCharsHint"]</span>
-                </div>
+                    <K7SettingRow Label="@L["RequiredUniqueChars"]" Hint="@L["RequiredUniqueCharsHint"]">
+                        <K7TextField TValue="int" aria-label="@L["RequiredUniqueChars"]" Value="_policy.RequiredUniqueChars"
+                                     ValueChanged="OnRequiredUniqueCharsChanged" Type="number" />
+                    </K7SettingRow>
 
-                <K7Switch Label="@L["RequireDigit"]" Value="_policy.RequireDigit"
-                          ValueChanged="OnRequireDigitChanged" />
-                <K7Switch Label="@L["RequireLowercase"]" Value="_policy.RequireLowercase"
-                          ValueChanged="OnRequireLowercaseChanged" />
-                <K7Switch Label="@L["RequireUppercase"]" Value="_policy.RequireUppercase"
-                          ValueChanged="OnRequireUppercaseChanged" />
-                <K7Switch Label="@L["RequireNonAlphanumeric"]" Value="_policy.RequireNonAlphanumeric"
-                          ValueChanged="OnRequireNonAlphanumericChanged" />
+                    <K7SettingRow Label="@L["RequireDigit"]">
+                        <K7Switch AriaLabel="@L["RequireDigit"]" Value="_policy.RequireDigit"
+                                  ValueChanged="OnRequireDigitChanged" />
+                    </K7SettingRow>
+                    <K7SettingRow Label="@L["RequireLowercase"]">
+                        <K7Switch AriaLabel="@L["RequireLowercase"]" Value="_policy.RequireLowercase"
+                                  ValueChanged="OnRequireLowercaseChanged" />
+                    </K7SettingRow>
+                    <K7SettingRow Label="@L["RequireUppercase"]">
+                        <K7Switch AriaLabel="@L["RequireUppercase"]" Value="_policy.RequireUppercase"
+                                  ValueChanged="OnRequireUppercaseChanged" />
+                    </K7SettingRow>
+                    <K7SettingRow Label="@L["RequireNonAlphanumeric"]">
+                        <K7Switch AriaLabel="@L["RequireNonAlphanumeric"]" Value="_policy.RequireNonAlphanumeric"
+                                  ValueChanged="OnRequireNonAlphanumericChanged" />
+                    </K7SettingRow>
+                </div>
             </section>
         </div>
 

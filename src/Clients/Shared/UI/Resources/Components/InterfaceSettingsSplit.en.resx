@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="Title" xml:space="preserve"><value>Interface</value></data>
+  <data name="Subtitle" xml:space="preserve"><value>Appearance, home page, navigation and theme songs.</value></data>
+  <data name="AdminSubtitle" xml:space="preserve"><value>Appearance, home page, navigation and theme songs offered by default to every account.</value></data>
+  <data name="Home" xml:space="preserve"><value>Home</value></data>
+  <data name="HomeDescription" xml:space="preserve"><value>Rows shown on the home page and their order</value></data>
+  <data name="Navigation" xml:space="preserve"><value>Navigation</value></data>
+  <data name="NavigationDescription" xml:space="preserve"><value>Shortcuts to your pages, collections and playlists</value></data>
+  <data name="Appearance" xml:space="preserve"><value>Appearance</value></data>
+  <data name="AppearanceDescription" xml:space="preserve"><value>Color theme and language of the app</value></data>
+  <data name="ThemeSongs" xml:space="preserve"><value>Theme songs</value></data>
+  <data name="ThemeSongsDescription" xml:space="preserve"><value>Background music on movie and series pages</value></data>
+</root>

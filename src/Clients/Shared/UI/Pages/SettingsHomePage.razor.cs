@@ -9,7 +9,7 @@ using Microsoft.Extensions.Localization;
 
 namespace K7.Clients.Shared.UI.Pages;
 
-public partial class SettingsHomePage
+public partial class SettingsHomePage : IDisposable
 {
     private sealed record HomeFormState(List<HomeRowEditModel> Rows);
 
@@ -20,14 +20,28 @@ public partial class SettingsHomePage
 
     private List<HomeRowEditModel> _rows = [];
     private bool _isLoading = true;
-    private bool _saving;
     private HomeLayoutPreview? _preview;
     private bool _previewLoading;
     private bool _hasUserOverride;
     private readonly SettingsFormTracker<HomeFormState> _formTracker = new();
+    private readonly SettingsAutoSaveSession<HomeFormState> _autoSave;
 
-    private bool IsDirty => _formTracker.IsDirty(new HomeFormState(_rows));
-    private bool ResetDisabled => !IsDirty && !_hasUserOverride;
+    public SettingsHomePage()
+    {
+        _autoSave = new SettingsAutoSaveSession<HomeFormState>(
+            _formTracker,
+            () => _isLoading ? null : new HomeFormState(_rows),
+            PersistAsync,
+            work => InvokeAsync(work),
+            StateHasChanged,
+            ReportError);
+    }
+
+    private bool ResetDisabled => !_autoSave.IsDirty && !_hasUserOverride;
+
+    public void Dispose() => _autoSave.Dispose();
+
+    protected override void OnAfterRender(bool firstRender) => _autoSave.OnAfterRender();
 
     protected override async Task OnInitializedAsync()
     {
@@ -52,11 +66,6 @@ public partial class SettingsHomePage
 
     private void CaptureFormState() => _formTracker.Capture(new HomeFormState(_rows));
 
-    private void CancelChanges()
-    {
-        _rows = _formTracker.Restore().Rows;
-    }
-
     private void OnRowVisibilityChanged(HomeRowEditModel row, bool value)
     {
         row.IsVisible = value;
@@ -67,54 +76,29 @@ public partial class SettingsHomePage
     {
         for (var i = 0; i < _rows.Count; i++)
             _rows[i].Order = i;
-        StateHasChanged();
     }
 
-    private async Task SaveLayout()
+    private async Task PersistAsync()
     {
-        _saving = true;
-        try
-        {
-            RenumberRows();
-            var layout = new HomeLayoutDto { Rows = _rows.Select(m => m.ToDto()).ToList() };
-            await PreferencesService.UpdateHomeLayoutAsync(layout);
-            CaptureFormState();
-            await RefreshOverrideStateAsync();
-            await HomeFeedStore.ResetAndReloadAsync();
-            Snackbar.Add(L["HomeSaveSuccess"], K7Severity.Success);
-        }
-        catch (Exception ex)
-        {
-            Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), K7Severity.Error);
-        }
-        finally
-        {
-            _saving = false;
-        }
+        var layout = new HomeLayoutDto { Rows = _rows.Select(m => m.ToDto()).ToList() };
+        await PreferencesService.UpdateHomeLayoutAsync(layout);
+        await RefreshOverrideStateAsync();
+        await HomeFeedStore.ResetAndReloadAsync();
     }
 
-    private async Task ResetLayout()
+    private Task ResetLayoutAsync() => _autoSave.RunAsync(async () =>
     {
-        _saving = true;
-        try
-        {
-            await PreferencesService.ResetHomeLayoutAsync();
-            var layout = await PreferencesService.GetHomeLayoutAsync();
-            _rows = layout.Rows.OrderBy(r => r.Order).Select(HomeRowEditModel.FromDto).ToList();
-            CaptureFormState();
-            await RefreshOverrideStateAsync();
-            await HomeFeedStore.ResetAndReloadAsync();
-            Snackbar.Add(L["HomeResetSuccess"], K7Severity.Success);
-        }
-        catch (Exception ex)
-        {
-            Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), K7Severity.Error);
-        }
-        finally
-        {
-            _saving = false;
-        }
-    }
+        await PreferencesService.ResetHomeLayoutAsync();
+        var layout = await PreferencesService.GetHomeLayoutAsync();
+        _rows = layout.Rows.OrderBy(r => r.Order).Select(HomeRowEditModel.FromDto).ToList();
+        CaptureFormState();
+        await RefreshOverrideStateAsync();
+        await HomeFeedStore.ResetAndReloadAsync();
+        Snackbar.Add(L["HomeResetSuccess"], K7Severity.Success);
+    });
+
+    private void ReportError(Exception ex) =>
+        Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), K7Severity.Error);
 
     private async Task RefreshPreviewAsync()
     {

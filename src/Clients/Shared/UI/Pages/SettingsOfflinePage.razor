@@ -42,41 +42,54 @@
 
     <h6>@L["StorageLimits"]</h6>
 
-    <K7ByteSizeSelect Label="@L["MaxDownloadStorage"]"
-                      Value="_maxDownloadBytes"
-                      ValueChanged="OnMaxDownloadChanged"
-                      Presets="OfflineStoragePresets.DownloadLimits"
-                      DeviceTotalBytes="_storageInfo?.DeviceTotalBytes"
-                      SiblingBytes="_maxCacheBytes" />
+    <div>
+        <K7SettingRow Label="@L["MaxDownloadStorage"]">
+            <K7ByteSizeSelect Value="_maxDownloadBytes"
+                              ValueChanged="OnMaxDownloadChanged"
+                              Presets="OfflineStoragePresets.DownloadLimits"
+                              DeviceTotalBytes="_storageInfo?.DeviceTotalBytes"
+                              SiblingBytes="_maxCacheBytes" />
+        </K7SettingRow>
 
-    <K7ByteSizeSelect Label="@L["MaxCacheStorage"]"
-                      Value="_maxCacheBytes"
-                      ValueChanged="OnMaxCacheChanged"
-                      Presets="OfflineStoragePresets.CacheLimits"
-                      MaxBytes="@(50L * 1024 * 1024 * 1024)"
-                      DeviceTotalBytes="_storageInfo?.DeviceTotalBytes"
-                      SiblingBytes="_maxDownloadBytes" />
+        <K7SettingRow Label="@L["MaxCacheStorage"]">
+            <K7ByteSizeSelect Value="_maxCacheBytes"
+                              ValueChanged="OnMaxCacheChanged"
+                              Presets="OfflineStoragePresets.CacheLimits"
+                              MaxBytes="@(50L * 1024 * 1024 * 1024)"
+                              DeviceTotalBytes="_storageInfo?.DeviceTotalBytes"
+                              SiblingBytes="_maxDownloadBytes" />
+        </K7SettingRow>
+    </div>
 
-    <hr class="k7-divider my-2" />
     <h6>@L["Network"]</h6>
 
-    <K7Switch Label="@L["AllowWifi"]" Value="_allowWifi" ValueChanged="OnAllowWifiChanged" />
-    <K7Switch Label="@L["AllowMobileData"]" Value="_allowMobileData" ValueChanged="OnAllowMobileDataChanged" />
+    <div>
+        <K7SettingRow Label="@L["AllowWifi"]">
+            <K7Switch AriaLabel="@L["AllowWifi"]" Value="_allowWifi" ValueChanged="OnAllowWifiChanged" />
+        </K7SettingRow>
 
-    <hr class="k7-divider my-2" />
+        <K7SettingRow Label="@L["AllowMobileData"]">
+            <K7Switch AriaLabel="@L["AllowMobileData"]" Value="_allowMobileData" ValueChanged="OnAllowMobileDataChanged" />
+        </K7SettingRow>
+    </div>
+
     <h6>@L["MusicCache"]</h6>
 
-    <K7PresetIntSelect Label="@L["LookaheadWifi"]"
-                       Value="_lookaheadWifi"
-                       ValueChanged="OnLookaheadWifiChanged"
-                       Presets="OfflineStoragePresets.LookaheadWifi"
-                       DisabledLabel="@L["Disabled"]"
-                       Max="200" />
+    <div>
+        <K7SettingRow Label="@L["LookaheadWifi"]">
+            <K7PresetIntSelect Value="_lookaheadWifi"
+                               ValueChanged="OnLookaheadWifiChanged"
+                               Presets="OfflineStoragePresets.LookaheadWifi"
+                               DisabledLabel="@L["Disabled"]"
+                               Max="200" />
+        </K7SettingRow>
 
-    <K7PresetIntSelect Label="@L["LookaheadMobile"]"
-                       Value="_lookaheadMobile"
-                       ValueChanged="OnLookaheadMobileChanged"
-                       Presets="OfflineStoragePresets.LookaheadMobile"
-                       DisabledLabel="@L["Disabled"]"
-                       Max="100" />
+        <K7SettingRow Label="@L["LookaheadMobile"]">
+            <K7PresetIntSelect Value="_lookaheadMobile"
+                               ValueChanged="OnLookaheadMobileChanged"
+                               Presets="OfflineStoragePresets.LookaheadMobile"
+                               DisabledLabel="@L["Disabled"]"
+                               Max="100" />
+        </K7SettingRow>
+    </div>
 </div>

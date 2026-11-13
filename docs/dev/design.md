@@ -55,6 +55,46 @@ Type, space, and radius stay in `tokens.css` (Open Props-style scales, not the p
 4. Colors, spacing, and type that matter go through design tokens (themes are a product feature).
 5. WCAG AA minimum: contrast, keyboard/spatial focus, semantic controls. Keep core features available on small screens.
 
+## Settings pages
+
+Long settings pages must not turn into one tall scroll (painful with a remote) nor stretch
+controls across a wide screen:
+
+- `K7SettingsSplit` + `K7SettingsNavItem`: an index (icon, title, short description of what the
+  section is for) and one sub-page at a time. Side by side on wide screens. Under 1200px and on
+  TV it behaves like a menu: the index, then the sub-page as its own screen with a back link and
+  the page header hidden. Each sub-page has its own route (`/settings/video-playback/{section}`).
+- Pages that stay separate components can still share one index: `InterfaceSettingsSplit` wraps
+  the appearance (theme, language), home layout, navigation and theme songs pages (personal
+  and admin) under `/settings/interface` and `/admin/interface`. The former addresses stay
+  routable because saved shortcuts point at them. Reset to defaults is per sub-page.
+  `AdvancedSettingsSplit` does the same for the admin-only Advanced entry (transcoding, link
+  previews) under `/admin/advanced`.
+  A save bar that belongs to one sub-page goes on `settings-form-page--section-actions`, which
+  hides it while the index is shown alone.
+- Personal settings and their server defaults mirror each other: same entry name, same
+  sub-pages, same keys (`/settings/video-playback/subtitles` and
+  `/admin/video-playback/subtitles`). `SettingsMirrorLink` in the page header jumps to the
+  counterpart on the same sub-page (pairs listed in `SettingsMirror`). The link towards the
+  admin only shows to accounts with `CanAccessAdmin`. Register a new pair when adding a
+  settings page that has server defaults.
+- `K7SettingRow`: one setting per line, label and hint on the left, compact control on the right.
+  Sliders and text fields go in a `settings-field-group` between rows.
+- `K7OptionList`: short single choices shown in full instead of a select.
+- Saving follows one rule. Personal settings save on change, with no Save or Cancel: the page
+  shows a `K7SaveIndicator` (spinner from the first pending edit to the end of the request, then
+  a round check) beside **Reset to defaults**, in the split footer (`SaveState`) or in
+  `K7SettingsActionBar` with `AutoSave`. `SettingsAutoSaveSession` holds the logic (debounce,
+  state, flush when leaving the page). Server defaults in the admin keep the explicit Save and
+  Cancel of `K7SettingsActionBar`, since they reach every account. A lone admin switch (link
+  previews) saves on change too: a Save bar for one switch is more ceremony than safety. Forms that need a deliberate
+  confirmation (password, PIN, account creation) keep their own button.
+- Rows shared by a personal page and its admin defaults live in one fields component that takes
+  the section key (`VideoPlayerSettingsFields`, `TrackSelectionSettingsFields`,
+  `AudioPlayerExperienceSettingsFields`).
+
+Video and audio playback (settings and admin) are the reference implementations.
+
 ## Avoid
 
 - Glassmorphism, gradient text, identical card grids, nested cards, hero-metric dashboards

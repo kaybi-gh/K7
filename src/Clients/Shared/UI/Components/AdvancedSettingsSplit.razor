@@ -1,0 +1,31 @@
+@namespace K7.Clients.Shared.UI.Components
+@using K7.Clients.Shared.UI.Pages.Admin.Components
+@inject IStringLocalizer<AdvancedSettingsSplit> L
+@inject NavigationManager Navigation
+@implements IDisposable
+
+<K7SettingsSplit IndexLabel="@L["Title"]"
+                 DetailTitle="@(Section == LinkPreviews ? L["LinkPreviews"] : L["Transcoding"])"
+                 BackHref="@BasePath"
+                 DetailOpen="DetailOpen">
+    <Header>
+        <div class="admin-page-intro">
+            <AdminPageHeader Title="@L["Title"]" Subtitle="@L["Subtitle"]" />
+        </div>
+    </Header>
+    <Index>
+        <K7SettingsNavItem Href="@($"{BasePath}/{Transcoding}")"
+                           Icon="@Phosphor.FilmStrip"
+                           Title="@L["Transcoding"]"
+                           Description="@L["TranscodingDescription"]"
+                           Active="@(Section == Transcoding)" />
+        <K7SettingsNavItem Href="@($"{BasePath}/{LinkPreviews}")"
+                           Icon="@Phosphor.LinkSimple"
+                           Title="@L["LinkPreviews"]"
+                           Description="@L["LinkPreviewsDescription"]"
+                           Active="@(Section == LinkPreviews)" />
+    </Index>
+    <Detail>
+        @ChildContent
+    </Detail>
+</K7SettingsSplit>

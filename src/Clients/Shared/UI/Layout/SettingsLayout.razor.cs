@@ -10,6 +10,7 @@ public partial class SettingsLayout
     private static readonly string[] ExperienceRoutes =
     [
         "/settings/general",
+        "/settings/interface",
         "/settings/home-layout",
         "/settings/navigation",
         "/settings/audio-player",

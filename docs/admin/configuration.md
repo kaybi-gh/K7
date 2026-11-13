@@ -17,7 +17,7 @@ Install first: [install.md](install.md). Day-to-day features: [operating.md](ope
 
 Discord, Telegram, Slack, and iMessage fetch the media URL **without** a session cookie. K7 answers those GETs **before** login redirection, with a small public HTML document. Recipients still sign in to open the app. The document is sent with `Cache-Control: no-store`: the same URL serves the app once the browser holds a session cookie, so neither the browser nor a caching reverse proxy may keep a copy. A cached copy redirected signed-in browsers to the welcome page in a loop. The `og:image` host must be reachable from the internet (reverse proxy TLS plus forwarded `Host` / `X-Forwarded-Proto`, or `BaseUrl` when Host is missing).
 
-Media title, overview, and poster are **on by default**. Turn them off under **Admin -> Experience -> General** (`MediaLinkPreviewsEnabled`) to keep crawlers on the 1200x630 K7 card only. The public HTML (and no login redirect) stays either way.
+Media title, overview, and poster are **on by default**. Turn them off under **Admin -> Experience -> Advanced -> Link previews** (`MediaLinkPreviewsEnabled`) to keep crawlers on the 1200x630 K7 card only. The public HTML (and no login redirect) stays either way.
 
 ## Database
 

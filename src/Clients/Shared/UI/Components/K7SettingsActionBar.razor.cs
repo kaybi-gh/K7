@@ -18,9 +18,22 @@ public partial class K7SettingsActionBar : IAsyncDisposable
     [Parameter] public bool ResetDisabled { get; set; }
     [Parameter] public bool ShowResetToDefaults { get; set; } = true;
     [Parameter] public bool ResetRequiresConfirmation { get; set; } = true;
+
+    /// <summary>
+    /// Page saves on change (personal settings): Cancel and Save give way to a
+    /// <see cref="K7SaveIndicator"/> beside the reset button. Server defaults keep the buttons.
+    /// </summary>
+    [Parameter] public bool AutoSave { get; set; }
+
+    /// <summary>State shown by the indicator when <see cref="AutoSave"/> is set.</summary>
+    [Parameter] public SettingsSaveState SaveState { get; set; }
+
     [Parameter] public EventCallback OnSave { get; set; }
     [Parameter] public EventCallback OnCancel { get; set; }
     [Parameter] public EventCallback OnResetToDefaults { get; set; }
+
+    /// <summary>Nothing to show yet: no reset button and no save since the page opened.</summary>
+    private bool IsEmpty => AutoSave && !ShowResetToDefaults && SaveState == SettingsSaveState.Idle;
 
     private async Task ResetToDefaultsAsync()
     {

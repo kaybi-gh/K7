@@ -123,14 +123,14 @@ Install ffmpeg or set `Paths__FFMpegBinaryFolder`. The official image already in
 
 ### Hardware encoder test fails / playback stuck on nvenc
 
-Symptom: Admin -> Transcoding **Test encoder** fails with `Cannot load libcuda.so.1`, or logs show `Using video encoder h264_nvenc` then conversion failed. Capabilities used to list every encoder compiled into ffmpeg even when no GPU was present. K7 now only lists encoders that pass a verification encode.
+Symptom: Admin -> Experience -> Advanced -> Transcoding **Test encoder** fails with `Cannot load libcuda.so.1`, or logs show `Using video encoder h264_nvenc` then conversion failed. Capabilities used to list every encoder compiled into ffmpeg even when no GPU was present. K7 now only lists encoders that pass a verification encode.
 
 NVENC probes used to apply `scale_cuda` without a CUDA device context, so a working GPU was reported as missing (Aspire/local and Docker). The probe now encodes from system memory. Quality downscale stays on the GPU only when ffmpeg was built with `scale_cuda`.
 
 - `/dev/dri` enables **VAAPI** (Intel/AMD), not NVIDIA NVENC. For NVIDIA, use `gpus: all` (or the deploy reservations form) with nvidia-container-toolkit and set `NVIDIA_DRIVER_CAPABILITIES=compute,utility,video` - see [Operating - Hardware acceleration](operating.md#hardware-acceleration).
 - The K7 image needs VAAPI driver packages (included in current Dockerfiles). Rebuild or pull a recent image. Mounting `/dev/dri` alone is not enough if drivers are missing.
 - After changing devices or image, recreate the container so the probe runs again.
-- Temporary workaround: set encoder mode to **Software** in Admin -> Transcoding.
+- Temporary workaround: set encoder mode to **Software** in Admin -> Experience -> Advanced -> Transcoding.
 - Debug inside the container: `vainfo` and logs containing `Hardware encoder h264_vaapi ... failed verification`.
 
 ### Setup / login 500: antiforgery SecurePolicy Always

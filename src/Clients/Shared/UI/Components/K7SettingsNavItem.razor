@@ -1,0 +1,22 @@
+@namespace K7.Clients.Shared.UI.Components
+
+<a class="k7-settings-nav-item focusable @(Active ? "k7-settings-nav-item--active" : "") @Class"
+   href="@Href"
+   aria-current="@(Active ? "page" : null)">
+    @if (!string.IsNullOrEmpty(Icon))
+    {
+        <span class="k7-settings-nav-item__icon">
+            <K7Icon Icon="@Icon" />
+        </span>
+    }
+    <span class="k7-settings-nav-item__text">
+        <span class="k7-settings-nav-item__title">@Title</span>
+        @if (!string.IsNullOrEmpty(Description))
+        {
+            <span class="k7-settings-nav-item__description">@Description</span>
+        }
+    </span>
+    <span class="k7-settings-nav-item__caret" aria-hidden="true">
+        <K7Icon Icon="@Phosphor.CaretRight" IconSize="@K7IconSize.Sm" />
+    </span>
+</a>

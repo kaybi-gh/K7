@@ -28,20 +28,12 @@
             }
 
             <SidebarNavGroup Title="@L["GroupExperience"]" Icon="@Phosphor.SlidersHorizontal" Routes="@ExperienceRoutes">
-                <NavLink class="nav-link focusable" href="/settings/general">
-                    <span class="nav-icon"><K7Icon Icon="@Phosphor.Gear" /></span>
-                    <span class="nav-label">@L["General"]</span>
+                <NavLink class="nav-link focusable" href="/settings/interface">
+                    <span class="nav-icon"><K7Icon Icon="@Phosphor.Layout" /></span>
+                    <span class="nav-label">@L["Interface"]</span>
                 </NavLink>
                 @if (!_isGuest)
                 {
-                    <NavLink class="nav-link focusable" href="/settings/home-layout">
-                        <span class="nav-icon"><K7Icon Icon="@Phosphor.House" /></span>
-                        <span class="nav-label">@L["HomeLayout"]</span>
-                    </NavLink>
-                    <NavLink class="nav-link focusable" href="/settings/navigation">
-                        <span class="nav-icon"><K7Icon Icon="@Phosphor.NavigationArrow" /></span>
-                        <span class="nav-label">@L["CustomNav"]</span>
-                    </NavLink>
                     <NavLink class="nav-link focusable" href="/settings/audio-player">
                         <span class="nav-icon"><K7Icon Icon="@Phosphor.MusicNotes" /></span>
                         <span class="nav-label">@L["AudioPlayback"]</span>

@@ -1,0 +1,33 @@
+.k7-save-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+}
+
+.k7-save-indicator__icon {
+    display: inline-flex;
+    line-height: 1;
+}
+
+.k7-save-indicator__icon--saved {
+    animation: k7-save-indicator-saved 0.25s ease-out;
+}
+
+.k7-save-indicator__icon--failed {
+    color: var(--color-error);
+}
+
+@keyframes k7-save-indicator-saved {
+    from {
+        opacity: 0;
+        transform: scale(0.6);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .k7-save-indicator__icon--saved {
+        animation: none;
+    }
+}

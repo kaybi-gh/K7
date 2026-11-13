@@ -2,14 +2,18 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
+    flex-wrap: wrap;
     gap: var(--space-3);
     width: 100%;
     min-width: 0;
 }
 
+/* The title keeps a readable width: actions drop under it instead of squeezing it, whatever
+   the room left by the sidebar. */
 .admin-page-header__text {
     display: flex;
     flex-direction: column;
+    flex: 1 1 18rem;
     gap: var(--space-1);
     min-width: 0;
 }

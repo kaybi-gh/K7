@@ -65,4 +65,12 @@
   <data name="RememberMusicSession" xml:space="preserve"><value>Remember music session</value></data>
   <data name="SkipBackDuration" xml:space="preserve"><value>Skip back duration</value></data>
   <data name="SkipForwardDuration" xml:space="preserve"><value>Skip forward duration</value></data>
+  <data name="LoudnessSectionDescription" xml:space="preserve"><value>Same perceived volume from one track to the next</value></data>
+  <data name="EqualizerSectionDescription" xml:space="preserve"><value>Presets and frequency bands</value></data>
+  <data name="CrossfadeSectionDescription" xml:space="preserve"><value>Transition between two tracks</value></data>
+  <data name="AutoplaySectionDescription" xml:space="preserve"><value>What plays when the queue ends</value></data>
+  <data name="StreamingQualitySectionDescription" xml:space="preserve"><value>Bitrate on Wi-Fi and mobile data</value></data>
+  <data name="PlayerBehaviorSectionDescription" xml:space="preserve"><value>Session, full screen, screen lock and skip duration</value></data>
+  <data name="TrackingSectionTitle" xml:space="preserve"><value>Music tracking</value></data>
+  <data name="TrackingSectionDescription" xml:space="preserve"><value>When a track counts as listened</value></data>
 </root>

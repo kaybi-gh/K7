@@ -80,13 +80,13 @@ Category cards on Explore open a per-group feed (`/explore?library-group={id}`) 
 
 ### Custom navigation
 
-Users can enable extra shortcuts under Settings -> Navigation (server default: Admin -> Experience -> Navigation). Off by default. Administrators can pin admin sidebar pages as a separate shortcut type (Admin page). Those shortcuts are dropped for accounts without CanAccessAdmin. The main Home / Explore / My Space bar does not change. On desktop and TV the shortcuts are either a Home carousel of small category cards or a thin text bar under the top menu. Shortcuts that do not fit the bar width stay in a More menu. Bar pages are Home, Explore, My Space, Settings (including admin), and/or media pages (movies, series, music, catalog, search). Never auth or the player. The Home row never appears on the Explore group grid. Row pages are Home and/or Explore group feeds (`/explore?library-group=`). Each layout chooses desktop, phone, and/or TV (default: desktop and TV). On phones, only the Home row is used (never Explore feeds). On TV the Home row sits under the top menu, above the hero.
+Users can enable extra shortcuts under Settings -> Interface -> Navigation (server default: Admin -> Experience -> Interface -> Navigation). Off by default. Administrators can pin admin sidebar pages as a separate shortcut type (Admin page). Those shortcuts are dropped for accounts without CanAccessAdmin. The main Home / Explore / My Space bar does not change. On desktop and TV the shortcuts are either a Home carousel of small category cards or a thin text bar under the top menu. Shortcuts that do not fit the bar width stay in a More menu. Bar pages are Home, Explore, My Space, Settings (including admin), and/or media pages (movies, series, music, catalog, search). Never auth or the player. The Home row never appears on the Explore group grid. Row pages are Home and/or Explore group feeds (`/explore?library-group=`). Each layout chooses desktop, phone, and/or TV (default: desktop and TV). On phones, only the Home row is used (never Explore feeds). On TV the Home row sits under the top menu, above the hero.
 
 Shortcuts are library groups, collections, playlists (including dynamic playlists), or an allowlisted app page (My Space, Search, Settings, ...). The Downloads app page shortcut is offered on native apps only (hidden on the web client). Legacy filtered-catalog shortcuts still open if they were saved earlier. Reorder them by dragging the handle (or with up/down arrows on the handle). The Home row title is optional (empty hides it). Each shortcut card can match its target (icon, cover, color) or override those. Users override the server default and can reset.
 
 ### Theme songs
 
-Detail pages can play an ambient theme when a file is available (user toggle: Settings -> Experience -> General -> enable theme songs. Optional per-device disable on the same page. Server default: Admin -> Experience -> General). Theme continues across related series pages (serie / season / episode) and cast person digressions. A finished theme (natural end, watch, or trailer) does not restart on return to the same media. Playback pauses when the app is not visible. Leaving that media context fades out, and opening another media with a theme crossfades.
+Detail pages can play an ambient theme when a file is available (user toggle: Settings -> Interface -> Theme songs. Optional per-device disable on the same page. Server default: Admin -> Experience -> Interface -> Theme songs). Theme continues across related series pages (serie / season / episode) and cast person digressions. A finished theme (natural end, watch, or trailer) does not restart on return to the same media. Playback pauses when the app is not visible. Leaving that media context fades out, and opening another media with a theme crossfades.
 
 Movie and series trailers play in K7 by default. **Open trailers in YouTube** (Settings -> Video playback, server default under Admin -> Video playback) sends YouTube to the system app on native clients and TV. That can leave K7, and on a TV that keeps only one app in memory the system may unload K7. The browser (except TV) always stays in K7.
 
@@ -98,7 +98,7 @@ Movie and series trailers play in K7 by default. **Open trailers in YouTube** (S
 
 ### Shared URL previews
 
-Discord, Telegram, Slack, and iMessage can show a media title, overview, and poster when someone pastes a movie, series, or album URL. Recipients still sign in to open the app. This is **on by default**. Turn it off under **Admin -> Experience -> General** to keep crawlers on the K7 card only. See [configuration.md](configuration.md#shared-url-previews).
+Discord, Telegram, Slack, and iMessage can show a media title, overview, and poster when someone pastes a movie, series, or album URL. Recipients still sign in to open the app. This is **on by default**. Turn it off under **Admin -> Experience -> Advanced -> Link previews** to keep crawlers on the K7 card only. See [configuration.md](configuration.md#shared-url-previews).
 
 ### Folder and naming conventions
 
@@ -177,7 +177,7 @@ Size the transcoding volume for concurrent streams. Safe to wipe between runs (c
 
 ### Hardware acceleration
 
-The server probes ffmpeg once per process lifetime (in-memory cache), then **verifies** each candidate hardware encoder with a short encode test. Only encoders that actually work are listed under Admin -> Transcoding. Built-in ffmpeg encoder names (for example `h264_nvenc` on Ubuntu packages) are **not** enough - the GPU device and drivers must be reachable inside the container. Failed probes (for example NVENC without a GPU) are summarized once at Information without dumping full ffmpeg stderr. Details stay at Debug.
+The server probes ffmpeg once per process lifetime (in-memory cache), then **verifies** each candidate hardware encoder with a short encode test. Only encoders that actually work are listed under Admin -> Experience -> Advanced -> Transcoding. Built-in ffmpeg encoder names (for example `h264_nvenc` on Ubuntu packages) are **not** enough - the GPU device and drivers must be reachable inside the container. Failed probes (for example NVENC without a GPU) are summarized once at Information without dumping full ffmpeg stderr. Details stay at Debug.
 
 NVENC verification encodes a few lavfi frames from system memory. It does **not** require the `scale_cuda` filter (often missing from distro ffmpeg) or an explicit CUDA device init. If `scale_cuda` and the `cuda` hwaccel are both present, transcode keeps decode/scale on the GPU. Otherwise NVENC still encodes, with scale on the CPU.
 
@@ -189,7 +189,7 @@ Supported families:
 - Also: VideoToolbox, AMF
 - Software fallback: `libx264` / `libx265`
 
-Controlled in **Admin -> Transcoding** (server setting `TranscodeSettings`), not `appsettings.json`:
+Controlled in **Admin -> Experience -> Advanced -> Transcoding** (server setting `TranscodeSettings`), not `appsettings.json`:
 
 - Hardware encoder mode: Auto / Software / HardwarePreferred
 - HDR tonemap and concurrency / quota options
@@ -199,7 +199,7 @@ Use **Test encoder** after changing Compose devices. If verification finds no wo
 
 #### Docker Compose device passthrough
 
-The stock [`docker-compose.yaml`](../../docker-compose.yaml) does **not** pass through GPUs. Add one of the following to the `k7-server` service, then recreate the container and confirm Admin -> Transcoding.
+The stock [`docker-compose.yaml`](../../docker-compose.yaml) does **not** pass through GPUs. Add one of the following to the `k7-server` service, then recreate the container and confirm Admin -> Experience -> Advanced -> Transcoding.
 
 **Intel / AMD (VAAPI)** - mount DRM render nodes:
 
@@ -243,7 +243,7 @@ environment:
 
 `NVIDIA_DRIVER_CAPABILITIES` must include `video`. Without it the toolkit does not inject `libnvidia-encode` and NVENC probes fail even when `gpus: all` is set.
 
-After recreate: open Admin -> Transcoding, confirm detected hardware encoders lists only working encoders, and run **Test encoder**. Recreate the container (or restart the Aspire/local process) so the in-memory probe runs again.
+After recreate: open Admin -> Experience -> Advanced -> Transcoding, confirm detected hardware encoders lists only working encoders, and run **Test encoder**. Recreate the container (or restart the Aspire/local process) so the in-memory probe runs again.
 
 Users pick stream quality in the player; that drives whether a remux/transcode session is needed.
 

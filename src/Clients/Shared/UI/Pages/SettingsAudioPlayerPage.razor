@@ -1,37 +1,75 @@
 @page "/settings/audio-player"
+@page "/settings/audio-player/{Section}"
 @layout SettingsLayout
+@implements IDisposable
 @inject IStringLocalizer<SettingsAudioPlayerPage> L
+@inject IStringLocalizer<SharedResource> S
 @inject IAudioPlayerService AudioPlayerService
 @inject AutoplayService AutoplayService
 @inject IDeviceStorageService DeviceStorage
 @inject IK7Snackbar Snackbar
-
-<div class="admin-page-intro">
-    <AdminPageHeader Title="@L["Title"]" Subtitle="@L["Subtitle"]" />
-</div>
+@inject IK7DialogService DialogService
 
 @if (_loading)
 {
+    <div class="admin-page-intro">
+        <AdminPageHeader Title="@L["Title"]" Subtitle="@L["Subtitle"]">
+            <Actions>
+                <SettingsMirrorLink />
+            </Actions>
+        </AdminPageHeader>
+    </div>
     <div class="d-flex flex-col pa-16">
         <K7Spinner />
     </div>
 }
 else if (_settings is not null && _audioPolicy is not null)
 {
-    <div class="settings-form-page">
-        <div class="settings-form-page__body pa-4 d-flex flex-col gap-6">
-            <AudioPlayerExperienceSettingsFields Settings="_settings" SettingsChanged="OnSettingsChanged" />
-
-            <K7Divider />
-
-            <PlaybackPolicySettingsFields AudioPolicy="_audioPolicy" AudioPolicyChanged="OnAudioPolicyChanged" />
-        </div>
-
-        <K7SettingsActionBar IsDirty="IsDirty"
-                             IsSaving="_saving"
-                             ResetDisabled="ResetDisabled"
-                             OnSave="SaveAsync"
-                             OnCancel="CancelChanges"
-                             OnResetToDefaults="ResetAsync" />
-    </div>
+    <K7SettingsSplit IndexLabel="@L["Title"]"
+                     DetailTitle="@ActiveSectionTitle"
+                     BackHref="@BasePath"
+                     DetailOpen="IsSectionOpen"
+                     SaveState="CurrentSaveState">
+        <Header>
+            <div class="admin-page-intro">
+                <AdminPageHeader Title="@L["Title"]" Subtitle="@L["Subtitle"]">
+                    <Actions>
+                        <SettingsMirrorLink />
+                    </Actions>
+                </AdminPageHeader>
+            </div>
+        </Header>
+        <Index>
+            @foreach (var section in Sections)
+            {
+                <K7SettingsNavItem Href="@($"{BasePath}/{section.Key}")"
+                                   Icon="@section.Icon"
+                                   Title="@section.Title"
+                                   Description="@section.Description"
+                                   Active="@(section.Key == ActiveSection)" />
+            }
+        </Index>
+        <Footer>
+            <K7Button Variant="outlined"
+                      Color="secondary"
+                      Disabled="_saving || ResetDisabled"
+                      OnClick="ConfirmResetAsync">
+                @S["ResetToDefaults"]
+            </K7Button>
+        </Footer>
+        <Detail>
+            @if (ActiveSection == AudioSettingsSections.Tracking)
+            {
+                <PlaybackPolicySettingsFields AudioPolicy="_audioPolicy"
+                                              AudioPolicyChanged="OnAudioPolicyChanged"
+                                              ShowHeading="false" />
+            }
+            else
+            {
+                <AudioPlayerExperienceSettingsFields Settings="_settings"
+                                                     SettingsChanged="OnSettingsChanged"
+                                                     Section="@ActiveSection" />
+            }
+        </Detail>
+    </K7SettingsSplit>
 }

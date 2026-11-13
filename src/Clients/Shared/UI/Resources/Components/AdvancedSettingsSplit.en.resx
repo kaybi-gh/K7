@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="Title" xml:space="preserve"><value>Advanced</value></data>
+  <data name="Subtitle" xml:space="preserve"><value>Technical server settings that rarely need changing.</value></data>
+  <data name="Transcoding" xml:space="preserve"><value>Transcoding</value></data>
+  <data name="TranscodingDescription" xml:space="preserve"><value>On-the-fly encoding when the device cannot play the file</value></data>
+  <data name="LinkPreviews" xml:space="preserve"><value>Link previews</value></data>
+  <data name="LinkPreviewsDescription" xml:space="preserve"><value>What messaging apps show when a link is pasted</value></data>
+</root>

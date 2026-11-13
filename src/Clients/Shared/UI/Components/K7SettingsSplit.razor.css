@@ -1,0 +1,162 @@
+.k7-settings-split {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.k7-settings-split__panes {
+    display: grid;
+    grid-template-columns: minmax(0, 22rem) minmax(0, 56rem);
+    grid-template-rows: auto 1fr;
+    grid-template-areas:
+        "index detail"
+        "footer detail";
+    align-items: start;
+    gap: var(--space-4) var(--space-6);
+    padding: var(--space-4);
+}
+
+.k7-settings-split__index {
+    grid-area: index;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    min-width: 0;
+}
+
+.k7-settings-split__detail {
+    grid-area: detail;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    min-width: 0;
+    padding: var(--space-4) var(--space-5);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius-lg);
+}
+
+.k7-settings-split__footer {
+    grid-area: footer;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-3);
+    min-width: 0;
+    padding: 0 var(--space-3);
+}
+
+.k7-settings-split__header {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.k7-settings-split__back {
+    display: none;
+    align-items: center;
+    gap: var(--space-2);
+    align-self: flex-start;
+    min-height: 2.5rem;
+    padding: var(--space-1) var(--space-3) var(--space-1) 0;
+    border-radius: var(--radius-sm);
+    color: var(--color-text-secondary);
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+    text-decoration: none;
+}
+
+.k7-settings-split__title {
+    margin: 0;
+}
+
+.k7-settings-split__body {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+/* Side by side: the open sub-page is marked in the index. */
+.k7-settings-split__index ::deep .k7-settings-nav-item--active {
+    background: var(--color-surface-2);
+    border-color: var(--color-border);
+}
+
+/* Menu mode (one pane at a time): narrow screens. */
+@media (max-width: 1199.98px) {
+    .k7-settings-split__panes {
+        grid-template-columns: minmax(0, 56rem);
+        grid-template-rows: auto;
+        grid-template-areas:
+            "index"
+            "footer";
+    }
+
+    .k7-settings-split--detail-open .k7-settings-split__panes {
+        grid-template-areas:
+            "detail"
+            "footer";
+    }
+
+    .k7-settings-split--detail-open .k7-settings-split__intro,
+    .k7-settings-split--detail-open .k7-settings-split__index,
+    .k7-settings-split:not(.k7-settings-split--detail-open) .k7-settings-split__detail {
+        display: none;
+    }
+
+    .k7-settings-split__back {
+        display: inline-flex;
+    }
+
+    .k7-settings-split__detail {
+        padding: 0;
+        border: none;
+    }
+
+    .k7-settings-split__footer {
+        padding: 0;
+    }
+
+    .k7-settings-split__index ::deep .k7-settings-nav-item--active {
+        background: transparent;
+        border-color: transparent;
+    }
+}
+
+/* Menu mode on TV, whatever its width, so each screen fits without scrolling. */
+html.platform-tv .k7-settings-split__panes {
+    grid-template-columns: minmax(0, 56rem);
+    grid-template-rows: auto;
+    grid-template-areas:
+        "index"
+        "footer";
+}
+
+html.platform-tv .k7-settings-split--detail-open .k7-settings-split__panes {
+    grid-template-areas:
+        "detail"
+        "footer";
+}
+
+html.platform-tv .k7-settings-split--detail-open .k7-settings-split__intro,
+html.platform-tv .k7-settings-split--detail-open .k7-settings-split__index,
+html.platform-tv .k7-settings-split:not(.k7-settings-split--detail-open) .k7-settings-split__detail {
+    display: none;
+}
+
+html.platform-tv .k7-settings-split__back {
+    display: inline-flex;
+}
+
+html.platform-tv .k7-settings-split__detail {
+    padding: 0;
+    border: none;
+}
+
+html.platform-tv .k7-settings-split__footer {
+    padding: 0;
+}
+
+html.platform-tv .k7-settings-split__index ::deep .k7-settings-nav-item--active {
+    background: transparent;
+    border-color: transparent;
+}

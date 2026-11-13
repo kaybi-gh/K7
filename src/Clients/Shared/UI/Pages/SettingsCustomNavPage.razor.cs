@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Components;
 
 namespace K7.Clients.Shared.UI.Pages;
 
-public partial class SettingsCustomNavPage
+public partial class SettingsCustomNavPage : IDisposable
 {
     [Inject] private IUserPreferencesService PreferencesService { get; set; } = default!;
     [Inject] private ILibraryService LibraryService { get; set; } = default!;
@@ -19,11 +19,26 @@ public partial class SettingsCustomNavPage
     private CustomNavLayoutEditModel _model = new();
     private List<LibraryGroupDto> _groups = [];
     private bool _isLoading = true;
-    private bool _saving;
     private readonly SettingsFormTracker<CustomNavLayoutEditModel> _formTracker = new();
+    private readonly SettingsAutoSaveSession<CustomNavLayoutEditModel> _autoSave;
 
-    private bool IsDirty => _formTracker.IsDirty(_model);
-    private bool ResetDisabled { get => !IsDirty && !field; set; }
+    public SettingsCustomNavPage()
+    {
+        _autoSave = new SettingsAutoSaveSession<CustomNavLayoutEditModel>(
+            _formTracker,
+            () => _isLoading ? null : _model,
+            PersistAsync,
+            work => InvokeAsync(work),
+            StateHasChanged,
+            ReportError);
+    }
+
+    /// <summary>Set to whether the user has a layout of their own, read as whether reset has nothing to do.</summary>
+    private bool ResetDisabled { get => !_autoSave.IsDirty && !field; set; }
+
+    public void Dispose() => _autoSave.Dispose();
+
+    protected override void OnAfterRender(bool firstRender) => _autoSave.OnAfterRender();
 
     protected override async Task OnInitializedAsync()
     {
@@ -46,48 +61,23 @@ public partial class SettingsCustomNavPage
         }
     }
 
-    private void CancelChanges() => _model = _formTracker.Restore();
-
-    private async Task SaveAsync()
+    private async Task PersistAsync()
     {
-        _saving = true;
-        try
-        {
-            await PreferencesService.UpdateCustomNavLayoutAsync(_model.ToDto());
-            _formTracker.Capture(_model);
-            ResetDisabled = true;
-            await CustomNavStore.ReloadAsync();
-            Snackbar.Add(L["SaveSuccess"], K7Severity.Success);
-        }
-        catch (Exception ex)
-        {
-            Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), K7Severity.Error);
-        }
-        finally
-        {
-            _saving = false;
-        }
+        await PreferencesService.UpdateCustomNavLayoutAsync(_model.ToDto());
+        ResetDisabled = true;
+        await CustomNavStore.ReloadAsync();
     }
 
-    private async Task ResetAsync()
+    private Task ResetAsync() => _autoSave.RunAsync(async () =>
     {
-        _saving = true;
-        try
-        {
-            await PreferencesService.ResetCustomNavLayoutAsync();
-            _model = CustomNavLayoutEditModel.FromDto(await PreferencesService.GetCustomNavLayoutAsync());
-            _formTracker.Capture(_model);
-            ResetDisabled = false;
-            await CustomNavStore.ReloadAsync();
-            Snackbar.Add(L["ResetSuccess"], K7Severity.Success);
-        }
-        catch (Exception ex)
-        {
-            Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), K7Severity.Error);
-        }
-        finally
-        {
-            _saving = false;
-        }
-    }
+        await PreferencesService.ResetCustomNavLayoutAsync();
+        _model = CustomNavLayoutEditModel.FromDto(await PreferencesService.GetCustomNavLayoutAsync());
+        _formTracker.Capture(_model);
+        ResetDisabled = false;
+        await CustomNavStore.ReloadAsync();
+        Snackbar.Add(L["ResetSuccess"], K7Severity.Success);
+    });
+
+    private void ReportError(Exception ex) =>
+        Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), K7Severity.Error);
 }

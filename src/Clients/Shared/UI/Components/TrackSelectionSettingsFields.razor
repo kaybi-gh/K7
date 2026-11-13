@@ -1,0 +1,83 @@
+@namespace K7.Clients.Shared.UI.Components
+@using K7.Shared.Enums
+
+@if (Preferences is not null)
+{
+    @if (!string.IsNullOrEmpty(Description))
+    {
+        <span class="settings-field-hint">@Description</span>
+    }
+
+    <K7SettingRow Label="@Localizer["Scope"]">
+        <K7Select TValue="Guid?"
+                  Value="SelectedLibraryId"
+                  ValueChanged="LibraryScopeChanged">
+            <K7SelectItem TValue="Guid?" Value="@((Guid?)null)" Text="@Localizer["ScopeGlobal"]">@Localizer["ScopeGlobal"]</K7SelectItem>
+            @foreach (var lib in Libraries)
+            {
+                <K7SelectItem TValue="Guid?" Value="@lib.Id" Text="@lib.Title">@lib.Title</K7SelectItem>
+            }
+        </K7Select>
+    </K7SettingRow>
+
+    <K7SettingRow Label="@Localizer["PreferredAudioLanguage"]">
+        <K7LanguageSelect IncludeOriginalLanguage="true"
+                          OriginalLanguageLabel="@Localizer["OriginalLanguage"]"
+                          @bind-Value="Preferences.PreferredAudioLanguage"
+                          @bind-Value:after="NotifyChangedAsync" />
+    </K7SettingRow>
+
+    <K7SettingRow Label="@Localizer["FallbackAudioLanguage"]">
+        <K7LanguageSelect IncludeOriginalLanguage="true"
+                          OriginalLanguageLabel="@Localizer["OriginalLanguage"]"
+                          @bind-Value="Preferences.FallbackAudioLanguage"
+                          @bind-Value:after="NotifyChangedAsync" />
+    </K7SettingRow>
+
+    <K7SettingRow Label="@Localizer["SubtitleWhenPreferredAudio"]">
+        <K7Select TValue="SubtitlePreference"
+                  @bind-Value="Preferences.SubtitleWhenPreferredAudio"
+                  @bind-Value:after="NotifyChangedAsync">
+            <K7SelectItem Value="SubtitlePreference.Off" Text="@Localizer["SubOff"]">@Localizer["SubOff"]</K7SelectItem>
+            <K7SelectItem Value="SubtitlePreference.ForcedOnly" Text="@Localizer["SubForcedOnly"]">@Localizer["SubForcedOnly"]</K7SelectItem>
+            <K7SelectItem Value="SubtitlePreference.Full" Text="@Localizer["SubFull"]">@Localizer["SubFull"]</K7SelectItem>
+            <K7SelectItem Value="SubtitlePreference.HearingImpaired" Text="@Localizer["SubHearingImpaired"]">@Localizer["SubHearingImpaired"]</K7SelectItem>
+        </K7Select>
+    </K7SettingRow>
+
+    @if (Preferences.SubtitleWhenPreferredAudio != SubtitlePreference.Off)
+    {
+        <K7SettingRow Label="@Localizer["SubtitleLanguageWhenPreferredAudio"]">
+            <K7LanguageSelect @bind-Value="Preferences.SubtitleLanguageWhenPreferredAudio"
+                              @bind-Value:after="NotifyChangedAsync" />
+        </K7SettingRow>
+    }
+
+    <K7SettingRow Label="@Localizer["SubtitleWhenOtherAudio"]">
+        <K7Select TValue="SubtitlePreference"
+                  @bind-Value="Preferences.SubtitleWhenOtherAudio"
+                  @bind-Value:after="NotifyChangedAsync">
+            <K7SelectItem Value="SubtitlePreference.Off" Text="@Localizer["SubOff"]">@Localizer["SubOff"]</K7SelectItem>
+            <K7SelectItem Value="SubtitlePreference.ForcedOnly" Text="@Localizer["SubForcedOnly"]">@Localizer["SubForcedOnly"]</K7SelectItem>
+            <K7SelectItem Value="SubtitlePreference.Full" Text="@Localizer["SubFull"]">@Localizer["SubFull"]</K7SelectItem>
+            <K7SelectItem Value="SubtitlePreference.HearingImpaired" Text="@Localizer["SubHearingImpaired"]">@Localizer["SubHearingImpaired"]</K7SelectItem>
+        </K7Select>
+    </K7SettingRow>
+
+    @if (Preferences.SubtitleWhenOtherAudio != SubtitlePreference.Off)
+    {
+        <K7SettingRow Label="@Localizer["SubtitleLanguageWhenOtherAudio"]">
+            <K7LanguageSelect @bind-Value="Preferences.SubtitleLanguageWhenOtherAudio"
+                              @bind-Value:after="NotifyChangedAsync" />
+        </K7SettingRow>
+    }
+
+    @if (Settings is not null)
+    {
+        <K7SettingRow Label="@Localizer["RememberTrackSelection"]" Hint="@Localizer["RememberTrackSelectionHint"]">
+            <K7Switch AriaLabel="@Localizer["RememberTrackSelection"]"
+                      Value="Settings.RememberTrackSelection != false"
+                      ValueChanged="OnRememberTrackSelectionChangedAsync" />
+        </K7SettingRow>
+    }
+}

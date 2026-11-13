@@ -13,11 +13,12 @@
 
 <div class="pa-4 d-flex flex-col gap-4">
     <K7Paper Outlined="true" Elevation="0" Class="admin-surface-card watch-together-panel">
-        <p class="text-secondary mb-3">@L["PrivacyDescription"]</p>
-        <K7Switch Label="@L["BlockNewMembership"]"
-                  Value="_preferences.BlockNewMembership"
-                  ValueChanged="OnBlockNewMembershipChanged"
-                  Disabled="_savingPreference" />
+        <K7SettingRow Label="@L["BlockNewMembership"]" Hint="@L["PrivacyDescription"]">
+            <K7Switch AriaLabel="@L["BlockNewMembership"]"
+                      Value="_preferences.BlockNewMembership"
+                      ValueChanged="OnBlockNewMembershipChanged"
+                      Disabled="_savingPreference" />
+        </K7SettingRow>
     </K7Paper>
 
     <K7Paper Outlined="true" Elevation="0" Class="admin-surface-card watch-together-panel shared-profiles-groups">

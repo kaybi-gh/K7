@@ -11,12 +11,14 @@
 
 <div class="pa-4">
     <section class="settings-section">
-        <p class="text-secondary mb-3">@L["SyncPlayDeviceDescription"]</p>
-        <K7Switch Label="@L["SyncPlayDeviceEnabled"]" @bind-Value="SyncPlay.IsEnabled" />
-        <p class="text-secondary mb-3 mt-4">@L["SyncPlayInvitationsDescription"]</p>
-        <K7Switch Label="@L["SyncPlayInvitationsEnabled"]"
-                  Value="_syncPlayPreferences.InvitationsEnabled"
-                  ValueChanged="OnSyncPlayInvitationsChanged"
-                  Disabled="_savingSyncPlayPreference" />
+        <K7SettingRow Label="@L["SyncPlayDeviceEnabled"]" Hint="@L["SyncPlayDeviceDescription"]">
+            <K7Switch AriaLabel="@L["SyncPlayDeviceEnabled"]" @bind-Value="SyncPlay.IsEnabled" />
+        </K7SettingRow>
+        <K7SettingRow Label="@L["SyncPlayInvitationsEnabled"]" Hint="@L["SyncPlayInvitationsDescription"]">
+            <K7Switch AriaLabel="@L["SyncPlayInvitationsEnabled"]"
+                      Value="_syncPlayPreferences.InvitationsEnabled"
+                      ValueChanged="OnSyncPlayInvitationsChanged"
+                      Disabled="_savingSyncPlayPreference" />
+        </K7SettingRow>
     </section>
 </div>

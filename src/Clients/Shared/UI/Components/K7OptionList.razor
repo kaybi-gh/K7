@@ -1,0 +1,24 @@
+@namespace K7.Clients.Shared.UI.Components
+@typeparam TValue
+
+<div class="k7-option-list @Class" role="radiogroup" aria-label="@AriaLabel">
+    @foreach (var option in Options)
+    {
+        var opt = option;
+        var isActive = EqualityComparer<TValue>.Default.Equals(opt.Value, Value);
+        <button type="button"
+                class="k7-option-list__item focusable @(isActive ? "k7-option-list__item--active" : "")"
+                role="radio"
+                aria-checked="@(isActive ? "true" : "false")"
+                disabled="@Disabled"
+                @onclick="() => OnOptionClicked(opt.Value)">
+            <span class="k7-option-list__label">@opt.Label</span>
+            <span class="k7-option-list__mark" aria-hidden="true">
+                @if (isActive)
+                {
+                    <K7Icon Icon="@Phosphor.Check" IconSize="@K7IconSize.Sm" />
+                }
+            </span>
+        </button>
+    }
+</div>

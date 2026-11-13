@@ -1,6 +1,6 @@
 @namespace K7.Clients.Shared.UI.Components
 
-<label class="k7-switch-wrap focusable @Class" role="switch" aria-checked="@Value" tabindex="0" data-sn-focus-target=".k7-switch-track">
+<label class="k7-switch-wrap focusable @Class" role="switch" aria-checked="@Value" aria-label="@(string.IsNullOrEmpty(AriaLabel) ? null : AriaLabel)" tabindex="0" data-sn-focus-target=".k7-switch-track">
     <input type="checkbox"
            checked="@Value"
            disabled="@Disabled"

@@ -1,0 +1,14 @@
+@namespace K7.Clients.Shared.UI.Components
+
+<div class="k7-setting-row @(Stacked ? "k7-setting-row--stacked" : "") @Class">
+    <div class="k7-setting-row__text">
+        <span class="k7-setting-row__label">@Label</span>
+        @if (!string.IsNullOrEmpty(Hint))
+        {
+            <span class="k7-setting-row__hint">@Hint</span>
+        }
+    </div>
+    <div class="k7-setting-row__control">
+        @ChildContent
+    </div>
+</div>

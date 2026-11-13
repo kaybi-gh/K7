@@ -22,6 +22,9 @@ public partial class AudioPlayerExperienceSettingsFields
     [Parameter] public AudioPlayerSettingsDto? Settings { get; set; }
     [Parameter] public EventCallback<AudioPlayerSettingsDto> SettingsChanged { get; set; }
 
+    /// <summary>Sub-page to render, one of <see cref="AudioSettingsSections"/>.</summary>
+    [Parameter, EditorRequired] public string Section { get; set; } = "";
+
     private void OnChanged(Action<AudioPlayerSettingsDto> apply)
     {
         if (Settings is null)

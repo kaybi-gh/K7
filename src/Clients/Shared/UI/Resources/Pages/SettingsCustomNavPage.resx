@@ -7,6 +7,5 @@
   <data name="Enabled" xml:space="preserve"><value>Activer la navigation personnalisée</value></data>
   <data name="EnabledHint" xml:space="preserve"><value>La barre de navigation principale reste inchangée. Ces raccourcis s'ajoutent en plus.</value></data>
   <data name="ItemsEmpty" xml:space="preserve"><value>Aucun raccourci. Ajoutez un groupe, un catalogue filtré ou une page.</value></data>
-  <data name="SaveSuccess" xml:space="preserve"><value>Navigation enregistrée.</value></data>
   <data name="ResetSuccess" xml:space="preserve"><value>Navigation réinitialisée.</value></data>
 </root>

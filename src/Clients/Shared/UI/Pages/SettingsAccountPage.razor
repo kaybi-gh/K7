@@ -19,233 +19,216 @@
     <AdminPageHeader Title="@L["PageTitle"]" Subtitle="@L["Subtitle"]" />
 </div>
 
-<div class="pa-4">
+<div class="account-page pa-4">
     @if (!_isGuest)
     {
-    @* Avatar Section *@
-    <section class="settings-section mb-4">
-        <h6 class="mb-2">@L["Avatar"]</h6>
-        <div class="d-flex align-center gap-3">
-            <K7Avatar Image="@_avatarUrl" Letter="@_avatarLetter" Size="xl" Alt="@_displayName" />
-            <div class="d-flex gap-2">
-                <K7Button Variant="outlined" OnClick="UploadAvatar">@L["UploadAvatar"]</K7Button>
-                @if (!string.IsNullOrEmpty(_avatarUrl))
+        @* ---- Profile: who you are ---- *@
+        <section class="account-section">
+            <h6 class="account-section__title">@L["SectionProfile"]</h6>
+
+            <div class="account-identity">
+                <K7Avatar Image="@_avatarUrl" Letter="@_avatarLetter" Size="xl" Alt="@_displayName" />
+                <div class="account-identity__actions">
+                    <K7Button Variant="outlined" OnClick="UploadAvatar">@L["UploadAvatar"]</K7Button>
+                    @if (!string.IsNullOrEmpty(_avatarUrl))
+                    {
+                        <K7Button Variant="text" Color="error" OnClick="RemoveAvatar">@L["RemoveAvatar"]</K7Button>
+                    }
+                </div>
+            </div>
+            <InputFile id="@_avatarFileInputId" @ref="_fileInput" OnChange="OnFileSelected" accept="image/*" class="account-file-input" />
+            @if (_avatarError is not null)
+            {
+                <K7Alert Severity="K7Severity.Error" Class="mt-2">@_avatarError</K7Alert>
+            }
+
+            <div>
+                <K7SettingRow Label="@L["DisplayName"]">
+                    <K7TextField @bind-Value="@_displayName" MaxLength="50" />
+                    @if (_displayName != _originalDisplayName)
+                    {
+                        <K7Button Variant="outlined" OnClick="SaveDisplayName">@S["Save"]</K7Button>
+                    }
+                </K7SettingRow>
+                @if (_profileSuccess is not null)
                 {
-                    <K7Button Variant="text" Color="error" OnClick="RemoveAvatar">@L["RemoveAvatar"]</K7Button>
+                    <K7Alert Severity="K7Severity.Success" Class="mt-2">@_profileSuccess</K7Alert>
+                }
+                @if (_profileError is not null)
+                {
+                    <K7Alert Severity="K7Severity.Error" Class="mt-2">@_profileError</K7Alert>
+                }
+
+                @if (_hasPassword)
+                {
+                    <K7SettingRow Label="@L["Email"]" Hint="@L["EmailHelper"]">
+                        <K7TextField @bind-Value="@_newEmail" />
+                    </K7SettingRow>
+                    @if ((_newEmail ?? "") != (_email ?? ""))
+                    {
+                        <K7SettingRow Label="@L["CurrentPassword"]">
+                            <K7TextField @bind-Value="@_emailPassword" Type="password" />
+                            <K7Button Variant="outlined" OnClick="SaveEmail">@S["Save"]</K7Button>
+                        </K7SettingRow>
+                    }
+                    @if (_emailError is not null)
+                    {
+                        <K7Alert Severity="K7Severity.Error" Class="mt-2">@_emailError</K7Alert>
+                    }
+                    @if (_emailSuccess is not null)
+                    {
+                        <K7Alert Severity="K7Severity.Success" Class="mt-2">@_emailSuccess</K7Alert>
+                    }
                 }
             </div>
-        </div>
-        <InputFile id="@_avatarFileInputId" @ref="_fileInput" OnChange="OnFileSelected" accept="image/*" style="display:none" />
-        @if (_avatarError is not null)
-        {
-            <K7Alert Severity="K7Severity.Error" Class="mt-2">@_avatarError</K7Alert>
-        }
-    </section>
-
-    <hr class="k7-divider my-4" />
-
-    @* Display Name Section *@
-    <section class="settings-section mb-4">
-        <h6 class="mb-2">@L["DisplayName"]</h6>
-        <K7TextField @bind-Value="@_displayName" Label="@L["DisplayName"]" MaxLength="50" />
-        @if (_displayName != _originalDisplayName)
-        {
-            <K7Button Variant="outlined" OnClick="SaveDisplayName" Class="mt-2">@S["Save"]</K7Button>
-        }
-        @if (_profileSuccess is not null)
-        {
-            <K7Alert Severity="K7Severity.Success" Class="mt-2">@_profileSuccess</K7Alert>
-        }
-        @if (_profileError is not null)
-        {
-            <K7Alert Severity="K7Severity.Error" Class="mt-2">@_profileError</K7Alert>
-        }
-    </section>
-
-    <hr class="k7-divider my-4" />
-
-    @* Email Section *@
-    @if (_hasPassword)
-    {
-        <section class="settings-section mb-4">
-            <h6 class="mb-2">@L["Email"]</h6>
-            <K7TextField @bind-Value="@_newEmail" Label="@L["EmailOptional"]" HelperText="@L["EmailHelper"]" />
-            @if ((_newEmail ?? "") != (_email ?? ""))
-            {
-                <K7TextField @bind-Value="@_emailPassword" Label="@L["CurrentPassword"]" Type="password" Class="mt-2" />
-                <K7Button Variant="outlined" OnClick="SaveEmail" Class="mt-2">@S["Save"]</K7Button>
-            }
-            @if (_emailError is not null)
-            {
-                <K7Alert Severity="K7Severity.Error" Class="mt-2">@_emailError</K7Alert>
-            }
-            @if (_emailSuccess is not null)
-            {
-                <K7Alert Severity="K7Severity.Success" Class="mt-2">@_emailSuccess</K7Alert>
-            }
         </section>
 
-        <hr class="k7-divider my-4" />
-    }
+        @* ---- Security: how you sign in ---- *@
+        <section class="account-section">
+            <h6 class="account-section__title">@L["SectionSecurity"]</h6>
 
-    @* Password Section *@
-    <section class="settings-section mb-4">
-        <h6 class="mb-2">@L["Password"]</h6>
-        @if (!_hasPassword && !_localSignInEnabled)
-        {
-            <K7Alert Severity="K7Severity.Info" Variant="outlined">@L["LocalSignInDisabledNoPassword"]</K7Alert>
-        }
-        else
-        {
-            <p class="text-sm mb-2">@(_hasPassword ? L["PasswordSet"] : L["NoPasswordSet"])</p>
-            <K7Button Variant="outlined" OnClick="OpenPasswordDialog">
-                @(_hasPassword ? L["ChangePassword"] : L["SetPassword"])
-            </K7Button>
-        }
-        @if (_passwordError is not null)
-        {
-            <K7Alert Severity="K7Severity.Error" Class="mt-2">@_passwordError</K7Alert>
-        }
-        @if (_passwordSuccess is not null)
-        {
-            <K7Alert Severity="K7Severity.Success" Class="mt-2">@_passwordSuccess</K7Alert>
-        }
-    </section>
+            <div>
+                @if (!_hasPassword && !_localSignInEnabled)
+                {
+                    <K7SettingRow Label="@L["Password"]" Hint="@L["LocalSignInDisabledNoPassword"]" />
+                }
+                else
+                {
+                    <K7SettingRow Label="@L["Password"]" Hint="@(_hasPassword ? L["PasswordSet"] : L["NoPasswordSet"])">
+                        <K7Button Variant="outlined" OnClick="OpenPasswordDialog">
+                            @(_hasPassword ? L["ChangePassword"] : L["SetPassword"])
+                        </K7Button>
+                    </K7SettingRow>
+                }
+                @if (_passwordError is not null)
+                {
+                    <K7Alert Severity="K7Severity.Error" Class="mt-2">@_passwordError</K7Alert>
+                }
+                @if (_passwordSuccess is not null)
+                {
+                    <K7Alert Severity="K7Severity.Success" Class="mt-2">@_passwordSuccess</K7Alert>
+                }
 
-    <hr class="k7-divider my-4" />
-
-    @* Two-Factor Authentication *@
-    @if (_hasPassword)
-    {
-        <section class="settings-section mb-4">
-            <h6 class="mb-2">@L["TwoFactor"]</h6>
-            @if (_twoFactorEnabled)
-            {
-                <p class="text-sm mb-2">@L["TwoFactorEnabled"]</p>
-                <p class="text-sm text-muted mb-2">@L["RecoveryCodesRemaining", _recoveryCodesLeft]</p>
-                <div class="d-flex gap-2 flex-wrap">
-                    <K7Button Variant="outlined" OnClick="GenerateRecoveryCodesAsync">@L["RegenerateRecoveryCodes"]</K7Button>
-                    <K7Button Variant="text" Color="error" OnClick="DisableTwoFactorAsync">@L["DisableTwoFactor"]</K7Button>
-                </div>
-            }
-            else if (_twoFactorSetup is not null)
-            {
-                <p class="text-sm mb-2">@L["TwoFactorSetupPrompt"]</p>
-                <p class="text-sm text-muted mb-2">@L["SharedKey"]: <span class="recovery-code">@_twoFactorSetup.SharedKey</span></p>
-                <div id="two-factor-qr" class="mb-3"></div>
-                <K7TextField @bind-Value="_verifyCode" Label="@L["VerificationCode"]" Class="mb-2" />
-                <div class="d-flex gap-2">
-                    <K7Button Variant="filled" OnClick="VerifyTwoFactorSetupAsync">@L["VerifyAndEnable"]</K7Button>
-                    <K7Button Variant="text" OnClick="CancelTwoFactorSetup">@S["Cancel"]</K7Button>
-                </div>
-            }
-            else
-            {
-                <p class="text-sm mb-2">@L["TwoFactorDisabled"]</p>
-                <K7Button Variant="outlined" OnClick="BeginTwoFactorSetupAsync">@L["EnableTwoFactor"]</K7Button>
-            }
-
-            @if (_recoveryCodes.Count > 0)
-            {
-                <K7Alert Severity="K7Severity.Warning" Class="mt-3">@L["SaveRecoveryCodes"]</K7Alert>
-                <ul class="recovery-codes-list mt-2">
-                    @foreach (var recoveryCode in _recoveryCodes)
+                @if (_hasPassword)
+                {
+                    @if (_twoFactorEnabled)
                     {
-                        <li><span class="recovery-code">@recoveryCode</span></li>
+                        <K7SettingRow Label="@L["TwoFactor"]"
+                                      Hint="@($"{L["TwoFactorEnabled"]} {L["RecoveryCodesRemaining", _recoveryCodesLeft]}")">
+                            <K7Button Variant="outlined" OnClick="GenerateRecoveryCodesAsync">@L["RegenerateRecoveryCodes"]</K7Button>
+                            <K7Button Variant="text" Color="error" OnClick="DisableTwoFactorAsync">@L["DisableTwoFactor"]</K7Button>
+                        </K7SettingRow>
                     }
-                </ul>
-            }
+                    else if (_twoFactorSetup is not null)
+                    {
+                        <K7SettingRow Label="@L["TwoFactor"]" Hint="@L["TwoFactorSetupPrompt"]" />
+                        <div class="account-two-factor-setup">
+                            <p class="account-hint">@L["SharedKey"]: <span class="recovery-code">@_twoFactorSetup.SharedKey</span></p>
+                            <div id="two-factor-qr"></div>
+                            <K7TextField @bind-Value="_verifyCode" Label="@L["VerificationCode"]" />
+                            <div class="account-actions">
+                                <K7Button Variant="filled" OnClick="VerifyTwoFactorSetupAsync">@L["VerifyAndEnable"]</K7Button>
+                                <K7Button Variant="text" OnClick="CancelTwoFactorSetup">@S["Cancel"]</K7Button>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <K7SettingRow Label="@L["TwoFactor"]" Hint="@L["TwoFactorDisabled"]">
+                            <K7Button Variant="outlined" OnClick="BeginTwoFactorSetupAsync">@L["EnableTwoFactor"]</K7Button>
+                        </K7SettingRow>
+                    }
 
-            @if (_twoFactorError is not null)
-            {
-                <K7Alert Severity="K7Severity.Error" Class="mt-2">@_twoFactorError</K7Alert>
-            }
-            @if (_twoFactorSuccess is not null)
-            {
-                <K7Alert Severity="K7Severity.Success" Class="mt-2">@_twoFactorSuccess</K7Alert>
-            }
+                    @if (_recoveryCodes.Count > 0)
+                    {
+                        <K7Alert Severity="K7Severity.Warning" Class="mt-3">@L["SaveRecoveryCodes"]</K7Alert>
+                        <ul class="recovery-codes-list">
+                            @foreach (var recoveryCode in _recoveryCodes)
+                            {
+                                <li><span class="recovery-code">@recoveryCode</span></li>
+                            }
+                        </ul>
+                    }
+
+                    @if (_twoFactorError is not null)
+                    {
+                        <K7Alert Severity="K7Severity.Error" Class="mt-2">@_twoFactorError</K7Alert>
+                    }
+                    @if (_twoFactorSuccess is not null)
+                    {
+                        <K7Alert Severity="K7Severity.Success" Class="mt-2">@_twoFactorSuccess</K7Alert>
+                    }
+                }
+
+                <K7SettingRow Label="@L["Pin"]" Hint="@(_hasPin ? L["PinSet"] : L["PinNotSet"])">
+                    @if (_hasPin)
+                    {
+                        <K7Button Variant="outlined" OnClick="ChangePin">@L["ChangePin"]</K7Button>
+                        <K7Button Variant="text" Color="error" OnClick="RemovePin">@L["RemovePin"]</K7Button>
+                    }
+                    else
+                    {
+                        <K7Button Variant="outlined" OnClick="SetPin">@L["SetPin"]</K7Button>
+                    }
+                </K7SettingRow>
+                @if (_pinError is not null)
+                {
+                    <K7Alert Severity="K7Severity.Error" Class="mt-2">@_pinError</K7Alert>
+                }
+                @if (_pinSuccess is not null)
+                {
+                    <K7Alert Severity="K7Severity.Success" Class="mt-2">@_pinSuccess</K7Alert>
+                }
+            </div>
         </section>
 
-        <hr class="k7-divider my-4" />
-    }
+        @* ---- Linked sign-in providers ---- *@
+        @if (_loginMethods is not null && (_loginMethods.ExternalLogins.Count > 0 || _canShowLinkOidc))
+        {
+            <section class="account-section">
+                <h6 class="account-section__title">@L["LoginMethods"]</h6>
 
-    @* PIN Section *@
-    <section class="settings-section mb-4">
-        <h6 class="mb-2">@L["Pin"]</h6>
-        @if (_hasPin)
-        {
-            <p class="text-sm mb-2">@L["PinSet"]</p>
-            <div class="d-flex gap-2">
-                <K7Button Variant="outlined" OnClick="ChangePin">@L["ChangePin"]</K7Button>
-                <K7Button Variant="text" Color="error" OnClick="RemovePin">@L["RemovePin"]</K7Button>
-            </div>
-        }
-        else
-        {
-            <p class="text-sm mb-2">@L["PinNotSet"]</p>
-            <K7Button Variant="outlined" OnClick="SetPin">@L["SetPin"]</K7Button>
-        }
-        @if (_pinError is not null)
-        {
-            <K7Alert Severity="K7Severity.Error" Class="mt-2">@_pinError</K7Alert>
-        }
-        @if (_pinSuccess is not null)
-        {
-            <K7Alert Severity="K7Severity.Success" Class="mt-2">@_pinSuccess</K7Alert>
-        }
-    </section>
-
-    <hr class="k7-divider my-4" />
-
-    @* Login Methods Section *@
-    @if (_loginMethods is not null && (_loginMethods.ExternalLogins.Count > 0 || _canShowLinkOidc))
-    {
-        <section class="settings-section mb-4">
-            <h6 class="mb-2">@L["LoginMethods"]</h6>
-            @if (_loginMethods.ExternalLogins.Count > 0)
-            {
-                <ul class="login-methods-list">
+                <div>
                     @foreach (var login in _loginMethods.ExternalLogins)
                     {
-                        <li class="d-flex align-center justify-space-between py-2">
-                            <span>@(login.ProviderDisplayName ?? login.Provider)</span>
-                            <K7Button Variant="text" Color="error" Size="sm"
+                        <K7SettingRow Label="@(login.ProviderDisplayName ?? login.Provider)">
+                            <K7Button Variant="text" Color="error"
                                       Disabled="@(!login.CanUnlink)"
                                       OnClick="@(() => UnlinkLogin(login.Provider))">
                                 @L["Unlink"]
                             </K7Button>
-                        </li>
+                        </K7SettingRow>
                     }
-                </ul>
-            }
-            else if (_canShowLinkOidc)
+                    @if (_canShowLinkOidc)
+                    {
+                        <K7SettingRow Label="@(_loginMethods.OidcDisplayName ?? "OIDC")"
+                                      Hint="@(_loginMethods.ExternalLogins.Count == 0 ? L["NoExternalLogins"].Value : null)">
+                            <K7Button Variant="outlined" OnClick="LinkOidcAsync">
+                                @L["LinkOidc", _loginMethods.OidcDisplayName ?? "OIDC"]
+                            </K7Button>
+                        </K7SettingRow>
+                    }
+                </div>
+                @if (_loginMethodsError is not null)
+                {
+                    <K7Alert Severity="K7Severity.Error" Class="mt-2">@_loginMethodsError</K7Alert>
+                }
+            </section>
+        }
+
+        @* ---- Danger zone ---- *@
+        <section class="account-section">
+            <h6 class="account-section__title account-section__title--danger">@L["DangerZone"]</h6>
+
+            <div>
+                <K7SettingRow Label="@L["DeleteAccount"]" Hint="@L["DeleteAccountWarning"]">
+                    <K7Button Variant="filled" Color="error" OnClick="DeleteAccount">@L["DeleteAccount"]</K7Button>
+                </K7SettingRow>
+            </div>
+            @if (_deleteError is not null)
             {
-                <p class="text-sm text-muted">@L["NoExternalLogins"]</p>
-            }
-            @if (_canShowLinkOidc)
-            {
-                <K7Button Variant="outlined" Class="mt-2" OnClick="LinkOidcAsync">
-                    @L["LinkOidc", _loginMethods.OidcDisplayName ?? "OIDC"]
-                </K7Button>
-            }
-            @if (_loginMethodsError is not null)
-            {
-                <K7Alert Severity="K7Severity.Error" Class="mt-2">@_loginMethodsError</K7Alert>
+                <K7Alert Severity="K7Severity.Error" Class="mt-2">@_deleteError</K7Alert>
             }
         </section>
-
-        <hr class="k7-divider my-4" />
     }
-
-    @* Danger Zone *@
-    <section class="settings-section mb-4">
-        <h6 class="mb-2 text-error">@L["DangerZone"]</h6>
-        <p class="text-sm mb-2">@L["DeleteAccountWarning"]</p>
-        <K7Button Variant="filled" Color="error" OnClick="DeleteAccount">@L["DeleteAccount"]</K7Button>
-        @if (_deleteError is not null)
-        {
-            <K7Alert Severity="K7Severity.Error" Class="mt-2">@_deleteError</K7Alert>
-        }
-    </section>
-    } @* end !_isGuest *@
 </div>

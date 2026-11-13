@@ -1,0 +1,48 @@
+@namespace K7.Clients.Shared.UI.Components
+@using K7.Clients.Shared.UI.Pages.Admin.Components
+@inject IStringLocalizer<InterfaceSettingsSplit> L
+@inject NavigationManager Navigation
+@implements IDisposable
+
+<K7SettingsSplit IndexLabel="@L["Title"]"
+                 DetailTitle="@ActiveTitle"
+                 BackHref="@BasePath"
+                 DetailOpen="DetailOpen">
+    <Header>
+        <div class="admin-page-intro">
+            <AdminPageHeader Title="@L["Title"]" Subtitle="@(Admin ? L["AdminSubtitle"] : L["Subtitle"])">
+                <Actions>
+                    <SettingsMirrorLink />
+                </Actions>
+            </AdminPageHeader>
+        </div>
+    </Header>
+    <Index>
+        <K7SettingsNavItem Href="@($"{BasePath}/{InterfaceSettingsSections.Appearance}")"
+                           Icon="@Phosphor.Palette"
+                           Title="@L["Appearance"]"
+                           Description="@L["AppearanceDescription"]"
+                           Active="@(Section == InterfaceSettingsSections.Appearance)" />
+        @if (!_isGuest)
+        {
+            <K7SettingsNavItem Href="@($"{BasePath}/{InterfaceSettingsSections.Home}")"
+                               Icon="@Phosphor.House"
+                               Title="@L["Home"]"
+                               Description="@L["HomeDescription"]"
+                               Active="@(Section == InterfaceSettingsSections.Home)" />
+            <K7SettingsNavItem Href="@($"{BasePath}/{InterfaceSettingsSections.Navigation}")"
+                               Icon="@Phosphor.NavigationArrow"
+                               Title="@L["Navigation"]"
+                               Description="@L["NavigationDescription"]"
+                               Active="@(Section == InterfaceSettingsSections.Navigation)" />
+        }
+        <K7SettingsNavItem Href="@($"{BasePath}/{InterfaceSettingsSections.ThemeSongs}")"
+                           Icon="@Phosphor.MusicNotes"
+                           Title="@L["ThemeSongs"]"
+                           Description="@L["ThemeSongsDescription"]"
+                           Active="@(Section == InterfaceSettingsSections.ThemeSongs)" />
+    </Index>
+    <Detail>
+        @ChildContent
+    </Detail>
+</K7SettingsSplit>

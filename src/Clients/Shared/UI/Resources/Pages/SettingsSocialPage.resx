@@ -4,7 +4,6 @@
   <resheader name="version"><value>2.0</value></resheader>
   <data name="Title" xml:space="preserve"><value>Social</value></data>
   <data name="Subtitle" xml:space="preserve"><value>Ce que vous voulez partager et ce que vous voulez recevoir.</value></data>
-  <data name="ReviewPreferences" xml:space="preserve"><value>Préférences des avis</value></data>
   <data name="BlurReviewsForUnwatchedMedia" xml:space="preserve"><value>Flouter les avis tant que le média n'a pas été vu</value></data>
   <data name="ShareTitle" xml:space="preserve"><value>Ce que je partage</value></data>
   <data name="ViewTitle" xml:space="preserve"><value>Ce que je veux voir</value></data>
@@ -18,5 +17,4 @@
   <data name="ScopeFederation" xml:space="preserve"><value>Ce serveur et les serveurs fédérés</value></data>
   <data name="ScopeSpecificPeople" xml:space="preserve"><value>Personnes spécifiques</value></data>
   <data name="FederationDirectPeersNote" xml:space="preserve"><value>Le partage fédéré concerne uniquement les serveurs directement connectés, sans transitivité.</value></data>
-  <data name="SaveSuccess" xml:space="preserve"><value>Préférences enregistrées.</value></data>
 </root>

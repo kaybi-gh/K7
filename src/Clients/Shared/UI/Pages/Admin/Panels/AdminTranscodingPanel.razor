@@ -1,11 +1,16 @@
+@page "/admin/advanced"
+@page "/admin/advanced/transcoding"
 @page "/admin/transcoding"
 @layout AdminLayout
 @inject IStringLocalizer<AdminTranscodingPanel> L
 @inject ITranscodeAdminService TranscodeAdmin
 @inject IK7Snackbar Snackbar
 
+<PageTitle>@L["Title"]</PageTitle>
+
+<AdvancedSettingsSplit Section="@AdvancedSettingsSplit.Transcoding">
 <div class="transcoding-panel">
-    <AdminPageHeader Title="@L["Title"]" Subtitle="@L["Subtitle"]" />
+    <p class="settings-field-hint">@L["Subtitle"]</p>
 
     @if (_loading)
     {
@@ -17,22 +22,31 @@
     {
         <K7Paper Outlined="true" Elevation="0" Class="admin-surface-card transcoding-panel__card">
             <div class="d-flex flex-col gap-4">
-                <K7Select TValue="HardwareEncoderMode" Value="_settings.EncoderMode" ValueChanged="OnEncoderModeChanged" Label="@L["EncoderMode"]" Variant="outlined">
-                    <K7SelectItem Value="HardwareEncoderMode.Auto" Text="@L["EncoderAuto"]">@L["EncoderAuto"]</K7SelectItem>
-                    <K7SelectItem Value="HardwareEncoderMode.Software" Text="@L["EncoderSoftware"]">@L["EncoderSoftware"]</K7SelectItem>
-                    <K7SelectItem Value="HardwareEncoderMode.HardwarePreferred" Text="@L["EncoderHardwarePreferred"]">@L["EncoderHardwarePreferred"]</K7SelectItem>
-                </K7Select>
+                <div>
+                    <K7SettingRow Label="@L["EncoderMode"]">
+                        <K7Select TValue="HardwareEncoderMode" Value="_settings.EncoderMode" ValueChanged="OnEncoderModeChanged" Variant="outlined">
+                            <K7SelectItem Value="HardwareEncoderMode.Auto" Text="@L["EncoderAuto"]">@L["EncoderAuto"]</K7SelectItem>
+                            <K7SelectItem Value="HardwareEncoderMode.Software" Text="@L["EncoderSoftware"]">@L["EncoderSoftware"]</K7SelectItem>
+                            <K7SelectItem Value="HardwareEncoderMode.HardwarePreferred" Text="@L["EncoderHardwarePreferred"]">@L["EncoderHardwarePreferred"]</K7SelectItem>
+                        </K7Select>
+                    </K7SettingRow>
 
-                <K7Switch Label="@L["EnableHdrTonemap"]" Value="_settings.EnableHdrTonemap" ValueChanged="v => _settings = _settings with { EnableHdrTonemap = v }" />
+                    <K7SettingRow Label="@L["EnableHdrTonemap"]">
+                        <K7Switch AriaLabel="@L["EnableHdrTonemap"]" Value="_settings.EnableHdrTonemap" ValueChanged="v => _settings = _settings with { EnableHdrTonemap = v }" />
+                    </K7SettingRow>
 
-                <K7TextField TValue="int" Label="@L["MaxConcurrentTranscodes"]" Value="_settings.MaxConcurrentTranscodes" ValueChanged="v => _settings = _settings with { MaxConcurrentTranscodes = v }" Type="number" />
-                <span class="text-caption transcoding-panel__hint">@L["MaxConcurrentTranscodesHint"]</span>
+                    <K7SettingRow Label="@L["MaxConcurrentTranscodes"]" Hint="@L["MaxConcurrentTranscodesHint"]">
+                        <K7TextField TValue="int" aria-label="@L["MaxConcurrentTranscodes"]" Value="_settings.MaxConcurrentTranscodes" ValueChanged="v => _settings = _settings with { MaxConcurrentTranscodes = v }" Type="number" />
+                    </K7SettingRow>
 
-                <K7TextField TValue="int" Label="@L["TranscodeTempQuotaMb"]" Value="_settings.TranscodeTempQuotaMb" ValueChanged="v => _settings = _settings with { TranscodeTempQuotaMb = v }" Type="number" />
-                <span class="text-caption transcoding-panel__hint">@L["TranscodeTempQuotaMbHint"]</span>
+                    <K7SettingRow Label="@L["TranscodeTempQuotaMb"]" Hint="@L["TranscodeTempQuotaMbHint"]">
+                        <K7TextField TValue="int" aria-label="@L["TranscodeTempQuotaMb"]" Value="_settings.TranscodeTempQuotaMb" ValueChanged="v => _settings = _settings with { TranscodeTempQuotaMb = v }" Type="number" />
+                    </K7SettingRow>
 
-                <K7TextField TValue="int" Label="@L["EncoderThrottleBufferSegments"]" Value="_settings.EncoderThrottleBufferSegments" ValueChanged="v => _settings = _settings with { EncoderThrottleBufferSegments = v }" Type="number" />
-                <span class="text-caption transcoding-panel__hint">@L["EncoderThrottleBufferSegmentsHint"]</span>
+                    <K7SettingRow Label="@L["EncoderThrottleBufferSegments"]" Hint="@L["EncoderThrottleBufferSegmentsHint"]">
+                        <K7TextField TValue="int" aria-label="@L["EncoderThrottleBufferSegments"]" Value="_settings.EncoderThrottleBufferSegments" ValueChanged="v => _settings = _settings with { EncoderThrottleBufferSegments = v }" Type="number" />
+                    </K7SettingRow>
+                </div>
 
                 <div class="d-flex align-center gap-2">
                     <K7Button Color="primary" OnClick="SaveAsync" Disabled="_saving">@L["Save"]</K7Button>
@@ -76,3 +90,4 @@
         }
     }
 </div>
+</AdvancedSettingsSplit>

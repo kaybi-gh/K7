@@ -1,3 +1,4 @@
+using K7.Clients.Shared.UI.Components;
 using K7.Clients.Shared.UI.Helpers;
 using K7.Shared.Dtos;
 using K7.Shared.Dtos.Entities;
@@ -15,7 +16,10 @@ public partial class AdminVideoPlaybackPanel
         TrackSelectionPreferencesDto Preferences,
         Guid? LibraryId);
 
-    private static readonly int[] InactivityPromptChoices = [2, 3, 4, 5];
+    private const string BasePath = "/admin/video-playback";
+
+    /// <summary>Sub-page to show. Null shows the index (plus the first sub-page on wide screens).</summary>
+    [Parameter] public string? Section { get; set; }
 
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
     [Inject] private IStringLocalizer<SharedResource> S { get; set; } = default!;
@@ -32,6 +36,23 @@ public partial class AdminVideoPlaybackPanel
     private bool _saving;
     private bool _hasServerOverride;
     private readonly SettingsFormTracker<VideoFormState> _formTracker = new();
+
+    private IReadOnlyList<SettingsSection> Sections =>
+    [
+        new(VideoSettingsSections.Tracks, Phosphor.Translate, Lt["SectionTitle"], Ls["TracksSectionDescription"]),
+        new(VideoSettingsSections.Seekbar, Phosphor.FastForward, L["SeekbarSection"], Ls["SeekbarSectionDescription"]),
+        new(VideoSettingsSections.Skip, Phosphor.SkipForward, L["IntroSkipSection"], Ls["IntroSkipSectionDescription"]),
+        new(VideoSettingsSections.NextEpisode, Phosphor.Queue, L["NextEpisodeSection"], Ls["NextEpisodeSectionDescription"]),
+        new(VideoSettingsSections.Trailers, Phosphor.FilmStrip, L["TrailersSection"], Ls["TrailersSectionDescription"]),
+        new(VideoSettingsSections.Subtitles, Phosphor.ClosedCaptioning, L["SubtitleSection"], Ls["SubtitleSectionDescription"]),
+        new(VideoSettingsSections.Resume, Phosphor.ClockCounterClockwise, Ls["ResumeSectionTitle"], Ls["ResumeSectionDescription"])
+    ];
+
+    private bool IsSectionOpen => Sections.Any(s => s.Key == Section);
+
+    private string ActiveSection => IsSectionOpen ? Section! : VideoSettingsSections.Tracks;
+
+    private string ActiveSectionTitle => Sections.First(s => s.Key == ActiveSection).Title;
 
     private bool IsDirty =>
         _settings is not null
@@ -93,57 +114,6 @@ public partial class AdminVideoPlaybackPanel
     private void OnVideoPolicyChanged(VideoPlaybackPolicySettingsDto value)
     {
         _videoPolicy = value;
-        StateHasChanged();
-    }
-
-    private void OnRememberTrackSelectionChanged(bool value)
-    {
-        if (_settings is null)
-            return;
-
-        _settings.RememberTrackSelection = value;
-        StateHasChanged();
-    }
-
-    private void OnSubtitleBackgroundOpacityChanged(double value)
-    {
-        if (_settings is null)
-            return;
-
-        _settings.SubtitleBackgroundOpacity = value;
-        StateHasChanged();
-    }
-
-    private void OnSubtitleShadowBlurChanged(double value)
-    {
-        if (_settings is null)
-            return;
-
-        _settings.SubtitleShadowBlur = value;
-        StateHasChanged();
-    }
-
-    private static string FormatOpacity(double value) => $"{value:P0}";
-
-    private static string FormatBlur(double value) => $"{value:F1} px";
-
-    private static string FormatSkipSeconds(int value) => $"{value}s";
-
-    private void OnSkipBackSecondsChanged(int value)
-    {
-        if (_settings is null)
-            return;
-
-        _settings.SkipBackSeconds = value;
-        StateHasChanged();
-    }
-
-    private void OnSkipForwardSecondsChanged(int value)
-    {
-        if (_settings is null)
-            return;
-
-        _settings.SkipForwardSeconds = value;
         StateHasChanged();
     }
 

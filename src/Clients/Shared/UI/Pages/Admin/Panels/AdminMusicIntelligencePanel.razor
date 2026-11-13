@@ -18,8 +18,9 @@
     {
         <K7Paper Outlined="true" Style="padding: var(--space-4);">
             <div class="d-flex flex-col gap-3">
-                <K7Switch Label="@L["Enabled"]" Value="_settings.Enabled" ValueChanged="OnEnabledChanged" />
-                <span class="text-sm" style="color: var(--color-text-muted);">@L["EnabledDescription"]</span>
+                <K7SettingRow Label="@L["Enabled"]" Hint="@L["EnabledDescription"]">
+                    <K7Switch AriaLabel="@L["Enabled"]" Value="_settings.Enabled" ValueChanged="OnEnabledChanged" />
+                </K7SettingRow>
 
                 @if (!_settings.Enabled)
                 {
@@ -45,9 +46,11 @@
                                  Placeholder="audiomuse_..." Type="password" />
 
                     <div class="d-flex flex-col gap-2">
-                        <K7Switch Label="@L["InstantPlaylistEnabled"]"
-                                  Value="_settings.InstantPlaylistEnabled"
-                                  ValueChanged="OnInstantPlaylistEnabledChanged" />
+                        <K7SettingRow Label="@L["InstantPlaylistEnabled"]">
+                            <K7Switch AriaLabel="@L["InstantPlaylistEnabled"]"
+                                      Value="_settings.InstantPlaylistEnabled"
+                                      ValueChanged="OnInstantPlaylistEnabledChanged" />
+                        </K7SettingRow>
                         <K7Alert Severity="K7Severity.Info" Variant="outlined">
                             @L["InstantPlaylistCallout"]
                         </K7Alert>

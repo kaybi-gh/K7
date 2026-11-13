@@ -12,12 +12,18 @@
 else if (_settings is not null)
 {
     <div class="admin-page-intro">
-        <AdminPageHeader Title="@L["Title"]" Subtitle="@L["Description"]" />
+        <AdminPageHeader Title="@L["Title"]" Subtitle="@L["Description"]">
+            <Actions>
+                <SettingsMirrorLink />
+            </Actions>
+        </AdminPageHeader>
     </div>
     <div class="settings-form-page">
         <div class="settings-form-page__body d-flex flex-col pa-4 gap-4">
 
-            <K7Switch Label="@L["Enabled"]" Value="_settings.Enabled" ValueChanged="OnEnabledChanged" />
+            <K7SettingRow Label="@L["Enabled"]">
+                <K7Switch AriaLabel="@L["Enabled"]" Value="_settings.Enabled" ValueChanged="OnEnabledChanged" />
+            </K7SettingRow>
 
             @if (!_settings.Enabled)
             {

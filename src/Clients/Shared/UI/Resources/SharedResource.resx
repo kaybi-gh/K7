@@ -193,4 +193,7 @@
   <data name="Outro" xml:space="preserve"><value>Outro</value></data>
   <data name="TrailerOpenFailed" xml:space="preserve"><value>Impossible d'ouvrir la bande-annonce</value></data>
   <data name="LinuxLibVlcUnavailable" xml:space="preserve"><value>LibVLC 4 introuvable : lecture en transcodage HLS. Installez VLC 4 pour la lecture directe.</value></data>
+  <data name="AutoSaveSaving" xml:space="preserve"><value>Enregistrement...</value></data>
+  <data name="AutoSaveSaved" xml:space="preserve"><value>Enregistré</value></data>
+  <data name="AutoSaveFailed" xml:space="preserve"><value>Non enregistré</value></data>
 </root>

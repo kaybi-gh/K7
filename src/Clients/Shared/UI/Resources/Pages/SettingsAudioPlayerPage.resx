@@ -65,4 +65,12 @@
   <data name="RememberMusicSession" xml:space="preserve"><value>Reprendre la session musicale</value></data>
   <data name="SkipBackDuration" xml:space="preserve"><value>Retour rapide</value></data>
   <data name="SkipForwardDuration" xml:space="preserve"><value>Avance rapide</value></data>
+  <data name="LoudnessSectionDescription" xml:space="preserve"><value>Même volume perçu d'un morceau à l'autre</value></data>
+  <data name="EqualizerSectionDescription" xml:space="preserve"><value>Préréglages et bandes de fréquences</value></data>
+  <data name="CrossfadeSectionDescription" xml:space="preserve"><value>Transition entre deux morceaux</value></data>
+  <data name="AutoplaySectionDescription" xml:space="preserve"><value>Suite de la lecture à la fin de la file d'attente</value></data>
+  <data name="StreamingQualitySectionDescription" xml:space="preserve"><value>Débit en Wi-Fi et en données mobiles</value></data>
+  <data name="PlayerBehaviorSectionDescription" xml:space="preserve"><value>Session, plein écran, veille et durée des sauts</value></data>
+  <data name="TrackingSectionTitle" xml:space="preserve"><value>Suivi musical</value></data>
+  <data name="TrackingSectionDescription" xml:space="preserve"><value>Quand un morceau compte comme écouté</value></data>
 </root>

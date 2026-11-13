@@ -45,4 +45,5 @@
   <data name="ClearAllPreferencesTitle" xml:space="preserve"><value>Clear this device's settings</value></data>
   <data name="ClearAllPreferencesMessage" xml:space="preserve"><value>Clear settings stored on this device (player, sidebar, downloads, filters)? The server URL and your sign-in stay in place. The app will reload.</value></data>
   <data name="ClearPreferencesSuccess" xml:space="preserve"><value>Local customizations cleared.</value></data>
+  <data name="ChangeServer" xml:space="preserve"><value>Change server</value></data>
 </root>

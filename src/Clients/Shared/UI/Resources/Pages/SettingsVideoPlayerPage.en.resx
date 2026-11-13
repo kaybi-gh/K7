@@ -102,4 +102,13 @@
   <data name="InactivityPromptHint" xml:space="preserve"><value>After several episodes played in a row without any interaction, the countdown is replaced by a confirmation.</value></data>
   <data name="InactivityPromptDisabled" xml:space="preserve"><value>Never</value></data>
   <data name="InactivityPromptAfterEpisodes" xml:space="preserve"><value>After {0} episodes</value></data>
+  <data name="ResumeSectionTitle" xml:space="preserve"><value>Resume</value></data>
+  <data name="TracksSectionDescription" xml:space="preserve"><value>Audio and subtitle languages picked when playback starts</value></data>
+  <data name="SeekbarSectionDescription" xml:space="preserve"><value>Thumbnails, chapters and skip duration</value></data>
+  <data name="IntroSkipSectionDescription" xml:space="preserve"><value>Skip opening and closing credits</value></data>
+  <data name="NextEpisodeSectionDescription" xml:space="preserve"><value>Episode auto-play and the still watching prompt</value></data>
+  <data name="TrailersSectionDescription" xml:space="preserve"><value>Where trailers open</value></data>
+  <data name="SubtitleSectionDescription" xml:space="preserve"><value>Font, size, colors and shadow</value></data>
+  <data name="ResumeSectionDescription" xml:space="preserve"><value>Resume, watched threshold and Continue watching</value></data>
+  <data name="AdvancedSectionDescription" xml:space="preserve"><value>Settings specific to this device</value></data>
 </root>

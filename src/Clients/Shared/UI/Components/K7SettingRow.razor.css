@@ -1,0 +1,78 @@
+/* The label keeps a readable width: a control that does not fit beside it drops under it,
+   whatever the room left by the sidebar or the index. */
+.k7-setting-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    column-gap: var(--space-4);
+    row-gap: var(--space-2);
+    padding: var(--space-3) 0;
+    border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.k7-setting-row:last-child {
+    border-bottom: none;
+}
+
+.k7-setting-row__text {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 12rem;
+    gap: var(--space-1);
+    min-width: 0;
+}
+
+.k7-setting-row__label {
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+    color: var(--color-text);
+}
+
+.k7-setting-row__hint {
+    font-size: var(--text-xs);
+    line-height: 1.4;
+    color: var(--color-text-muted);
+}
+
+.k7-setting-row__control {
+    display: flex;
+    justify-content: flex-end;
+    flex: 0 1 auto;
+    min-width: 0;
+    max-width: 100%;
+}
+
+/* Selects and inputs keep a readable fixed width instead of stretching across the page. */
+.k7-setting-row__control ::deep .k7-field {
+    width: 18rem;
+    max-width: 100%;
+}
+
+.k7-setting-row--stacked .k7-setting-row__text,
+.k7-setting-row--stacked .k7-setting-row__control {
+    flex-basis: 100%;
+}
+
+.k7-setting-row--stacked .k7-setting-row__control {
+    justify-content: stretch;
+}
+
+.k7-setting-row--stacked .k7-setting-row__control ::deep .k7-field {
+    width: 100%;
+}
+
+@media (max-width: 599.98px) {
+    /* Switches stay beside their label. Wider controls drop under it. */
+    .k7-setting-row:has(.k7-field) .k7-setting-row__text,
+    .k7-setting-row__control:has(.k7-field) {
+        flex-basis: 100%;
+    }
+
+    .k7-setting-row__control:has(.k7-field) {
+        justify-content: stretch;
+    }
+
+    .k7-setting-row__control ::deep .k7-field {
+        width: 100%;
+    }
+}

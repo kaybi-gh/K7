@@ -5,9 +5,11 @@
     gap: var(--space-4);
 }
 
+/* Groups sit side by side when the page is wide, instead of one tall column. */
 .settings-libraries__groups {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(22rem, 100%), 1fr));
+    align-items: start;
     gap: var(--space-4);
 }
 

@@ -193,4 +193,7 @@
   <data name="Outro" xml:space="preserve"><value>Outro</value></data>
   <data name="TrailerOpenFailed" xml:space="preserve"><value>Could not open the trailer</value></data>
   <data name="LinuxLibVlcUnavailable" xml:space="preserve"><value>LibVLC 4 not found: playing through HLS transcode. Install VLC 4 for Direct Play.</value></data>
+  <data name="AutoSaveSaving" xml:space="preserve"><value>Saving...</value></data>
+  <data name="AutoSaveSaved" xml:space="preserve"><value>Saved</value></data>
+  <data name="AutoSaveFailed" xml:space="preserve"><value>Not saved</value></data>
 </root>

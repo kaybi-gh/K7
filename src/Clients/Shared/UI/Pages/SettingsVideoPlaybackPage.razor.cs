@@ -5,6 +5,7 @@ using K7.Shared.Helpers;
 using K7.Shared.Interfaces;
 using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
+using K7.Clients.Shared.UI.Components;
 using K7.Clients.Shared.UI.Helpers;
 using K7.Server.Domain.Enums;
 using Microsoft.AspNetCore.Components;
@@ -14,7 +15,7 @@ using OperatingSystem = K7.Server.Domain.Enums.OperatingSystem;
 
 namespace K7.Clients.Shared.UI.Pages;
 
-public partial class SettingsVideoPlaybackPage
+public partial class SettingsVideoPlaybackPage : IDisposable
 {
     private sealed record VideoFormState(
         VideoPlayerSettingsDto Settings,
@@ -32,7 +33,10 @@ public partial class SettingsVideoPlaybackPage
         string MpcExtraArgs,
         string MpcLibraryPathsJson);
 
-    private static readonly int[] InactivityPromptChoices = [2, 3, 4, 5];
+    private const string BasePath = "/settings/video-playback";
+
+    /// <summary>Sub-page to show. Null shows the index (plus the first sub-page on wide screens).</summary>
+    [Parameter] public string? Section { get; set; }
 
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
     [Inject] private IStringLocalizer<SharedResource> S { get; set; } = default!;
@@ -70,6 +74,50 @@ public partial class SettingsVideoPlaybackPage
     private bool _saving;
     private bool _hasUserOverride;
     private readonly SettingsFormTracker<VideoFormState> _formTracker = new();
+    private readonly SettingsAutoSave _autoSave = new();
+    private SettingsSaveState _saveStatus;
+    private bool _disposed;
+
+    private IReadOnlyList<SettingsSection> Sections
+    {
+        get
+        {
+            var sections = new List<SettingsSection>
+            {
+                new(VideoSettingsSections.Tracks, Phosphor.Translate, Lt["SectionTitle"], L["TracksSectionDescription"]),
+                new(VideoSettingsSections.Seekbar, Phosphor.FastForward, L["SeekbarSection"], L["SeekbarSectionDescription"]),
+                new(VideoSettingsSections.Skip, Phosphor.SkipForward, L["IntroSkipSection"], L["IntroSkipSectionDescription"]),
+                new(VideoSettingsSections.NextEpisode, Phosphor.Queue, L["NextEpisodeSection"], L["NextEpisodeSectionDescription"]),
+                new(VideoSettingsSections.Trailers, Phosphor.FilmStrip, L["TrailersSection"], L["TrailersSectionDescription"]),
+                new(VideoSettingsSections.Subtitles, Phosphor.ClosedCaptioning, L["SubtitleSection"], L["SubtitleSectionDescription"]),
+                new(VideoSettingsSections.Resume, Phosphor.ClockCounterClockwise, L["ResumeSectionTitle"], L["ResumeSectionDescription"])
+            };
+
+            if (_showDeviceAdvanced)
+            {
+                sections.Add(new SettingsSection(
+                    VideoSettingsSections.Advanced,
+                    Phosphor.Wrench,
+                    L["AdvancedSection"],
+                    L["AdvancedSectionDescription"]));
+            }
+
+            return sections;
+        }
+    }
+
+    private bool IsSectionOpen => Sections.Any(s => s.Key == Section);
+
+    private string ActiveSection => IsSectionOpen ? Section! : VideoSettingsSections.Tracks;
+
+    private string ActiveSectionTitle => Sections.First(s => s.Key == ActiveSection).Title;
+
+    /// <summary>
+    /// Edits waiting for the debounce already count as saving, so the indicator stays visible
+    /// from the change to the end of the request instead of flashing.
+    /// </summary>
+    private SettingsSaveState CurrentSaveState =>
+        _saveStatus != SettingsSaveState.Failed && IsDirty ? SettingsSaveState.Saving : _saveStatus;
 
     private bool IsDirty =>
         _settings is not null
@@ -86,6 +134,19 @@ public partial class SettingsVideoPlaybackPage
             || (_showMpcExternal && !WindowsMpcPlaybackSettings.IsDefault(CurrentMpcOptions())));
 
     private bool ResetDisabled => !IsDirty && !_hasUserOverride && !HasDeviceVideoOverride;
+
+    public void Dispose()
+    {
+        if (_disposed)
+            return;
+
+        _disposed = true;
+        _autoSave.Dispose();
+
+        // Leaving inside the quiet time: send the last change instead of dropping it.
+        if (!_saving && IsDirty)
+            PersistAsync().FireAndForget();
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -112,6 +173,18 @@ public partial class SettingsVideoPlaybackPage
         }
 
         _loading = false;
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (_loading || _saving || _disposed || _settings is null || _preferences is null || _videoPolicy is null)
+            return;
+
+        var state = GetFormState();
+        if (!_formTracker.IsDirty(state))
+            return;
+
+        _autoSave.Schedule(_formTracker.Snapshot(state), () => InvokeAsync(SaveAsync));
     }
 
     private VideoFormState GetFormState() =>
@@ -230,82 +303,9 @@ public partial class SettingsVideoPlaybackPage
         _formTracker.Capture(GetFormState());
     }
 
-    private void CancelChanges()
-    {
-        if (_settings is null || _preferences is null || _videoPolicy is null)
-            return;
-
-        var state = _formTracker.Restore();
-        _settings = state.Settings;
-        _videoPolicy = state.Policy;
-        _preferences = state.Preferences;
-        _selectedLibraryId = state.LibraryId;
-        _audioPassthrough = state.AudioPassthrough;
-        _exoBuffer = state.ExoBuffer;
-        _hdmiAfr = state.HdmiAfr;
-        _dvDecode = state.DvDecode;
-        _mpcEnabled = state.MpcEnabled;
-        _mpcExePath = state.MpcExePath;
-        _mpcWebHost = state.MpcWebHost;
-        _mpcWebPortText = state.MpcWebPortText;
-        _mpcExtraArgs = state.MpcExtraArgs;
-        ApplyLibraryPathMap(LibraryPathMirror.Deserialize(state.MpcLibraryPathsJson));
-    }
-
     private void OnVideoPolicyChanged(VideoPlaybackPolicySettingsDto value)
     {
         _videoPolicy = value;
-        StateHasChanged();
-    }
-
-    private void OnRememberTrackSelectionChanged(bool value)
-    {
-        if (_settings is null)
-            return;
-
-        _settings.RememberTrackSelection = value;
-        StateHasChanged();
-    }
-
-    private void OnSubtitleBackgroundOpacityChanged(double value)
-    {
-        if (_settings is null)
-            return;
-
-        _settings.SubtitleBackgroundOpacity = value;
-        StateHasChanged();
-    }
-
-    private void OnSubtitleShadowBlurChanged(double value)
-    {
-        if (_settings is null)
-            return;
-
-        _settings.SubtitleShadowBlur = value;
-        StateHasChanged();
-    }
-
-    private static string FormatOpacity(double value) => $"{value:P0}";
-
-    private static string FormatBlur(double value) => $"{value:F1} px";
-
-    private static string FormatSkipSeconds(int value) => $"{value}s";
-
-    private void OnSkipBackSecondsChanged(int value)
-    {
-        if (_settings is null)
-            return;
-
-        _settings.SkipBackSeconds = value;
-        StateHasChanged();
-    }
-
-    private void OnSkipForwardSecondsChanged(int value)
-    {
-        if (_settings is null)
-            return;
-
-        _settings.SkipForwardSeconds = value;
         StateHasChanged();
     }
 
@@ -329,21 +329,15 @@ public partial class SettingsVideoPlaybackPage
         if (libraryId == _selectedLibraryId)
             return;
 
+        // Preferences are stored per scope: save the current scope before loading another.
         if (IsDirty)
         {
-            var confirmed = await DialogService.ShowMessageBoxAsync(
-                S["UnsavedChangesTitle"],
-                S["UnsavedChangesMessage"],
-                yesText: S["Continue"],
-                cancelText: S["Cancel"]);
-
-            if (confirmed is not true)
+            await SaveAsync();
+            if (IsDirty)
             {
                 StateHasChanged();
                 return;
             }
-
-            CancelChanges();
         }
 
         _selectedLibraryId = libraryId;
@@ -366,27 +360,61 @@ public partial class SettingsVideoPlaybackPage
         if (_saving || _settings is null || _preferences is null || _videoPolicy is null)
             return;
 
+        _autoSave.Cancel();
         _saving = true;
+        _saveStatus = SettingsSaveState.Saving;
+        StateHasChanged();
         try
         {
-            await Task.WhenAll(
-                UserPreferencesService.UpdateUserVideoPlayerSettingsAsync(_settings),
-                UserPreferencesService.UpdateUserVideoPlaybackPolicySettingsAsync(_videoPolicy),
-                UserPreferencesService.UpdateUserTrackSelectionPreferencesAsync(_preferences, _selectedLibraryId));
-            PersistDeviceVideoExperience();
-            await ApplyLocalVideoPlayerSettingsAsync(_settings);
-            CaptureFormState();
+            // Snapshot what is sent: edits made while the request is in flight stay dirty
+            // and trigger the next save.
+            var sentSnapshot = _formTracker.Snapshot(GetFormState());
+            var sentSettings = _settings;
+            await PersistAsync();
+            await ApplyLocalVideoPlayerSettingsAsync(sentSettings);
+            _formTracker.CaptureSnapshot(sentSnapshot);
+            _autoSave.Reset();
             await RefreshOverrideStateAsync();
-            Snackbar.Add(L["SaveSuccess"], K7Severity.Success);
+            _saveStatus = SettingsSaveState.Saved;
         }
         catch (Exception ex)
         {
+            _saveStatus = SettingsSaveState.Failed;
             Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), K7Severity.Error);
         }
         finally
         {
             _saving = false;
+            if (!_disposed)
+                StateHasChanged();
         }
+    }
+
+    private async Task PersistAsync()
+    {
+        if (_settings is null || _preferences is null || _videoPolicy is null)
+            return;
+
+        await Task.WhenAll(
+            UserPreferencesService.UpdateUserVideoPlayerSettingsAsync(_settings),
+            UserPreferencesService.UpdateUserVideoPlaybackPolicySettingsAsync(_videoPolicy),
+            UserPreferencesService.UpdateUserTrackSelectionPreferencesAsync(_preferences, _selectedLibraryId));
+        PersistDeviceVideoExperience();
+    }
+
+    private async Task ConfirmResetAsync()
+    {
+        if (_saving)
+            return;
+
+        var confirmed = await DialogService.ShowMessageBoxAsync(
+            S["ResetToDefaultsTitle"],
+            S["ResetToDefaultsMessage"],
+            yesText: S["ResetToDefaults"],
+            cancelText: S["Cancel"]);
+
+        if (confirmed is true)
+            await ResetAsync();
     }
 
     private async Task ResetAsync()
@@ -394,6 +422,8 @@ public partial class SettingsVideoPlaybackPage
         if (_saving)
             return;
 
+        _autoSave.Reset();
+        _saveStatus = SettingsSaveState.Idle;
         _saving = true;
         try
         {

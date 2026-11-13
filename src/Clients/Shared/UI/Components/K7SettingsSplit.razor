@@ -1,0 +1,34 @@
+@namespace K7.Clients.Shared.UI.Components
+
+<div class="k7-settings-split @(DetailOpen ? "k7-settings-split--detail-open" : "") @Class">
+    @if (Header is not null)
+    {
+        <div class="k7-settings-split__intro">
+            @Header
+        </div>
+    }
+    <div class="k7-settings-split__panes">
+        <nav class="k7-settings-split__index" aria-label="@IndexLabel">
+            @Index
+        </nav>
+        <section class="k7-settings-split__detail">
+            <header class="k7-settings-split__header">
+                <a class="k7-settings-split__back focusable" href="@BackHref">
+                    <K7Icon Icon="@Phosphor.ArrowLeft" IconSize="@K7IconSize.Sm" />
+                    <span>@IndexLabel</span>
+                </a>
+                <h5 class="k7-settings-split__title">@DetailTitle</h5>
+            </header>
+            <div class="k7-settings-split__body">
+                @Detail
+            </div>
+        </section>
+        @if (Footer is not null || SaveState != SettingsSaveState.Idle)
+        {
+            <div class="k7-settings-split__footer">
+                @Footer
+                <K7SaveIndicator State="SaveState" />
+            </div>
+        }
+    </div>
+</div>

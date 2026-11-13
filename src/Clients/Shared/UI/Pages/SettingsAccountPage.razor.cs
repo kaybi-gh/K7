@@ -2,6 +2,7 @@ using System.Security.Claims;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Clients.Shared.Services;
+using K7.Clients.Shared.UI.Components;
 using K7.Clients.Shared.UI.Components.Dialogs;
 using K7.Clients.Shared.UI.Extensions;
 using K7.Server.Domain.Enums;
@@ -97,7 +98,7 @@ public partial class SettingsAccountPage
 
         if (_isGuest)
         {
-            NavigationManager.NavigateTo("/settings/general", replace: true);
+            NavigationManager.NavigateTo(InterfaceSettingsSections.SettingsBasePath, replace: true);
             return;
         }
 

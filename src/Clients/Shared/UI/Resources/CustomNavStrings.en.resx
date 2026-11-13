@@ -42,7 +42,7 @@
   <data name="RouteAdminDevices" xml:space="preserve"><value>Devices</value></data>
   <data name="RouteAdminRestrictions" xml:space="preserve"><value>Restrictions</value></data>
   <data name="RouteAdminAuthentication" xml:space="preserve"><value>Authentication</value></data>
-  <data name="RouteAdminGeneral" xml:space="preserve"><value>General</value></data>
+  <data name="RouteAdminGeneral" xml:space="preserve"><value>Link previews</value></data>
   <data name="RouteAdminHomeLayout" xml:space="preserve"><value>Home layout</value></data>
   <data name="RouteAdminNavigation" xml:space="preserve"><value>Navigation</value></data>
   <data name="RouteAdminAudioPlayback" xml:space="preserve"><value>Audio playback</value></data>
