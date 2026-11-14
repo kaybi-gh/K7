@@ -12,7 +12,7 @@ Small private installs: the owner plus family/friends. Same people on desktop, p
 - Surface chrome uses `--color-text` and `--color-accent-text` (a darker copper that meets WCAG AA on `--color-bg`). Copy over artwork uses `--color-text-on-media` on dark scrims. In light theme media heroes (desktop, mobile, and TV) use beige `--color-bg` scrims at the same opacities as dark, so logo, meta, and overview use `--color-text` like section titles.
 - Media artwork (posters, covers, stills) carries the UI. Chrome stays quiet; do not decorate over the content.
 - Ambient color (player backdrop, album hero blur) comes from the media when possible, not from a fixed brand palette.
-- Accent is copper via `--color-accent` (`#d9b060` in both themes). Never hard-code palette hex in components. Hex in this doc is a token reference only.
+- Accent is copper via `--color-accent` (`#d9b060` in both default themes; other themes and the user's accent override set their own). Never hard-code palette hex in components. Hex in this doc is a token reference only.
 - Fonts: Epilogue for headings, Manrope for body (`--font-heading` / `--font-body`). Do not use Inter/Roboto/Arial or monospace as a style gimmick.
 
 ## Loading
@@ -31,11 +31,21 @@ Component catalog: [developing.md - DesignSystem](developing.md#designsystem). B
 
 ## Theme tokens
 
-Themes are a product surface. A later branding pass can ship a custom `[data-theme]` sheet or inject CSS through `K7.applyCustomCss`. Until then, hex lives only in `src/Clients/Shared/UI/wwwroot/css/themes/`. Override the names below, not component CSS.
+Themes are a product surface, and they are data, never CSS. A theme is nine colors on a dark or light base (`ThemePaletteDto` in `K7.Shared/Theming`): background, surface, secondary surface, text, secondary text, muted text, accent, text on accent, accent for text. `ThemeCssBuilder` derives every other color token from those and writes them on the root element over the base stylesheet (`K7.applyAppearance`). Only validated `#rrggbb` values and fixed strings are written, so a shared theme file cannot inject CSS.
+
+- **Base themes** (`default-dark`, `default-light`) are the two stylesheets in `src/Clients/Shared/UI/wwwroot/css/themes/`. `data-theme` on `<html>` is always one of the two, so `[data-theme="default-light"]` rules cover every light theme. Hex lives only there and in `BuiltInThemes`.
+- **Built-in themes** (`BuiltInThemes`) and **custom themes** (made in the editor or imported as a `k7-theme` JSON file, stored with the user's appearance preferences) layer their palette over a base.
+- **Server themes** (`ServerThemes`, server setting `ServerThemes`) are custom themes made by an administrator under Admin -> Experience -> Interface -> Appearance. Same palette and file format, ids prefixed `server-`. They travel in `ServerInfoDto.ServerThemes`, show in every account's theme picker, and can be the server default theme. Deleting the default one puts the default back on `default-dark`.
+- Every palette must pass `ThemePaletteValidator` (WCAG AA for text and accent, 3:1 for muted text). Built-in themes are covered by a test; the editor and the import refuse a palette that fails.
+- **Appearance preferences** (`AppearancePreferencesDto`, user setting `Appearance`): theme, optional accent override, text size, corner style, plus an optional set per device type (desktop, phone, tablet, TV). They follow the account. The last look is cached in `localStorage` so `theme.js` restores it before Blazor starts.
+- Text size scales the root font size (type tokens are in `rem`). Corner style overrides the `--radius-*` scale. Keep new sizes in `rem` and radii on the tokens so both keep working.
+- The rules below (copper accent, no pure `#000` / `#fff`) describe the two default themes. Other themes may use their own accent, and the Black theme uses a true black background for OLED screens.
+
+Override the names below, not component CSS.
 
 **Surfaces:** `--color-bg`, `--color-surface`, `--color-surface-2`, `--color-drawer`, `--color-overlay`
 
-**Brand:** `--color-primary` / `--color-primary-hover` / `--color-on-primary` are the shared brand gold (`#d9b060` / `#e8c878`) in every theme. `--color-accent` and `--color-accent-hover` match that gold. `--color-accent-text` is the darker copper for labels on light surfaces.
+**Brand:** `--color-primary` / `--color-primary-hover` / `--color-on-primary` are the shared brand gold (`#d9b060` / `#e8c878`) in both default themes, and follow the accent elsewhere. `--color-accent` and `--color-accent-hover` match that gold. `--color-accent-text` is the darker copper for labels on light surfaces.
 
 **Text:** `--color-text`, `--color-text-secondary`, `--color-text-muted`, `--color-text-on-media`, `--color-text-on-media-muted`, `--color-text-on-media-accent`
 
@@ -66,7 +76,7 @@ controls across a wide screen:
   TV it behaves like a menu: the index, then the sub-page as its own screen with a back link and
   the page header hidden. Each sub-page has its own route (`/settings/video-playback/{section}`).
 - Pages that stay separate components can still share one index: `InterfaceSettingsSplit` wraps
-  the appearance (theme, language), home layout, navigation and theme songs pages (personal
+  the appearance (theme, accent, text size, corners, own themes, language), home layout, navigation and theme songs pages (personal
   and admin) under `/settings/interface` and `/admin/interface`. The former addresses stay
   routable because saved shortcuts point at them. Reset to defaults is per sub-page.
   `AdvancedSettingsSplit` does the same for the admin-only Advanced entry (transcoding, link

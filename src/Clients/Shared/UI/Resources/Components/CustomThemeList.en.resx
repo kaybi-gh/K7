@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="EditTheme" xml:space="preserve"><value>Edit {0}</value></data>
+  <data name="ExportTheme" xml:space="preserve"><value>Export {0}</value></data>
+  <data name="DeleteTheme" xml:space="preserve"><value>Delete {0}</value></data>
+  <data name="CreateTheme" xml:space="preserve"><value>Create a theme</value></data>
+  <data name="ImportTheme" xml:space="preserve"><value>Import a theme</value></data>
+  <data name="DeleteThemeTitle" xml:space="preserve"><value>Delete the theme</value></data>
+  <data name="DeleteThemeMessage" xml:space="preserve"><value>Delete the theme {0}? Devices using it go back to the default theme.</value></data>
+  <data name="DeleteServerThemeMessage" xml:space="preserve"><value>Delete the theme {0} for the whole server? Accounts using it go back to the default theme.</value></data>
+</root>

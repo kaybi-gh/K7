@@ -395,6 +395,51 @@
         }
       }
     },
+    "/api/users/me/preferences/appearance": {
+      "delete": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "DeleteUserAppearancePreferences",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "GetUserAppearancePreferences",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "UpdateUserAppearancePreferences",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AppearancePreferencesDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/users/me/preferences/audio-playback-policy": {
       "delete": {
         "tags": [
@@ -11473,6 +11518,29 @@
         }
       }
     },
+    "/api/admin/settings/themes": {
+      "put": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "UpdateServerThemes",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateServerThemesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/about": {
       "get": {
         "tags": [
@@ -11920,6 +11988,58 @@
         }
       },
       "ApiKeyScope": {
+        "type": "integer"
+      },
+      "AppearanceCornerStyle": {
+        "type": "integer"
+      },
+      "AppearancePreferencesDto": {
+        "type": "object",
+        "properties": {
+          "default": {
+            "$ref": "#/components/schemas/AppearanceSettingsDto"
+          },
+          "deviceOverrides": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/AppearanceSettingsDto"
+            }
+          },
+          "customThemes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CustomThemeDto"
+            }
+          }
+        }
+      },
+      "AppearanceSettingsDto": {
+        "type": "object",
+        "properties": {
+          "themeId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "accentColor": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "textSize": {
+            "$ref": "#/components/schemas/AppearanceTextSize"
+          },
+          "cornerStyle": {
+            "$ref": "#/components/schemas/AppearanceCornerStyle"
+          },
+          "isDefault": {
+            "type": "boolean"
+          }
+        }
+      },
+      "AppearanceTextSize": {
         "type": "integer"
       },
       "ArtistLinkItem": {
@@ -13862,6 +13982,20 @@
       },
       "CustomNavPlacement": {
         "type": "integer"
+      },
+      "CustomThemeDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "palette": {
+            "$ref": "#/components/schemas/ThemePaletteDto"
+          }
+        }
       },
       "DayOfWeekPointDto": {
         "required": [
@@ -22280,6 +22414,41 @@
           }
         }
       },
+      "ThemePaletteDto": {
+        "type": "object",
+        "properties": {
+          "isDark": {
+            "type": "boolean"
+          },
+          "background": {
+            "type": "string"
+          },
+          "surface": {
+            "type": "string"
+          },
+          "surfaceAlt": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "textSecondary": {
+            "type": "string"
+          },
+          "textMuted": {
+            "type": "string"
+          },
+          "accent": {
+            "type": "string"
+          },
+          "onAccent": {
+            "type": "string"
+          },
+          "accentText": {
+            "type": "string"
+          }
+        }
+      },
       "TimeSeriesPointDto": {
         "required": [
           "date"
@@ -23498,6 +23667,20 @@
             "items": {
               "type": "string",
               "format": "uuid"
+            }
+          }
+        }
+      },
+      "UpdateServerThemesRequest": {
+        "required": [
+          "themes"
+        ],
+        "type": "object",
+        "properties": {
+          "themes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CustomThemeDto"
             }
           }
         }

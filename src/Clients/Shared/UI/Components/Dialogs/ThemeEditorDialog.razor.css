@@ -1,0 +1,5 @@
+.theme-editor__issues {
+    margin-top: var(--space-2);
+    padding-left: var(--space-5);
+    list-style: disc;
+}

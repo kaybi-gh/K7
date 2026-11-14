@@ -1,6 +1,5 @@
 @inherits LayoutComponentBase
 @implements IDisposable
-@using K7.Clients.Shared.Services.Resources
 @inject NavigationManager Nav
 @inject ThemeService ThemeService
 @inject IJSRuntime JS
@@ -55,6 +54,7 @@
                     <li><a href="/components#k7-switch">K7Switch</a></li>
                     <li><a href="/components#k7-setting-row">K7SettingRow</a></li>
                     <li><a href="/components#k7-option-list">K7OptionList</a></li>
+                    <li><a href="/components#k7-theme-picker">K7ThemePicker</a></li>
                     <li><a href="/components#k7-settings-split">K7SettingsSplit</a></li>
                     <li><a href="/components#k7-save-indicator">K7SaveIndicator</a></li>
                     <li><a href="/components#k7-entity-row">K7EntityRow</a></li>
@@ -126,14 +126,14 @@
 
         <div class="ds-theme-toggle">
             <button type="button"
-                    class="@ThemeButtonClass(Themes.DefaultDark)"
-                    @onclick="() => SetThemeAsync(Themes.DefaultDark)">
+                    class="@ThemeButtonClass(BuiltInThemes.DefaultDark)"
+                    @onclick="() => SetThemeAsync(BuiltInThemes.DefaultDark)">
                 <K7Icon Icon="@Phosphor.Moon" />
                 Dark
             </button>
             <button type="button"
-                    class="@ThemeButtonClass(Themes.DefaultLight)"
-                    @onclick="() => SetThemeAsync(Themes.DefaultLight)">
+                    class="@ThemeButtonClass(BuiltInThemes.DefaultLight)"
+                    @onclick="() => SetThemeAsync(BuiltInThemes.DefaultLight)">
                 <K7Icon Icon="@Phosphor.Sun" />
                 Light
             </button>
@@ -163,12 +163,9 @@
         try
         {
             var saved = await JS.InvokeAsync<string?>("K7.getSavedTheme");
-            var theme = Themes.FromCssDataAttribute(saved) ?? Themes.DefaultDark;
-            if (ThemeService.Theme != theme)
-            {
-                ThemeService.Theme = theme;
-                await InvokeAsync(StateHasChanged);
-            }
+            var theme = BuiltInThemes.Find(saved) ?? BuiltInThemes.DefaultDark;
+            ThemeService.Apply(new AppearancePreferencesDto { Default = { ThemeId = theme.Id } }, ThemeService.DeviceType);
+            await InvokeAsync(StateHasChanged);
         }
         catch (JSException)
         {
@@ -176,14 +173,14 @@
     }
 
     private string ThemeButtonClass(ThemeDefinition theme) =>
-        ThemeService.Theme == theme ? "ds-theme-toggle__btn is-active" : "ds-theme-toggle__btn";
+        ThemeService.Theme.BaseAttribute == theme.Id ? "ds-theme-toggle__btn is-active" : "ds-theme-toggle__btn";
 
     private async Task SetThemeAsync(ThemeDefinition theme)
     {
-        ThemeService.Theme = theme;
+        ThemeService.Apply(new AppearancePreferencesDto { Default = { ThemeId = theme.Id } }, ThemeService.DeviceType);
         try
         {
-            await JS.InvokeVoidAsync("K7.applyTheme", theme.CssDataAttribute);
+            await ThemeBootstrap.ApplyToDocumentAsync(JS, ThemeService.Css);
         }
         catch (JSException)
         {

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="ThemeName_default-dark" xml:space="preserve"><value>K7 dark</value></data>
+  <data name="ThemeName_default-light" xml:space="preserve"><value>K7 light</value></data>
+  <data name="ThemeName_graphite" xml:space="preserve"><value>Graphite</value></data>
+  <data name="ThemeName_midnight" xml:space="preserve"><value>Midnight</value></data>
+  <data name="ThemeName_oled" xml:space="preserve"><value>Black</value></data>
+  <data name="ThemeName_plum" xml:space="preserve"><value>Plum</value></data>
+  <data name="ThemeName_forest" xml:space="preserve"><value>Forest</value></data>
+  <data name="ThemeName_ember" xml:space="preserve"><value>Ember</value></data>
+  <data name="ThemeName_paper" xml:space="preserve"><value>Paper</value></data>
+  <data name="ThemeName_mist" xml:space="preserve"><value>Mist</value></data>
+</root>

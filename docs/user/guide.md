@@ -193,7 +193,7 @@ Almost everything personal can be tuned under **Settings**. The administrator ma
 | Area | Where | What you can change |
 |---|---|---|
 | Profile | Settings -> Account | Avatar, display name (also password, email, PIN, 2FA for password accounts) |
-| Look and language | Settings -> Interface -> Appearance | Theme (light / dark) and interface language |
+| Look and language | Settings -> Interface -> Appearance | Theme (ten built-in, dark and light), accent color, text size, corner style, your own themes, and interface language. Follows your account on every device |
 | Theme songs | Settings -> Interface -> Theme songs | Background music on series and movie pages, with a per-device off switch |
 | This device | Settings -> My device | Form factor, HDR, the K7 server URL (read-only on the web app, disconnect on native apps), and codecs this device can play (containers, video profiles such as HEVC Main / Main 10, audio including AC3/EAC3 when the browser reports them, and subtitles). Clear settings stored only on this device (player, sidebar, downloads, filters). The server URL and sign-in stay |
 | Home layout | Settings -> Interface -> Home | Which rows appear on Home and in which order (drag the handle, with preview). Server defaults scope "newly added" rows by library group so new folders in that group show up automatically. Administrators can instead pin specific libraries when editing the server home layout |
@@ -206,6 +206,19 @@ Almost everything personal can be tuned under **Settings**. The administrator ma
 | About | Settings -> About | Server and client versions link to the matching GitHub release notes. GitHub opens the repository. Documentation opens the user guide, or the docs index for administrators |
 
 Session **quality** stays in the player menu only (not a saved preference).
+
+### Themes
+
+Under **Settings -> Interface -> Appearance**, the interface language comes first, then the theme, picked from its preview. Everything else is optional:
+
+- **Accent color** replaces the theme's accent on buttons, links and selection. K7 adjusts it so text stays readable.
+- **Text size** and **Corners** apply to the whole app.
+- **Applies to** picks which devices you are setting up: **All**, or only computers, phones, tablets or TVs. A type of device uses the shared settings until you change one for it. **Use the shared settings** removes its separate look. While a type is picked, the app previews its look, even on another device.
+- **My themes**: create a theme from the colors on screen (nine colors, previewed live across the app), or import one somebody shared. A theme that is too hard to read cannot be saved or imported. Export shows the theme as a small JSON text to copy or download. A theme file only holds a name and colors.
+
+**Reset to defaults** goes back to the look chosen by the administrator and keeps your own themes.
+
+Your own themes stay on your account. An administrator can add **server themes** (Admin -> Experience -> Interface -> Appearance): they show in everybody's theme list and one of them can be the default theme of the server. To share a theme with everyone, export it and ask an administrator to import it there.
 
 ## My Space and libraries
 

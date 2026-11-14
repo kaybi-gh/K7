@@ -15,6 +15,14 @@
 
     if (isTv) {
         document.documentElement.classList.add('platform-tv');
+        // Font size of the system, sent by the Android host (TelevisionLayout.TextScaleMarker).
+        // The host turned the text zoom of the WebView off: the root font size takes the
+        // factor instead (app.css), so text and rem-sized boxes grow together.
+        var textScale = /K7TextScale\/(\d+(?:\.\d+)?)/.exec(ua);
+        if (textScale) {
+            var factor = Math.min(1.5, Math.max(0.85, parseFloat(textScale[1]) || 1));
+            document.documentElement.style.setProperty('--k7-system-text-scale', String(factor));
+        }
         // Do not use initial-scale = 1/dpr. That makes 1 CSS px = 1 physical px.
         // On 4K Fire TV (dpr 2, CSS width already 1920) it blows the layout out
         // to 3840 CSS px and the TV carousel looks postage-stamp sized.

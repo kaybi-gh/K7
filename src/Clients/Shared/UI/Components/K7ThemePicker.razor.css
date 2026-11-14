@@ -1,0 +1,98 @@
+.k7-theme-picker {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(7rem, 1fr));
+    gap: var(--space-3);
+    width: 100%;
+}
+
+.k7-theme-picker__item {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    padding: var(--space-1);
+    border: 2px solid transparent;
+    border-radius: var(--radius-lg);
+    background: transparent;
+    color: var(--color-text-secondary);
+    font-size: var(--text-sm);
+    text-align: center;
+    cursor: pointer;
+    transition: border-color var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out);
+}
+
+.k7-theme-picker__item:hover:not(:disabled) {
+    color: var(--color-text);
+}
+
+.k7-theme-picker__item--active {
+    border-color: var(--color-accent-text);
+    color: var(--color-text);
+    font-weight: var(--font-medium);
+}
+
+.k7-theme-picker__item:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.k7-theme-picker__swatch {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    aspect-ratio: 16 / 10;
+    padding: 8px;
+    overflow: hidden;
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius-md);
+    background: var(--swatch-bg, var(--color-bg));
+}
+
+.k7-theme-picker__bar {
+    width: 45%;
+    height: 5px;
+    border-radius: var(--radius-full);
+    background: var(--swatch-surface, var(--color-surface));
+}
+
+.k7-theme-picker__line {
+    width: 70%;
+    height: 4px;
+    border-radius: var(--radius-full);
+    background: var(--swatch-text, var(--color-text));
+}
+
+.k7-theme-picker__line--short {
+    width: 40%;
+    background: var(--swatch-muted, var(--color-text-muted));
+}
+
+.k7-theme-picker__cards {
+    display: flex;
+    flex: 1;
+    gap: 4px;
+    min-height: 0;
+    margin-top: 2px;
+}
+
+.k7-theme-picker__cards > span {
+    flex: 1;
+    border-radius: var(--radius-sm);
+    background: var(--swatch-surface, var(--color-surface));
+}
+
+.k7-theme-picker__dot {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 10px;
+    height: 10px;
+    border-radius: var(--radius-full);
+    background: var(--swatch-accent, var(--color-accent));
+}
+
+.k7-theme-picker__name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}

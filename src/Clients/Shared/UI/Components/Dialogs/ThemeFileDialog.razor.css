@@ -1,0 +1,5 @@
+.theme-file-dialog__hint {
+    margin-bottom: var(--space-3);
+    color: var(--color-text-secondary);
+    font-size: var(--text-sm);
+}

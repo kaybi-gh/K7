@@ -2,6 +2,7 @@ using K7.Shared.Dtos;
 using K7.Shared.Dtos.CustomNav;
 using K7.Shared.Dtos.Home;
 using K7.Shared.Dtos.Requests;
+using K7.Shared.Theming;
 
 namespace K7.Shared.Interfaces;
 
@@ -25,6 +26,9 @@ public interface IUserPreferencesService
     Task<GeneralPreferencesDto> GetEffectiveGeneralPreferencesAsync(CancellationToken cancellationToken = default);
     Task UpdateUserGeneralPreferencesAsync(GeneralPreferencesDto settings, CancellationToken cancellationToken = default);
     Task ResetUserGeneralPreferencesAsync(CancellationToken cancellationToken = default);
+    Task<AppearancePreferencesDto> GetAppearancePreferencesAsync(CancellationToken cancellationToken = default);
+    Task UpdateAppearancePreferencesAsync(AppearancePreferencesDto preferences, CancellationToken cancellationToken = default);
+    Task ResetAppearancePreferencesAsync(CancellationToken cancellationToken = default);
     Task<VideoPlayerSettingsDto> GetEffectiveVideoPlayerSettingsAsync(CancellationToken cancellationToken = default);
     Task UpdateUserVideoPlayerSettingsAsync(VideoPlayerSettingsDto settings, CancellationToken cancellationToken = default);
     Task ResetUserVideoPlayerSettingsAsync(CancellationToken cancellationToken = default);

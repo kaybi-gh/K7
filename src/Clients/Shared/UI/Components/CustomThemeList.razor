@@ -1,0 +1,28 @@
+@namespace K7.Clients.Shared.UI.Components
+@inject IStringLocalizer<CustomThemeList> L
+@inject IStringLocalizer<SharedResource> S
+
+<div class="custom-theme-list">
+    @foreach (var theme in Themes)
+    {
+        var item = theme;
+        <div class="custom-theme-list__theme">
+            <span class="custom-theme-list__name">@item.Name</span>
+            <K7IconButton Icon="@Phosphor.PencilSimple"
+                          AriaLabel="@string.Format(L["EditTheme"], item.Name)"
+                          Disabled="@Disabled"
+                          OnClick="() => EditAsync(item)" />
+            <K7IconButton Icon="@Phosphor.Export"
+                          AriaLabel="@string.Format(L["ExportTheme"], item.Name)"
+                          OnClick="() => ExportAsync(item)" />
+            <K7IconButton Icon="@Phosphor.Trash"
+                          AriaLabel="@string.Format(L["DeleteTheme"], item.Name)"
+                          Disabled="@Disabled"
+                          OnClick="() => DeleteAsync(item)" />
+        </div>
+    }
+    <div class="custom-theme-list__actions">
+        <K7Button Variant="outlined" StartIcon="@Phosphor.Plus" OnClick="CreateAsync" Disabled="@AddDisabled">@L["CreateTheme"]</K7Button>
+        <K7Button Variant="text" StartIcon="@Phosphor.FileArrowUp" OnClick="ImportAsync" Disabled="@AddDisabled">@L["ImportTheme"]</K7Button>
+    </div>
+</div>

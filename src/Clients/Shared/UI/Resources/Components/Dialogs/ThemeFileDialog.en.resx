@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="ImportHint" xml:space="preserve"><value>Paste the content of a K7 theme or choose its file.</value></data>
+  <data name="PastePlaceholder" xml:space="preserve"><value>Theme content (JSON)</value></data>
+  <data name="ExportHint" xml:space="preserve"><value>Copy this text or download the file to share the theme.</value></data>
+  <data name="ChooseFile" xml:space="preserve"><value>Choose a file</value></data>
+  <data name="Import" xml:space="preserve"><value>Import</value></data>
+  <data name="Download" xml:space="preserve"><value>Download</value></data>
+  <data name="Copy" xml:space="preserve"><value>Copy</value></data>
+  <data name="Copied" xml:space="preserve"><value>Theme copied.</value></data>
+  <data name="CopyFailed" xml:space="preserve"><value>Could not copy the theme. Select the text and copy it.</value></data>
+  <data name="Error_Empty" xml:space="preserve"><value>Paste the content of a theme or choose a file.</value></data>
+  <data name="Error_TooLarge" xml:space="preserve"><value>This file is too large to be a K7 theme.</value></data>
+  <data name="Error_InvalidJson" xml:space="preserve"><value>This content is not a readable K7 theme.</value></data>
+  <data name="Error_InvalidFormat" xml:space="preserve"><value>This content is not a K7 theme.</value></data>
+  <data name="Error_InvalidColors" xml:space="preserve"><value>This theme contains a color that is not valid.</value></data>
+  <data name="Error_Contrast" xml:space="preserve"><value>This theme lacks contrast between text and background. It cannot be imported.</value></data>
+</root>

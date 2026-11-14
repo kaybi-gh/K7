@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="Name" xml:space="preserve"><value>Name</value></data>
+  <data name="Base" xml:space="preserve"><value>Base</value></data>
+  <data name="BaseHint" xml:space="preserve"><value>Sets shadows and how artwork is framed.</value></data>
+  <data name="BaseDark" xml:space="preserve"><value>Dark</value></data>
+  <data name="BaseLight" xml:space="preserve"><value>Light</value></data>
+  <data name="Color_Background" xml:space="preserve"><value>Background</value></data>
+  <data name="Color_Surface" xml:space="preserve"><value>Surface</value></data>
+  <data name="Color_Surface_Hint" xml:space="preserve"><value>Cards, menus and dialogs.</value></data>
+  <data name="Color_SurfaceAlt" xml:space="preserve"><value>Secondary surface</value></data>
+  <data name="Color_SurfaceAlt_Hint" xml:space="preserve"><value>Fields, hovered or selected items.</value></data>
+  <data name="Color_Text" xml:space="preserve"><value>Text</value></data>
+  <data name="Color_TextSecondary" xml:space="preserve"><value>Secondary text</value></data>
+  <data name="Color_TextMuted" xml:space="preserve"><value>Muted text</value></data>
+  <data name="Color_TextMuted_Hint" xml:space="preserve"><value>Hints and captions.</value></data>
+  <data name="Color_Accent" xml:space="preserve"><value>Accent</value></data>
+  <data name="Color_Accent_Hint" xml:space="preserve"><value>Primary buttons and selection.</value></data>
+  <data name="Color_OnAccent" xml:space="preserve"><value>Text on accent</value></data>
+  <data name="Color_OnAccent_Hint" xml:space="preserve"><value>Label of primary buttons.</value></data>
+  <data name="Color_AccentText" xml:space="preserve"><value>Accent for text</value></data>
+  <data name="Color_AccentText_Hint" xml:space="preserve"><value>Colored links and icons on the background.</value></data>
+  <data name="IssuesIntro" xml:space="preserve"><value>This theme cannot be saved yet:</value></data>
+  <data name="Issue_InvalidColor" xml:space="preserve"><value>A color is not valid.</value></data>
+  <data name="Issue_TextContrast" xml:space="preserve"><value>Text does not stand out enough on the background or surfaces.</value></data>
+  <data name="Issue_SecondaryTextContrast" xml:space="preserve"><value>Secondary text does not stand out enough on the background.</value></data>
+  <data name="Issue_MutedTextContrast" xml:space="preserve"><value>Muted text does not stand out enough on the background.</value></data>
+  <data name="Issue_OnAccentContrast" xml:space="preserve"><value>Text on accent does not stand out enough.</value></data>
+  <data name="Issue_AccentTextContrast" xml:space="preserve"><value>Accent for text does not stand out enough on the background.</value></data>
+</root>

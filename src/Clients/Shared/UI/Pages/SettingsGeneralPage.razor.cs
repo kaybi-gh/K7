@@ -1,7 +1,5 @@
 using System.Globalization;
 using K7.Clients.Shared.Interfaces;
-using K7.Clients.Shared.Models;
-using K7.Clients.Shared.Services.Resources;
 using K7.Clients.Shared.UI.Components;
 using K7.Shared;
 using K7.Shared.Dtos;
@@ -14,9 +12,8 @@ namespace K7.Clients.Shared.UI.Pages;
 
 public partial class SettingsGeneralPage : IDisposable
 {
-    private string _currentCulture = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+    private readonly string _currentCulture = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
     private string _serverDefaultLanguage = "en";
-    private string _serverDefaultThemeCss = "default-dark";
     private bool _serverDefaultPlayThemeSongs = true;
     private bool _hasLanguageOverride;
     private bool _resetting;
@@ -24,7 +21,7 @@ public partial class SettingsGeneralPage : IDisposable
     private bool _playThemeSongs = true;
     private bool _disableThemeSongsOnDevice;
     private bool _themeSongsSaving;
-    private SettingsSaveState _saveState;
+    private AppearanceSettingsPanel? _appearancePanel;
 
     private bool IsThemeSongs => InterfaceSettingsSections.IsThemeSongs(NavigationManager);
 
@@ -33,7 +30,12 @@ public partial class SettingsGeneralPage : IDisposable
 
     private bool AppearanceOnDefaults =>
         !_hasLanguageOverride
-        && ThemeService.Theme.CssDataAttribute == _serverDefaultThemeCss;
+        && (_appearancePanel?.IsOnDefaults ?? true);
+
+    /// <summary>The appearance panel saves on its own and reports its state.</summary>
+    private SettingsSaveState ActiveSaveState { get =>
+        IsThemeSongs ? field : _appearancePanel?.SaveState ?? SettingsSaveState.Idle; set;
+    }
 
     private bool ThemeSongsOnDefaults =>
         _playThemeSongs == _serverDefaultPlayThemeSongs
@@ -44,7 +46,6 @@ public partial class SettingsGeneralPage : IDisposable
 
     protected override void OnInitialized()
     {
-        ThemeService.ThemeOnChange += OnThemeChanged;
         NavigationManager.LocationChanged += OnLocationChanged;
         _disableThemeSongsOnDevice = DeviceStorageService.Get(PreferenceKeys.THEME_SONGS_DISABLED_ON_DEVICE) == true;
     }
@@ -57,7 +58,6 @@ public partial class SettingsGeneralPage : IDisposable
             if (serverInfo is not null)
             {
                 _serverDefaultLanguage = serverInfo.DefaultLanguage;
-                _serverDefaultThemeCss = serverInfo.DefaultTheme;
             }
 
             var userLanguage = await UserService.GetUserLanguageAsync();
@@ -86,18 +86,13 @@ public partial class SettingsGeneralPage : IDisposable
 
     public void Dispose()
     {
-        ThemeService.ThemeOnChange -= OnThemeChanged;
         NavigationManager.LocationChanged -= OnLocationChanged;
     }
 
     // Appearance and Theme songs are the same page: render again when only the address changes.
     private void OnLocationChanged(object? sender, LocationChangedEventArgs e) => InvokeAsync(StateHasChanged);
 
-    private void OnThemeChanged()
-    {
-        _saveState = SettingsSaveState.Saved;
-        InvokeAsync(StateHasChanged);
-    }
+    private void OnAppearanceStateChanged() => StateHasChanged();
 
     private async Task OnCultureChanged(string culture)
     {
@@ -127,13 +122,13 @@ public partial class SettingsGeneralPage : IDisposable
         {
             _videoPlayerSettings.PlayThemeSongs = enabled;
             await UserPreferencesService.UpdateUserVideoPlayerSettingsAsync(_videoPlayerSettings);
-            _saveState = SettingsSaveState.Saved;
+            ActiveSaveState = SettingsSaveState.Saved;
         }
         catch (Exception ex)
         {
             _playThemeSongs = previous;
             _videoPlayerSettings.PlayThemeSongs = previous;
-            _saveState = SettingsSaveState.Failed;
+            ActiveSaveState = SettingsSaveState.Failed;
             Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), K7Severity.Error);
         }
         finally
@@ -146,7 +141,7 @@ public partial class SettingsGeneralPage : IDisposable
     {
         _disableThemeSongsOnDevice = disabled;
         DeviceStorageService.Set(PreferenceKeys.THEME_SONGS_DISABLED_ON_DEVICE, disabled);
-        _saveState = SettingsSaveState.Saved;
+        ActiveSaveState = SettingsSaveState.Saved;
     }
 
     private async Task ResetToDefaultsAsync()
@@ -155,7 +150,7 @@ public partial class SettingsGeneralPage : IDisposable
             return;
 
         _resetting = true;
-        _saveState = SettingsSaveState.Idle;
+        ActiveSaveState = SettingsSaveState.Idle;
         try
         {
             if (IsThemeSongs)
@@ -175,7 +170,6 @@ public partial class SettingsGeneralPage : IDisposable
 
     private async Task ResetAppearanceAsync()
     {
-        var defaultTheme = Themes.FromCssDataAttribute(_serverDefaultThemeCss) ?? Themes.DefaultDark;
         var needsCultureReload = _hasLanguageOverride
             || !string.Equals(
                 CultureInfo.CurrentUICulture.TwoLetterISOLanguageName,
@@ -191,12 +185,11 @@ public partial class SettingsGeneralPage : IDisposable
             // Best effort
         }
 
-        await JSRuntime.InvokeVoidAsync("K7.clearSavedTheme");
-        ThemeService.Theme = defaultTheme;
-        await JSRuntime.InvokeVoidAsync("K7.applyTheme", defaultTheme.CssDataAttribute);
+        if (_appearancePanel is not null)
+            await _appearancePanel.ResetAsync();
 
         _hasLanguageOverride = false;
-        _saveState = SettingsSaveState.Idle;
+        ActiveSaveState = SettingsSaveState.Idle;
         Snackbar.Add(L["GeneralResetSuccess"], K7Severity.Success);
 
         if (needsCultureReload)

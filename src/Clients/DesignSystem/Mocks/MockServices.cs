@@ -901,6 +901,7 @@ public sealed class MockServerInfoService : IServerInfoService
     public Task<List<LiteMediaDto>?> GetMusicRadioAsync(string radioType, Guid[]? libraryIds = null, Guid[]? libraryGroupIds = null, Guid? seedTrackId = null, Guid? seedArtistId = null, string? genre = null, int limit = 50, Guid[]? excludeIds = null, CancellationToken cancellationToken = default) => Task.FromResult<List<LiteMediaDto>?>(null);
     public Task UpdateDefaultLanguageAsync(string language, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task UpdateDefaultThemeAsync(string theme, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task UpdateServerThemesAsync(IReadOnlyList<K7.Shared.Theming.CustomThemeDto> themes, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task<List<ActiveStreamDto>?> GetActiveStreamsAsync(CancellationToken cancellationToken = default) => Task.FromResult<List<ActiveStreamDto>?>(null);
     public Task<ServerMetricsHistoryDto?> GetServerMetricsAsync(CancellationToken cancellationToken = default)
     {
@@ -984,6 +985,9 @@ public sealed class MockUserPreferencesService : IUserPreferencesService
     public Task UpdateSyncPlayPreferencesAsync(K7.Shared.Dtos.SyncPlayPreferencesDto preferences, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task<K7.Shared.Dtos.SharedProfilePreferencesDto> GetSharedProfilePreferencesAsync(CancellationToken cancellationToken = default) => Task.FromResult(new K7.Shared.Dtos.SharedProfilePreferencesDto());
     public Task UpdateSharedProfilePreferencesAsync(K7.Shared.Dtos.SharedProfilePreferencesDto preferences, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task<K7.Shared.Theming.AppearancePreferencesDto> GetAppearancePreferencesAsync(CancellationToken cancellationToken = default) => Task.FromResult(new K7.Shared.Theming.AppearancePreferencesDto());
+    public Task UpdateAppearancePreferencesAsync(K7.Shared.Theming.AppearancePreferencesDto preferences, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task ResetAppearancePreferencesAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task<bool> UserSettingExistsAsync(string key, CancellationToken cancellationToken = default) => Task.FromResult(false);
 }
 

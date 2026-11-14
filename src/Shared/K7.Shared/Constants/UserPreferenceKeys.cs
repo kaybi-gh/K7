@@ -3,6 +3,7 @@ namespace K7.Shared.Constants;
 public static class UserPreferenceKeys
 {
     public const string GeneralPreferences = "GeneralPreferences";
+    public const string Appearance = "Appearance";
     public const string HomeLayout = "HomeLayout";
     public const string CustomNavLayout = "CustomNavLayout";
     public const string AudioPlayerSettings = "AudioPlayerSettings";

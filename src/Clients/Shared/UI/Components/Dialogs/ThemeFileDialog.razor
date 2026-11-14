@@ -1,0 +1,42 @@
+@inject IStringLocalizer<ThemeFileDialog> L
+@inject IStringLocalizer<SharedResource> S
+
+<div class="k7-dialog-content">
+    @if (Import)
+    {
+        <p class="theme-file-dialog__hint">@L["ImportHint"]</p>
+        <K7TextField @bind-Value="_json"
+                     Variant="outlined"
+                     Immediate="true"
+                     Lines="10"
+                     MaxLength="@ThemeFile.MaxLength"
+                     Placeholder="@L["PastePlaceholder"]" />
+        <InputFile id="@_fileInputId" OnChange="OnFileSelectedAsync" accept=".json,application/json" style="display:none" />
+        @if (_error is not null)
+        {
+            <K7Alert Severity="K7Severity.Error">@_error</K7Alert>
+        }
+    }
+    else
+    {
+        <p class="theme-file-dialog__hint">@L["ExportHint"]</p>
+        <K7TextField Value="@Json" Variant="outlined" ReadOnly="true" Lines="12" />
+    }
+</div>
+<div class="k7-dialog-actions">
+    @if (Import)
+    {
+        <K7Button OnClick="Cancel">@S["Cancel"]</K7Button>
+        <K7Button Variant="outlined" StartIcon="@Phosphor.FileArrowUp" OnClick="ChooseFileAsync">@L["ChooseFile"]</K7Button>
+        <K7Button Color="primary" Variant="filled" OnClick="ImportTheme" Disabled="@string.IsNullOrWhiteSpace(_json)">@L["Import"]</K7Button>
+    }
+    else
+    {
+        <K7Button OnClick="Cancel">@S["Close"]</K7Button>
+        @if (CanDownload)
+        {
+            <K7Button Variant="outlined" StartIcon="@Phosphor.DownloadSimple" OnClick="DownloadAsync">@L["Download"]</K7Button>
+        }
+        <K7Button Color="primary" Variant="filled" StartIcon="@Phosphor.Copy" OnClick="CopyAsync">@L["Copy"]</K7Button>
+    }
+</div>

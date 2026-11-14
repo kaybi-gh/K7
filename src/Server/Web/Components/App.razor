@@ -173,7 +173,10 @@
     {
         await using var scope = ScopeFactory.CreateAsyncScope();
         var serverSettings = scope.ServiceProvider.GetRequiredService<IServerSettingsService>();
-        _defaultTheme = await serverSettings.GetAsync(ServerSettingKeys.DefaultTheme) ?? "default-dark";
+        // The startup script only needs the base (dark or light) of the default theme.
+        _defaultTheme = K7.Shared.Theming.ServerThemes.BaseAttribute(
+            await serverSettings.GetAsync(ServerSettingKeys.DefaultTheme),
+            K7.Shared.Theming.ServerThemes.Parse(await serverSettings.GetAsync(ServerSettingKeys.ServerThemes)));
         _defaultLanguage = await serverSettings.GetAsync(ServerSettingKeys.DefaultLanguage) ?? "en";
 
         var path = HttpContext.Request.Path.Value ?? "/";

@@ -1010,6 +1010,12 @@ public partial class K7ServerService : IK7ServerService, IMediaService, ILibrary
         response.EnsureSuccessStatusCode();
     }
 
+    public async Task UpdateServerThemesAsync(IReadOnlyList<Theming.CustomThemeDto> themes, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PutAsJsonAsync("api/admin/settings/themes", new { Themes = themes }, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
     public async Task<List<ActiveStreamDto>?> GetActiveStreamsAsync(CancellationToken cancellationToken = default)
     {
         return await HttpClient.GetFromJsonAsync<List<ActiveStreamDto>>("api/admin/streams", _serializerOptions, cancellationToken);
@@ -1800,6 +1806,24 @@ public partial class K7ServerService : IK7ServerService, IMediaService, ILibrary
     public async Task ResetUserGeneralPreferencesAsync(CancellationToken cancellationToken = default)
     {
         var response = await HttpClient.DeleteAsync("api/users/me/preferences/general", cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task<K7.Shared.Theming.AppearancePreferencesDto> GetAppearancePreferencesAsync(CancellationToken cancellationToken = default)
+    {
+        var result = await HttpClient.GetFromJsonAsync<K7.Shared.Theming.AppearancePreferencesDto>("api/users/me/preferences/appearance", _serializerOptions, cancellationToken);
+        return result ?? new K7.Shared.Theming.AppearancePreferencesDto();
+    }
+
+    public async Task UpdateAppearancePreferencesAsync(K7.Shared.Theming.AppearancePreferencesDto preferences, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PutAsJsonAsync("api/users/me/preferences/appearance", preferences, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task ResetAppearancePreferencesAsync(CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.DeleteAsync("api/users/me/preferences/appearance", cancellationToken);
         response.EnsureSuccessStatusCode();
     }
 

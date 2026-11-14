@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="ImportHint" xml:space="preserve"><value>Collez le contenu d'un thème K7 ou choisissez son fichier.</value></data>
+  <data name="PastePlaceholder" xml:space="preserve"><value>Contenu du thème (JSON)</value></data>
+  <data name="ExportHint" xml:space="preserve"><value>Copiez ce texte ou téléchargez le fichier pour partager le thème.</value></data>
+  <data name="ChooseFile" xml:space="preserve"><value>Choisir un fichier</value></data>
+  <data name="Import" xml:space="preserve"><value>Importer</value></data>
+  <data name="Download" xml:space="preserve"><value>Télécharger</value></data>
+  <data name="Copy" xml:space="preserve"><value>Copier</value></data>
+  <data name="Copied" xml:space="preserve"><value>Thème copié.</value></data>
+  <data name="CopyFailed" xml:space="preserve"><value>Impossible de copier le thème. Sélectionnez le texte et copiez-le.</value></data>
+  <data name="Error_Empty" xml:space="preserve"><value>Collez le contenu d'un thème ou choisissez un fichier.</value></data>
+  <data name="Error_TooLarge" xml:space="preserve"><value>Ce fichier est trop volumineux pour être un thème K7.</value></data>
+  <data name="Error_InvalidJson" xml:space="preserve"><value>Ce contenu n'est pas un thème K7 lisible.</value></data>
+  <data name="Error_InvalidFormat" xml:space="preserve"><value>Ce contenu n'est pas un thème K7.</value></data>
+  <data name="Error_InvalidColors" xml:space="preserve"><value>Ce thème contient une couleur non valide.</value></data>
+  <data name="Error_Contrast" xml:space="preserve"><value>Ce thème manque de contraste entre le texte et le fond. Il ne peut pas être importé.</value></data>
+</root>

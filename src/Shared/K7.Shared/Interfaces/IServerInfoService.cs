@@ -1,6 +1,7 @@
 using K7.Shared.Dtos;
 using K7.Shared.Dtos.Entities.Medias;
 using K7.Shared.Dtos.SharedProfiles;
+using K7.Shared.Theming;
 
 namespace K7.Shared.Interfaces;
 
@@ -21,6 +22,7 @@ public interface IServerInfoService
     Task<List<LiteMediaDto>?> GetMusicRadioAsync(string radioType, Guid[]? libraryIds = null, Guid[]? libraryGroupIds = null, Guid? seedTrackId = null, Guid? seedArtistId = null, string? genre = null, int limit = 50, Guid[]? excludeIds = null, CancellationToken cancellationToken = default);
     Task UpdateDefaultLanguageAsync(string language, CancellationToken cancellationToken = default);
     Task UpdateDefaultThemeAsync(string theme, CancellationToken cancellationToken = default);
+    Task UpdateServerThemesAsync(IReadOnlyList<CustomThemeDto> themes, CancellationToken cancellationToken = default);
     Task<List<ActiveStreamDto>?> GetActiveStreamsAsync(CancellationToken cancellationToken = default);
     Task<ServerMetricsHistoryDto?> GetServerMetricsAsync(CancellationToken cancellationToken = default);
     Task<PlaybackHistoryPageDto?> GetAdminPlaybackHistoryAsync(int page = 1, int pageSize = 25, string? mediaType = null, Guid? userId = null, string period = "all", DateTime? from = null, DateTime? to = null, string? q = null, CancellationToken cancellationToken = default);

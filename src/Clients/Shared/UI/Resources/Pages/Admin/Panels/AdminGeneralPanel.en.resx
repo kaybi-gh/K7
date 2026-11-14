@@ -26,4 +26,7 @@
   <data name="SaveSuccess" xml:space="preserve"><value>Settings saved</value></data>
   <data name="MediaLinkPreviews" xml:space="preserve"><value>Include title and poster</value></data>
   <data name="MediaLinkPreviewsHint" xml:space="preserve"><value>When a movie, series, or album URL is pasted into Discord, Telegram, or iMessage, the preview shows the title, overview, and poster without an account. The app still requires login. Turn off to show only the K7 card.</value></data>
+  <data name="ServerThemes" xml:space="preserve"><value>Server themes</value></data>
+  <data name="ServerThemesHint" xml:space="preserve"><value>Offered to every account, next to the built-in themes. A server theme can be the default theme. Changes are saved right away.</value></data>
+  <data name="ServerThemesSaved" xml:space="preserve"><value>Server themes saved</value></data>
 </root>

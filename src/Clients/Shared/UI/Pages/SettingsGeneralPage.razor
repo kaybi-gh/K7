@@ -3,9 +3,6 @@
 @page "/settings/interface/theme-songs"
 @page "/settings/general"
 @layout SettingsLayout
-@using K7.Clients.Shared.Models
-@using K7.Clients.Shared.Services.Resources
-@inject ThemeService ThemeService
 @inject IDeviceStorageService DeviceStorageService
 @inject IUserPreferencesService UserPreferencesService
 @inject IServerPreferencesService ServerPreferencesService
@@ -40,27 +37,18 @@
             }
             else
             {
-                <K7SettingRow Label="@L["Theme"]">
-                    <K7Select TValue="ThemeDefinition"
-                              @bind-Value="@ThemeService.Theme"
-                              ToStringFunc="@(t => t?.Name)">
-                        @foreach (var theme in Themes.Collection)
-                        {
-                            <K7SelectItem Value="@theme" Text="@theme?.Name">@theme?.Name</K7SelectItem>
-                        }
-                    </K7Select>
-                </K7SettingRow>
                 <K7SettingRow Label="@L["Language"]">
                     <K7LanguageSelect Value="@_currentCulture"
                                       ValueChanged="OnCultureChanged"
                                       Languages="SupportedLanguages.Interface" />
                 </K7SettingRow>
+                <AppearanceSettingsPanel @ref="_appearancePanel" OnStateChanged="OnAppearanceStateChanged" />
             }
         </InterfaceSettingsSplit>
     </div>
 
     <K7SettingsActionBar AutoSave="true"
-                         SaveState="_saveState"
+                         SaveState="ActiveSaveState"
                          IsSaving="_resetting || _themeSongsSaving"
                          ResetDisabled="ResetDisabled"
                          OnResetToDefaults="ResetToDefaultsAsync" />

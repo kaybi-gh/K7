@@ -4,8 +4,6 @@
 @page "/admin/interface/appearance"
 @page "/admin/interface/theme-songs"
 @layout AdminLayout
-@using K7.Clients.Shared.Models
-@using K7.Clients.Shared.Services.Resources
 @inject IStringLocalizer<AdminGeneralPanel> L
 @inject IStringLocalizer<SharedResource> S
 @inject IStringLocalizer<InterfaceSettingsSplit> Li
@@ -53,21 +51,25 @@
                 }
                 else
                 {
-                    <K7SettingRow Label="@L["DefaultTheme"]">
-                        <K7Select TValue="ThemeDefinition"
-                                  Value="_defaultTheme"
-                                  ValueChanged="OnDefaultThemeChanged"
-                                  ToStringFunc="@(t => t?.Name)">
-                            @foreach (var theme in Themes.Collection)
-                            {
-                                <K7SelectItem Value="@theme" Text="@theme.Name">@theme.Name</K7SelectItem>
-                            }
-                        </K7Select>
-                    </K7SettingRow>
                     <K7SettingRow Label="@L["DefaultLanguage"]">
                         <K7LanguageSelect Value="@_defaultLanguage"
                                           ValueChanged="OnDefaultLanguageChanged"
                                           Languages="SupportedLanguages.Interface" />
+                    </K7SettingRow>
+                    <K7SettingRow Label="@L["DefaultTheme"]" Stacked="true">
+                        <K7ThemePicker Themes="SelectableThemes"
+                                       Value="@_defaultTheme.Id"
+                                       ValueChanged="OnDefaultThemeChanged"
+                                       AriaLabel="@L["DefaultTheme"]" />
+                    </K7SettingRow>
+                    <K7SettingRow Label="@L["ServerThemes"]" Hint="@L["ServerThemesHint"]" Stacked="true">
+                        <CustomThemeList Themes="_serverThemes"
+                                         Server="true"
+                                         MaxCount="ServerThemes.MaxCount"
+                                         Disabled="_savingThemes"
+                                         OnAdded="AddServerThemeAsync"
+                                         OnEdited="ReplaceServerThemeAsync"
+                                         OnDeleted="RemoveServerThemeAsync" />
                     </K7SettingRow>
                 }
             </InterfaceSettingsSplit>

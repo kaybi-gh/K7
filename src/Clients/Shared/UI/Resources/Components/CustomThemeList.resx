@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="EditTheme" xml:space="preserve"><value>Modifier {0}</value></data>
+  <data name="ExportTheme" xml:space="preserve"><value>Exporter {0}</value></data>
+  <data name="DeleteTheme" xml:space="preserve"><value>Supprimer {0}</value></data>
+  <data name="CreateTheme" xml:space="preserve"><value>Créer un thème</value></data>
+  <data name="ImportTheme" xml:space="preserve"><value>Importer un thème</value></data>
+  <data name="DeleteThemeTitle" xml:space="preserve"><value>Supprimer le thème</value></data>
+  <data name="DeleteThemeMessage" xml:space="preserve"><value>Supprimer le thème {0} ? Les appareils qui l'utilisent reviennent au thème par défaut.</value></data>
+  <data name="DeleteServerThemeMessage" xml:space="preserve"><value>Supprimer le thème {0} pour tout le serveur ? Les comptes qui l'utilisent reviennent au thème par défaut.</value></data>
+</root>

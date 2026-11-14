@@ -45,6 +45,12 @@ html, body, #app {
     color: var(--color-text);
 }
 
+/* Text size of the appearance settings: a factor on the base size of the platform, so the
+   larger base of the TV layout (html.platform-tv below) is scaled too, not replaced. */
+html {
+    font-size: calc(var(--text-base) * var(--k7-text-scale, 1));
+}
+
 /* Scrollbar */
 ::-webkit-scrollbar            { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track      { background: var(--scrollbar-track); }
@@ -113,8 +119,9 @@ textarea[data-sn-editing="true"] {
    not map 1 CSS px to 1 physical px on 4K (that shrinks the UI).
    ============================================================ */
 html.platform-tv {
-    /* 10-foot: scale all rem-based type (tokens, utilities, most pages). */
-    font-size: var(--text-lg);
+    /* 10-foot: scale all rem-based type (tokens, utilities, most pages). The text size of the
+       appearance settings multiplies this base instead of replacing it. */
+    font-size: calc(var(--text-lg) * var(--k7-text-scale, 1) * var(--k7-system-text-scale, 1));
     /* Avoid hover side-effects on D-pad navigation */
     cursor: none;
 }

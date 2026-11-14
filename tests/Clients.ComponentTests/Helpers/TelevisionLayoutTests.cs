@@ -87,4 +87,16 @@ public class TelevisionLayoutTests
         TelevisionLayout.TryGetViewportScale(3840, out var scale).Should().BeTrue();
         scale.Should().BeApproximately(2, 0.001);
     }
+
+    [TestCase(1.3, "K7TextScale/1.3")]
+    [TestCase(1.0, "K7TextScale/1")]
+    [TestCase(1.15, "K7TextScale/1.15")]
+    [TestCase(3.0, "K7TextScale/1.5")]
+    [TestCase(0.2, "K7TextScale/0.85")]
+    [TestCase(0.0, "K7TextScale/1")]
+    [TestCase(double.NaN, "K7TextScale/1")]
+    public void TextScaleMarker_ShouldCarryTheSystemFontSize_WithinBounds(double fontScale, string expected)
+    {
+        TelevisionLayout.TextScaleMarker(fontScale).Should().Be(expected);
+    }
 }

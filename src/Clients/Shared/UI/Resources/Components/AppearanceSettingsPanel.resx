@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="Theme" xml:space="preserve"><value>Thème</value></data>
+  <data name="AccentColor" xml:space="preserve"><value>Couleur d'accent</value></data>
+  <data name="AccentColorHint" xml:space="preserve"><value>Remplace la couleur d'accent du thème pour les boutons, les liens et la sélection.</value></data>
+  <data name="UseThemeAccent" xml:space="preserve"><value>Reprendre celle du thème</value></data>
+  <data name="TextSize" xml:space="preserve"><value>Taille du texte</value></data>
+  <data name="TextSizeHint" xml:space="preserve"><value>Agrandit ou réduit le texte de toute l'application.</value></data>
+  <data name="TextSize_Small" xml:space="preserve"><value>Petite</value></data>
+  <data name="TextSize_Default" xml:space="preserve"><value>Normale</value></data>
+  <data name="TextSize_Large" xml:space="preserve"><value>Grande</value></data>
+  <data name="TextSize_ExtraLarge" xml:space="preserve"><value>Très grande</value></data>
+  <data name="Corners" xml:space="preserve"><value>Coins</value></data>
+  <data name="Corners_Square" xml:space="preserve"><value>Droits</value></data>
+  <data name="Corners_Default" xml:space="preserve"><value>Normaux</value></data>
+  <data name="Corners_Round" xml:space="preserve"><value>Arrondis</value></data>
+  <data name="Device_Desktop" xml:space="preserve"><value>les ordinateurs</value></data>
+  <data name="Device_Phone" xml:space="preserve"><value>les téléphones</value></data>
+  <data name="Device_Tablet" xml:space="preserve"><value>les tablettes</value></data>
+  <data name="Device_TV" xml:space="preserve"><value>les téléviseurs</value></data>
+  <data name="MyThemes" xml:space="preserve"><value>Mes thèmes</value></data>
+  <data name="MyThemesHint" xml:space="preserve"><value>Créez votre thème à partir des couleurs affichées, ou importez celui qu'on vous a partagé.</value></data>
+  <data name="Scope" xml:space="preserve"><value>Appareils concernés</value></data>
+  <data name="Scope_All" xml:space="preserve"><value>Tous</value></data>
+  <data name="Scope_Desktop" xml:space="preserve"><value>Ordinateur</value></data>
+  <data name="Scope_Phone" xml:space="preserve"><value>Téléphone</value></data>
+  <data name="Scope_Tablet" xml:space="preserve"><value>Tablette</value></data>
+  <data name="Scope_TV" xml:space="preserve"><value>TV</value></data>
+  <data name="ScopeHint_All" xml:space="preserve"><value>Réglages communs à tous vos appareils. Choisissez un type d'appareil pour lui donner un thème, une taille de texte ou des coins différents.</value></data>
+  <data name="ScopeHint_Shared" xml:space="preserve"><value>Pas encore de réglages propres pour {0}, qui reprennent les réglages communs. Changez un réglage ci-dessous pour les différencier.</value></data>
+  <data name="ScopeHint_Own" xml:space="preserve"><value>Réglages propres pour {0}. Les autres appareils gardent les leurs.</value></data>
+  <data name="ScopeUseShared" xml:space="preserve"><value>Reprendre les réglages communs</value></data>
+  <data name="ScopePreviewNote" xml:space="preserve"><value>Aperçu : cet appareil retrouvera ses propres réglages quand vous quitterez la page.</value></data>
+</root>

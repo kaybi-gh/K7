@@ -1,7 +1,7 @@
 using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
-using K7.Clients.Shared.UI.Helpers;
 using K7.Clients.Shared.Services;
+using K7.Clients.Shared.UI.Helpers;
 using K7.Server.Domain.Enums;
 using K7.Shared;
 using K7.Shared.Interfaces;
@@ -161,6 +161,14 @@ public partial class MainLayout : IDisposable
 
             if (userChanged && Connectivity.IsOnline)
             {
+                ThemeBootstrap.LoadUserAsync(
+                        ThemeService,
+                        JS,
+                        ServerInfoService,
+                        Services.GetRequiredService<IUserPreferencesService>(),
+                        DeviceService)
+                    .FireAndForget(Logger, "Appearance preferences load failed");
+
                 try
                 {
                     await DeviceInitializer.InitializeDeviceAsync(Services, userId);
@@ -240,7 +248,8 @@ public partial class MainLayout : IDisposable
             if (PerfTrace.IsEnabled)
                 await PerfTrace.SyncJsAsync(JS);
             AotProfileTour.Start(Services, NavigationManager, JS, InvokeAsync);
-            await JS.InvokeVoidAsync("K7.applyTheme", ThemeService.Theme.CssDataAttribute);
+            if (ThemeService.IsResolved)
+                await ThemeBootstrap.ApplyToDocumentAsync(JS, ThemeService.Css);
             await JS.InvokeVoidAsync("K7.dismissPreload");
             _selfRef = DotNetObjectReference.Create(this);
             try
@@ -319,7 +328,7 @@ public partial class MainLayout : IDisposable
     {
         try
         {
-            await JS.InvokeVoidAsync("K7.applyTheme", ThemeService.Theme.CssDataAttribute);
+            await ThemeBootstrap.ApplyToDocumentAsync(JS, ThemeService.Css);
         }
         catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException)
         {

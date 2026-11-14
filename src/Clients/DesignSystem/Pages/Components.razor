@@ -447,6 +447,15 @@
         </div>
     </section>
 
+    <section id="k7-theme-picker" class="ds-section">
+        <h2>K7ThemePicker</h2>
+        <p class="ds-description">Single choice among themes, each drawn with its own colors (background, surface, text, accent). Used by Settings - Interface - Appearance and by the admin default theme. Themes are data (nine colors), never CSS.</p>
+        <div class="ds-preview ds-preview--column">
+            <K7ThemePicker Themes="BuiltInThemes.All" AriaLabel="Theme" @bind-Value="_themePickerValue" />
+            <K7ThemePicker Themes="_themePickerShortList" AriaLabel="Disabled" Value="@BuiltInThemes.DefaultLightId" Disabled="true" />
+        </div>
+    </section>
+
     <section id="k7-settings-split" class="ds-section">
         <h2>K7SettingsSplit</h2>
         <p class="ds-description">Long settings page split into an index (<code>K7SettingsNavItem</code>: icon, title, short description) and one sub-page at a time. Wide screens show both side by side. When the content area is narrower than about 52rem (window under 1100px with the page sidebar open, 900px with it folded) and on TV it behaves like a menu: the index alone, then the sub-page as its own screen (<code>Header</code> hidden, back link on top) once <code>DetailOpen</code> is set. <code>Footer</code> holds page-wide actions such as reset, and <code>SaveState</code> shows a <code>K7SaveIndicator</code> beside them on pages that save on change.</p>
@@ -893,6 +902,9 @@
     private string? _settingRowFont = "Default";
     private string? _settingRowPrompt = "Never";
     private string? _optionListValue = "countdown";
+    private string? _themePickerValue = BuiltInThemes.DefaultDarkId;
+    private static readonly IReadOnlyList<ThemeDefinition> _themePickerShortList =
+        [BuiltInThemes.DefaultDark, BuiltInThemes.DefaultLight, BuiltInThemes.Paper];
     private static readonly IReadOnlyList<ButtonGroupOption<string>> _optionListOptions =
     [
         new("countdown", "Play the next one after a countdown"),

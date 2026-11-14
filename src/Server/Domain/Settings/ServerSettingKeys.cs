@@ -14,6 +14,9 @@ public static class ServerSettingKeys
     public static readonly SettingKey<string> SetupToken = new("SetupToken");
     public static readonly SettingKey<string> DefaultLanguage = new("DefaultLanguage", "en");
     public static readonly SettingKey<string> DefaultTheme = new("DefaultTheme", "default-dark");
+
+    /// <summary>JSON list of the themes made by an administrator and offered to every account.</summary>
+    public static readonly SettingKey<string> ServerThemes = new("ServerThemes");
     public static readonly SettingKey<int> BackgroundTaskWorkerCount = new("BackgroundTaskWorkerCount", BackgroundTaskScheduling.DefaultWorkerCount);
 
     /// <summary>

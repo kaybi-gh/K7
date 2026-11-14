@@ -1,3 +1,5 @@
+/* Room kept for a row that is not rendered yet. In px: it must stay below the height of a real
+   row whatever the text size, or it becomes the tallest row and pushes the feed up. */
 .tv-feed-row-spacer {
-    min-height: 22rem;
+    min-height: 396px;
 }

@@ -179,6 +179,18 @@ public class TransparentBlazorWebViewHandler : BlazorWebViewHandler
                 ? TelevisionLayout.UserAgentMarker
                 : $"{currentUa} {TelevisionLayout.UserAgentMarker}";
         }
+
+        // The WebView zooms text by the font size of the system and leaves boxes alone: on a
+        // TV set to a large font, icons got clipped and the mini player grew out of its bar.
+        // Text zoom is turned off and the factor goes to the page, which scales its root font
+        // size with it (tv-layout.js), so text and boxes grow together.
+        var fontScale = webView.Context?.Resources?.Configuration?.FontScale ?? 1f;
+        settings.TextZoom = 100;
+        var ua = settings.UserAgentString ?? string.Empty;
+        if (!ua.Contains(TelevisionLayout.TextScaleMarkerPrefix, System.StringComparison.Ordinal))
+        {
+            settings.UserAgentString = $"{ua} {TelevisionLayout.TextScaleMarker(fontScale)}";
+        }
     }
 
     private static void ConfigureWebViewImeOnFocus(global::Android.Webkit.WebSettings settings)

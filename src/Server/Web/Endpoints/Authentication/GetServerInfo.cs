@@ -3,6 +3,7 @@ using K7.Server.Domain.Constants;
 using K7.Server.Domain.Settings;
 using K7.Server.Infrastructure.Database.Context.Identity;
 using K7.Shared.Dtos;
+using K7.Shared.Theming;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -37,6 +38,7 @@ public class GetServerInfo : IEndpoint
 
             var defaultLanguage = await serverSettings.GetAsync(ServerSettingKeys.DefaultLanguage, cancellationToken) ?? "en";
             var defaultTheme = await serverSettings.GetAsync(ServerSettingKeys.DefaultTheme, cancellationToken) ?? "default-dark";
+            var serverThemes = ServerThemes.Parse(await serverSettings.GetAsync(ServerSettingKeys.ServerThemes, cancellationToken));
             var policy = await passwordPolicy.GetAsync(cancellationToken);
 
             return Results.Ok(new ServerInfoDto
@@ -44,6 +46,7 @@ public class GetServerInfo : IEndpoint
                 GuestEnabled = guestEnabled,
                 DefaultLanguage = defaultLanguage,
                 DefaultTheme = defaultTheme,
+                ServerThemes = serverThemes,
                 PasswordPolicy = policy
             });
         })

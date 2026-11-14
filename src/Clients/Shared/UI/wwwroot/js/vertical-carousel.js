@@ -81,6 +81,44 @@ export function init(rootElement, dotNetRef) {
         }
     }
 
+    // Middle of the picture of a row (poster, cover, still), from the top of the row. The text
+    // under the picture does not count. -1 when the row has no card yet.
+    function visualCenter(slide) {
+        var item = slide.querySelector('[data-carousel-item]:not([data-carousel-loop-back])');
+        if (!item) return -1;
+
+        var visual = item.querySelector('.media-card-container') || item;
+        var rect = visual.getBoundingClientRect();
+        var height = rect.height;
+        // A placeholder keeps the room of the text in its bottom padding.
+        if (visual === item) height -= parseFloat(getComputedStyle(item).paddingBottom) || 0;
+        if (height <= 0) return -1;
+
+        return rect.top - slide.getBoundingClientRect().top + height / 2;
+    }
+
+    // Rows hold pictures of different heights (posters, square covers, wide stills). They all
+    // sit on one line, the middle of the tallest picture, and the pagination sits on that line
+    // too: shorter rows are pushed down by a top padding.
+    function alignVisuals(slides) {
+        var centers = [];
+        var line = -1;
+        for (var i = 0; i < slides.length; i++) {
+            centers[i] = visualCenter(slides[i]);
+            line = Math.max(line, centers[i]);
+        }
+
+        for (var j = 0; j < slides.length; j++) {
+            var shift = centers[j] >= 0 ? line - centers[j] : 0;
+            if (shift < 0.5) continue;
+            var own = parseFloat(getComputedStyle(slides[j]).paddingTop) || 0;
+            slides[j].style.paddingTop = (own + shift) + 'px';
+        }
+
+        if (paginationNode)
+            paginationNode.style.top = line >= 0 ? Math.round(viewportNode.offsetTop + line) + 'px' : '';
+    }
+
     function normalizeSlideHeights() {
         var slides = containerNode.children;
         if (resizeObserver) {
@@ -89,7 +127,10 @@ export function init(rootElement, dotNetRef) {
 
         for (var i = 0; i < slides.length; i++) {
             slides[i].style.minHeight = '';
+            slides[i].style.paddingTop = '';
         }
+
+        alignVisuals(slides);
 
         var maxH = 0;
         for (var j = 0; j < slides.length; j++) {

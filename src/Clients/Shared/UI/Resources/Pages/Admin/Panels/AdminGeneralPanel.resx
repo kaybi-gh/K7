@@ -26,4 +26,7 @@
   <data name="SaveSuccess" xml:space="preserve"><value>Paramètres enregistrés</value></data>
   <data name="MediaLinkPreviews" xml:space="preserve"><value>Inclure titre et poster</value></data>
   <data name="MediaLinkPreviewsHint" xml:space="preserve"><value>Quand une URL de film, série ou album est collée dans Discord, Telegram ou iMessage, l'aperçu montre le titre, le synopsis et le poster sans compte. L'application reste derrière le login. Désactivez pour n'afficher que la carte K7.</value></data>
+  <data name="ServerThemes" xml:space="preserve"><value>Thèmes du serveur</value></data>
+  <data name="ServerThemesHint" xml:space="preserve"><value>Proposés à tous les comptes, à côté des thèmes intégrés. Un thème du serveur peut servir de thème par défaut. Les changements sont enregistrés tout de suite.</value></data>
+  <data name="ServerThemesSaved" xml:space="preserve"><value>Thèmes du serveur enregistrés</value></data>
 </root>

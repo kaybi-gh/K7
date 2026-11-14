@@ -21,22 +21,24 @@
     gap: 0;
 }
 
-.vertical-carousel__container > :deep(*) {
+/* Every row gets the height of the tallest one, and vertical-carousel.js pushes a row of
+   shorter pictures (square covers, wide stills) down so every picture sits on the line of the
+   pagination. */
+.vertical-carousel__container ::deep > * {
     display: flex;
     flex-direction: column;
-    justify-content: flex-end;
     box-sizing: border-box;
     overflow: hidden;
 }
 
 .vertical-carousel ::deep .tv-feed-row-spacer {
-    min-height: 22rem;
+    min-height: 396px;
 }
 
 /* Before JS sets viewport height, keep extra shelves out of document flow
    so the page does not flash a full desktop-style stack. Absolute + hidden
    still allows offsetHeight measurement for equalized strip height. */
-.vertical-carousel:not([data-vcarousel-ready]) .vertical-carousel__container > :deep(*:not(:first-child)) {
+.vertical-carousel:not([data-vcarousel-ready]) .vertical-carousel__container ::deep > *:not(:first-child) {
     position: absolute;
     visibility: hidden;
     pointer-events: none;

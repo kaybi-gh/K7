@@ -84,6 +84,10 @@ Users can enable extra shortcuts under Settings -> Interface -> Navigation (serv
 
 Shortcuts are library groups, collections, playlists (including dynamic playlists), or an allowlisted app page (My Space, Search, Settings, ...). The Downloads app page shortcut is offered on native apps only (hidden on the web client). Legacy filtered-catalog shortcuts still open if they were saved earlier. Reorder them by dragging the handle (or with up/down arrows on the handle). The Home row title is optional (empty hides it). Each shortcut card can match its target (icon, cover, color) or override those. Users override the server default and can reset.
 
+### Themes
+
+Admin -> Experience -> Interface -> Appearance sets the default theme, shown to every account that picked nothing: one of the built-in themes or a server theme. **Server themes** are made there (editor, or import of a `k7-theme` JSON file, up to 20) and are offered to every account next to the built-in ones. They are saved as soon as they change. The default theme is saved with the Save bar. Deleting a server theme sends the accounts using it back to the default theme, and if it was the default, the default goes back to K7 dark. A theme only holds a name and colors, never CSS. Details for users: [guide - Themes](../user/guide.md#themes).
+
 ### Theme songs
 
 Detail pages can play an ambient theme when a file is available (user toggle: Settings -> Interface -> Theme songs. Optional per-device disable on the same page. Server default: Admin -> Experience -> Interface -> Theme songs). Theme continues across related series pages (serie / season / episode) and cast person digressions. A finished theme (natural end, watch, or trailer) does not restart on return to the same media. Playback pauses when the app is not visible. Leaving that media context fades out, and opening another media with a theme crossfades.

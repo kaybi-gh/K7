@@ -12,6 +12,24 @@ public static class TelevisionLayout
     public const int TenFootCssWidthMin = 1280;
     public const int TenFootCssWidthMax = 2100;
 
+    /// <summary>User-agent token that carries the font size of the system, read by <c>tv-layout.js</c>.</summary>
+    public const string TextScaleMarkerPrefix = "K7TextScale/";
+    public const double TextScaleMin = 0.85;
+    public const double TextScaleMax = 1.5;
+
+    /// <summary>
+    /// The font size of the system as a user-agent token. The TV WebView stops zooming text on
+    /// its own (that enlarges the text and not the boxes around it, which clips icons and
+    /// overflows bars); the page scales its root font size by this factor instead, so text and
+    /// rem-sized boxes grow together.
+    /// </summary>
+    public static string TextScaleMarker(double fontScale)
+    {
+        var scale = double.IsFinite(fontScale) && fontScale > 0 ? fontScale : 1;
+        scale = Math.Clamp(scale, TextScaleMin, TextScaleMax);
+        return TextScaleMarkerPrefix + scale.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
+    }
+
     public static bool MatchesAndroidTelevision(
         bool uiModeTelevision,
         bool hasLeanback,

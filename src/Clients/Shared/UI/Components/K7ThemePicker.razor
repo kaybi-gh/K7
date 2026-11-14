@@ -1,0 +1,30 @@
+@namespace K7.Clients.Shared.UI.Components
+@using K7.Clients.Shared.UI.Helpers
+@inject IStringLocalizer<K7ThemePicker> L
+
+<div class="k7-theme-picker @Class" role="radiogroup" aria-label="@AriaLabel">
+    @foreach (var theme in Themes)
+    {
+        var item = theme;
+        var isActive = string.Equals(item.Id, Value, StringComparison.Ordinal);
+        <button type="button"
+                class="k7-theme-picker__item focusable @(isActive ? "k7-theme-picker__item--active" : "")"
+                role="radio"
+                aria-checked="@(isActive ? "true" : "false")"
+                disabled="@Disabled"
+                @onclick="() => OnThemeClicked(item.Id)">
+            <span class="k7-theme-picker__swatch" style="@SwatchStyle(item)" aria-hidden="true">
+                <span class="k7-theme-picker__bar"></span>
+                <span class="k7-theme-picker__line"></span>
+                <span class="k7-theme-picker__line k7-theme-picker__line--short"></span>
+                <span class="k7-theme-picker__cards">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </span>
+                <span class="k7-theme-picker__dot"></span>
+            </span>
+            <span class="k7-theme-picker__name">@ThemeNames.Get(L, item)</span>
+        </button>
+    }
+</div>

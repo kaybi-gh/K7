@@ -1,0 +1,68 @@
+@namespace K7.Clients.Shared.UI.Components
+@inject IStringLocalizer<AppearanceSettingsPanel> L
+@inject IStringLocalizer<SharedResource> S
+
+@if (!_loaded)
+{
+    <K7ProgressBar Indeterminate="true" />
+}
+else
+{
+    <K7SettingRow Label="@L["Scope"]" Stacked="true">
+        <HintContent>
+            @ScopeHint
+            @if (IsPreviewOnly)
+            {
+                <span class="appearance-panel__scope-note">@L["ScopePreviewNote"]</span>
+            }
+        </HintContent>
+        <ChildContent>
+            <div class="appearance-panel__scope">
+                <K7ButtonGroup TValue="DeviceType"
+                               Options="ScopeOptions"
+                               Value="_scope"
+                               ValueChanged="OnScopeChanged"
+                               AriaLabel="@L["Scope"]" />
+                @if (ScopeHasOverride)
+                {
+                    <K7Button Variant="text" OnClick="RemoveScopeOverride">@L["ScopeUseShared"]</K7Button>
+                }
+            </div>
+        </ChildContent>
+    </K7SettingRow>
+    <K7SettingRow Label="@L["Theme"]" Stacked="true">
+        <K7ThemePicker Themes="AllThemes"
+                       Value="@ActiveThemeId"
+                       ValueChanged="OnThemeChanged"
+                       AriaLabel="@L["Theme"]" />
+    </K7SettingRow>
+    <K7SettingRow Label="@L["AccentColor"]" Hint="@L["AccentColorHint"]">
+        <div class="appearance-panel__accent">
+            @if (Current.AccentColor is not null)
+            {
+                <K7Button Variant="text" OnClick="ClearAccent">@L["UseThemeAccent"]</K7Button>
+            }
+            <K7ColorPicker Value="@AccentValue" ValueChanged="OnAccentChanged" />
+        </div>
+    </K7SettingRow>
+    <K7SettingRow Label="@L["TextSize"]" Hint="@L["TextSizeHint"]">
+        <K7ButtonGroup TValue="AppearanceTextSize"
+                       Options="TextSizeOptions"
+                       Value="Current.TextSize"
+                       ValueChanged="OnTextSizeChanged"
+                       AriaLabel="@L["TextSize"]" />
+    </K7SettingRow>
+    <K7SettingRow Label="@L["Corners"]">
+        <K7ButtonGroup TValue="AppearanceCornerStyle"
+                       Options="CornerOptions"
+                       Value="Current.CornerStyle"
+                       ValueChanged="OnCornerStyleChanged"
+                       AriaLabel="@L["Corners"]" />
+    </K7SettingRow>
+    <K7SettingRow Label="@L["MyThemes"]" Hint="@L["MyThemesHint"]" Stacked="true">
+        <CustomThemeList Themes="_preferences.CustomThemes"
+                         OnAdded="AddTheme"
+                         OnEdited="ReplaceTheme"
+                         OnDeleted="RemoveTheme" />
+    </K7SettingRow>
+}

@@ -1,0 +1,43 @@
+@inject IStringLocalizer<ThemeEditorDialog> L
+@inject IStringLocalizer<SharedResource> S
+
+<div class="k7-dialog-content">
+    <div>
+        <K7SettingRow Label="@L["Name"]" Required="true">
+            <K7TextField @bind-Value="_name"
+                         Variant="outlined"
+                         Immediate="true"
+                         MaxLength="@CustomThemeDto.MaxNameLength" />
+        </K7SettingRow>
+        <K7SettingRow Label="@L["Base"]" Hint="@L["BaseHint"]">
+            <K7ButtonGroup TValue="bool"
+                           Options="BaseOptions"
+                           Value="_palette.IsDark"
+                           ValueChanged="OnBaseChanged"
+                           AriaLabel="@L["Base"]" />
+        </K7SettingRow>
+        @foreach (var field in Fields)
+        {
+            var item = field;
+            <K7SettingRow Label="@L[item.LabelKey]" Hint="@(item.HintKey is null ? null : L[item.HintKey].Value)">
+                <K7ColorPicker Value="@item.Get(_palette)" ValueChanged="value => OnColorChanged(item, value)" />
+            </K7SettingRow>
+        }
+    </div>
+    @if (_issues.Count > 0)
+    {
+        <K7Alert Severity="K7Severity.Warning">
+            <p>@L["IssuesIntro"]</p>
+            <ul class="theme-editor__issues">
+                @foreach (var issue in _issues)
+                {
+                    <li>@L[$"Issue_{issue}"]</li>
+                }
+            </ul>
+        </K7Alert>
+    }
+</div>
+<div class="k7-dialog-actions">
+    <K7Button OnClick="Cancel">@S["Cancel"]</K7Button>
+    <K7Button Color="primary" Variant="filled" OnClick="Save" Disabled="@(!CanSave)">@S["Save"]</K7Button>
+</div>
