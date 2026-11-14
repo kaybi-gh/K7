@@ -127,12 +127,16 @@ else if (_artist is not null)
                                 <ChildContent>
                                     @if (_musicIntelligenceAvailable)
                                     {
-                                        <K7MenuItem Icon="users-three" OnClick="NavigateToSimilarArtistsAsync">@L["ViewSimilarArtists"]</K7MenuItem>
+                                        <K7MenuSection>
+                                            <K7MenuItem Icon="users-three" OnClick="NavigateToSimilarArtistsAsync">@L["ViewSimilarArtists"]</K7MenuItem>
+                                        </K7MenuSection>
                                     }
                                     @if (_isAdmin)
                                     {
-                                        <K7MenuItem Icon="arrow-clockwise" OnClick="RefreshMetadataAsync">@L["RefreshMetadata"]</K7MenuItem>
-                                        <K7MenuItem Icon="pencil-simple" OnClick="OpenEditMetadataDialogAsync">@L["EditMetadata"]</K7MenuItem>
+                                        <K7MenuSection>
+                                            <K7MenuItem Icon="pencil-simple" OnClick="OpenEditMetadataDialogAsync">@L["EditMetadata"]</K7MenuItem>
+                                            <K7MenuItem Icon="arrow-clockwise" OnClick="RefreshMetadataAsync">@L["RefreshMetadata"]</K7MenuItem>
+                                        </K7MenuSection>
                                     }
                                 </ChildContent>
                             </K7Menu>

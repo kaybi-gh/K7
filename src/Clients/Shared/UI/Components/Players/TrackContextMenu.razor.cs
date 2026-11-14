@@ -8,6 +8,7 @@ using K7.Shared.Dtos.Requests;
 using K7.Shared.Interfaces;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Rendering;
+using Microsoft.AspNetCore.Components.Web;
 
 namespace K7.Clients.Shared.UI.Components.Players;
 
@@ -68,41 +69,15 @@ public partial class TrackContextMenu : IDisposable
         });
     }
 
+    // Sections in the same fixed order as MediaCardContextMenu: play, go to, my state, organize, manage.
     private void BuildMenuContent(RenderTreeBuilder builder)
     {
-        var seq = 0;
-        AddRelatedLinks(builder, ref seq);
-
-        if (_canRate)
+        AddSection(builder, 0, b =>
         {
-            builder.OpenElement(seq++, "div");
-            builder.AddAttribute(seq++, "class", "track-context-rating");
-            builder.OpenComponent<RatingStars>(seq++);
-            builder.AddAttribute(seq++, "MediaId", Track.MediaId);
-            builder.AddAttribute(seq++, "Value", UserRating);
-            builder.AddAttribute(seq++, "Size", "sm");
-            builder.CloseComponent();
-            builder.CloseElement();
-        }
-
-        AddMenuItem(builder, ref seq, "play-circle", L["PlayNext"], PlayNext);
-        AddMenuItem(builder, ref seq, "queue", L["AddToQueue"], AddToQueue);
-
-        if (_canCreatePlaylist)
-        {
-            builder.OpenElement(seq++, "hr");
-            builder.AddAttribute(seq++, "class", "k7-divider");
-            builder.CloseElement();
-            AddMenuItem(builder, ref seq, "plus-circle", L["AddToPlaylist"], AddToPlaylist);
-        }
-
-        if (DeviceService.GetClientType() != ClientType.Web)
-        {
-            builder.OpenElement(seq++, "hr");
-            builder.AddAttribute(seq++, "class", "k7-divider");
-            builder.CloseElement();
-            AddMenuItem(builder, ref seq, "download-simple", L["DownloadOffline"], DownloadOffline);
-        }
+            var seq = 0;
+            AddMenuItem(b, ref seq, "play-circle", L["PlayNext"], PlayNext, primary: true);
+            AddMenuItem(b, ref seq, "queue", L["AddToQueue"], AddToQueue);
+        });
 
         var hasRadioActions = _musicIntelligenceAvailable
             || !string.IsNullOrEmpty(Track.Artist)
@@ -110,51 +85,91 @@ public partial class TrackContextMenu : IDisposable
 
         if (hasRadioActions)
         {
-            builder.OpenElement(seq++, "hr");
-            builder.AddAttribute(seq++, "class", "k7-divider");
-            builder.CloseElement();
+            AddSection(builder, 10, b =>
+            {
+                var seq = 0;
+                if (_musicIntelligenceAvailable)
+                    AddMenuItem(b, ref seq, "waves", string.Format(L["RadioSonic"], Track.Title), RadioSonic);
 
-            if (_musicIntelligenceAvailable)
-                AddMenuItem(builder, ref seq, "waves", string.Format(L["RadioSonic"], Track.Title), RadioSonic);
+                if (!string.IsNullOrEmpty(Track.Artist))
+                    AddMenuItem(b, ref seq, "radio", string.Format(L["RadioArtist"], Track.Artist), RadioArtist);
 
-            if (!string.IsNullOrEmpty(Track.Artist))
-                AddMenuItem(builder, ref seq, "radio", string.Format(L["RadioArtist"], Track.Artist), RadioArtist);
+                if (!string.IsNullOrEmpty(Track.Genre))
+                    AddMenuItem(b, ref seq, "broadcast", string.Format(L["RadioGenre"], Track.Genre), RadioGenre);
+            });
+        }
 
-            if (!string.IsNullOrEmpty(Track.Genre))
-                AddMenuItem(builder, ref seq, "broadcast", string.Format(L["RadioGenre"], Track.Genre), RadioGenre);
+        var links = MediaCardRelatedMenu.Visible(
+            MediaCardRelatedLinks.Build(albumId: Track.AlbumId, artistId: Track.ArtistId),
+            CurrentPath());
+        if (links.Count > 0)
+        {
+            AddSection(builder, 15, b =>
+            {
+                var seq = 0;
+                foreach (var link in links)
+                {
+                    var href = link.Href;
+                    AddMenuItem(
+                        b,
+                        ref seq,
+                        MediaCardRelatedMenu.Icon(link.Kind),
+                        L[MediaCardRelatedMenu.LabelKey(link.Kind)],
+                        () => NavigationManager.NavigateTo(href));
+                }
+            });
+        }
+
+        if (_canRate)
+        {
+            AddSection(builder, 20, b =>
+            {
+                b.OpenElement(0, "div");
+                b.AddAttribute(1, "class", "k7-menu-row");
+                b.AddEventStopPropagationAttribute(2, "onclick", true);
+                b.AddMarkupContent(3, "<span class=\"k7-menu-item-icon\"><i class=\"ph ph-star k7-icon k7-icon--md\" aria-hidden=\"true\"></i></span>");
+                b.OpenElement(4, "span");
+                b.AddAttribute(5, "class", "k7-menu-item-text");
+                b.AddContent(6, L["MyRating"].Value);
+                b.CloseElement();
+                b.OpenComponent<RatingStars>(7);
+                b.AddAttribute(8, "MediaId", Track.MediaId);
+                b.AddAttribute(9, "Value", UserRating);
+                b.AddAttribute(10, "Size", "sm");
+                b.CloseComponent();
+                b.CloseElement();
+            });
+        }
+
+        var canDownload = DeviceService.GetClientType() != ClientType.Web;
+        if (_canCreatePlaylist || canDownload)
+        {
+            AddSection(builder, 30, b =>
+            {
+                var seq = 0;
+                if (_canCreatePlaylist)
+                    AddMenuItem(b, ref seq, "playlist", L["AddToPlaylist"], AddToPlaylist);
+
+                if (canDownload)
+                    AddMenuItem(b, ref seq, "download-simple", L["DownloadOffline"], DownloadOffline);
+            });
         }
 
         if (_canEditMetadata)
         {
-            builder.OpenElement(seq++, "hr");
-            builder.AddAttribute(seq++, "class", "k7-divider");
-            builder.CloseElement();
-            AddMenuItem(builder, ref seq, "pencil-simple", L["EditMetadata"], OpenEditMetadataAsync);
+            AddSection(builder, 50, b =>
+            {
+                var seq = 0;
+                AddMenuItem(b, ref seq, "pencil-simple", L["EditMetadata"], OpenEditMetadataAsync);
+            });
         }
     }
 
-    private void AddRelatedLinks(RenderTreeBuilder builder, ref int seq)
+    private static void AddSection(RenderTreeBuilder builder, int sequence, RenderFragment content)
     {
-        var links = MediaCardRelatedMenu.Visible(
-            MediaCardRelatedLinks.Build(albumId: Track.AlbumId, artistId: Track.ArtistId),
-            CurrentPath());
-        if (links.Count == 0)
-            return;
-
-        foreach (var link in links)
-        {
-            var href = link.Href;
-            AddMenuItem(
-                builder,
-                ref seq,
-                MediaCardRelatedMenu.Icon(link.Kind),
-                L[MediaCardRelatedMenu.LabelKey(link.Kind)],
-                () => NavigationManager.NavigateTo(href));
-        }
-
-        builder.OpenElement(seq++, "hr");
-        builder.AddAttribute(seq++, "class", "k7-divider");
-        builder.CloseElement();
+        builder.OpenComponent<K7MenuSection>(sequence);
+        builder.AddAttribute(sequence + 1, "ChildContent", content);
+        builder.CloseComponent();
     }
 
     private string CurrentPath()
@@ -172,10 +187,12 @@ public partial class TrackContextMenu : IDisposable
         ref int seq,
         string icon,
         string label,
-        Func<Task> onClick)
+        Func<Task> onClick,
+        bool primary = false)
     {
         builder.OpenComponent<K7MenuItem>(seq++);
         builder.AddAttribute(seq++, "Icon", icon);
+        builder.AddAttribute(seq++, "Primary", primary);
         builder.AddAttribute(seq++, "OnClick", EventCallback.Factory.Create(this, onClick));
         builder.AddAttribute(seq++, "ChildContent", (RenderFragment)(b => b.AddContent(0, label)));
         builder.CloseComponent();
@@ -186,10 +203,12 @@ public partial class TrackContextMenu : IDisposable
         ref int seq,
         string icon,
         string label,
-        Action onClick)
+        Action onClick,
+        bool primary = false)
     {
         builder.OpenComponent<K7MenuItem>(seq++);
         builder.AddAttribute(seq++, "Icon", icon);
+        builder.AddAttribute(seq++, "Primary", primary);
         builder.AddAttribute(seq++, "OnClick", EventCallback.Factory.Create(this, onClick));
         builder.AddAttribute(seq++, "ChildContent", (RenderFragment)(b => b.AddContent(0, label)));
         builder.CloseComponent();

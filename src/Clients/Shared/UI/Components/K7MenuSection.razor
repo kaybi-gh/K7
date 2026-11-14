@@ -1,0 +1,23 @@
+@namespace K7.Clients.Shared.UI.Components
+
+<div class="k7-menu-section @Class" role="group" aria-label="@Title">
+    @if (!string.IsNullOrEmpty(Title))
+    {
+        <span class="k7-menu-section__title" aria-hidden="true">@Title</span>
+    }
+    @ChildContent
+</div>
+
+@code {
+    /// <summary>
+    /// Group of related entries in a <see cref="K7Menu"/>: a separator is drawn between two
+    /// sections, so a long menu reads as a few short blocks (play, my state, organize, go to,
+    /// destructive). Render a section only when it has at least one entry.
+    /// </summary>
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    /// <summary>Optional small heading, for a section whose purpose is not obvious from its entries.</summary>
+    [Parameter] public string? Title { get; set; }
+
+    [Parameter] public string Class { get; set; } = "";
+}

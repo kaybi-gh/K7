@@ -594,17 +594,27 @@
 
     <section id="k7-menu" class="ds-section">
         <h2>K7Menu</h2>
+        <p class="ds-description">Action menus are made of <code>K7MenuSection</code>s, always in the same order: play or open (one <code>Primary</code> entry at most) with the "go to" shortcuts right below, my state, organize, manage, then destructive entries (<code>Danger</code>) last. A separator is drawn between two sections. <code>Hint</code> adds a short secondary text on the right, <code>Title</code> and <code>Subtitle</code> say what the menu acts on, and <code>k7-menu-row</code> hosts a control such as rating stars.</p>
         <div class="ds-preview">
-            <K7Menu>
+            <K7Menu Title="Blade Runner" Subtitle="1982">
                 <ActivatorContent>
                     <button type="button" class="k7-icon-btn focusable" aria-label="Options"><i class="ph ph-dots-three-vertical"></i></button>
                 </ActivatorContent>
                 <ChildContent>
-                    <K7MenuItem Icon="pencil-simple">Edit</K7MenuItem>
-                    <K7MenuItem Icon="share-network">Share</K7MenuItem>
-                    <K7MenuItem Icon="plus">Add to queue</K7MenuItem>
-                    <K7MenuItem Icon="playlist">Add to playlist</K7MenuItem>
-                    <K7MenuItem Icon="trash" Class="color-error">Delete</K7MenuItem>
+                    <K7MenuSection>
+                        <K7MenuItem Icon="play" Primary="true" Hint="42 min">Resume playback</K7MenuItem>
+                        <K7MenuItem Icon="arrow-counter-clockwise">Play from the beginning</K7MenuItem>
+                    </K7MenuSection>
+                    <K7MenuSection>
+                        <K7MenuItem Icon="check-circle">Mark as watched</K7MenuItem>
+                    </K7MenuSection>
+                    <K7MenuSection>
+                        <K7MenuItem Icon="playlist">Add to a playlist</K7MenuItem>
+                        <K7MenuItem Icon="folders">Add to a collection</K7MenuItem>
+                    </K7MenuSection>
+                    <K7MenuSection>
+                        <K7MenuItem Icon="trash" Danger="true">Delete</K7MenuItem>
+                    </K7MenuSection>
                 </ChildContent>
             </K7Menu>
 

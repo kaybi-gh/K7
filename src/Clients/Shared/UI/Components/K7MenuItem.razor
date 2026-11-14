@@ -1,6 +1,6 @@
 @namespace K7.Clients.Shared.UI.Components
 
-<button type="button" class="k7-menu-item focusable @Class" role="menuitem" disabled="@Disabled" @onclick="OnItemClick">
+<button type="button" class="k7-menu-item focusable @(Primary ? "k7-menu-item--primary" : "") @(Danger ? "k7-menu-item--error" : "") @Class" role="menuitem" disabled="@Disabled" @onclick="OnItemClick">
     <span class="k7-menu-item-icon">
         @if (!string.IsNullOrEmpty(Icon))
         {
@@ -8,4 +8,8 @@
         }
     </span>
     <span class="k7-menu-item-text">@ChildContent</span>
+    @if (!string.IsNullOrEmpty(Hint))
+    {
+        <span class="k7-menu-item-hint">@Hint</span>
+    }
 </button>

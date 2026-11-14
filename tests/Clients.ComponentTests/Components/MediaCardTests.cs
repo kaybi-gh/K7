@@ -237,7 +237,52 @@ public class MediaCardTests
         var cut = ctx.Render(BuildCardWithHost(model, overlayEnabled: true, href: "/series/1"));
         await cut.InvokeAsync(() => cut.Find(".media-card-menu-trigger").Click());
 
+        // A series plays its episode to watch next, and the link to its own page is hidden.
         cut.FindAll(".k7-menu-item-text").Select(item => item.TextContent.Trim()).Should().Equal("Play");
+    }
+
+    [Test]
+    public async Task Render_ShouldOfferAlbumPlaybackThenArtistLink_WhenCardIsAnAlbum()
+    {
+        using var ctx = CreateContext();
+        var model = CreateModel() with
+        {
+            Kind = MediaCardKind.Cover,
+            MediaType = MediaType.MusicAlbum,
+            RelatedLinks = [new MediaCardRelatedLink(MediaCardRelatedKind.Artist, "/music/artists/1")]
+        };
+
+        var cut = ctx.Render(BuildCardWithHost(model, overlayEnabled: true, href: "/music/albums/1"));
+        await cut.InvokeAsync(() => cut.Find(".media-card-menu-trigger").Click());
+
+        cut.FindAll(".k7-menu-item-text").Select(item => item.TextContent.Trim())
+            .Should().StartWith(new[] { "PlayAlbum", "GoToArtist" });
+    }
+
+    [Test]
+    public async Task Render_ShouldOnlyOpenThePage_WhenCardIsAnArtist()
+    {
+        using var ctx = CreateContext();
+        var model = CreateModel() with { Kind = MediaCardKind.Cover, MediaType = MediaType.MusicArtist };
+
+        var cut = ctx.Render(BuildCardWithHost(model, overlayEnabled: true, href: "/music/artists/1"));
+        await cut.InvokeAsync(() => cut.Find(".media-card-menu-trigger").Click());
+
+        cut.Find(".k7-menu-item--primary").TextContent.Should().Contain("Open");
+    }
+
+    [Test]
+    public async Task Render_ShouldOfferResumeAndStartOver_WhenMovieIsInProgress()
+    {
+        using var ctx = CreateContext();
+        var model = CreateModel() with { MediaType = MediaType.Movie, Progress = 40 };
+
+        var cut = ctx.Render(BuildCardWithHost(model, overlayEnabled: true, href: "/movies/1"));
+        await cut.InvokeAsync(() => cut.Find(".media-card-menu-trigger").Click());
+
+        cut.FindAll(".k7-menu-item-text").Select(item => item.TextContent.Trim())
+            .Should().StartWith(new[] { "Resume", "PlayFromStart" });
+        cut.Find(".k7-menu-item--primary").TextContent.Should().Contain("Resume");
     }
 
     [Test]
@@ -461,6 +506,8 @@ public class MediaCardTests
         featureAccess.HasCapabilityAsync(Capability.CanCreatePlaylist).Returns(false);
         ctx.Services.AddSingleton(featureAccess);
         ctx.Services.AddSingleton(Substitute.For<IMediaService>());
+        ctx.Services.AddSingleton(Substitute.For<ISyncPlayMediaLoader>());
+        ctx.Services.AddSingleton(Substitute.For<IAudioPlayerService>());
         ctx.Services.AddSingleton(Substitute.For<IK7DialogService>());
         ctx.Services.AddSingleton(Substitute.For<IK7Snackbar>());
         ctx.Services.AddSingleton(new MediaCacheStore());

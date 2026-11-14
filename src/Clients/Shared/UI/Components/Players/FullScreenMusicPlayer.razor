@@ -71,25 +71,34 @@
                             }
                             else
                             {
-                                @if (SleepTimer.IsActive)
-                                {
-                                    <K7MenuItem Icon="@Phosphor.Timer" OnClick="CancelSleepTimer">@S["CancelSleepTimer"] (@FormatRemaining(SleepTimer.Remaining))</K7MenuItem>
-                                }
-                                else
-                                {
-                                    <K7MenuItem Icon="@Phosphor.Timer" PreventClose="true" OnClick="() => _sleepTimerSubmenuOpen = true">@S["SleepTimer"]</K7MenuItem>
-                                }
-                                <K7MenuItem Icon="@Phosphor.ShareNetwork" OnClick="ShareTrack">@S["Share"]</K7MenuItem>
-                                <K7MenuItem Icon="@Phosphor.FloppyDisk" OnClick="SaveQueueAsPlaylist">@S["SaveQueueAsPlaylist"]</K7MenuItem>
-                                <K7MenuItem Icon="@Phosphor.Plus" OnClick="AddToPlaylist">@S["AddToPlaylist"]</K7MenuItem>
-                                <K7MenuItem Icon="@Phosphor.User" OnClick="GoToArtist">@S["GoToArtist"]</K7MenuItem>
-                                <K7MenuItem Icon="@Phosphor.VinylRecord" OnClick="GoToAlbum">@S["GoToAlbum"]</K7MenuItem>
-                                @if (_visualizerAvailable)
-                                {
-                                    <K7MenuItem Icon="@Phosphor.Waveform" OnClick="ToggleVisualizer">@(_visualizerEnabled ? S["DisableVisualizer"] : S["Visualizer"])</K7MenuItem>
-                                }
+                                @* Sections in the fixed menu order: organize, go to, player options, admin. *@
+                                <K7MenuSection>
+                                    <K7MenuItem Icon="@Phosphor.Playlist" OnClick="AddToPlaylist">@S["AddToPlaylist"]</K7MenuItem>
+                                    <K7MenuItem Icon="@Phosphor.FloppyDisk" OnClick="SaveQueueAsPlaylist">@S["SaveQueueAsPlaylist"]</K7MenuItem>
+                                    <K7MenuItem Icon="@Phosphor.ShareNetwork" OnClick="ShareTrack">@S["Share"]</K7MenuItem>
+                                </K7MenuSection>
+                                <K7MenuSection>
+                                    <K7MenuItem Icon="@Phosphor.VinylRecord" OnClick="GoToAlbum">@S["GoToAlbum"]</K7MenuItem>
+                                    <K7MenuItem Icon="@Phosphor.User" OnClick="GoToArtist">@S["GoToArtist"]</K7MenuItem>
+                                </K7MenuSection>
+                                <K7MenuSection>
+                                    @if (SleepTimer.IsActive)
+                                    {
+                                        <K7MenuItem Icon="@Phosphor.Timer" OnClick="CancelSleepTimer">@S["CancelSleepTimer"] (@FormatRemaining(SleepTimer.Remaining))</K7MenuItem>
+                                    }
+                                    else
+                                    {
+                                        <K7MenuItem Icon="@Phosphor.Timer" PreventClose="true" OnClick="() => _sleepTimerSubmenuOpen = true">@S["SleepTimer"]</K7MenuItem>
+                                    }
+                                    @if (_visualizerAvailable)
+                                    {
+                                        <K7MenuItem Icon="@Phosphor.Waveform" OnClick="ToggleVisualizer">@(_visualizerEnabled ? S["DisableVisualizer"] : S["Visualizer"])</K7MenuItem>
+                                    }
+                                </K7MenuSection>
                                 <AuthorizeView Roles="Administrator">
-                                    <K7MenuItem Icon="@Phosphor.Info" OnClick="ShowTrackInfo">@S["TrackInfo"]</K7MenuItem>
+                                    <K7MenuSection>
+                                        <K7MenuItem Icon="@Phosphor.Info" OnClick="ShowTrackInfo">@S["TrackInfo"]</K7MenuItem>
+                                    </K7MenuSection>
                                 </AuthorizeView>
                             }
                         </ChildContent>

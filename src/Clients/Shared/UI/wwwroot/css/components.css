@@ -1059,17 +1059,48 @@ details.k7-expansion[open] .k7-expansion-icon { transform: rotate(90deg); }
 .k7-menu-item--warning .k7-menu-item-icon i { color: var(--color-warning); }
 .k7-menu-item--error,
 .k7-menu-item--error .k7-menu-item-icon i { color: var(--color-error); }
+.k7-menu-item--primary { font-weight: var(--font-semibold); }
+.k7-menu-item--primary .k7-menu-item-icon i { color: var(--color-accent-text); }
 .k7-menu-item-text { flex: 1; min-width: 0; }
+/* A disabled item reads as unavailable: dimmed, no hover, no pointer. Its hint says why. */
+.k7-menu-item:disabled {
+  cursor: default;
+  color: var(--color-text-muted);
+}
+.k7-menu-item:disabled:hover { background: transparent; }
+.k7-menu-item:disabled .k7-menu-item-text,
+.k7-menu-item:disabled .k7-menu-item-icon { opacity: 0.55; }
+.k7-menu-item-hint {
+  flex-shrink: 0;
+  margin-left: var(--space-3);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+/* Sections: a long menu reads as a few short blocks, with a separator between two of them. */
+.k7-menu-section + .k7-menu-section {
+  margin-top: var(--space-1);
+  padding-top: var(--space-1);
+  border-top: 1px solid var(--color-border-subtle);
+}
+.k7-menu-section__title {
+  display: block;
+  padding: var(--space-1) var(--space-4) 0;
+  font-size: var(--text-xs);
+  font-weight: var(--font-medium);
+  color: var(--color-text-muted);
+}
+/* A control line inside a menu (e.g. rating stars): same icon and label as an entry, control on the right. */
+.k7-menu-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  margin: var(--space-1) var(--space-1);
+  font-size: var(--text-sm);
+  color: var(--color-text);
+}
 .k7-menu-item-chevron { display: inline-flex; align-items: center; margin-left: auto; opacity: 0.6; }
 hr.k7-menu-divider { border: none; border-top: 1px solid var(--color-border); margin: var(--space-1) 0; }
-
-.track-context-rating {
-  display: flex;
-  justify-content: center;
-  width: 100%;
-  padding: var(--space-3) var(--space-5);
-  border-bottom: 1px solid var(--color-border);
-}
 
 .k7-menu-header {
   display: flex;
@@ -1080,8 +1111,20 @@ hr.k7-menu-divider { border: none; border-top: 1px solid var(--color-border); ma
   border-bottom: 1px solid var(--color-border);
   margin-bottom: var(--space-1);
 }
-.k7-menu-header-title {
+.k7-menu-header-text {
+  display: flex;
+  flex-direction: column;
   flex: 1;
+  min-width: 0;
+}
+.k7-menu-header-subtitle {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.k7-menu-header-title {
   min-width: 0;
   font-family: var(--font-heading);
   font-size: var(--text-sm);
@@ -1350,6 +1393,13 @@ hr.k7-menu-divider { border: none; border-top: 1px solid var(--color-border); ma
   }
   .k7-menu-item-icon {
     width: 1.5rem;
+  }
+  .k7-menu-row {
+    padding: var(--space-3) var(--space-5);
+    margin: 0;
+    min-height: 48px;
+    font-size: var(--text-base, 1rem);
+    gap: var(--space-3);
   }
   hr.k7-menu-divider {
     margin: var(--space-2) var(--space-4);

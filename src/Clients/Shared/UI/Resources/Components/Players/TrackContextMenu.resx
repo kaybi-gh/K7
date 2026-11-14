@@ -46,4 +46,5 @@
   <data name="SimilarTracksError" xml:space="preserve"><value>Erreur lors de la recherche de titres similaires</value></data>
   <data name="EditMetadata" xml:space="preserve"><value>Modifier les métadonnées</value></data>
   <data name="EditMetadataError" xml:space="preserve"><value>Impossible d'ouvrir l'édition des métadonnées</value></data>
+  <data name="MyRating" xml:space="preserve"><value>Ma note</value></data>
 </root>

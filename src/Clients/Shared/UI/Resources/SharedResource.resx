@@ -162,9 +162,9 @@
   <data name="NoPreviousTracks" xml:space="preserve"><value>Aucun morceau precedent</value></data>
   <data name="NoUpcomingTracks" xml:space="preserve"><value>Aucun morceau a suivre</value></data>
   <data name="Back" xml:space="preserve"><value>Retour</value></data>
-  <data name="GoToArtist" xml:space="preserve"><value>Aller a l'artiste</value></data>
-  <data name="GoToAlbum" xml:space="preserve"><value>Aller a l'album</value></data>
-  <data name="AddToPlaylist" xml:space="preserve"><value>Ajouter a une playlist...</value></data>
+  <data name="GoToArtist" xml:space="preserve"><value>Aller à l'artiste</value></data>
+  <data name="GoToAlbum" xml:space="preserve"><value>Aller à l'album</value></data>
+  <data name="AddToPlaylist" xml:space="preserve"><value>Ajouter à une playlist</value></data>
   <data name="PlayingOn" xml:space="preserve"><value>Lecture sur {0}</value></data>
   <data name="ResumeHere" xml:space="preserve"><value>Reprendre ici</value></data>
   <data name="LeaveRemoteControl" xml:space="preserve"><value>Quitter la telecommande</value></data>

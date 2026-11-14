@@ -92,6 +92,10 @@ controls across a wide screen:
   users or items is a search field over a `K7CheckboxList` with avatar or icon, name and a
   secondary line. Viewers, help texts, picker grids and confirmations are not forms and stay
   as they are.
+- Action menus (card context menus, "..." menus) share one structure: `K7MenuSection`s in a
+  fixed order - play or open (one `Primary` entry at most) with the "go to" shortcuts right
+  below, my state, organize, manage, destructive (`Danger`, always last). A label says what happens: "Open the page" on a
+  series, not "Play". Sections draw their own separators, so no raw divider in a menu.
 - `K7SettingRow`: one setting per line, label and hint on the left, compact control on the right.
   Sliders and text fields go in a `settings-field-group` between rows.
 - `K7OptionList`: short single choices shown in full instead of a select.

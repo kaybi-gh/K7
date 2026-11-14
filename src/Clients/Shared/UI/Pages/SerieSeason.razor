@@ -183,12 +183,16 @@ else if (_season is not null)
                                     <K7IconButton Icon="@Phosphor.DotsThreeVertical" AriaLabel="more-actions" />
                                 </ActivatorContent>
                                 <ChildContent>
-                                    <K7MenuItem Icon="television" OnClick="NavigateToSerie">@L["BackToSerie"]</K7MenuItem>
-                                    <K7MenuItem Icon="pencil-simple" OnClick="OpenEditMetadataDialogAsync">@L["EditMetadata"]</K7MenuItem>
-                                    @if (!_isFederated)
-                                    {
-                                        <K7MenuItem Icon="waveform" OnClick="DetectIntrosOutrosAsync">@L["DetectIntrosOutros"]</K7MenuItem>
-                                    }
+                                    <K7MenuSection>
+                                        <K7MenuItem Icon="television" OnClick="NavigateToSerie">@L["BackToSerie"]</K7MenuItem>
+                                    </K7MenuSection>
+                                    <K7MenuSection>
+                                        <K7MenuItem Icon="pencil-simple" OnClick="OpenEditMetadataDialogAsync">@L["EditMetadata"]</K7MenuItem>
+                                        @if (!_isFederated)
+                                        {
+                                            <K7MenuItem Icon="waveform" OnClick="DetectIntrosOutrosAsync">@L["DetectIntrosOutros"]</K7MenuItem>
+                                        }
+                                    </K7MenuSection>
                                 </ChildContent>
                             </K7Menu>
                         </AuthorizeView>

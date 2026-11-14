@@ -155,27 +155,39 @@ else if (_episode is not null)
                                     <K7IconButton Icon="@Phosphor.DotsThreeVertical" AriaLabel="@L["MoreActions"]" />
                                 </ActivatorContent>
                                 <ChildContent>
-                                    <K7MenuItem Icon="television" OnClick="NavigateToSerie">@L["BackToSerie"]</K7MenuItem>
-                                    <K7MenuItem Icon="film-strip" OnClick="NavigateToSeason">@L["BackToSeason"]</K7MenuItem>
+                                    @* Sections in the same order as the media card menu: my state, go to, hide, manage. *@
                                     <AuthorizeView Roles="User,Administrator">
-                                        <K7MenuItem Icon="check-circle" OnClick="ToggleWatchStateAsync">
-                                            @(_episode.UserState?.IsCompleted == true ? CardL["MarkAsUnwatched"] : CardL["MarkAsWatched"])
-                                        </K7MenuItem>
+                                        <K7MenuSection>
+                                            <K7MenuItem Icon="@(_episode.UserState?.IsCompleted == true ? "circle" : "check-circle")" OnClick="ToggleWatchStateAsync">
+                                                @(_episode.UserState?.IsCompleted == true ? CardL["MarkAsUnwatched"] : CardL["MarkAsWatched"])
+                                            </K7MenuItem>
+                                        </K7MenuSection>
                                     </AuthorizeView>
-                                    @if (_canExclude)
+                                    <K7MenuSection>
+                                        <K7MenuItem Icon="television" OnClick="NavigateToSerie">@L["BackToSerie"]</K7MenuItem>
+                                        <K7MenuItem Icon="rows" OnClick="NavigateToSeason">@L["BackToSeason"]</K7MenuItem>
+                                    </K7MenuSection>
+                                    @if (_canExclude || _isAdmin)
                                     {
-                                        <K7MenuItem Icon="eye-slash" OnClick="ExcludeForSelfAsync">@S["HideForMe"]</K7MenuItem>
-                                    }
-                                    @if (_isAdmin)
-                                    {
-                                        <K7MenuItem Icon="circle" OnClick="ExcludeForOthersAsync">@S["HideForUser"]</K7MenuItem>
+                                        <K7MenuSection>
+                                            @if (_canExclude)
+                                            {
+                                                <K7MenuItem Icon="eye-slash" OnClick="ExcludeForSelfAsync">@S["HideForMe"]</K7MenuItem>
+                                            }
+                                            @if (_isAdmin)
+                                            {
+                                                <K7MenuItem Icon="user-minus" OnClick="ExcludeForOthersAsync">@S["HideForUser"]</K7MenuItem>
+                                            }
+                                        </K7MenuSection>
                                     }
                                     <AuthorizeView Roles="Administrator">
-                                        <K7MenuItem Icon="pencil-simple" OnClick="OpenEditMetadataAsync">@S["EditMetadata"]</K7MenuItem>
-                                        @if (_episode.IndexedFiles is { Count: > 0 })
-                                        {
-                                            <K7MenuItem Icon="file-zip" OnClick="OpenIndexedFilesAsync">@S["IndexedVersions"]</K7MenuItem>
-                                        }
+                                        <K7MenuSection>
+                                            <K7MenuItem Icon="pencil-simple" OnClick="OpenEditMetadataAsync">@S["EditMetadata"]</K7MenuItem>
+                                            @if (_episode.IndexedFiles is { Count: > 0 })
+                                            {
+                                                <K7MenuItem Icon="file-zip" OnClick="OpenIndexedFilesAsync">@S["IndexedVersions"]</K7MenuItem>
+                                            }
+                                        </K7MenuSection>
                                     </AuthorizeView>
                                 </ChildContent>
                             </K7Menu>

@@ -3139,6 +3139,33 @@ var SpatialNav = (function () {
         document.addEventListener('contextmenu', function (e) {
             var target = e.target;
             if (!target || !target.closest) return;
+
+            // An open menu covers the page with its backdrop, which would swallow the right
+            // click. Hand it to the element underneath, so a second right click opens that
+            // element's menu; when nothing underneath has one, it just closes the open menu.
+            if (target.classList && target.classList.contains('k7-backdrop')
+                && document.querySelector('.k7-menu-dropdown--open')) {
+                e.preventDefault();
+                e.stopPropagation();
+                var previousPointerEvents = target.style.pointerEvents;
+                target.style.pointerEvents = 'none';
+                var below = document.elementFromPoint(e.clientX, e.clientY);
+                target.style.pointerEvents = previousPointerEvents;
+
+                var handled = !!below && !below.dispatchEvent(new MouseEvent('contextmenu', {
+                    bubbles: true,
+                    cancelable: true,
+                    view: window,
+                    button: 2,
+                    clientX: e.clientX,
+                    clientY: e.clientY
+                }));
+                // The shared card menu swaps its content by itself; any other menu is closed.
+                var sharedMenuOpen = !!document.querySelector('.media-card-context-menu-host__menu.k7-menu--open');
+                if (!handled || !sharedMenuOpen) target.click();
+                return;
+            }
+
             if (target.closest('[data-longpress]')) {
                 e.preventDefault();
             }

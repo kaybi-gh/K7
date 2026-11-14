@@ -25,13 +25,13 @@
   <data name="GoToAlbum" xml:space="preserve"><value>Go to album</value></data>
   <data name="GoToArtist" xml:space="preserve"><value>Go to artist</value></data>
   <data name="AddToQueue" xml:space="preserve"><value>Add to queue</value></data>
-  <data name="AddToPlaylist" xml:space="preserve"><value>Add to a playlist</value></data>
+  <data name="AddToPlaylist" xml:space="preserve"><value>Add to playlist</value></data>
   <data name="RadioArtist" xml:space="preserve"><value>Radio {0}</value></data>
   <data name="RadioSonic" xml:space="preserve"><value>Similar to {0}</value></data>
   <data name="RadioGenre" xml:space="preserve"><value>Radio {0}</value></data>
   <data name="PlayNextSnackbar" xml:space="preserve"><value>'{0}' playing next</value></data>
   <data name="AddedToQueueSnackbar" xml:space="preserve"><value>'{0}' added to queue</value></data>
-  <data name="AddToPlaylistTitle" xml:space="preserve"><value>Add to a playlist</value></data>
+  <data name="AddToPlaylistTitle" xml:space="preserve"><value>Add to playlist</value></data>
   <data name="RadioArtistSnackbar" xml:space="preserve"><value>Radio {0}</value></data>
   <data name="RadioSonicSnackbar" xml:space="preserve"><value>Similar to {0}</value></data>
   <data name="RadioGenreSnackbar" xml:space="preserve"><value>Radio {0}</value></data>
@@ -46,4 +46,5 @@
   <data name="SimilarTracksError" xml:space="preserve"><value>Error finding similar tracks</value></data>
   <data name="EditMetadata" xml:space="preserve"><value>Edit metadata</value></data>
   <data name="EditMetadataError" xml:space="preserve"><value>Could not open metadata editor</value></data>
+  <data name="MyRating" xml:space="preserve"><value>My rating</value></data>
 </root>

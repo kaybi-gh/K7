@@ -1,57 +1,80 @@
 @inject IStringLocalizer<MediaCardContextMenu> L
 
-@if (_relatedLinks.Count > 0)
+@* Sections in a fixed order, the same in every media menu: play and go to, my state, organize, hide. *@
+@if (ShowPlay || _relatedLinks.Count > 0)
 {
-    @foreach (var link in _relatedLinks)
-    {
-        var href = link.Href;
-        <K7MenuItem Icon="@MediaCardRelatedMenu.Icon(link.Kind)" OnClick="@(() => Navigate(href))">
-            @L[MediaCardRelatedMenu.LabelKey(link.Kind)]
-        </K7MenuItem>
-    }
-    <hr class="k7-divider" />
+    <K7MenuSection>
+        @if (ShowPlay)
+        {
+            <K7MenuItem Icon="@(IsPlayable ? "play" : "arrow-right")" Primary="true" OnClick="@(() => OnPlayAsync())">
+                @PlayLabel
+            </K7MenuItem>
+            @if (CanResume)
+            {
+                <K7MenuItem Icon="arrow-counter-clockwise" OnClick="@(() => OnPlayAsync(fromBeginning: true))">
+                    @L["PlayFromStart"]
+                </K7MenuItem>
+            }
+        }
+        @foreach (var link in _relatedLinks)
+        {
+            var href = link.Href;
+            <K7MenuItem Icon="@MediaCardRelatedMenu.Icon(link.Kind)" OnClick="@(() => Navigate(href))">
+                @L[MediaCardRelatedMenu.LabelKey(link.Kind)]
+            </K7MenuItem>
+        }
+    </K7MenuSection>
 }
-@if (ShowRating && _hasValidMediaId)
+
+@if (HasStateSection)
 {
-    <div class="track-context-rating" @onclick:stopPropagation="true">
-        <RatingStars MediaId="_mediaId" Value="Model.UserRating" Size="sm" />
-    </div>
+    <K7MenuSection>
+        @if (ShowRating && _hasValidMediaId)
+        {
+            <div class="k7-menu-row" @onclick:stopPropagation="true">
+                <span class="k7-menu-item-icon"><i class="ph ph-star k7-icon k7-icon--md" aria-hidden="true"></i></span>
+                <span class="k7-menu-item-text">@L["MyRating"]</span>
+                <RatingStars MediaId="_mediaId" Value="Model.UserRating" Size="sm" />
+            </div>
+        }
+        @if (ShowReview && _hasValidMediaId)
+        {
+            <K7MenuItem Icon="chat-circle-text" OnClick="OpenReviewDialogAsync">@L["MyReview"]</K7MenuItem>
+        }
+        @if (ShowWatchState && _hasValidMediaId)
+        {
+            <K7MenuItem Icon="@(Model.Watched ? "circle" : "check-circle")" OnClick="ToggleWatchStateAsync">
+                @(Model.Watched ? L["MarkAsUnwatched"] : L["MarkAsWatched"])
+            </K7MenuItem>
+        }
+        @if (ContinueWatchingMenuEnabled && _hasValidMediaId)
+        {
+            <K7MenuItem Icon="x-circle" OnClick="OnDismissFromContinueWatching">@L["RemoveFromContinueWatching"]</K7MenuItem>
+        }
+    </K7MenuSection>
 }
-@if (ShowPlay)
-{
-    <K7MenuItem Icon="play" OnClick="OnPlay">@L["Play"]</K7MenuItem>
-}
-@if (ShowReview && _hasValidMediaId)
-{
-    <K7MenuItem Icon="chat-circle-text" OnClick="OpenReviewDialogAsync">@L["MyReview"]</K7MenuItem>
-}
-@if (ShowWatchState && _hasValidMediaId)
-{
-    <K7MenuItem Icon="check-circle" OnClick="ToggleWatchStateAsync">
-        @(Model.Watched ? L["MarkAsUnwatched"] : L["MarkAsWatched"])
-    </K7MenuItem>
-}
-@if (ContinueWatchingMenuEnabled && _hasValidMediaId)
-{
-    <K7MenuItem Icon="x-circle" OnClick="OnDismissFromContinueWatching">@L["RemoveFromContinueWatching"]</K7MenuItem>
-}
-@if (ExcludeMenuEnabled)
-{
-    <K7MenuItem Icon="eye-slash" OnClick="OnExcludeForSelf">@L["HideForMe"]</K7MenuItem>
-    @if (IsAdmin)
-    {
-        <K7MenuItem Icon="circle" OnClick="OnExcludeForOthers">@L["HideForUser"]</K7MenuItem>
-    }
-}
+
 @if (_hasValidMediaId && (ShowPlaylist || ShowCollection))
 {
-    <hr class="k7-divider" />
-    @if (ShowPlaylist)
-    {
-        <K7MenuItem Icon="plus-circle" OnClick="AddToPlaylistAsync">@L["AddToPlaylist"]</K7MenuItem>
-    }
-    @if (ShowCollection)
-    {
-        <K7MenuItem Icon="folders" OnClick="AddToCollectionAsync">@L["AddToCollection"]</K7MenuItem>
-    }
+    <K7MenuSection>
+        @if (ShowPlaylist)
+        {
+            <K7MenuItem Icon="playlist" OnClick="AddToPlaylistAsync">@L["AddToPlaylist"]</K7MenuItem>
+        }
+        @if (ShowCollection)
+        {
+            <K7MenuItem Icon="folders" OnClick="AddToCollectionAsync">@L["AddToCollection"]</K7MenuItem>
+        }
+    </K7MenuSection>
+}
+
+@if (ExcludeMenuEnabled)
+{
+    <K7MenuSection>
+        <K7MenuItem Icon="eye-slash" OnClick="OnExcludeForSelf">@L["HideForMe"]</K7MenuItem>
+        @if (IsAdmin)
+        {
+            <K7MenuItem Icon="user-minus" OnClick="OnExcludeForOthers">@L["HideForUser"]</K7MenuItem>
+        }
+    </K7MenuSection>
 }

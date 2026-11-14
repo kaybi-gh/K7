@@ -163,12 +163,16 @@ else if (_album is not null)
                                 <ChildContent>
                                     @if (_artists.Count > 0)
                                     {
-                                        <K7MenuItem Icon="user" OnClick="NavigateToPrimaryArtist">@L["GoToArtist"]</K7MenuItem>
+                                        <K7MenuSection>
+                                            <K7MenuItem Icon="user" OnClick="NavigateToPrimaryArtist">@L["GoToArtist"]</K7MenuItem>
+                                        </K7MenuSection>
                                     }
                                     <AuthorizeView Roles="Administrator">
-                                        <K7MenuItem Icon="magnifying-glass" OnClick="OpenMediaReIdentifyDialogAsync">@L["ReIdentify"]</K7MenuItem>
-                                        <K7MenuItem Icon="arrow-clockwise" OnClick="RefreshMetadataAsync">@L["RefreshMetadata"]</K7MenuItem>
-                                        <K7MenuItem Icon="pencil-simple" OnClick="OpenEditMetadataDialogAsync">@L["EditMetadata"]</K7MenuItem>
+                                        <K7MenuSection>
+                                            <K7MenuItem Icon="pencil-simple" OnClick="OpenEditMetadataDialogAsync">@L["EditMetadata"]</K7MenuItem>
+                                            <K7MenuItem Icon="magnifying-glass" OnClick="OpenMediaReIdentifyDialogAsync">@L["ReIdentify"]</K7MenuItem>
+                                            <K7MenuItem Icon="arrow-clockwise" OnClick="RefreshMetadataAsync">@L["RefreshMetadata"]</K7MenuItem>
+                                        </K7MenuSection>
                                     </AuthorizeView>
                                 </ChildContent>
                             </K7Menu>

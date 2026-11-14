@@ -34,4 +34,9 @@
   <data name="AddToCollection" xml:space="preserve"><value>Ajouter à une collection</value></data>
   <data name="AddToPlaylistTitle" xml:space="preserve"><value>Ajouter à une playlist</value></data>
   <data name="AddToCollectionTitle" xml:space="preserve"><value>Ajouter à une collection</value></data>
+  <data name="Resume" xml:space="preserve"><value>Reprendre la lecture</value></data>
+  <data name="PlayFromStart" xml:space="preserve"><value>Lire depuis le début</value></data>
+  <data name="Open" xml:space="preserve"><value>Ouvrir la fiche</value></data>
+  <data name="MyRating" xml:space="preserve"><value>Ma note</value></data>
+  <data name="PlayAlbum" xml:space="preserve"><value>Lire l'album</value></data>
 </root>

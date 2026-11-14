@@ -13,6 +13,9 @@ public partial class K7Menu : IAsyncDisposable
     [Parameter] public RenderFragment? ChildContent { get; set; }
     [Parameter] public string Class { get; set; } = "";
     [Parameter] public string? Title { get; set; }
+
+    /// <summary>Second line of the header, under <see cref="Title"/>: what the menu acts on.</summary>
+    [Parameter] public string? Subtitle { get; set; }
     [Parameter] public bool Disabled { get; set; }
     [Parameter] public bool Open { get; set; }
     [Parameter] public EventCallback<bool> OpenChanged { get; set; }
