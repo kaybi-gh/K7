@@ -15,6 +15,21 @@ public partial class AdminUserMediaExclusionsDialog
 
     private bool _loading = true;
     private List<ExcludedMediaItem> _excludedMedias = [];
+    private string _search = "";
+
+    private List<ExcludedMediaItem> FilteredMedias
+    {
+        get
+        {
+            var search = _search.Trim();
+            if (search.Length == 0)
+                return _excludedMedias;
+
+            return _excludedMedias
+                .Where(m => (m.Title ?? m.Id.ToString()).Contains(search, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+    }
 
     protected override async Task OnInitializedAsync()
     {

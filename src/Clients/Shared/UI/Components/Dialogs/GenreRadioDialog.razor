@@ -19,8 +19,8 @@
                         SearchAsync="SearchGenresAsync" />
 
         <div class="d-flex gap-2 justify-end">
-            <K7Button OnClick="Cancel" Variant="K7ButtonVariant.Text">@L["Cancel"]</K7Button>
-            <K7Button OnClick="PlayAsync" Variant="K7ButtonVariant.Filled" Disabled="string.IsNullOrWhiteSpace(_selectedGenre) || _playing">
+            <K7Button OnClick="Cancel" Variant="text">@L["Cancel"]</K7Button>
+            <K7Button OnClick="PlayAsync" Variant="filled" Disabled="string.IsNullOrWhiteSpace(_selectedGenre) || _playing">
                 @if (_playing)
                 {
                     <K7Spinner Size="16" />

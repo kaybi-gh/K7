@@ -11,22 +11,26 @@
 
 <div class="k7-dialog-content">
     <div class="d-flex flex-col gap-4 pa-4 intelligent-search-dialog">
-        @if (FixedKind is null)
-        {
-            <K7Select TValue="IntelligentSearchKind" Value="_kind" ValueChanged="OnKindChanged" Label="@L["ModeLabel"]" Variant="outlined">
-                <K7SelectItem TValue="IntelligentSearchKind" Value="IntelligentSearchKind.Sonic" Text="@L["ModeSonic"]">@L["ModeSonic"]</K7SelectItem>
-                <K7SelectItem TValue="IntelligentSearchKind" Value="IntelligentSearchKind.Lyrics" Text="@L["ModeLyrics"]">@L["ModeLyrics"]</K7SelectItem>
-            </K7Select>
-        }
+        <div>
+            @if (FixedKind is null)
+            {
+                <K7SettingRow Label="@L["ModeLabel"]">
+                    <K7Select TValue="IntelligentSearchKind" Value="_kind" ValueChanged="OnKindChanged" Variant="outlined">
+                        <K7SelectItem TValue="IntelligentSearchKind" Value="IntelligentSearchKind.Sonic" Text="@L["ModeSonic"]">@L["ModeSonic"]</K7SelectItem>
+                        <K7SelectItem TValue="IntelligentSearchKind" Value="IntelligentSearchKind.Lyrics" Text="@L["ModeLyrics"]">@L["ModeLyrics"]</K7SelectItem>
+                    </K7Select>
+                </K7SettingRow>
+            }
 
-        <K7TextField @bind-Value="_query"
-                     Label="@L["QueryLabel"]"
-                     Placeholder="@GetPlaceholder()"
-                     HelperText="@GetHelperText()" />
+            <K7SettingRow Label="@L["QueryLabel"]" Hint="@GetHelperText()" Stacked="true">
+                <K7TextField @bind-Value="_query"
+                             Placeholder="@GetPlaceholder()" />
+            </K7SettingRow>
+        </div>
 
         <div class="d-flex gap-2 justify-end">
-            <K7Button OnClick="Cancel" Variant="K7ButtonVariant.Text">@L["Cancel"]</K7Button>
-            <K7Button OnClick="SubmitAsync" Variant="K7ButtonVariant.Filled" Disabled="string.IsNullOrWhiteSpace(_query) || _loading">
+            <K7Button OnClick="Cancel" Variant="text">@L["Cancel"]</K7Button>
+            <K7Button OnClick="SubmitAsync" Variant="filled" Disabled="string.IsNullOrWhiteSpace(_query) || _loading">
                 @if (_loading)
                 {
                     <K7Spinner Size="16" />

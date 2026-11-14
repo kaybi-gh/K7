@@ -1,0 +1,5 @@
+/* The rule editor fills the stacked row. */
+.restriction-profile-dialog__rules {
+    flex: 1 1 100%;
+    min-width: 0;
+}

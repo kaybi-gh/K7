@@ -6,7 +6,7 @@
 @inject IStringLocalizer<SharedResource> S
 @inject ILibraryService LibraryService
 
-<div class="k7-dialog-content">
+<div class="k7-dialog-content accept-dialog">
     <div class="accept-dialog__peer">
         <span class="accept-dialog__peer-name">@RequesterName</span>
         <span class="accept-dialog__peer-url">@RequesterUrl</span>
@@ -20,23 +20,27 @@
     }
     else
     {
-        <div class="accept-dialog__libraries">
-            <span class="accept-dialog__label">@L["SharedLibrariesLabel"]</span>
-            <K7CheckboxList TItem="LibraryDto"
-                            Items="_libraries"
-                            IsChecked="@(l => _selectedIds.Contains(l.Id))"
-                            CheckedChanged="@(e => ToggleLibrary(e.Item.Id))"
-                            ItemLabel="@(l => l.Title)" />
-            @if (_libraries.Count == 0)
-            {
-                <span class="accept-dialog__empty">@L["NoLibraries"]</span>
-            }
-        </div>
-
-        <div class="accept-dialog__option">
-            <K7Switch Value="_autoShareNew"
-                      ValueChanged="@(v => _autoShareNew = v)"
-                      Label="@L["AutoShareNewLibraries"]" />
+        <div>
+            <K7SettingRow Label="@L["SharedLibrariesLabel"]" Stacked="true">
+                @if (_libraries.Count == 0)
+                {
+                    <span class="accept-dialog__empty">@L["NoLibraries"]</span>
+                }
+                else
+                {
+                    <K7CheckboxList TItem="LibraryDto"
+                                    Items="_libraries"
+                                    IsChecked="@(l => _selectedIds.Contains(l.Id))"
+                                    CheckedChanged="@(e => ToggleLibrary(e.Item.Id))"
+                                    ItemLabel="@(l => l.Title)"
+                                    Class="accept-dialog__list" />
+                }
+            </K7SettingRow>
+            <K7SettingRow Label="@L["AutoShareNewLibraries"]">
+                <K7Switch Value="_autoShareNew"
+                          ValueChanged="@(v => _autoShareNew = v)"
+                          AriaLabel="@L["AutoShareNewLibraries"]" />
+            </K7SettingRow>
         </div>
     }
 </div>

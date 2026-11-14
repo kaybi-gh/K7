@@ -10,7 +10,7 @@
     <K7DialogStepper Steps="@_stepLabels" ActiveStep="_activeStep" MaxVisitedStep="_maxVisitedStep"
                      OnStepClick="GoToStep" />
 </div>
-<div class="k7-dialog-content">
+<div class="k7-dialog-content notification-rule">
     @if (ContentStep == 0)
     {
         <h6>@L["SelectCategory"]</h6>
@@ -51,31 +51,37 @@
     {
         <h6>@L["DestinationTitle"]</h6>
         <p class="text-sm mb-3" style="color: var(--color-text-muted);">@L["DestinationHelper"]</p>
-        <div class="d-flex flex-col gap-3 mt-2">
-            <K7TextField @bind-Value="_name" Label="@L["Name"]" Variant="outlined"
-                          Required="true" RequiredError="@L["NameRequired"]" />
+        <div>
+            <K7SettingRow Label="@L["Name"]" Required="true">
+                <K7TextField @bind-Value="_name" Variant="outlined"
+                             Required="true" RequiredError="@L["NameRequired"]" />
+            </K7SettingRow>
 
             @if (_presets.Count > 0)
             {
-                <K7Select TValue="string" Value="_selectedPresetId" ValueChanged="OnPresetChanged"
-                           Label="@L["WebhookPreset"]" Variant="outlined"
-                           HelperText="@L["WebhookPresetHelper"]">
-                    <K7SelectItem Value="@("")" Text="@L["PresetNone"]">@L["PresetNone"]</K7SelectItem>
-                    @foreach (var preset in _presets)
-                    {
-                        <K7SelectItem Value="@preset.Id" Text="@LocalizePreset(preset)">@LocalizePreset(preset)</K7SelectItem>
-                    }
-                </K7Select>
+                <K7SettingRow Label="@L["WebhookPreset"]" Hint="@L["WebhookPresetHelper"]">
+                    <K7Select TValue="string" Value="_selectedPresetId" ValueChanged="OnPresetChanged"
+                              Variant="outlined">
+                        <K7SelectItem Value="@("")" Text="@L["PresetNone"]">@L["PresetNone"]</K7SelectItem>
+                        @foreach (var preset in _presets)
+                        {
+                            <K7SelectItem Value="@preset.Id" Text="@LocalizePreset(preset)">@LocalizePreset(preset)</K7SelectItem>
+                        }
+                    </K7Select>
+                </K7SettingRow>
             }
 
-            <K7TextField @bind-Value="_webhookUrl" Label="@L["WebhookUrl"]" Variant="outlined"
-                          Required="true" RequiredError="@L["WebhookUrlRequired"]"
-                          Validation="ValidateWebhookUrl"
-                          HelperText="@(WebhookUrlHelperText ?? "")" />
-            <K7Select TValue="string" @bind-Value="_webhookMethod" Label="@L["HttpMethod"]" Variant="outlined">
-                <K7SelectItem Value="@("POST")" Text="POST">POST</K7SelectItem>
-                <K7SelectItem Value="@("PUT")" Text="PUT">PUT</K7SelectItem>
-            </K7Select>
+            <K7SettingRow Label="@L["WebhookUrl"]" Hint="@WebhookUrlHelperText" Stacked="true" Required="true">
+                <K7TextField @bind-Value="_webhookUrl" Variant="outlined"
+                             Required="true" RequiredError="@L["WebhookUrlRequired"]"
+                             Validation="ValidateWebhookUrl" />
+            </K7SettingRow>
+            <K7SettingRow Label="@L["HttpMethod"]">
+                <K7Select TValue="string" @bind-Value="_webhookMethod" Variant="outlined">
+                    <K7SelectItem Value="@("POST")" Text="POST">POST</K7SelectItem>
+                    <K7SelectItem Value="@("PUT")" Text="PUT">PUT</K7SelectItem>
+                </K7Select>
+            </K7SettingRow>
         </div>
     }
 
@@ -86,81 +92,73 @@
             @L["ConditionsStepHelper"]
         </K7Alert>
 
-        <div class="d-flex flex-col gap-3">
-            <div class="d-flex flex-col gap-2">
-                <span class="text-sm text-bold">@L["CooldownSeconds"]</span>
+        <div>
+            <K7SettingRow Label="@L["CooldownSeconds"]" Hint="@L["CooldownSecondsHelper"]">
                 <K7TextField TValue="int?" Value="_cooldownSeconds"
-                              ValueChanged="v => _cooldownSeconds = v"
-                              Label="@L["CooldownSecondsField"]"
-                              HelperText="@L["CooldownSecondsHelper"]"
-                              Variant="outlined"
-                              Type="number" />
-            </div>
+                             ValueChanged="v => _cooldownSeconds = v"
+                             Placeholder="@L["CooldownSecondsField"]"
+                             Variant="outlined"
+                             Type="number" />
+            </K7SettingRow>
 
             @if (SupportsMediaBatching)
             {
-                <div class="d-flex flex-col gap-2">
-                    <span class="text-sm text-bold">@L["BatchDebounceSeconds"]</span>
+                <K7SettingRow Label="@L["BatchDebounceSeconds"]" Hint="@L["BatchDebounceSecondsHelper"]">
                     <K7TextField TValue="int?" Value="_batchDebounceSeconds"
-                                  ValueChanged="v => _batchDebounceSeconds = v"
-                                  Label="@L["BatchDebounceSecondsField"]"
-                                  HelperText="@L["BatchDebounceSecondsHelper"]"
-                                  Variant="outlined"
-                                  Type="number" />
-                </div>
+                                 ValueChanged="v => _batchDebounceSeconds = v"
+                                 Placeholder="@L["BatchDebounceSecondsField"]"
+                                 Variant="outlined"
+                                 Type="number" />
+                </K7SettingRow>
             }
 
-            <K7Divider />
+            <K7SettingRow Label="@L["ScheduleWindows"]" Hint="@L["ScheduleWindowsHelper"]" Stacked="true">
+                <div class="notification-rule__stack">
+                    <K7Button Variant="outlined" Size="sm" OnClick="AddScheduleWindow" Class="align-self-start">
+                        @L["AddWindow"]
+                    </K7Button>
 
-            <div class="d-flex flex-col gap-2">
-                <span class="text-sm text-bold">@L["ScheduleWindows"]</span>
-                <p class="text-sm" style="color: var(--color-text-muted);">@L["ScheduleWindowsHelper"]</p>
-                <K7Button Variant="outlined" Size="sm" OnClick="AddScheduleWindow" Class="align-self-start">
-                    @L["AddWindow"]
-                </K7Button>
+                    @if (_scheduleWindows.Count == 0)
+                    {
+                        <p class="text-caption" style="color: var(--color-text-muted);">@L["ScheduleWindowsEmpty"]</p>
+                    }
 
-                @if (_scheduleWindows.Count == 0)
-                {
-                    <p class="text-caption" style="color: var(--color-text-muted);">@L["ScheduleWindowsEmpty"]</p>
-                }
-
-                @foreach (var (window, index) in _scheduleWindows.Select((w, i) => (w, i)))
-                {
-                    <K7Paper Outlined="true" Class="pa-3">
-                        <div class="d-flex flex-col gap-2">
-                            <div class="d-flex gap-2 align-end">
-                                <K7TextField @bind-Value="window.Start" Label="@L["StartTime"]" Variant="outlined" Type="time" />
-                                <K7TextField @bind-Value="window.End" Label="@L["EndTime"]" Variant="outlined" Type="time" />
-                                <K7IconButton Icon="@Phosphor.X" AriaLabel="@L["RemoveWindow"]" OnClick="() => RemoveScheduleWindow(index)" />
+                    @foreach (var (window, index) in _scheduleWindows.Select((w, i) => (w, i)))
+                    {
+                        <K7Paper Outlined="true" Class="pa-3">
+                            <div class="d-flex flex-col gap-2">
+                                <div class="d-flex gap-2 align-end">
+                                    <K7TextField @bind-Value="window.Start" Label="@L["StartTime"]" Variant="outlined" Type="time" />
+                                    <K7TextField @bind-Value="window.End" Label="@L["EndTime"]" Variant="outlined" Type="time" />
+                                    <K7IconButton Icon="@Phosphor.X" AriaLabel="@L["RemoveWindow"]" OnClick="() => RemoveScheduleWindow(index)" />
+                                </div>
+                                <div class="d-flex flex-wrap gap-1">
+                                    @foreach (var day in Enum.GetValues<DayOfWeek>())
+                                    {
+                                        var selected = window.Days.Contains((int)day);
+                                        <K7Chip Size="sm" Color="@(selected ? "primary" : "default")"
+                                                OnClick="@(() => ToggleScheduleDay(window, day))">
+                                            @LocalizeDay(day)
+                                        </K7Chip>
+                                    }
+                                </div>
                             </div>
-                            <div class="d-flex flex-wrap gap-1">
-                                @foreach (var day in Enum.GetValues<DayOfWeek>())
-                                {
-                                    var selected = window.Days.Contains((int)day);
-                                    <K7Chip Size="sm" Color="@(selected ? "primary" : "default")"
-                                            OnClick="@(() => ToggleScheduleDay(window, day))">
-                                        @LocalizeDay(day)
-                                    </K7Chip>
-                                }
-                            </div>
-                        </div>
-                    </K7Paper>
-                }
-            </div>
+                        </K7Paper>
+                    }
+                </div>
+            </K7SettingRow>
 
-            <K7Divider />
-
-            <div class="d-flex flex-col gap-2">
-                <span class="text-sm text-bold">@L["Conditions"]</span>
-                <p class="text-sm" style="color: var(--color-text-muted);">@L["ConditionsOptionalHelper"]</p>
-                <K7RuleEditor Value="@(_ruleFilter ?? new RuleGroupDto())"
-                              ValueChanged="@(v => _ruleFilter = v.Items.Count > 0 ? v : null)"
-                              FieldDescriptors="GetConditionFieldDescriptors()"
-                              SearchSuggestionOptionsAsync="SearchConditionSuggestionOptionsAsync"
-                              ResolveSearchDisplayAsync="ResolveConditionSearchDisplayAsync"
-                              CommitSearchOnSelectOnly="IsIdSearchField"
-                              EmptyHint="@L["ConditionsEmptyHint"]" />
-            </div>
+            <K7SettingRow Label="@L["Conditions"]" Hint="@L["ConditionsOptionalHelper"]" Stacked="true">
+                <div class="notification-rule__stack">
+                    <K7RuleEditor Value="@(_ruleFilter ?? new RuleGroupDto())"
+                                  ValueChanged="@(v => _ruleFilter = v.Items.Count > 0 ? v : null)"
+                                  FieldDescriptors="GetConditionFieldDescriptors()"
+                                  SearchSuggestionOptionsAsync="SearchConditionSuggestionOptionsAsync"
+                                  ResolveSearchDisplayAsync="ResolveConditionSearchDisplayAsync"
+                                  CommitSearchOnSelectOnly="IsIdSearchField"
+                                  EmptyHint="@L["ConditionsEmptyHint"]" />
+                </div>
+            </K7SettingRow>
         </div>
     }
 
@@ -198,51 +196,51 @@
         {
             @if (_payloadFormat == "Structured")
             {
-                <div class="d-flex flex-col gap-3">
-                    <div class="d-flex align-center justify-between">
+                <div>
+                    <K7SettingRow Label="@L["TitleTemplate"]" Hint="@L["TitleTemplateHelper"]" Stacked="true">
                         <K7TextField @ref="_titleField"
-                                      @bind-Value="_titleTemplate"
-                                      Label="@L["TitleTemplate"]"
-                                      Variant="outlined"
-                                      Immediate="true"
-                                      HelperText="@L["TitleTemplateHelper"]"
-                                      Style="flex: 1;"
-                                      OnFocus="@(() => _activeTemplateField = TemplateField.Title)" />
+                                     @bind-Value="_titleTemplate"
+                                     Variant="outlined"
+                                     Immediate="true"
+                                     Style="flex: 1;"
+                                     OnFocus="@(() => _activeTemplateField = TemplateField.Title)" />
                         @if (HasDefaultTemplates)
                         {
                             <K7Button Variant="text" Color="primary" Size="sm" OnClick="ApplyDefaultTemplates" Class="ml-2">
                                 @L["UseDefaultTemplate"]
                             </K7Button>
                         }
-                    </div>
-                    <K7TextField @ref="_bodyField"
-                                  @bind-Value="_bodyTemplate"
-                                  Label="@L["BodyTemplate"]"
-                                  Variant="outlined"
-                                  Lines="4"
-                                  Immediate="true"
-                                  HelperText="@L["BodyTemplateHelper"]"
-                                  OnFocus="@(() => _activeTemplateField = TemplateField.Body)" />
+                    </K7SettingRow>
+                    <K7SettingRow Label="@L["BodyTemplate"]" Hint="@L["BodyTemplateHelper"]" Stacked="true">
+                        <K7TextField @ref="_bodyField"
+                                     @bind-Value="_bodyTemplate"
+                                     Variant="outlined"
+                                     Lines="4"
+                                     Immediate="true"
+                                     OnFocus="@(() => _activeTemplateField = TemplateField.Body)" />
+                    </K7SettingRow>
                 </div>
             }
             else
             {
-                <div class="d-flex flex-col gap-3">
-                    <K7TextField @ref="_rawField"
-                                  @bind-Value="_rawJsonTemplate"
-                                  Label="@L["RawJsonTemplate"]"
-                                  Variant="outlined"
-                                  Lines="8"
-                                  Immediate="true"
-                                  HelperText="@L["RawJsonTemplateHelper"]"
-                                  Validation="ValidateRawJson"
-                                  OnFocus="@(() => _activeTemplateField = TemplateField.Raw)" />
-                    @if (HasDefaultTemplates && string.IsNullOrWhiteSpace(_selectedPresetId))
-                    {
-                        <K7Button Variant="text" Color="primary" Size="sm" OnClick="ApplyDefaultTemplates" Class="align-self-start">
-                            @L["UseDefaultTemplate"]
-                        </K7Button>
-                    }
+                <div>
+                    <K7SettingRow Label="@L["RawJsonTemplate"]" Hint="@L["RawJsonTemplateHelper"]" Stacked="true">
+                        <div class="notification-rule__stack">
+                            <K7TextField @ref="_rawField"
+                                         @bind-Value="_rawJsonTemplate"
+                                         Variant="outlined"
+                                         Lines="8"
+                                         Immediate="true"
+                                         Validation="ValidateRawJson"
+                                         OnFocus="@(() => _activeTemplateField = TemplateField.Raw)" />
+                            @if (HasDefaultTemplates && string.IsNullOrWhiteSpace(_selectedPresetId))
+                            {
+                                <K7Button Variant="text" Color="primary" Size="sm" OnClick="ApplyDefaultTemplates" Class="align-self-start">
+                                    @L["UseDefaultTemplate"]
+                                </K7Button>
+                            }
+                        </div>
+                    </K7SettingRow>
                 </div>
             }
         }

@@ -2,67 +2,89 @@
 
 <div class="k7-dialog-content">
     <div class="edit-library-dialog d-flex flex-col">
+        <K7Tabs TValue="string" Tabs="ConfigTabs" Value="_configTab"
+                ValueChanged="@(tab => _configTab = tab)" Class="edit-library-tabs" />
+        @if (_configTab == "General")
+        {
         <section class="edit-library-section">
-            <h6 class="edit-library-section__title">@L["SectionGeneralTitle"]</h6>
-            <div class="edit-library-section__fields d-flex flex-col">
-                <K7TextField @bind-Value="_title" Label="@L["TitleLabel"]" Variant="outlined"
-                              Required="true" RequiredError="@L["TitleRequired"]" />
+            <div>
+                <K7SettingRow Label="@L["TitleLabel"]" Required="true">
+                    <K7TextField @bind-Value="_title" Variant="outlined"
+                                 Required="true" RequiredError="@L["TitleRequired"]" />
+                </K7SettingRow>
 
                 @if (AvailableGroups.Count > 0)
                 {
-                    <K7Select TValue="Guid" @bind-Value="_selectedGroupId" Label="@L["GroupLabel"]" Variant="outlined">
-                        @foreach (var group in AvailableGroups)
-                        {
-                            <K7SelectItem TValue="Guid" Value="@group.Id" Text="@group.Title">@group.Title</K7SelectItem>
-                        }
-                    </K7Select>
+                    <K7SettingRow Label="@L["GroupLabel"]">
+                        <K7Select TValue="Guid" @bind-Value="_selectedGroupId" Variant="outlined">
+                            @foreach (var group in AvailableGroups)
+                            {
+                                <K7SelectItem TValue="Guid" Value="@group.Id" Text="@group.Title">@group.Title</K7SelectItem>
+                            }
+                        </K7Select>
+                    </K7SettingRow>
                 }
             </div>
         </section>
+        }
 
+        @if (_configTab == "Metadata")
+        {
         <section class="edit-library-section">
-            <h6 class="edit-library-section__title">@L["SectionMetadataTitle"]</h6>
             <p class="edit-library-section__description">@L["SectionMetadataDescription"]</p>
-            <div class="edit-library-section__fields d-flex flex-col">
-                <K7Select TValue="string" @bind-Value="_selectedProvider" Label="@L["ProviderLabel"]" Variant="outlined"
-                          Disabled="IsFederated"
-                          HelperText="@(MediaType == LibraryMediaType.Serie ? L["ProviderHelperSerie"].Value : null)">
-                    @foreach (var provider in AvailableProviders)
-                    {
-                        <K7SelectItem TValue="string" Value="@provider.ProviderName" Text="@provider.ProviderName">@provider.ProviderName</K7SelectItem>
-                    }
-                </K7Select>
+            <div>
+                <K7SettingRow Label="@L["ProviderLabel"]"
+                              Hint="@(MediaType == LibraryMediaType.Serie ? L["ProviderHelperSerie"].Value : null)">
+                    <K7Select TValue="string" @bind-Value="_selectedProvider" Variant="outlined"
+                              Disabled="IsFederated">
+                        @foreach (var provider in AvailableProviders)
+                        {
+                            <K7SelectItem TValue="string" Value="@provider.ProviderName" Text="@provider.ProviderName">@provider.ProviderName</K7SelectItem>
+                        }
+                    </K7Select>
+                </K7SettingRow>
 
-                <K7LanguageSelect @bind-Value="_metadataLanguage" Label="@L["MetadataLanguageLabel"]" Variant="outlined"
-                                  Disabled="IsFederated" />
+                <K7SettingRow Label="@L["MetadataLanguageLabel"]">
+                    <K7LanguageSelect @bind-Value="_metadataLanguage" Variant="outlined"
+                                      Disabled="IsFederated" />
+                </K7SettingRow>
 
-                <K7LanguageSelect @bind-Value="_metadataFallbackLanguage" Label="@L["MetadataFallbackLanguageLabel"]" Variant="outlined"
-                                  Disabled="IsFederated" />
+                <K7SettingRow Label="@L["MetadataFallbackLanguageLabel"]">
+                    <K7LanguageSelect @bind-Value="_metadataFallbackLanguage" Variant="outlined"
+                                      Disabled="IsFederated" />
+                </K7SettingRow>
 
-                <K7TextField TValue="int?" Type="number" @bind-Value="_metadataRefreshIntervalDays"
-                             Label="@L["MetadataRefreshLabel"]" Variant="outlined"
-                             HelperText="@L["MetadataRefreshHelper"]"
-                             Disabled="IsFederated" />
+                <K7SettingRow Label="@L["MetadataRefreshLabel"]" Hint="@L["MetadataRefreshHelper"]">
+                    <K7TextField TValue="int?" Type="number" @bind-Value="_metadataRefreshIntervalDays"
+                                 Variant="outlined"
+                                 Disabled="IsFederated" />
+                </K7SettingRow>
             </div>
         </section>
+        }
 
         @if (!IsFederated)
         {
+            @if (_configTab == "Scan")
+            {
             <section class="edit-library-section">
-                <h6 class="edit-library-section__title">@L["SectionScanTitle"]</h6>
                 <p class="edit-library-section__description">@L["SectionScanDescription"]</p>
-                <div class="edit-library-section__fields d-flex flex-col">
-                    <K7Switch @bind-Value="_realtimeMonitorEnabled" Label="@L["RealtimeMonitorLabel"]" />
-                    <span class="edit-library-section__field-hint">@L["RealtimeMonitorHelper"]</span>
+                <div>
+                    <K7SettingRow Label="@L["RealtimeMonitorLabel"]" Hint="@L["RealtimeMonitorHelper"]">
+                        <K7Switch @bind-Value="_realtimeMonitorEnabled" AriaLabel="@L["RealtimeMonitorLabel"]" />
+                    </K7SettingRow>
 
-                    <K7TextField TValue="int" Type="number" @bind-Value="_autoScanIntervalHours" Immediate="true"
-                                 Label="@L["AutoScanIntervalLabel"]" Variant="outlined"
-                                 HelperText="@L["AutoScanIntervalHelper"]" />
+                    <K7SettingRow Label="@L["AutoScanIntervalLabel"]" Hint="@L["AutoScanIntervalHelper"]">
+                        <K7TextField TValue="int" Type="number" @bind-Value="_autoScanIntervalHours" Immediate="true"
+                                     Variant="outlined" />
+                    </K7SettingRow>
                 </div>
             </section>
+            }
 
+            @if (_configTab == "Capabilities")
+            {
             <section class="edit-library-section">
-                <h6 class="edit-library-section__title">@L["SectionCapabilitiesTitle"]</h6>
                 <p class="edit-library-section__description">@L["SectionCapabilitiesDescription"]</p>
                 <LibraryProcessingSettingsSection MediaType="MediaType"
                     ShowSectionTitle="false"
@@ -74,6 +96,7 @@
                     @bind-TranscodingEnabled="_transcodingEnabled"
                     @bind-TransmuxingEnabled="_transmuxingEnabled" />
             </section>
+            }
         }
     </div>
 </div>

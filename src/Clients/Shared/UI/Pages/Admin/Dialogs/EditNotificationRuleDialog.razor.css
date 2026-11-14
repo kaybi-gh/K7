@@ -3,3 +3,17 @@
     border-width: 2px;
     background-color: var(--color-accent-subtle);
 }
+
+/* Content that fills a stacked row: a button above a list, a rule editor, a long template. */
+.notification-rule__stack {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    flex: 1 1 100%;
+    min-width: 0;
+}
+
+/* The title field shares its stacked row with the "use default" button. */
+.notification-rule ::deep .k7-setting-row__control {
+    align-items: center;
+}

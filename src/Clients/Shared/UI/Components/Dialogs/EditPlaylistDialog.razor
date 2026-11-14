@@ -1,71 +1,70 @@
 @inject IStringLocalizer<EditPlaylistDialog> L
 @inject IStringLocalizer<SharedResource> S
 
-<div class="k7-dialog-content">
-    <div class="d-flex flex-col gap-3 mt-2">
-        <K7TextField @bind-Value="Title"
-                      Label="@L["NameLabel"]"
-                      Variant="outlined"
-                      Required="true"
-                      RequiredError="@L["NameRequired"]"
-                      MaxLength="200" />
-        <K7TextField @bind-Value="Description"
-                      Label="@L["DescriptionOptional"]"
-                      Variant="outlined"
-                      Lines="3"
-                      MaxLength="2000" />
-
-        <K7VisibilityScopeSelect Label="@L["VisibilityScope"]" @bind-Value="_visibilityScope" Variant="outlined" />
-
-        <div class="picker-row">
-            <span class="picker-row__label">@L["CoverLabel"]</span>
-            <div class="picker-row__value">
-                @if (UsesMosaicPreview)
-                {
-                    <span class="text-sm text-secondary">@L["CoverMosaic"]</span>
-                }
-                else if (_pendingCover?.SourcePictureId.HasValue == true)
-                {
-                    <K7Image Src="@($"/api/metadata-pictures/{_pendingCover.SourcePictureId}?size=Small")"
-                             Class="picker-row__cover-preview"
-                             Width="48"
-                             Height="48"
-                             ObjectFit="cover"
-                             Alt=""
-                             LoadingMode="K7ImageLoadingMode.Css" />
-                }
-                else if (_pendingCover?.File is not null)
-                {
-                    <span class="text-sm text-secondary">@_pendingCover.File.Name</span>
-                }
-                else if (_currentCoverPictureId.HasValue)
-                {
-                    <K7Image Src="@($"/api/metadata-pictures/{_currentCoverPictureId}?size=Small")"
-                             Class="picker-row__cover-preview"
-                             Width="48"
-                             Height="48"
-                             ObjectFit="cover"
-                             Alt=""
-                             LoadingMode="K7ImageLoadingMode.Css" />
-                }
-                else
-                {
-                    <span class="text-sm text-secondary">@L["CoverMosaic"]</span>
-                }
-            </div>
+<div class="k7-dialog-content cover-editor">
+    <div>
+        <K7SettingRow Label="@L["NameLabel"]" Required="true">
+            <K7TextField @bind-Value="Title"
+                          Variant="outlined"
+                          Required="true"
+                          RequiredError="@L["NameRequired"]"
+                          MaxLength="200" />
+        </K7SettingRow>
+        <K7SettingRow Label="@L["DescriptionOptional"]" Stacked="true">
+            <K7TextField @bind-Value="Description"
+                          Variant="outlined"
+                          Lines="3"
+                          MaxLength="2000" />
+        </K7SettingRow>
+        <K7SettingRow Label="@L["VisibilityScope"]">
+            <K7VisibilityScopeSelect @bind-Value="_visibilityScope" Variant="outlined" />
+        </K7SettingRow>
+        <K7SettingRow Label="@L["CoverLabel"]">
+            @if (UsesMosaicPreview)
+            {
+                <span class="text-sm text-secondary">@L["CoverMosaic"]</span>
+            }
+            else if (_pendingCover?.SourcePictureId.HasValue == true)
+            {
+                <K7Image Src="@($"/api/metadata-pictures/{_pendingCover.SourcePictureId}?size=Small")"
+                         Class="cover-editor__cover-preview"
+                         Width="48"
+                         Height="48"
+                         ObjectFit="cover"
+                         Alt=""
+                         LoadingMode="K7ImageLoadingMode.Css" />
+            }
+            else if (_pendingCover?.File is not null)
+            {
+                <span class="text-sm text-secondary">@_pendingCover.File.Name</span>
+            }
+            else if (_currentCoverPictureId.HasValue)
+            {
+                <K7Image Src="@($"/api/metadata-pictures/{_currentCoverPictureId}?size=Small")"
+                         Class="cover-editor__cover-preview"
+                         Width="48"
+                         Height="48"
+                         ObjectFit="cover"
+                         Alt=""
+                         LoadingMode="K7ImageLoadingMode.Css" />
+            }
+            else
+            {
+                <span class="text-sm text-secondary">@L["CoverMosaic"]</span>
+            }
             <K7Button Variant="outlined" Size="sm" OnClick="OpenCoverPickerAsync">@L["CoverChange"]</K7Button>
             @if (CanResetToMosaic)
             {
                 <K7Button Variant="text" Size="sm" OnClick="ResetCoverToMosaic">@L["ResetCoverMosaic"]</K7Button>
             }
-        </div>
+        </K7SettingRow>
+    </div>
 
-        <div class="cover-preview-mosaic">
-            <K7CoverMosaic ImageUrls="PreviewMosaicUrls"
-                            PlaceholderIcon="@Phosphor.Queue"
-                            PictureSize="MetadataPictureSize.Medium"
-                            Alt="@Title" />
-        </div>
+    <div class="cover-preview-mosaic">
+        <K7CoverMosaic ImageUrls="PreviewMosaicUrls"
+                        PlaceholderIcon="@Phosphor.Queue"
+                        PictureSize="MetadataPictureSize.Medium"
+                        Alt="@Title" />
     </div>
 </div>
 <div class="k7-dialog-actions">

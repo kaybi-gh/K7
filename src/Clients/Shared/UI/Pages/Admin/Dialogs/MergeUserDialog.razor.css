@@ -1,0 +1,9 @@
+.merge-user-dialog__intro {
+    margin: 0;
+    font-size: var(--text-sm);
+    color: var(--color-text-secondary);
+}
+
+.merge-user-dialog__heading {
+    margin: 0 0 var(--space-1);
+}

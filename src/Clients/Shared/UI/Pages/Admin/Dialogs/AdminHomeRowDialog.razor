@@ -1,75 +1,84 @@
 @inject IStringLocalizer<AdminHomeRowDialog> L
 @inject IStringLocalizer<SharedResource> S
 
-<div class="k7-dialog-content">
-    <div class="d-flex flex-col gap-3 mt-2">
-        <K7TextField @bind-Value="_title" Label="@L["Title"]" Required="true" Variant="outlined" />
-        <K7Switch @bind-Value="_continueWatching" Label="@L["ContinueWatching"]" />
+<div class="k7-dialog-content home-row-dialog">
+    <div>
+        <K7SettingRow Label="@L["Title"]" Required="true">
+            <K7TextField @bind-Value="_title" Required="true" Variant="outlined" />
+        </K7SettingRow>
+        <K7SettingRow Label="@L["ContinueWatching"]">
+            <K7Switch @bind-Value="_continueWatching" AriaLabel="@L["ContinueWatching"]" />
+        </K7SettingRow>
 
         @if (!_continueWatching)
         {
-            <K7Select TValue="CatalogScope" Value="_catalogScope" ValueChanged="OnCatalogScopeChanged"
-                      Label="@L["CatalogScope"]" Variant="outlined">
-                @foreach (var scope in Enum.GetValues<CatalogScope>())
-                {
-                    <K7SelectItem Value="@scope" Text="@GetCatalogScopeLabel(scope)">@GetCatalogScopeLabel(scope)</K7SelectItem>
-                }
-            </K7Select>
+            <K7SettingRow Label="@L["CatalogScope"]">
+                <K7Select TValue="CatalogScope" Value="_catalogScope" ValueChanged="OnCatalogScopeChanged"
+                          Variant="outlined">
+                    @foreach (var scope in Enum.GetValues<CatalogScope>())
+                    {
+                        <K7SelectItem Value="@scope" Text="@GetCatalogScopeLabel(scope)">@GetCatalogScopeLabel(scope)</K7SelectItem>
+                    }
+                </K7Select>
+            </K7SettingRow>
 
             @if (_catalogScope == CatalogScope.LibraryGroups && LibraryGroups.Count > 0)
             {
-                <div>
-                    <p class="text-sm mb-1">@L["LibraryGroups"]</p>
+                <K7SettingRow Label="@L["LibraryGroups"]" Hint="@L["LibraryGroupsHint"]" Stacked="true">
                     <K7CheckboxList TItem="LibraryGroupDto"
-                                      Items="LibraryGroups"
-                                      IsChecked="@(group => _libraryGroupIds.Contains(group.Id))"
-                                      CheckedChanged="@(e => ToggleLibraryGroup(e.Item.Id, e.Checked))"
-                                      ItemLabel="@(group => group.Title)" />
-                    <p class="text-xs mt-1 field-hint">@L["LibraryGroupsHint"]</p>
-                </div>
+                                    Items="LibraryGroups"
+                                    IsChecked="@(group => _libraryGroupIds.Contains(group.Id))"
+                                    CheckedChanged="@(e => ToggleLibraryGroup(e.Item.Id, e.Checked))"
+                                    ItemLabel="@(group => group.Title)"
+                                    Class="home-row-dialog__list" />
+                </K7SettingRow>
             }
 
             @if (_catalogScope == CatalogScope.Libraries && Libraries.Count > 0)
             {
-                <div>
-                    <p class="text-sm mb-1">@L["Libraries"]</p>
+                <K7SettingRow Label="@L["Libraries"]" Hint="@L["LibrariesHint"]" Stacked="true">
                     <K7CheckboxList TItem="LibraryDto"
-                                      Items="Libraries"
-                                      IsChecked="@(lib => _libraryIds.Contains(lib.Id))"
-                                      CheckedChanged="@(e => ToggleLibrary(e.Item.Id, e.Checked))"
-                                      ItemLabel="@(lib => lib.Title)" />
-                    <p class="text-xs mt-1 field-hint">@L["LibrariesHint"]</p>
-                </div>
+                                    Items="Libraries"
+                                    IsChecked="@(lib => _libraryIds.Contains(lib.Id))"
+                                    CheckedChanged="@(e => ToggleLibrary(e.Item.Id, e.Checked))"
+                                    ItemLabel="@(lib => lib.Title)"
+                                    Class="home-row-dialog__list" />
+                </K7SettingRow>
             }
 
-            <div>
-                <p class="text-sm mb-1">@L["MediaTypes"]</p>
+            <K7SettingRow Label="@L["MediaTypes"]" Hint="@L["MediaTypesHint"]" Stacked="true">
                 <K7CheckboxList TItem="MediaType"
-                                  Items="_availableMediaTypes"
-                                  IsChecked="@(type => _mediaTypes.Contains(type))"
-                                  CheckedChanged="@(e => ToggleMediaType(e.Item, e.Checked))"
-                                  ItemLabel="@GetMediaTypeLabel" />
-                <p class="text-xs mt-1 field-hint">@L["MediaTypesHint"]</p>
-            </div>
+                                Items="_availableMediaTypes"
+                                IsChecked="@(type => _mediaTypes.Contains(type))"
+                                CheckedChanged="@(e => ToggleMediaType(e.Item, e.Checked))"
+                                ItemLabel="@GetMediaTypeLabel"
+                                Class="home-row-dialog__list" />
+            </K7SettingRow>
 
-            <K7Select TValue="MediaOrderingOption" @bind-Value="_orderBy" Label="@L["Sort"]" Variant="outlined">
-                @foreach (var option in _orderOptions)
-                {
-                    <K7SelectItem Value="@option" Text="@GetOrderLabel(option)">@GetOrderLabel(option)</K7SelectItem>
-                }
-            </K7Select>
+            <K7SettingRow Label="@L["Sort"]">
+                <K7Select TValue="MediaOrderingOption" @bind-Value="_orderBy" Variant="outlined">
+                    @foreach (var option in _orderOptions)
+                    {
+                        <K7SelectItem Value="@option" Text="@GetOrderLabel(option)">@GetOrderLabel(option)</K7SelectItem>
+                    }
+                </K7Select>
+            </K7SettingRow>
         }
 
-        <K7Select TValue="HomeRowDisplayType" @bind-Value="_displayType" Label="@L["Display"]" Variant="outlined">
-            <K7SelectItem Value="@HomeRowDisplayType.Carousel" Text="@L["DisplayCarousel"]">@L["DisplayCarousel"]</K7SelectItem>
-        </K7Select>
+        <K7SettingRow Label="@L["Display"]">
+            <K7Select TValue="HomeRowDisplayType" @bind-Value="_displayType" Variant="outlined">
+                <K7SelectItem Value="@HomeRowDisplayType.Carousel" Text="@L["DisplayCarousel"]">@L["DisplayCarousel"]</K7SelectItem>
+            </K7Select>
+        </K7SettingRow>
 
-        <K7Select TValue="int" @bind-Value="_pageSize" Label="@L["ItemCount"]" Variant="outlined">
-            @foreach (var size in _pageSizeOptions)
-            {
-                <K7SelectItem Value="@size" Text="@size.ToString()">@size</K7SelectItem>
-            }
-        </K7Select>
+        <K7SettingRow Label="@L["ItemCount"]">
+            <K7Select TValue="int" @bind-Value="_pageSize" Variant="outlined">
+                @foreach (var size in _pageSizeOptions)
+                {
+                    <K7SelectItem Value="@size" Text="@size.ToString()">@size</K7SelectItem>
+                }
+            </K7Select>
+        </K7SettingRow>
     </div>
 </div>
 <div class="k7-dialog-actions">

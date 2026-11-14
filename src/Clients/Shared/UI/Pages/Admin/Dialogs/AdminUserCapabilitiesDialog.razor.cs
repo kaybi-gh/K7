@@ -11,7 +11,49 @@ public partial class AdminUserCapabilitiesDialog
     [Parameter] public string Role { get; set; } = Roles.User;
     [Parameter] public Dictionary<Capability, bool> Overrides { get; set; } = new();
 
+    private static readonly (string TitleKey, Capability[] Capabilities)[] _groups =
+    [
+        ("GroupPlayback",
+        [
+            Capability.CanResumePlayback,
+            Capability.CanReportPlaybackProgress,
+            Capability.CanTranscode,
+            Capability.CanScrobble
+        ]),
+        ("GroupContent", [Capability.CanRate, Capability.CanCreatePlaylist]),
+        ("GroupHistory",
+        [
+            Capability.CanViewHistory,
+            Capability.CanDeleteHistory,
+            Capability.CanReassignHistory,
+            Capability.CanViewStats
+        ]),
+        ("GroupAccount", [Capability.CanManageDevices, Capability.CanModifySettings]),
+        ("GroupAdmin", [Capability.CanAccessAdmin, Capability.CanManageLibraries, Capability.CanManageUsers])
+    ];
+
     private IReadOnlySet<Capability> _defaultCaps = DefaultCapabilities.ForRole(Roles.User);
+
+    /// <summary>
+    /// Capabilities by theme, so the list reads as a few short blocks. A capability added to the
+    /// enum without a group still shows, under "Other".
+    /// </summary>
+    private IReadOnlyList<(string Title, IReadOnlyList<Capability> Capabilities)> Groups
+    {
+        get
+        {
+            var groups = _groups
+                .Select(g => (Title: L[g.TitleKey].Value, Capabilities: (IReadOnlyList<Capability>)g.Capabilities))
+                .ToList();
+
+            var grouped = _groups.SelectMany(g => g.Capabilities).ToHashSet();
+            var others = Enum.GetValues<Capability>().Where(c => !grouped.Contains(c)).ToList();
+            if (others.Count > 0)
+                groups.Add((L["GroupOther"].Value, others));
+
+            return groups;
+        }
+    }
 
     protected override void OnParametersSet()
     {

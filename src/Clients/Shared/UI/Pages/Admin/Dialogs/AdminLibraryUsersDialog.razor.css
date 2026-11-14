@@ -1,32 +1,42 @@
-.library-users__hint {
-    font-size: var(--text-sm);
-    color: var(--color-text-secondary);
-    margin-bottom: 0.75rem;
-}
-
-.library-users__info {
+.library-users {
     display: flex;
     flex-direction: column;
+    gap: var(--space-3);
+}
+
+.library-users__intro,
+.library-users__empty {
+    margin: 0;
+    font-size: var(--text-sm);
+    color: var(--color-text-secondary);
+}
+
+/* Taller than the default list: this dialog is nothing but the list. */
+.library-users ::deep .library-users__list {
+    max-height: min(50vh, 24rem);
+}
+
+.library-users__text {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
     min-width: 0;
 }
 
-.library-users__name {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: var(--text-sm);
-    white-space: nowrap;
+.library-users__name,
+.library-users__secondary {
     overflow: hidden;
     text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
-.library-users__role {
-    font-size: var(--text-xs);
-    color: var(--color-text-secondary);
-}
-
-.library-users__empty {
+.library-users__name {
     font-size: var(--text-sm);
-    color: var(--color-text-secondary);
-    font-style: italic;
+    font-weight: var(--font-medium);
+    color: var(--color-text);
+}
+
+.library-users__secondary {
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
 }

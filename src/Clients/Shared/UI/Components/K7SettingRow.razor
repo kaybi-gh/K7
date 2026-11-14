@@ -2,10 +2,14 @@
 
 <div class="k7-setting-row @(Stacked ? "k7-setting-row--stacked" : "") @Class">
     <div class="k7-setting-row__text">
-        <span class="k7-setting-row__label">@Label</span>
+        <span class="k7-setting-row__label @(Required ? "k7-setting-row__label--required" : "")">@Label</span>
         @if (!string.IsNullOrEmpty(Hint))
         {
             <span class="k7-setting-row__hint">@Hint</span>
+        }
+        @if (HintContent is not null)
+        {
+            <span class="k7-setting-row__hint">@HintContent</span>
         }
     </div>
     <div class="k7-setting-row__control">

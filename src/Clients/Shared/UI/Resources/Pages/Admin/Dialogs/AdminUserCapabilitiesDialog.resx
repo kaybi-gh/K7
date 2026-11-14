@@ -2,7 +2,7 @@
 <root>
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
-  <data name="RoleHint" xml:space="preserve"><value>Rôle actuel : {0}. Les cases cochées par défaut sont héritées du rôle.</value></data>
+  <data name="RoleHint" xml:space="preserve"><value>Les valeurs par défaut viennent du rôle {0}. Une capacité modifiée affiche un bouton pour revenir à la valeur du rôle.</value></data>
   <data name="RemoveOverride" xml:space="preserve"><value>Retirer la surcharge</value></data>
   <data name="RoleAdministrator" xml:space="preserve"><value>Administrateur</value></data>
   <data name="RoleUser" xml:space="preserve"><value>Utilisateur</value></data>
@@ -22,4 +22,10 @@
   <data name="CapCanReportPlaybackProgress" xml:space="preserve"><value>Reporter la progression</value></data>
   <data name="CapCanTranscode" xml:space="preserve"><value>Transcoder les médias</value></data>
   <data name="CapCanScrobble" xml:space="preserve"><value>Scrobbler les lectures</value></data>
+  <data name="GroupPlayback" xml:space="preserve"><value>Lecture</value></data>
+  <data name="GroupContent" xml:space="preserve"><value>Contenu</value></data>
+  <data name="GroupHistory" xml:space="preserve"><value>Historique et statistiques</value></data>
+  <data name="GroupAccount" xml:space="preserve"><value>Compte et appareils</value></data>
+  <data name="GroupAdmin" xml:space="preserve"><value>Administration</value></data>
+  <data name="GroupOther" xml:space="preserve"><value>Autres</value></data>
 </root>

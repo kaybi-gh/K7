@@ -22,53 +22,20 @@
     cursor: not-allowed;
 }
 
-.field-row:not(.external-id-row):not(.external-ids-header) {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 40px;
-    grid-template-rows: auto auto;
-    column-gap: 4px;
-    row-gap: var(--space-1);
+/* Each row holds a field and its lock button: the field shrinks, the button stays beside it. */
+.edit-metadata-dialog ::deep .k7-setting-row__control {
+    align-items: flex-start;
+    gap: var(--space-1);
 }
 
-.field-row:not(.external-id-row):not(.external-ids-header):has(.k7-field-helper),
-.field-row:not(.external-id-row):not(.external-ids-header):has(.k7-field-error) {
-    grid-template-rows: auto auto auto;
+.edit-metadata-dialog ::deep .k7-setting-row__control .k7-field {
+    min-width: 0;
 }
 
-.field-row:not(.external-id-row):not(.external-ids-header) ::deep .k7-field {
-    display: contents;
-}
-
-.field-row:not(.external-id-row):not(.external-ids-header) ::deep .k7-label {
-    grid-column: 1;
-    grid-row: 1;
-}
-
-.field-row:not(.external-id-row):not(.external-ids-header) ::deep .k7-input-wrap,
-.field-row:not(.external-id-row):not(.external-ids-header) ::deep .k7-textarea,
-.field-row:not(.external-id-row):not(.external-ids-header) ::deep .k7-select-wrap {
-    grid-column: 1;
-    grid-row: 2;
-}
-
-.field-row:not(.external-id-row):not(.external-ids-header) ::deep .k7-field-helper,
-.field-row:not(.external-id-row):not(.external-ids-header) ::deep .k7-field-error {
-    grid-column: 1;
-    grid-row: 3;
-}
-
-.field-row:not(.external-id-row):not(.external-ids-header) ::deep .lock-btn {
-    grid-column: 2;
-    grid-row: 2;
-    align-self: end;
-    flex-shrink: 0;
+.edit-metadata-dialog ::deep .k7-setting-row__control .lock-btn {
     width: 40px;
     height: 40px;
     margin: 0;
-}
-
-.field-row:not(.external-id-row):not(.external-ids-header):has(.k7-textarea) ::deep .lock-btn {
-    align-self: start;
 }
 
 .field-row.external-id-row,
@@ -101,13 +68,6 @@
     width: 40px;
     height: 40px;
     margin: 0;
-}
-
-.field-label {
-    font-size: var(--text-sm);
-    color: var(--color-text-secondary);
-    flex: 1;
-    padding: 8px 0;
 }
 
 ::deep .lock-btn {

@@ -71,7 +71,7 @@
         <p class="ds-description">Overlay <code>position:fixed; inset:0</code>. Cliquer sur la pochette dans le MiniMusicPlayer ou utiliser le bouton ci-dessous pour l'ouvrir.</p>
         @if (MockAudio.CurrentTrack is not null)
         {
-            <K7Button OnClick="() => MockAudio.ToggleFullScreen()" Variant="K7ButtonVariant.Outlined">
+            <K7Button OnClick="() => MockAudio.ToggleFullScreen()" Variant="outlined">
                 @(MockAudio.IsFullScreenVisible ? "Fermer le player" : "Ouvrir le player plein ecran")
             </K7Button>
         }
@@ -86,8 +86,8 @@
         <p class="ds-description">Video player via Video.js. Cliquer "Play" charge Big Buck Bunny - utiliser le bouton play de l'overlay K7 ou les controles Video.js pour lancer la lecture.</p>
         <div class="ds-preview ds-preview--block">
             <div style="display:flex;gap:var(--space-2);margin-bottom:var(--space-4)">
-                <K7Button OnClick="ShowVideoPlayer" Variant="K7ButtonVariant.Filled">Play Big Buck Bunny</K7Button>
-                <K7Button OnClick="HideVideoPlayer" Variant="K7ButtonVariant.Outlined">Hide</K7Button>
+                <K7Button OnClick="ShowVideoPlayer" Variant="filled">Play Big Buck Bunny</K7Button>
+                <K7Button OnClick="HideVideoPlayer" Variant="outlined">Hide</K7Button>
             </div>
             <VideoPlayer />
         </div>

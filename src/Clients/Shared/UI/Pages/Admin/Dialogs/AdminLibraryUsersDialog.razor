@@ -2,44 +2,56 @@
 @inject IStringLocalizer<AdminLibraryUsersDialog> L
 @inject IStringLocalizer<SharedResource> S
 
-<div class="k7-dialog-content">
-        @if (_loading)
+<div class="k7-dialog-content library-users">
+    @if (_loading)
+    {
+        <K7ProgressBar Indeterminate="true" />
+    }
+    else if (_users.Count == 0)
+    {
+        <p class="library-users__empty">@L["Empty"]</p>
+    }
+    else
+    {
+        <p class="library-users__intro">@L["Hint"]</p>
+
+        <K7TextField TValue="string"
+                     Value="@_search"
+                     ValueChanged="@(value => _search = value ?? "")"
+                     Immediate="true"
+                     Placeholder="@L["SearchPlaceholder"]"
+                     AdornmentIcon="@Phosphor.MagnifyingGlass" />
+
+        @if (FilteredUsers.Count == 0)
         {
-            <K7ProgressBar Indeterminate="true" />
-        }
-        else if (_users.Count == 0)
-        {
-            <p class="library-users__empty">@L["Empty"]</p>
+            <p class="library-users__empty">@L["NoMatch"]</p>
         }
         else
         {
-            <p class="library-users__hint">
-                @L["Hint"]
-            </p>
             <K7CheckboxList TItem="UserDto"
-                            Items="_users"
+                            Items="FilteredUsers"
                             IsChecked="@(u => !_excludedUserIds.Contains(u.Id))"
-                            CheckedChanged="@(e => ToggleAccess(e.Item.Id, e.Checked))">
+                            CheckedChanged="@(e => ToggleAccess(e.Item.Id, e.Checked))"
+                            Class="library-users__list">
                 <ItemTemplate Context="user">
-                    <K7Avatar Size="sm" Image="@user.AvatarUrl" Letter="@GetInitial(user)" />
-                    <div class="library-users__info">
-                        <span class="library-users__name">
-                            @(user.UserName ?? user.Email ?? "-")
-                            @if (IsSelfExcluded(user))
-                            {
-                                <K7Chip Size="sm" Color="secondary" Variant="outlined">@L["AutoExcluded"]</K7Chip>
-                            }
-                        </span>
-                        <span class="library-users__role">@user.Role</span>
-                    </div>
+                    <K7Avatar Size="sm" Image="@user.AvatarUrl" Letter="@GetInitial(user)" UserId="@user.Id" />
+                    <span class="library-users__text">
+                        <span class="library-users__name">@(user.UserName ?? user.Email ?? "-")</span>
+                        <span class="library-users__secondary">@user.Role</span>
+                    </span>
+                    @if (IsSelfExcluded(user))
+                    {
+                        <K7Chip Size="sm" Color="secondary" Variant="outlined">@L["AutoExcluded"]</K7Chip>
+                    }
                 </ItemTemplate>
             </K7CheckboxList>
         }
-    </div>
-    <div class="k7-dialog-actions">
-        <K7Button OnClick="Cancel">@S["Cancel"]</K7Button>
-        <K7Button Color="primary" Variant="filled" OnClick="Submit" Disabled="_saving">
-            @if (_saving) { <K7Spinner Size="sm" /> }
-            @S["Save"]
-        </K7Button>
-    </div>
+    }
+</div>
+<div class="k7-dialog-actions">
+    <K7Button OnClick="Cancel">@S["Cancel"]</K7Button>
+    <K7Button Color="primary" Variant="filled" OnClick="Submit" Disabled="_saving">
+        @if (_saving) { <K7Spinner Size="sm" /> }
+        @S["Save"]
+    </K7Button>
+</div>

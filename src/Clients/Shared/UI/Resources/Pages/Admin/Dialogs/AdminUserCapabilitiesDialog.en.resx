@@ -2,7 +2,7 @@
 <root>
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
-  <data name="RoleHint" xml:space="preserve"><value>Current role: {0}. Checked defaults are inherited from the role.</value></data>
+  <data name="RoleHint" xml:space="preserve"><value>Defaults come from the {0} role. A changed capability shows a button to go back to the role's value.</value></data>
   <data name="RemoveOverride" xml:space="preserve"><value>Remove override</value></data>
   <data name="RoleAdministrator" xml:space="preserve"><value>Administrator</value></data>
   <data name="RoleUser" xml:space="preserve"><value>User</value></data>
@@ -22,4 +22,10 @@
   <data name="CapCanReportPlaybackProgress" xml:space="preserve"><value>Report playback progress</value></data>
   <data name="CapCanTranscode" xml:space="preserve"><value>Transcode media</value></data>
   <data name="CapCanScrobble" xml:space="preserve"><value>Scrobble playback</value></data>
+  <data name="GroupPlayback" xml:space="preserve"><value>Playback</value></data>
+  <data name="GroupContent" xml:space="preserve"><value>Content</value></data>
+  <data name="GroupHistory" xml:space="preserve"><value>History and statistics</value></data>
+  <data name="GroupAccount" xml:space="preserve"><value>Account and devices</value></data>
+  <data name="GroupAdmin" xml:space="preserve"><value>Administration</value></data>
+  <data name="GroupOther" xml:space="preserve"><value>Other</value></data>
 </root>

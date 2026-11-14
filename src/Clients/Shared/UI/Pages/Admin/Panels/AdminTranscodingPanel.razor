@@ -14,13 +14,10 @@
 
     @if (_loading)
     {
-        <K7Paper Outlined="true" Elevation="0" Class="admin-surface-card transcoding-panel__card transcoding-panel__card--loading">
-            <K7Spinner />
-        </K7Paper>
+        <K7Spinner />
     }
     else if (_settings is not null)
     {
-        <K7Paper Outlined="true" Elevation="0" Class="admin-surface-card transcoding-panel__card">
             <div class="d-flex flex-col gap-4">
                 <div>
                     <K7SettingRow Label="@L["EncoderMode"]">
@@ -50,43 +47,40 @@
 
                 <div class="d-flex align-center gap-2">
                     <K7Button Color="primary" OnClick="SaveAsync" Disabled="_saving">@L["Save"]</K7Button>
-                    <K7Button OnClick="TestEncoderAsync" Variant="K7ButtonVariant.Outlined" Disabled="_testing">@L["TestEncoder"]</K7Button>
+                    <K7Button OnClick="TestEncoderAsync" Variant="outlined" Disabled="_testing">@L["TestEncoder"]</K7Button>
                     @if (_testing)
                     {
                         <K7Spinner Size="20" />
                     }
                 </div>
+                @if (_testResult is not null)
+                {
+                    @if (_testResult.Success)
+                    {
+                        <span class="transcoding-panel__test transcoding-panel__test--ok">@L["TestSuccess"] @_testResult.SelectedEncoder (@(_testResult.IsHardwareAccelerated ? L["Hardware"] : L["Software"]))</span>
+                    }
+                    else
+                    {
+                        <span class="transcoding-panel__test transcoding-panel__test--error">@L["TestFailed"]: @_testResult.Error</span>
+                    }
+                }
             </div>
-        </K7Paper>
 
         @if (_capabilities is not null)
         {
-            <K7Paper Outlined="true" Elevation="0" Class="admin-surface-card transcoding-panel__card">
-                <h6>@L["CapabilitiesTitle"]</h6>
-                <p class="text-caption transcoding-panel__hint">@L["FfmpegVersion"]: @(_capabilities.FfmpegVersion ?? "-")</p>
-                @if (_capabilities.AvailableHardwareEncoders.Count > 0)
-                {
-                    <p>@L["HardwareEncoders"]: @string.Join(", ", _capabilities.AvailableHardwareEncoders)</p>
-                }
-                else
-                {
-                    <p>@L["NoHardwareEncoders"]</p>
-                }
-            </K7Paper>
-        }
-
-        @if (_testResult is not null)
-        {
-            <K7Paper Outlined="true" Elevation="0" Class="admin-surface-card transcoding-panel__card">
-                @if (_testResult.Success)
-                {
-                    <span class="transcoding-panel__test transcoding-panel__test--ok">@L["TestSuccess"] @_testResult.SelectedEncoder (@(_testResult.IsHardwareAccelerated ? L["Hardware"] : L["Software"]))</span>
-                }
-                else
-                {
-                    <span class="transcoding-panel__test transcoding-panel__test--error">@L["TestFailed"]: @_testResult.Error</span>
-                }
-            </K7Paper>
+            <div class="transcoding-panel__capabilities">
+                <h6 class="transcoding-panel__heading">@L["CapabilitiesTitle"]</h6>
+                <K7SettingRow Label="@L["FfmpegVersion"]">
+                    <span class="transcoding-panel__value">@(_capabilities.FfmpegVersion ?? "-")</span>
+                </K7SettingRow>
+                <K7SettingRow Label="@L["HardwareEncoders"]">
+                    <span class="transcoding-panel__value">
+                        @(_capabilities.AvailableHardwareEncoders.Count > 0
+                            ? string.Join(", ", _capabilities.AvailableHardwareEncoders)
+                            : L["NoHardwareEncoders"])
+                    </span>
+                </K7SettingRow>
+            </div>
         }
     }
 </div>

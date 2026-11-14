@@ -14,22 +14,23 @@
     else
     {
         <p class="text-sm mb-3">@(IsBulk ? string.Format(L["PromptBulk"], TargetIds.Count) : string.Format(L["Prompt"], MediaTitle))</p>
-        <K7Select TValue="Guid"
-                  @bind-Value="_selectedId"
-                  Label="@L["Destination"]"
-                  Variant="outlined"
-                  FullWidth="true"
-                  ToStringFunc="FormatDestination">
-            <K7SelectItem TValue="Guid" Value="@Guid.Empty" Text="@L["PersonalProfile"]">
-                @L["PersonalProfile"]
-            </K7SelectItem>
-            @foreach (var profile in _profiles)
-            {
-                <K7SelectItem TValue="Guid" Value="@profile.Id" Text="@profile.Name">
-                    @profile.Name
+        <K7SettingRow Label="@L["Destination"]">
+            <K7Select TValue="Guid"
+                      @bind-Value="_selectedId"
+                      Variant="outlined"
+                      FullWidth="true"
+                      ToStringFunc="FormatDestination">
+                <K7SelectItem TValue="Guid" Value="@Guid.Empty" Text="@L["PersonalProfile"]">
+                    @L["PersonalProfile"]
                 </K7SelectItem>
-            }
-        </K7Select>
+                @foreach (var profile in _profiles)
+                {
+                    <K7SelectItem TValue="Guid" Value="@profile.Id" Text="@profile.Name">
+                        @profile.Name
+                    </K7SelectItem>
+                }
+            </K7Select>
+        </K7SettingRow>
     }
 </div>
 <div class="k7-dialog-actions">

@@ -49,6 +49,7 @@ public partial class EditLibraryDialog
     private bool _realtimeMonitorEnabled = true;
     private int _autoScanIntervalHours = 6;
     private bool _isSubmitting;
+    private string _configTab = "General";
 
     protected override void OnInitialized()
     {
@@ -68,6 +69,21 @@ public partial class EditLibraryDialog
         _realtimeMonitorEnabled = RealtimeMonitorEnabled;
         _autoScanIntervalHours = AutoScanIntervalHours;
     }
+
+    /// <summary>Sections as tabs, so no section needs a long scroll. A received library has no scan or processing.</summary>
+    private IReadOnlyList<TabOption<string>> ConfigTabs => IsFederated
+        ?
+        [
+            new("General", L["SectionGeneralTitle"]),
+            new("Metadata", L["SectionMetadataTitle"])
+        ]
+        :
+        [
+            new("General", L["SectionGeneralTitle"]),
+            new("Metadata", L["SectionMetadataTitle"]),
+            new("Scan", L["SectionScanTitle"]),
+            new("Capabilities", L["SectionCapabilitiesTitle"])
+        ];
 
     private bool CanSubmit => !_isSubmitting && !string.IsNullOrWhiteSpace(_title) && !string.IsNullOrWhiteSpace(_selectedProvider);
 

@@ -8,17 +8,22 @@
 @inject IStringLocalizer<LibraryBrowseFilters> BrowseL
 @inject IStringLocalizer<SharedResource> S
 
-<div class="k7-dialog-content">
-    <div class="d-flex flex-col">
-        <K7TextField @bind-Value="_name" Label="@L["NameLabel"]" Required="true" Variant="outlined" />
-        <K7TextField @bind-Value="_description" Label="@L["DescriptionLabel"]" Variant="outlined" Lines="2" />
-
-        <p class="text-subtitle2 mt-2">@L["RulesHelper"]</p>
-
-        <K7RuleEditor Value="_ruleFilter"
-                      ValueChanged="OnRuleFilterChanged"
-                      FieldDescriptors="_fieldDescriptors"
-                      SearchSuggestionsAsync="SearchSuggestionsAsync" />
+<div class="k7-dialog-content restriction-profile-dialog">
+    <div>
+        <K7SettingRow Label="@L["NameLabel"]" Required="true">
+            <K7TextField @bind-Value="_name" Required="true" Variant="outlined" />
+        </K7SettingRow>
+        <K7SettingRow Label="@L["DescriptionLabel"]" Stacked="true">
+            <K7TextField @bind-Value="_description" Variant="outlined" Lines="2" />
+        </K7SettingRow>
+        <K7SettingRow Label="@L["RulesHelper"]" Stacked="true">
+            <div class="restriction-profile-dialog__rules">
+                <K7RuleEditor Value="_ruleFilter"
+                              ValueChanged="OnRuleFilterChanged"
+                              FieldDescriptors="_fieldDescriptors"
+                              SearchSuggestionsAsync="SearchSuggestionsAsync" />
+            </div>
+        </K7SettingRow>
     </div>
 </div>
 <div class="k7-dialog-actions">

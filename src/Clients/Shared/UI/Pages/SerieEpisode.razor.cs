@@ -385,7 +385,7 @@ public partial class SerieEpisode : IAsyncDisposable
         {
             { x => x.Media, _episode }
         };
-        var options = new K7DialogOptions { CloseOnEscapeKey = true, MaxWidth = K7DialogMaxWidth.Medium, FullWidth = true };
+        var options = new K7DialogOptions { CloseOnEscapeKey = true, MaxWidth = K7DialogMaxWidth.Large, FullWidth = true };
         var dialog = await DialogService.ShowAsync<EditMetadataDialog>(S["EditMetadata"], parameters, options);
         var result = await dialog.Result;
 
@@ -406,7 +406,7 @@ public partial class SerieEpisode : IAsyncDisposable
             { x => x.Media, _episode },
             { x => x.OnReIdentifyFile, EventCallback.Factory.Create<Guid>(this, OpenFileReIdentifyDialogAsync) }
         };
-        var options = new K7DialogOptions { CloseOnEscapeKey = true, MaxWidth = K7DialogMaxWidth.Medium, FullWidth = true };
+        var options = new K7DialogOptions { CloseOnEscapeKey = true, MaxWidth = K7DialogMaxWidth.Large, FullWidth = true };
         await DialogService.ShowAsync<IndexedFilesDialog>(S["IndexedVersions"], parameters, options);
     }
 

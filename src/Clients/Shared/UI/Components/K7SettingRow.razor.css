@@ -28,6 +28,11 @@
     color: var(--color-text);
 }
 
+.k7-setting-row__label--required::after {
+    content: " *";
+    color: var(--color-error);
+}
+
 .k7-setting-row__hint {
     font-size: var(--text-xs);
     line-height: 1.4;
@@ -46,6 +51,14 @@
 .k7-setting-row__control ::deep .k7-field {
     width: 18rem;
     max-width: 100%;
+}
+
+/* In a dialog the room is tighter: a slightly narrower field still sits beside its label
+   in the smallest form dialog instead of dropping under it. */
+@media (min-width: 600px) {
+    .k7-dialog-content .k7-setting-row__control ::deep .k7-field {
+        width: 14rem;
+    }
 }
 
 .k7-setting-row--stacked .k7-setting-row__text,

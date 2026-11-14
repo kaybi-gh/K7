@@ -23,32 +23,16 @@
     gap: var(--space-2);
 }
 
-.picker-row {
-    display: flex;
+/* Several controls can share the right side of a row (group chips, icon preview + Choose). */
+.create-library-dialog ::deep .k7-setting-row__control {
+    flex-wrap: wrap;
     align-items: center;
-    gap: 8px;
-    padding: 8px 0;
-    border-bottom: 1px solid var(--color-border);
+    gap: var(--space-2);
 }
 
-.picker-row__label {
-    font-size: var(--text-sm);
-    color: var(--color-text-secondary);
-    width: 100px;
-    flex-shrink: 0;
-}
-
-.picker-row__value {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    min-height: 36px;
-}
-
-.picker-row__icon-preview {
+.create-library-dialog__icon-preview {
     font-size: var(--text-xl);
-    color: var(--color-text-primary);
+    color: var(--color-text);
 }
 
 .edit-library-dialog {
@@ -82,13 +66,15 @@
     line-height: 1.45;
 }
 
-.edit-library-section__fields {
+/* One section at a time behind tabs: no separator needed, and a steady height so the dialog
+   does not jump when switching tab. */
+.edit-library-dialog {
     gap: var(--space-3);
 }
 
-.edit-library-section__field-hint {
-    margin-top: calc(-1 * var(--space-2));
-    font-size: var(--text-sm);
-    color: var(--color-text-muted);
-    line-height: 1.4;
+.edit-library-section,
+.edit-library-section:first-child {
+    padding-top: 0;
+    border-top: none;
+    min-height: 19rem;
 }

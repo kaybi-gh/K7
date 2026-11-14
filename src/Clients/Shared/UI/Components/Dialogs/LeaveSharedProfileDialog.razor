@@ -5,12 +5,14 @@
 
 <div class="d-flex flex-col gap-4">
     <p>@L["Prompt"]</p>
-    <K7Select TValue="Guid" Label="@L["NewHost"]" @bind-Value="_newHostUserId" ToStringFunc="@FormatMember">
-        @foreach (var member in OtherMembers)
-        {
-            <K7SelectItem Value="@member.UserId" Text="@(member.DisplayName ?? member.UserId.ToString())" />
-        }
-    </K7Select>
+    <K7SettingRow Label="@L["NewHost"]">
+        <K7Select TValue="Guid" @bind-Value="_newHostUserId" ToStringFunc="@FormatMember">
+            @foreach (var member in OtherMembers)
+            {
+                <K7SelectItem Value="@member.UserId" Text="@(member.DisplayName ?? member.UserId.ToString())" />
+            }
+        </K7Select>
+    </K7SettingRow>
 </div>
 
 <div class="k7-dialog-actions">

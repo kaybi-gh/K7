@@ -22,45 +22,6 @@
     color: var(--color-text-secondary);
 }
 
-/* Header actions (rendered inside dialog title bar) */
-
-.syncplay-dialog-header-actions {
-    display: flex;
-    align-items: center;
-    gap: var(--space-1);
-}
-
-.syncplay-dialog-tab-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--space-1);
-    height: 32px;
-    padding: 0 var(--space-2);
-    border-radius: var(--radius-sm);
-    border: none;
-    background: transparent;
-    color: var(--color-text-secondary);
-    cursor: pointer;
-    font-size: var(--text-sm);
-    transition: background var(--duration-fast), color var(--duration-fast);
-}
-
-.syncplay-dialog-tab-btn:hover {
-    background: var(--color-surface-hover);
-    color: var(--color-text);
-}
-
-.syncplay-dialog-tab-btn.active {
-    color: var(--color-text);
-    background: var(--color-surface-hover);
-    box-shadow: inset 0 -2px 0 currentColor;
-}
-
-.syncplay-dialog-members-count {
-    font-weight: var(--font-medium);
-}
-
 /* Media info */
 
 .syncplay-dialog-media {

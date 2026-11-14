@@ -2,21 +2,28 @@
 @inject IStringLocalizer<SharedResource> S
 
 <div class="k7-dialog-content">
-        <div class="d-flex flex-col mt-2">
-            <K7TextField @bind-Value="_username" Label="@L["Username"]" Variant="outlined"
-                          Required="true" RequiredError="@L["UsernameRequired"]" />
-            <K7TextField @bind-Value="_email" Label="@L["EmailOptional"]" Variant="outlined"
-                          HelperText="@L["EmailHelper"]" />
-            <K7TextField @bind-Value="_password" Label="@L["Password"]" Variant="outlined"
-                          Type="password" HelperText="@L["PasswordHelper"]" Immediate="true" />
+        <div>
+            <K7SettingRow Label="@L["Username"]" Required="true">
+                <K7TextField @bind-Value="_username" Variant="outlined"
+                             Required="true" RequiredError="@L["UsernameRequired"]" />
+            </K7SettingRow>
+            <K7SettingRow Label="@L["EmailOptional"]" Hint="@L["EmailHelper"]">
+                <K7TextField @bind-Value="_email" Variant="outlined" />
+            </K7SettingRow>
+            <K7SettingRow Label="@L["Password"]" Hint="@L["PasswordHelper"]">
+                <K7TextField @bind-Value="_password" Variant="outlined"
+                             Type="password" Immediate="true" />
+            </K7SettingRow>
             @if (!string.IsNullOrWhiteSpace(_password))
             {
                 <PasswordRulesHint Password="@_password" Policy="@_policy" />
             }
-            <K7Select TValue="string" @bind-Value="_role" Label="@L["Role"]" Variant="outlined">
-                <K7SelectItem Value="@("User")" Text="@S["RoleUser"]">@S["RoleUser"]</K7SelectItem>
-                <K7SelectItem Value="@("Administrator")" Text="@S["RoleAdministrator"]">@S["RoleAdministrator"]</K7SelectItem>
-            </K7Select>
+            <K7SettingRow Label="@L["Role"]">
+                <K7Select TValue="string" @bind-Value="_role" Variant="outlined">
+                    <K7SelectItem Value="@("User")" Text="@S["RoleUser"]">@S["RoleUser"]</K7SelectItem>
+                    <K7SelectItem Value="@("Administrator")" Text="@S["RoleAdministrator"]">@S["RoleAdministrator"]</K7SelectItem>
+                </K7Select>
+            </K7SettingRow>
         </div>
     </div>
     <div class="k7-dialog-actions">

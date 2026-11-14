@@ -23,4 +23,6 @@
   <data name="GroupPlayback" xml:space="preserve"><value>Playback</value></data>
   <data name="EditPreview" xml:space="preserve"><value>Edit / Preview</value></data>
   <data name="PreviewNote" xml:space="preserve"><value>Preview with sample data:</value></data>
+  <data name="PayloadTitle" xml:space="preserve"><value>Content sent for each event</value></data>
+  <data name="PayloadTitleReadOnly" xml:space="preserve"><value>View what this preset sends</value></data>
 </root>

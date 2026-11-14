@@ -15,22 +15,13 @@
     word-break: break-all;
 }
 
-.accept-dialog__libraries {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.accept-dialog__label {
-    font-size: var(--text-sm);
-    color: var(--color-text-secondary);
+/* The list fills the stacked row. */
+.accept-dialog ::deep .accept-dialog__list {
+    flex: 1 1 100%;
+    min-width: 0;
 }
 
 .accept-dialog__empty {
     font-size: var(--text-sm);
     color: var(--color-text-secondary);
-}
-
-.accept-dialog__option {
-    margin-top: 12px;
 }

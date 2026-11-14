@@ -5,10 +5,6 @@
     width: 100%;
 }
 
-.background-task-settings ::deep .background-task-settings__worker {
-    max-width: 12rem;
-}
-
 .background-task-settings__columns {
     display: flex;
     flex-direction: column;

@@ -2,69 +2,68 @@
 @inject IStringLocalizer<CreateSharedProfileDialog> L
 @inject IStringLocalizer<SharedResource> S
 
-<div class="k7-dialog-content">
+<div class="k7-dialog-content shared-profile-editor">
     @if (_loading)
     {
         <K7ProgressBar Indeterminate="true" />
     }
     else
     {
-        <div class="d-flex flex-col mt-2 gap-3">
-            <K7TextField @bind-Value="_name" Label="@L["GroupName"]" Variant="outlined" Required="true" />
+        <div>
+            <K7SettingRow Label="@L["GroupName"]" Required="true">
+                <K7TextField @bind-Value="_name" Variant="outlined" Required="true" />
+            </K7SettingRow>
 
-            <div>
-                <span class="text-sm text-muted">@L["Members"]</span>
-                <p class="text-xs text-secondary mt-1 mb-0">@L["MembersMinHint"]</p>
-                <K7Alert Severity="K7Severity.Info" Variant="outlined" NoIcon="true" Class="mt-2 mb-2">
-                    @L["MembersInvitationHint"]
-                </K7Alert>
-                <K7CheckboxList TItem="SharedProfileMemberCandidateDto"
-                                Items="_candidates"
-                                IsChecked="@(c => _selectedMemberIds.Contains(c.Id))"
-                                IsDisabled="@(c => c.Id == _currentUserId)"
-                                CheckedChanged="@(e => ToggleMember(e.Item.Id, e.Checked))">
-                    <ItemTemplate Context="candidate">
-                        <K7Avatar Size="sm" Image="@candidate.AvatarUrl" Letter="@GetInitial(candidate)" />
-                        <span class="text-sm">@(candidate.DisplayName ?? "-")</span>
-                    </ItemTemplate>
-                </K7CheckboxList>
-                @if (!_loading && _selectedMemberIds.Count < 2)
-                {
-                    <K7Alert Severity="K7Severity.Warning" Variant="outlined" NoIcon="true" Class="mt-2 mb-0">
-                        @L["MembersMinRequired"]
-                    </K7Alert>
-                }
-            </div>
+            <K7SettingRow Label="@L["Members"]"
+                          Hint="@($"{L["MembersMinHint"]} {L["MembersInvitationHint"]}")"
+                          Stacked="true">
+                <div class="shared-profile-editor__members">
+                    <K7CheckboxList TItem="SharedProfileMemberCandidateDto"
+                                    Items="_candidates"
+                                    IsChecked="@(c => _selectedMemberIds.Contains(c.Id))"
+                                    IsDisabled="@(c => c.Id == _currentUserId)"
+                                    CheckedChanged="@(e => ToggleMember(e.Item.Id, e.Checked))">
+                        <ItemTemplate Context="candidate">
+                            <K7Avatar Size="sm" Image="@candidate.AvatarUrl" Letter="@GetInitial(candidate)" />
+                            <span class="shared-profile-editor__name">@(candidate.DisplayName ?? "-")</span>
+                        </ItemTemplate>
+                    </K7CheckboxList>
+                    @if (!_loading && _selectedMemberIds.Count < 2)
+                    {
+                        <K7Alert Severity="K7Severity.Warning" Variant="outlined" NoIcon="true">
+                            @L["MembersMinRequired"]
+                        </K7Alert>
+                    }
+                </div>
+            </K7SettingRow>
 
             @if (_selectedMemberIds.Count >= 2)
             {
-                <K7Select TValue="Guid" @bind-Value="_hostUserId" Label="@L["Host"]" Variant="outlined"
-                          ToStringFunc="@GetMemberDisplayName"
-                          FullWidth="true">
-                    @foreach (var memberId in _selectedMemberIds)
-                    {
-                        <K7SelectItem TValue="Guid" Value="@memberId" Text="@GetMemberDisplayName(memberId)">
-                            @GetMemberDisplayName(memberId)
-                        </K7SelectItem>
-                    }
-                </K7Select>
+                <K7SettingRow Label="@L["Host"]">
+                    <K7Select TValue="Guid" @bind-Value="_hostUserId" Variant="outlined"
+                              ToStringFunc="@GetMemberDisplayName"
+                              FullWidth="true">
+                        @foreach (var memberId in _selectedMemberIds)
+                        {
+                            <K7SelectItem TValue="Guid" Value="@memberId" Text="@GetMemberDisplayName(memberId)">
+                                @GetMemberDisplayName(memberId)
+                            </K7SelectItem>
+                        }
+                    </K7Select>
+                </K7SettingRow>
             }
 
-            <div>
-                <span class="text-sm text-muted">@L["PinSectionTitle"]</span>
-                <p class="text-xs text-secondary mt-1 mb-2">@L["GroupPinHelper"]</p>
-                <div class="d-flex flex-wrap gap-2">
-                    @if (_hasPin)
-                    {
-                        <K7Button Variant="outlined" OnClick="ChangePinAsync" Disabled="_isSubmitting">@L["ChangePin"]</K7Button>
-                        <K7Button Variant="text" Color="error" OnClick="RemovePinAsync" Disabled="_isSubmitting">@L["RemovePin"]</K7Button>
-                    }
-                    else
-                    {
-                        <K7Button Variant="outlined" OnClick="SetPinAsync" Disabled="_isSubmitting">@L["SetPin"]</K7Button>
-                    }
-                </div>
-            </div>
+            <K7SettingRow Label="@L["PinSectionTitle"]" Hint="@L["GroupPinHelper"]">
+                @if (_hasPin)
+                {
+                    <K7Button Variant="outlined" OnClick="ChangePinAsync" Disabled="_isSubmitting">@L["ChangePin"]</K7Button>
+                    <K7Button Variant="text" Color="error" OnClick="RemovePinAsync" Disabled="_isSubmitting">@L["RemovePin"]</K7Button>
+                }
+                else
+                {
+                    <K7Button Variant="outlined" OnClick="SetPinAsync" Disabled="_isSubmitting">@L["SetPin"]</K7Button>
+                }
+            </K7SettingRow>
         </div>
     }
 </div>

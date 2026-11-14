@@ -1,3 +1,5 @@
-.field-hint {
-    color: var(--color-text-secondary);
+/* Checkbox lists fill their stacked row. */
+.home-row-dialog ::deep .home-row-dialog__list {
+    flex: 1 1 100%;
+    min-width: 0;
 }

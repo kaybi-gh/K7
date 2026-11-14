@@ -2,52 +2,62 @@
 @inject IStringLocalizer<MergeUserDialog> L
 @inject IStringLocalizer<SharedResource> S
 
-<div class="k7-dialog-content">
-        <div class="d-flex flex-col mt-2">
+<div class="k7-dialog-content merge-user-dialog">
+            <p class="merge-user-dialog__intro">
+                @string.Format(L["Description"], SourceDisplayName)
+            </p>
+
             <K7Alert Severity="K7Severity.Warning">
                 @L["Warning"]
             </K7Alert>
 
-            <p>
-                @string.Format(L["Description"], SourceDisplayName)
-            </p>
+            <div>
+                <K7SettingRow Label="@L["TargetUser"]" Required="true">
+                    <K7Select TValue="Guid?" @bind-Value="_targetUserId" Variant="outlined">
+                        @foreach (var user in _availableTargets)
+                        {
+                            var userLabel = user.UserName ?? user.Email ?? user.Id.ToString();
+                            <K7SelectItem TValue="Guid?" Value="@user.Id" Text="@userLabel">@userLabel</K7SelectItem>
+                        }
+                    </K7Select>
+                </K7SettingRow>
+            </div>
 
-            <K7Select TValue="Guid?" @bind-Value="_targetUserId" Label="@L["TargetUser"]" Variant="outlined">
-                @foreach (var user in _availableTargets)
-                {
-                    var userLabel = user.UserName ?? user.Email ?? user.Id.ToString();
-                    <K7SelectItem TValue="Guid?" Value="@user.Id" Text="@userLabel">@userLabel</K7SelectItem>
-                }
-            </K7Select>
+            <div>
+                <h6 class="merge-user-dialog__heading">@L["MergeStrategyTitle"]</h6>
+                <K7SettingRow Label="@L["PlayCount"]">
+                    <K7Select TValue="PlayCountMergeMode" @bind-Value="_playCountMode"
+                              Variant="outlined">
+                        <K7SelectItem Value="PlayCountMergeMode.Additive" Text="@L["PlayCountAdditive"]">@L["PlayCountAdditive"]</K7SelectItem>
+                        <K7SelectItem Value="PlayCountMergeMode.Max" Text="@L["PlayCountMax"]">@L["PlayCountMax"]</K7SelectItem>
+                        <K7SelectItem Value="PlayCountMergeMode.Ignore" Text="@L["PlayCountIgnore"]">@L["PlayCountIgnore"]</K7SelectItem>
+                    </K7Select>
+                </K7SettingRow>
 
-            <hr class="k7-divider" />
-            <p class="text-subtitle2">@L["MergeStrategyTitle"]</p>
+                <K7SettingRow Label="@L["RatingConflict"]">
+                    <K7Select TValue="RatingConflictMode" @bind-Value="_ratingMode"
+                              Variant="outlined">
+                        <K7SelectItem Value="RatingConflictMode.KeepExisting" Text="@L["RatingKeepExisting"]">@L["RatingKeepExisting"]</K7SelectItem>
+                        <K7SelectItem Value="RatingConflictMode.Overwrite" Text="@L["RatingOverwrite"]">@L["RatingOverwrite"]</K7SelectItem>
+                    </K7Select>
+                </K7SettingRow>
 
-            <K7Select TValue="PlayCountMergeMode" @bind-Value="_playCountMode" Label="@L["PlayCount"]"
-                       Variant="outlined">
-                <K7SelectItem Value="PlayCountMergeMode.Additive" Text="@L["PlayCountAdditive"]">@L["PlayCountAdditive"]</K7SelectItem>
-                <K7SelectItem Value="PlayCountMergeMode.Max" Text="@L["PlayCountMax"]">@L["PlayCountMax"]</K7SelectItem>
-                <K7SelectItem Value="PlayCountMergeMode.Ignore" Text="@L["PlayCountIgnore"]">@L["PlayCountIgnore"]</K7SelectItem>
-            </K7Select>
+                <K7SettingRow Label="@L["ProgressConflict"]">
+                    <K7Select TValue="ProgressConflictMode" @bind-Value="_progressMode"
+                              Variant="outlined">
+                        <K7SelectItem Value="ProgressConflictMode.MostRecent" Text="@L["ProgressMostRecent"]">@L["ProgressMostRecent"]</K7SelectItem>
+                        <K7SelectItem Value="ProgressConflictMode.AlwaysOverwrite" Text="@L["ProgressAlwaysOverwrite"]">@L["ProgressAlwaysOverwrite"]</K7SelectItem>
+                    </K7Select>
+                </K7SettingRow>
 
-            <K7Select TValue="RatingConflictMode" @bind-Value="_ratingMode" Label="@L["RatingConflict"]"
-                       Variant="outlined">
-                <K7SelectItem Value="RatingConflictMode.KeepExisting" Text="@L["RatingKeepExisting"]">@L["RatingKeepExisting"]</K7SelectItem>
-                <K7SelectItem Value="RatingConflictMode.Overwrite" Text="@L["RatingOverwrite"]">@L["RatingOverwrite"]</K7SelectItem>
-            </K7Select>
-
-            <K7Select TValue="ProgressConflictMode" @bind-Value="_progressMode" Label="@L["ProgressConflict"]"
-                       Variant="outlined">
-                <K7SelectItem Value="ProgressConflictMode.MostRecent" Text="@L["ProgressMostRecent"]">@L["ProgressMostRecent"]</K7SelectItem>
-                <K7SelectItem Value="ProgressConflictMode.AlwaysOverwrite" Text="@L["ProgressAlwaysOverwrite"]">@L["ProgressAlwaysOverwrite"]</K7SelectItem>
-            </K7Select>
-
-            <K7Select TValue="PlaylistMergeMode" @bind-Value="_playlistMode" Label="@L["Playlist"]"
-                       Variant="outlined">
-                <K7SelectItem Value="PlaylistMergeMode.Transfer" Text="@L["PlaylistTransfer"]">@L["PlaylistTransfer"]</K7SelectItem>
-                <K7SelectItem Value="PlaylistMergeMode.Delete" Text="@L["PlaylistDelete"]">@L["PlaylistDelete"]</K7SelectItem>
-            </K7Select>
-        </div>
+                <K7SettingRow Label="@L["Playlist"]">
+                    <K7Select TValue="PlaylistMergeMode" @bind-Value="_playlistMode"
+                              Variant="outlined">
+                        <K7SelectItem Value="PlaylistMergeMode.Transfer" Text="@L["PlaylistTransfer"]">@L["PlaylistTransfer"]</K7SelectItem>
+                        <K7SelectItem Value="PlaylistMergeMode.Delete" Text="@L["PlaylistDelete"]">@L["PlaylistDelete"]</K7SelectItem>
+                    </K7Select>
+                </K7SettingRow>
+            </div>
     </div>
     <div class="k7-dialog-actions">
         <K7Button OnClick="Cancel">@L["Cancel"]</K7Button>

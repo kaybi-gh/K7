@@ -2,24 +2,32 @@
 @inject IStringLocalizer<AdminUserCapabilitiesDialog> L
 @inject IStringLocalizer<SharedResource> S
 
-<div class="k7-dialog-content">
-        <p class="exclusions__hint">
-            @string.Format(L["RoleHint"], GetRoleLabel(Role))
-        </p>
-        <K7CheckboxList TItem="Capability"
-                        Items="Enum.GetValues<Capability>()"
-                        IsChecked="@(cap => Overrides.TryGetValue(cap, out var v) ? v : _defaultCaps.Contains(cap))"
-                        CheckedChanged="@(e => SetOverride(e.Item, e.Checked, _defaultCaps.Contains(e.Item)))">
-            <ItemTemplate Context="cap">
-                <span class="exclusions__name">@GetCapabilityLabel(cap)</span>
-                @if (Overrides.ContainsKey(cap))
-                {
-                    <K7IconButton Icon="@Phosphor.XCircle" OnClick="@(() => RemoveOverride(cap))" AriaLabel="@L["RemoveOverride"]" />
-                }
-            </ItemTemplate>
-        </K7CheckboxList>
-    </div>
-    <div class="k7-dialog-actions">
-        <K7Button OnClick="Cancel">@S["Cancel"]</K7Button>
-        <K7Button Color="primary" Variant="filled" OnClick="Submit">@S["Save"]</K7Button>
-    </div>
+<div class="k7-dialog-content capabilities">
+    <p class="capabilities__intro">
+        @string.Format(L["RoleHint"], GetRoleLabel(Role))
+    </p>
+    @foreach (var group in Groups)
+    {
+        <div @key="group.Title">
+            <h6 class="capabilities__heading">@group.Title</h6>
+            @foreach (var cap in group.Capabilities)
+            {
+                var capability = cap;
+                var defaultEnabled = _defaultCaps.Contains(capability);
+                <K7SettingRow Label="@GetCapabilityLabel(capability)">
+                    @if (Overrides.ContainsKey(capability))
+                    {
+                        <K7IconButton Icon="@Phosphor.XCircle" OnClick="@(() => RemoveOverride(capability))" AriaLabel="@L["RemoveOverride"]" />
+                    }
+                    <K7Switch Value="@(Overrides.TryGetValue(capability, out var v) ? v : defaultEnabled)"
+                              ValueChanged="@(value => SetOverride(capability, value, defaultEnabled))"
+                              AriaLabel="@GetCapabilityLabel(capability)" />
+                </K7SettingRow>
+            }
+        </div>
+    }
+</div>
+<div class="k7-dialog-actions">
+    <K7Button OnClick="Cancel">@S["Cancel"]</K7Button>
+    <K7Button Color="primary" Variant="filled" OnClick="Submit">@S["Save"]</K7Button>
+</div>

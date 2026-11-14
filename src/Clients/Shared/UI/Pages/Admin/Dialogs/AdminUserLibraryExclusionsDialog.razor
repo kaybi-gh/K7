@@ -20,8 +20,18 @@
                         <K7CheckboxList TItem="LibraryDto"
                                         Items="libs"
                                         IsChecked="@(lib => !_excludedIds.Contains(lib.Id))"
-                                        CheckedChanged="@(e => ToggleExclusion(e.Item.Id, !e.Checked))"
-                                        ItemLabel="@(lib => lib.Title)" />
+                                        CheckedChanged="@(e => ToggleExclusion(e.Item.Id, !e.Checked))">
+                            <ItemTemplate Context="lib">
+                                <K7Icon Icon="@GetMediaTypeIcon(lib.MediaType)" IconSize="@K7IconSize.Md" Class="exclusions__icon" />
+                                <span class="exclusions__text">
+                                    <span class="exclusions__name">@lib.Title</span>
+                                    @if (!string.IsNullOrEmpty(lib.PeerServerName))
+                                    {
+                                        <span class="exclusions__secondary">@lib.PeerServerName</span>
+                                    }
+                                </span>
+                            </ItemTemplate>
+                        </K7CheckboxList>
                     </K7Paper>
                 }
             }

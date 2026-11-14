@@ -66,4 +66,6 @@
   <data name="ResumeHere" xml:space="preserve"><value>Resume here</value></data>
   <data name="GoToMedia" xml:space="preserve"><value>View media</value></data>
   <data name="Sessions" xml:space="preserve"><value>Sessions</value></data>
+  <data name="ViewChat" xml:space="preserve"><value>Chat</value></data>
+  <data name="ViewMembers" xml:space="preserve"><value>Participants</value></data>
 </root>

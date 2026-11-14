@@ -74,7 +74,7 @@ public partial class SyncPlayDialog : IDisposable
         var hasMedia = SyncPlay.CurrentGroup?.CurrentMedia is not null;
 
         builder.OpenElement(seq++, "div");
-        builder.AddAttribute(seq++, "class", "d-flex align-center gap-1");
+        builder.AddAttribute(seq++, "class", "syncplay-dialog-header-actions");
 
         // Rejoin (only shown when media is playing)
         if (hasMedia)
@@ -91,6 +91,7 @@ public partial class SyncPlayDialog : IDisposable
         builder.OpenElement(seq++, "button");
         builder.AddAttribute(seq++, "class", $"syncplay-dialog-tab-btn focusable{(_view == View.Main ? " active" : "")}");
         builder.AddAttribute(seq++, "type", "button");
+        builder.AddAttribute(seq++, "aria-label", L["ViewChat"].Value);
         builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(this, () => SetView(View.Main)));
 
         builder.OpenComponent<K7Icon>(seq++);
@@ -103,6 +104,7 @@ public partial class SyncPlayDialog : IDisposable
         builder.OpenElement(seq++, "button");
         builder.AddAttribute(seq++, "class", $"syncplay-dialog-tab-btn focusable{(_view == View.Members ? " active" : "")}");
         builder.AddAttribute(seq++, "type", "button");
+        builder.AddAttribute(seq++, "aria-label", L["ViewMembers"].Value);
         builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(this, () => SetView(View.Members)));
 
         builder.OpenComponent<K7Icon>(seq++);
@@ -120,7 +122,6 @@ public partial class SyncPlayDialog : IDisposable
         builder.OpenComponent<K7IconButton>(seq++);
         builder.AddAttribute(seq++, "Icon", Phosphor.SignOut);
         builder.AddAttribute(seq++, "Size", "sm");
-        builder.AddAttribute(seq++, "Color", "danger");
         builder.AddAttribute(seq++, "AriaLabel", L["LeaveGroup"]);
         builder.AddAttribute(seq++, "OnClick", EventCallback.Factory.Create(this, Leave));
         builder.CloseComponent();

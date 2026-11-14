@@ -9,41 +9,54 @@
             <h6 class="edit-library-section__title">@(SectionTitle ?? L["SectionTitle"])</h6>
         }
 
-        @if (LibraryProcessingSettingsDto.ShowIntroDetection(MediaType))
-        {
-            <K7Switch Label="@L["IntroDetection"]" Value="IntroDetectionEnabled" ValueChanged="OnIntroDetectionChangedAsync" Disabled="Disabled" />
-            <span class="text-caption" style="color: var(--color-text-muted);">@L["IntroDetectionDescription"]</span>
-        }
+        <div>
+            @if (LibraryProcessingSettingsDto.ShowIntroDetection(MediaType))
+            {
+                <K7SettingRow Label="@L["IntroDetection"]" Hint="@L["IntroDetectionDescription"]">
+                    <K7Switch AriaLabel="@L["IntroDetection"]" Value="IntroDetectionEnabled" ValueChanged="OnIntroDetectionChangedAsync" Disabled="Disabled" />
+                </K7SettingRow>
+            }
 
-        @if (LibraryProcessingSettingsDto.ShowThemeSongGeneration(MediaType))
-        {
-            <K7Switch Label="@L["ThemeSongGeneration"]"
-                      Value="ThemeSongGenerationEnabled && IntroDetectionEnabled"
-                      ValueChanged="OnThemeSongGenerationChangedAsync"
-                      Disabled="Disabled || !IntroDetectionEnabled" />
-            <span class="text-caption" style="color: var(--color-text-muted);">@L["ThemeSongGenerationDescription"]</span>
-        }
+            @if (LibraryProcessingSettingsDto.ShowThemeSongGeneration(MediaType))
+            {
+                <K7SettingRow Label="@L["ThemeSongGeneration"]" Hint="@L["ThemeSongGenerationDescription"]">
+                    <K7Switch AriaLabel="@L["ThemeSongGeneration"]"
+                              Value="ThemeSongGenerationEnabled && IntroDetectionEnabled"
+                              ValueChanged="OnThemeSongGenerationChangedAsync"
+                              Disabled="Disabled || !IntroDetectionEnabled" />
+                </K7SettingRow>
+            }
 
-        @if (LibraryProcessingSettingsDto.ShowSeekbarThumbnails(MediaType))
-        {
-            <K7Switch Label="@L["SeekbarThumbnails"]" @bind-Value="SeekbarThumbnailGenerationEnabled" Disabled="Disabled" />
-        }
+            @if (LibraryProcessingSettingsDto.ShowSeekbarThumbnails(MediaType))
+            {
+                <K7SettingRow Label="@L["SeekbarThumbnails"]">
+                    <K7Switch AriaLabel="@L["SeekbarThumbnails"]" @bind-Value="SeekbarThumbnailGenerationEnabled" Disabled="Disabled" />
+                </K7SettingRow>
+            }
 
-        @if (LibraryProcessingSettingsDto.ShowChapterExtraction(MediaType))
-        {
-            <K7Switch Label="@L["ChapterExtraction"]" @bind-Value="ChapterExtractionEnabled" Disabled="Disabled" />
-            <span class="text-caption" style="color: var(--color-text-muted);">@L["ChapterExtractionDescription"]</span>
-        }
+            @if (LibraryProcessingSettingsDto.ShowChapterExtraction(MediaType))
+            {
+                <K7SettingRow Label="@L["ChapterExtraction"]" Hint="@L["ChapterExtractionDescription"]">
+                    <K7Switch AriaLabel="@L["ChapterExtraction"]" @bind-Value="ChapterExtractionEnabled" Disabled="Disabled" />
+                </K7SettingRow>
+            }
 
-        @if (LibraryProcessingSettingsDto.ShowMusicAudioAnalysis(MediaType))
-        {
-            <K7Switch Label="@L["MusicAudioAnalysis"]" @bind-Value="MusicAudioAnalysisEnabled" Disabled="Disabled" />
-        }
+            @if (LibraryProcessingSettingsDto.ShowMusicAudioAnalysis(MediaType))
+            {
+                <K7SettingRow Label="@L["MusicAudioAnalysis"]">
+                    <K7Switch AriaLabel="@L["MusicAudioAnalysis"]" @bind-Value="MusicAudioAnalysisEnabled" Disabled="Disabled" />
+                </K7SettingRow>
+            }
 
-        @if (LibraryProcessingSettingsDto.ShowTranscodeOptions(MediaType))
-        {
-            <K7Switch Label="@L["Transcoding"]" @bind-Value="TranscodingEnabled" Disabled="Disabled" />
-            <K7Switch Label="@L["Transmuxing"]" @bind-Value="TransmuxingEnabled" Disabled="Disabled" />
-        }
+            @if (LibraryProcessingSettingsDto.ShowTranscodeOptions(MediaType))
+            {
+                <K7SettingRow Label="@L["Transcoding"]">
+                    <K7Switch AriaLabel="@L["Transcoding"]" @bind-Value="TranscodingEnabled" Disabled="Disabled" />
+                </K7SettingRow>
+                <K7SettingRow Label="@L["Transmuxing"]">
+                    <K7Switch AriaLabel="@L["Transmuxing"]" @bind-Value="TransmuxingEnabled" Disabled="Disabled" />
+                </K7SettingRow>
+            }
+        </div>
     </div>
 }

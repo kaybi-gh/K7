@@ -1,22 +1,8 @@
-.picker-row {
-    display: flex;
+/* Several controls share the right side of the emoji row (preview + Choose + Remove). */
+.media-review-dialog ::deep .k7-setting-row__control {
     flex-wrap: wrap;
     align-items: center;
-    gap: var(--space-3);
-}
-
-.picker-row__label {
-    flex: 0 0 100%;
-    font-size: var(--text-sm);
-    color: var(--color-text-secondary);
-}
-
-.picker-row__value {
-    display: flex;
-    align-items: center;
-    min-height: 2rem;
-    flex: 1;
-    min-width: 0;
+    gap: var(--space-2);
 }
 
 .media-review-dialog-emoji-preview {

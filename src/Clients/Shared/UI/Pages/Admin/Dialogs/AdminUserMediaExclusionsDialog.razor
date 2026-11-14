@@ -1,22 +1,37 @@
+@inject IStringLocalizer<AdminUserMediaExclusionsDialog> L
+@inject IStringLocalizer<SharedResource> S
 
-<div class="k7-dialog-content">
-        @if (_loading)
+<div class="k7-dialog-content media-exclusions">
+    @if (_loading)
+    {
+        <K7ProgressBar Indeterminate="true" />
+    }
+    else if (_excludedMedias.Count == 0)
+    {
+        <p class="media-exclusions__empty">@L["Empty"]</p>
+    }
+    else
+    {
+        <p class="media-exclusions__intro">@string.Format(L["Hint"], _excludedMedias.Count)</p>
+
+        <K7TextField TValue="string"
+                     Value="@_search"
+                     ValueChanged="@(value => _search = value ?? "")"
+                     Immediate="true"
+                     Placeholder="@L["SearchPlaceholder"]"
+                     AdornmentIcon="@Phosphor.MagnifyingGlass" />
+
+        @if (FilteredMedias.Count == 0)
         {
-            <K7ProgressBar Indeterminate="true" />
-        }
-        else if (_excludedMedias.Count == 0)
-        {
-            <p class="exclusions__empty">Aucun media masque pour cet utilisateur.</p>
+            <p class="media-exclusions__empty">@L["NoMatch"]</p>
         }
         else
         {
-            <p class="exclusions__hint">
-                @_excludedMedias.Count media(s) masque(s). Decochez pour retablir l'acces.
-            </p>
             <K7CheckboxList TItem="ExcludedMediaItem"
-                            Items="_excludedMedias"
+                            Items="FilteredMedias"
                             IsChecked="@(_ => true)"
-                            CheckedChanged="@(e => ToggleMedia(e.Item, e.Checked))">
+                            CheckedChanged="@(e => ToggleMedia(e.Item, e.Checked))"
+                            Class="media-exclusions__list">
                 <ItemTemplate Context="media">
                     @if (!string.IsNullOrEmpty(media.PosterUrl))
                     {
@@ -26,12 +41,15 @@
                     {
                         <K7Avatar Size="sm" Letter="M" />
                     }
-                    <span class="exclusions__name">@(media.Title ?? media.Id.ToString())</span>
+                    <span class="media-exclusions__text">
+                        <span class="media-exclusions__name">@(media.Title ?? media.Id.ToString())</span>
+                    </span>
                 </ItemTemplate>
             </K7CheckboxList>
         }
-    </div>
-    <div class="k7-dialog-actions">
-        <K7Button OnClick="Cancel">Annuler</K7Button>
-        <K7Button Color="primary" Variant="filled" OnClick="Submit">Enregistrer</K7Button>
-    </div>
+    }
+</div>
+<div class="k7-dialog-actions">
+    <K7Button OnClick="Cancel">@S["Cancel"]</K7Button>
+    <K7Button Color="primary" Variant="filled" OnClick="Submit">@S["Save"]</K7Button>
+</div>

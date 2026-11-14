@@ -9,35 +9,32 @@
 @inject ILibraryService LibraryService
 @inject IFederationService FederationService
 
-<div class="k7-dialog-content">
-    <div class="peer-settings__field">
+<div class="k7-dialog-content peer-settings">
+    <div>
+    <K7SettingRow Label="@L["BaseUrlLabel"]" Stacked="true">
         <K7TextField @bind-Value="_baseUrl"
-                     Label="@L["BaseUrlLabel"]"
                      Variant="outlined"
                      Placeholder="http://server:7080" />
-    </div>
+    </K7SettingRow>
 
-    <div class="peer-settings__field">
-        <K7Switch @bind-Value="_autoAdd" Label="@L["AutoAddNewLibraries"]" />
-    </div>
+    <K7SettingRow Label="@L["AutoAddNewLibraries"]">
+        <K7Switch @bind-Value="_autoAdd" AriaLabel="@L["AutoAddNewLibraries"]" />
+    </K7SettingRow>
 
     @if (Peer?.IsProvider == true)
     {
-    <div class="peer-settings__field">
-        <K7Select Label="@L["PlaybackExecutionLabel"]"
-                  TValue="FederatedPlaybackExecution"
+    <K7SettingRow Label="@L["PlaybackExecutionLabel"]" Hint="@L["PlaybackExecutionHint"]">
+        <K7Select TValue="FederatedPlaybackExecution"
                   @bind-Value="_playbackExecution">
             <K7SelectItem TValue="FederatedPlaybackExecution" Value="FederatedPlaybackExecution.Peer" Text="@L["PlaybackExecutionPeer"]">@L["PlaybackExecutionPeer"]</K7SelectItem>
             <K7SelectItem TValue="FederatedPlaybackExecution" Value="FederatedPlaybackExecution.Origin" Text="@L["PlaybackExecutionOrigin"]">@L["PlaybackExecutionOrigin"]</K7SelectItem>
         </K7Select>
-        <span class="peer-settings__hint">@L["PlaybackExecutionHint"]</span>
-    </div>
+    </K7SettingRow>
     }
 
     @if (Peer?.IsProvider == true)
     {
-    <div class="peer-settings__section">
-        <span class="peer-settings__label">@L["SharedLibrariesLabel"]</span>
+    <K7SettingRow Label="@L["SharedLibrariesLabel"]" Stacked="true">
         @if (_isLoading)
         {
             <span>@S["Loading"]</span>
@@ -55,12 +52,11 @@
                             ItemLabel="@(l => l.Title)"
                             Class="peer-settings__list" />
         }
-    </div>
+    </K7SettingRow>
     }
     else if (Peer is not null)
     {
-    <div class="peer-settings__section">
-        <span class="peer-settings__label">@L["IntegratedLibrariesLabel"]</span>
+    <K7SettingRow Label="@L["IntegratedLibrariesLabel"]" Stacked="true">
         @if (_isLoading)
         {
             <span>@S["Loading"]</span>
@@ -78,20 +74,18 @@
                             ItemLabel="@(a => a.LibraryTitle ?? a.LibraryId.ToString())"
                             Class="peer-settings__list" />
         }
-    </div>
+    </K7SettingRow>
     }
 
     @if (Peer is not null)
     {
-    <div class="peer-settings__section">
-        <span class="peer-settings__label">@L["SocialAgreementsLabel"]</span>
+    <K7SettingRow Label="@L["SocialAgreementsLabel"]"
+                  Hint="@(_socialPolicy.Enabled ? L["SocialUserPrivacyHint"].Value : null)"
+                  Stacked="true">
+        <div class="peer-settings__social">
         @if (!_socialPolicy.Enabled)
         {
-            <span class="peer-settings__hint">@L["SocialDisabledGlobally"]</span>
-        }
-        else
-        {
-            <span class="peer-settings__hint">@L["SocialUserPrivacyHint"]</span>
+            <span class="peer-settings__warning">@L["SocialDisabledGlobally"]</span>
         }
         <div class="federation-social-policy @(!_socialPolicy.Enabled ? "federation-social-policy--disabled" : null)">
             <div class="federation-social-policy__header">
@@ -116,8 +110,10 @@
                 </div>
             }
         </div>
-    </div>
+        </div>
+    </K7SettingRow>
     }
+    </div>
 </div>
 <div class="k7-dialog-actions">
     <K7Button OnClick="Cancel">@S["Cancel"]</K7Button>

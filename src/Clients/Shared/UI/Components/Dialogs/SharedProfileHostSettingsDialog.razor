@@ -14,76 +14,91 @@
 }
 else
 {
-    <div class="k7-dialog-content">
-        <p class="text-secondary mb-0">@string.Format(L["Description"], Group.Name)</p>
-
-        <h6>@L["AvatarTitle"]</h6>
-        <div class="d-flex align-center gap-3">
+    <div class="k7-dialog-content host-settings">
+        @* Who this is about first: the profile's avatar and name, with the avatar actions beside. *@
+        <div class="host-settings__identity">
             @if (!string.IsNullOrEmpty(_avatarUrl))
             {
-                <K7Avatar Image="@_avatarUrl" Letter="@_avatarLetter" Size="lg" Alt="@Group.Name" />
+                <K7Avatar Image="@_avatarUrl" Letter="@_avatarLetter" Size="xl" Alt="@Group.Name" />
             }
             else
             {
                 <K7AvatarGroup Size="lg" Members="@_memberAvatarItems" />
             }
-            <div class="d-flex gap-2">
-                <K7Button Variant="outlined" OnClick="UploadAvatar" Disabled="_saving"
-                          @attributes="_initialFocusAttributes">@L["UploadAvatar"]</K7Button>
-                @if (!string.IsNullOrEmpty(_avatarUrl))
-                {
-                    <K7Button Variant="text" Color="error" OnClick="RemoveAvatar" Disabled="_saving">@L["RemoveAvatar"]</K7Button>
-                }
+            <div class="host-settings__identity-text">
+                <span class="host-settings__identity-name">@Group.Name</span>
+                <div class="host-settings__identity-actions">
+                    <K7Button Variant="outlined" Size="sm" OnClick="UploadAvatar" Disabled="_saving"
+                              @attributes="_initialFocusAttributes">@L["UploadAvatar"]</K7Button>
+                    @if (!string.IsNullOrEmpty(_avatarUrl))
+                    {
+                        <K7Button Variant="text" Size="sm" Color="error" OnClick="RemoveAvatar" Disabled="_saving">@L["RemoveAvatar"]</K7Button>
+                    }
+                </div>
             </div>
         </div>
+        <p class="host-settings__hint">@L["Description"]</p>
         <InputFile id="@_avatarFileInputId" OnChange="OnAvatarFileSelected" accept="image/*" style="display:none" />
         @if (_avatarError is not null)
         {
             <K7Alert Severity="K7Severity.Error">@_avatarError</K7Alert>
         }
 
-        <h6>@L["RestrictionTitle"]</h6>
-        <h6>@L["AgeFilterTitle"]</h6>
-        <K7Switch Label="@L["AgeRestrictionEnabled"]" @bind-Value="_ageRestrictionEnabled" />
-        <K7Alert Severity="K7Severity.Info" Icon="@Phosphor.Info">@L["AgeRestrictionHelp"]</K7Alert>
-        <K7TextField TValue="string" Type="date" Label="@L["DateOfBirth"]"
-                     @bind-Value="_dateOfBirthText"
-                     Required="_ageRestrictionEnabled"
-                     HelperText="@L["DateOfBirthHelp"]" />
-        <K7Switch Label="@L["HideUnratedTitles"]"
-                  @bind-Value="_hideUnratedTitles"
-                  Disabled="@(!_ageRestrictionEnabled)" />
+        <div>
+            <h6 class="host-settings__heading">@L["RestrictionTitle"]</h6>
+            <K7SettingRow Label="@L["AgeRestrictionEnabled"]" Hint="@L["AgeRestrictionHelp"]">
+                <K7Switch AriaLabel="@L["AgeRestrictionEnabled"]" @bind-Value="_ageRestrictionEnabled" />
+            </K7SettingRow>
+            <K7SettingRow Label="@L["DateOfBirth"]" Hint="@L["DateOfBirthHelp"]" Required="_ageRestrictionEnabled">
+                <K7TextField TValue="string" Type="date"
+                             @bind-Value="_dateOfBirthText"
+                             Required="_ageRestrictionEnabled" />
+            </K7SettingRow>
+            <K7SettingRow Label="@L["HideUnratedTitles"]">
+                <K7Switch AriaLabel="@L["HideUnratedTitles"]"
+                          @bind-Value="_hideUnratedTitles"
+                          Disabled="@(!_ageRestrictionEnabled)" />
+            </K7SettingRow>
+            <K7SettingRow Label="@L["RestrictionProfile"]" Hint="@L["RestrictionProfileHelp"]">
+                <K7Select TValue="Guid?" @bind-Value="_restrictionProfileId" Clearable="true">
+                    @foreach (var profile in _restrictionProfiles)
+                    {
+                        <K7SelectItem Value="@((Guid?)profile.Id)" Text="@profile.Name" />
+                    }
+                </K7Select>
+            </K7SettingRow>
+        </div>
         @if (_restrictionError is not null)
         {
             <K7Alert Severity="K7Severity.Error">@_restrictionError</K7Alert>
         }
 
-        <hr class="k7-divider my-2" />
-
-        <h6>@L["CustomProfilesTitle"]</h6>
-        <K7Select TValue="Guid?" Label="@L["RestrictionProfile"]" @bind-Value="_restrictionProfileId" Clearable="true">
-            @foreach (var profile in _restrictionProfiles)
-            {
-                <K7SelectItem Value="@((Guid?)profile.Id)" Text="@profile.Name" />
-            }
-        </K7Select>
-
-        <h6>@L["PlaylistsTitle"]</h6>
-        <p class="text-secondary mb-0">@L["PlaylistsDescription"]</p>
+        <div>
+            <h6 class="host-settings__heading">@L["PlaylistsTitle"]</h6>
+            <p class="host-settings__hint">@L["PlaylistsDescription"]</p>
+        </div>
         @if (_playlists.Count == 0)
         {
-            <p class="text-secondary mb-0">@L["NoPlaylists"]</p>
+            <p class="host-settings__hint">@L["NoPlaylists"]</p>
         }
         else
         {
-            @foreach (var playlist in _playlists)
-            {
-                var shared = _sharedPlaylistIds.Contains(playlist.Id);
-                <K7Switch Label="@playlist.Title"
-                          Value="shared"
-                          ValueChanged="(v) => OnPlaylistShareChanged(playlist.Id, v)"
-                          Disabled="_saving" />
-            }
+            <K7CheckboxList TItem="LitePlaylistDto"
+                            Items="_playlists"
+                            IsChecked="@(playlist => _sharedPlaylistIds.Contains(playlist.Id))"
+                            IsDisabled="@(_ => _saving)"
+                            CheckedChanged="@(change => OnPlaylistShareChanged(change.Item.Id, change.Checked))">
+                <ItemTemplate Context="playlist">
+                    <K7Icon Icon="@Phosphor.Queue" IconSize="@K7IconSize.Sm" />
+                    <span class="host-settings__text">
+                        <span class="host-settings__name">@playlist.Title</span>
+                        @if (!string.IsNullOrEmpty(playlist.Description))
+                        {
+                            <span class="host-settings__secondary">@playlist.Description</span>
+                        }
+                    </span>
+                </ItemTemplate>
+            </K7CheckboxList>
         }
     </div>
 

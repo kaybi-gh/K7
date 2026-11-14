@@ -61,7 +61,8 @@ Long settings pages must not turn into one tall scroll (painful with a remote) n
 controls across a wide screen:
 
 - `K7SettingsSplit` + `K7SettingsNavItem`: an index (icon, title, short description of what the
-  section is for) and one sub-page at a time. Side by side on wide screens. Under 1200px and on
+  section is for) and one sub-page at a time. Side by side once the content area
+  reaches about 52rem (window of 1100px with the page sidebar open, 900px with it folded). Below that and on
   TV it behaves like a menu: the index, then the sub-page as its own screen with a back link and
   the page header hidden. Each sub-page has its own route (`/settings/video-playback/{section}`).
 - Pages that stay separate components can still share one index: `InterfaceSettingsSplit` wraps
@@ -85,6 +86,12 @@ controls across a wide screen:
   `K7SheetAction` lines whose badges say what is already set. Row menus and inline controls
   move to the sheet, so every action is reachable with a remote. Libraries and library groups
   follow the same shell: the scan of a library is an action of its sheet.
+- Dialogs use the same rows as pages: a form dialog is a list of `K7SettingRow`s (label and
+  hint on the left, control on the right, `Stacked` for multi-line text, editors and lists,
+  `Required` to keep the asterisk the field's own label used to show). A dialog that picks
+  users or items is a search field over a `K7CheckboxList` with avatar or icon, name and a
+  secondary line. Viewers, help texts, picker grids and confirmations are not forms and stay
+  as they are.
 - `K7SettingRow`: one setting per line, label and hint on the left, compact control on the right.
   Sliders and text fields go in a `settings-field-group` between rows.
 - `K7OptionList`: short single choices shown in full instead of a select.

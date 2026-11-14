@@ -529,7 +529,7 @@ public partial class Movie : IAsyncDisposable
             { x => x.OnReIdentifyFile, EventCallback.Factory.Create<Guid>(this, OpenFileReIdentifyDialogAsync) }
         };
 
-        var options = new K7DialogOptions { CloseOnEscapeKey = true, MaxWidth = K7DialogMaxWidth.Medium, FullWidth = true };
+        var options = new K7DialogOptions { CloseOnEscapeKey = true, MaxWidth = K7DialogMaxWidth.Large, FullWidth = true };
         await DialogService.ShowAsync<IndexedFilesDialog>(L["IndexedVersions"], parameters, options);
     }
 
@@ -609,7 +609,7 @@ public partial class Movie : IAsyncDisposable
             { x => x.Media, _movie }
         };
 
-        var options = new K7DialogOptions { CloseOnEscapeKey = true, MaxWidth = K7DialogMaxWidth.Medium, FullWidth = true };
+        var options = new K7DialogOptions { CloseOnEscapeKey = true, MaxWidth = K7DialogMaxWidth.Large, FullWidth = true };
         var dialog = await DialogService.ShowAsync<EditMetadataDialog>(L["EditMetadata"], parameters, options);
         var result = await dialog.Result;
 

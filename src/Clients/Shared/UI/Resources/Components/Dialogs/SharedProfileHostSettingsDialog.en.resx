@@ -19,14 +19,12 @@
   </xsd:schema>
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
-  <data name="Description" xml:space="preserve"><value>Host preferences for shared profile "{0}": avatar, content restrictions, and playlists. Playback thresholds are set in Settings once this profile is active.</value></data>
-  <data name="AvatarTitle" xml:space="preserve"><value>Avatar</value></data>
+  <data name="Description" xml:space="preserve"><value>Playback thresholds are set in Settings once this profile is active.</value></data>
   <data name="UploadAvatar" xml:space="preserve"><value>Change</value></data>
   <data name="RemoveAvatar" xml:space="preserve"><value>Remove</value></data>
   <data name="AvatarTooLarge" xml:space="preserve"><value>Image must not exceed 2 MB.</value></data>
   <data name="RestrictionTitle" xml:space="preserve"><value>Content restrictions</value></data>
-  <data name="AgeFilterTitle" xml:space="preserve"><value>Automatic age filter</value></data>
-  <data name="CustomProfilesTitle" xml:space="preserve"><value>Custom restriction profile filter</value></data>
+  <data name="RestrictionProfileHelp" xml:space="preserve"><value>Adds your own rules on top of the age filter.</value></data>
   <data name="RestrictionProfile" xml:space="preserve"><value>Restriction profile</value></data>
   <data name="AgeRestrictionEnabled" xml:space="preserve"><value>Age restriction</value></data>
   <data name="AgeRestrictionHelp" xml:space="preserve"><value>Hides movies and series whose official rating exceeds the profile age. A date of birth alone does not filter.</value></data>
@@ -36,6 +34,6 @@
   <data name="DateOfBirthRequired" xml:space="preserve"><value>Date of birth is required to enable age restriction.</value></data>
   <data name="DateOfBirthInFuture" xml:space="preserve"><value>Date of birth cannot be in the future.</value></data>
   <data name="PlaylistsTitle" xml:space="preserve"><value>Shared playlists</value></data>
-  <data name="PlaylistsDescription" xml:space="preserve"><value>Playlists shared here appear in navigation for members while this profile is active.</value></data>
+  <data name="PlaylistsDescription" xml:space="preserve"><value>Checked playlists show in the members' navigation while this profile is active.</value></data>
   <data name="NoPlaylists" xml:space="preserve"><value>You have no playlists to share yet.</value></data>
 </root>

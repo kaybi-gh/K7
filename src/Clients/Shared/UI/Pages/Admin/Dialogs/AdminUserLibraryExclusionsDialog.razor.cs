@@ -1,3 +1,4 @@
+using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities;
 using Microsoft.AspNetCore.Components;
 
@@ -36,6 +37,14 @@ public partial class AdminUserLibraryExclusionsDialog
 
     private IEnumerable<LibraryDto> GetLibrariesForGroup(LibraryGroupDto group) =>
         _libraries.Where(l => l.LibraryGroupId == group.Id);
+
+    private static string GetMediaTypeIcon(LibraryMediaType type) => type switch
+    {
+        LibraryMediaType.Movie => Phosphor.FilmStrip,
+        LibraryMediaType.Serie => Phosphor.Television,
+        LibraryMediaType.Music => Phosphor.MusicNote,
+        _ => Phosphor.Folder
+    };
 
     private void ToggleExclusion(Guid libraryId, bool exclude)
     {

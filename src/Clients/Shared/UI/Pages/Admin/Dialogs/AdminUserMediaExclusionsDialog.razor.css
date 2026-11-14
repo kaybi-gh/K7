@@ -1,18 +1,36 @@
-.exclusions__hint {
-    font-size: var(--text-sm);
-    color: var(--color-text-secondary);
-    margin-bottom: 0.75rem;
+.media-exclusions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
 }
 
-.exclusions__name {
+.media-exclusions__intro,
+.media-exclusions__empty {
+    margin: 0;
     font-size: var(--text-sm);
-    white-space: nowrap;
+    color: var(--color-text-secondary);
+}
+
+/* Taller than the default list: this dialog is nothing but the list. */
+.media-exclusions ::deep .media-exclusions__list {
+    max-height: min(50vh, 24rem);
+}
+
+.media-exclusions__text {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.media-exclusions__name {
     overflow: hidden;
     text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
-.exclusions__empty {
+.media-exclusions__name {
     font-size: var(--text-sm);
-    color: var(--color-text-secondary);
-    font-style: italic;
+    font-weight: var(--font-medium);
+    color: var(--color-text);
 }

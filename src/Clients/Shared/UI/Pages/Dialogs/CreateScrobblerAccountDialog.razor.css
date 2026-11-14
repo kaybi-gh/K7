@@ -1,0 +1,22 @@
+/* A field and its "open settings" link can share the control side of a row. */
+.scrobbler-account-editor ::deep .k7-setting-row__control {
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.scrobbler-account-editor__intro {
+    color: var(--color-text-muted);
+}
+
+/* A handful of short choices: side by side on one line instead of a tall list. */
+.scrobbler-account-editor ::deep .scrobbler-account-editor__inline-list {
+    display: flex;
+    flex-wrap: wrap;
+    max-height: none;
+}
+
+.scrobbler-account-editor ::deep .scrobbler-account-editor__inline-list .k7-checkbox-list__row {
+    flex: 1 1 8rem;
+    background: transparent;
+}

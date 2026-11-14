@@ -629,12 +629,14 @@ input[data-sn-editing="true"].k7-range::-moz-range-thumb {
   flex-direction: column;
   animation: k7-slide-up 0.2s ease;
 }
-.k7-dialog--xs { max-width: 360px; }
-.k7-dialog--sm { max-width: 500px; }
-.k7-dialog--md { max-width: 700px; }
-.k7-dialog--lg { max-width: 900px; }
-.k7-dialog--xl { max-width: 1200px; }
-.k7-dialog--full { max-width: 100%; width: 100%; margin: var(--space-4); }
+/* Sizes in rem so a dialog grows with the larger text of the TV layout. */
+.k7-dialog--xs { max-width: 22.5rem; }
+.k7-dialog--sm { max-width: 31.25rem; }
+.k7-dialog--md { max-width: 43.75rem; }
+.k7-dialog--lg { max-width: 56.25rem; }
+.k7-dialog--xl { max-width: 75rem; }
+/* FullWidth fills the room up to the size above; it must not lift that limit. */
+.k7-dialog--full { width: 100%; }
 .k7-dialog-backdrop--fullscreen { padding: 0; }
 .k7-dialog--fullscreen {
   max-width: 100%;
@@ -679,11 +681,13 @@ input[data-sn-editing="true"].k7-range::-moz-range-thumb {
   flex-shrink: 0;
 }
 .k7-dialog-title { font-size: var(--text-lg); font-weight: 600; margin: 0; flex: 1; }
+/* The steps belong with the content below them: the header already draws the separator. */
 .k7-dialog-stepper-bar {
   flex-shrink: 0;
-  padding: var(--space-3) var(--space-5);
-  border-bottom: 1px solid var(--color-border);
+  padding: var(--space-3) var(--space-5) 0;
 }
+/* The content follows its steps closely instead of opening with a full margin. */
+.k7-dialog-stepper-bar + .k7-dialog-content { padding-top: var(--space-3); }
 .k7-dialog-content {
   flex: 1;
   min-height: 0;
@@ -702,6 +706,53 @@ input[data-sn-editing="true"].k7-range::-moz-range-thumb {
   padding: var(--space-3) var(--space-5);
   border-top: 1px solid var(--color-border);
   flex-shrink: 0;
+}
+/* SyncPlay dialog header: view tabs and actions. Global on purpose: the dialog host renders
+   the header, outside the dialog's own scoped styles. Same size, shape and hover as the icon
+   buttons beside them, with room between each. */
+.syncplay-dialog-header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-right: var(--space-2);
+  color: var(--color-text-secondary);
+}
+.syncplay-dialog-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  min-width: 32px;
+  height: 32px;
+  padding: 0 var(--space-2);
+  border: none;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font-size: var(--text-base);
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+.syncplay-dialog-tab-btn:hover,
+.syncplay-dialog-header-actions .k7-icon-btn:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text);
+}
+.syncplay-dialog-tab-btn.active { color: var(--color-accent-text); }
+.syncplay-dialog-members-count {
+  font-size: var(--text-xs);
+  font-weight: var(--font-medium);
+}
+/* Phones: the little width goes to the content, not to margins around and inside the dialog. */
+@media (max-width: 599.98px) {
+  .k7-dialog-backdrop:not(.k7-dialog-backdrop--fullscreen) {
+    padding-left: var(--space-2);
+    padding-right: var(--space-2);
+  }
+  .k7-dialog-header { padding: var(--space-3) var(--space-4); }
+  .k7-dialog-stepper-bar { padding: var(--space-3) var(--space-4) 0; }
+  .k7-dialog-content { padding: var(--space-4); }
+  .k7-dialog-actions { padding: var(--space-3) var(--space-4); flex-wrap: wrap; }
 }
 
 /* ── Snackbar / Toast ────────────────────────────────────────────────────────── */

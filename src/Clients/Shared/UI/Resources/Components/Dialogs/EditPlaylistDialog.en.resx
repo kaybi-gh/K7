@@ -31,5 +31,6 @@
   <data name="RemoveCover" xml:space="preserve"><value>Remove</value></data>
   <data name="ResetCoverMosaic" xml:space="preserve"><value>Reset to mosaic</value></data>
   <data name="CoverMosaic" xml:space="preserve"><value>Automatic mosaic</value></data>
+  <data name="VisibilityScope" xml:space="preserve"><value>Visibility</value></data>
 </root>
 

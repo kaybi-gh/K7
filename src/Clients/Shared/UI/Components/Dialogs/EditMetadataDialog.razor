@@ -10,196 +10,198 @@
     @if (_activeTab == 0 || !_showImagesTab)
     {
     <div class="d-flex flex-col">
-        <div class="field-row">
-            <K7TextField @bind-Value="_title" Label="@(_isPersonMode ? L["Name"] : L["Title"])" Variant="outlined" MaxLength="500"
-                         Class="@GetFieldClass("Title")" ReadOnly="@IsFieldLocked("Title")" />
-            <K7IconButton Icon="@GetLockIcon("Title")" OnClick="@(() => ToggleLock("Title"))" Title="@GetLockTooltip("Title")" Class="@GetLockClass("Title")" />
+        <div>
+            <K7SettingRow Label="@(_isPersonMode ? L["Name"] : L["Title"])">
+                <K7TextField @bind-Value="_title" Variant="outlined" MaxLength="500"
+                             Class="@GetFieldClass("Title")" ReadOnly="@IsFieldLocked("Title")" />
+                <K7IconButton Icon="@GetLockIcon("Title")" OnClick="@(() => ToggleLock("Title"))" Title="@GetLockTooltip("Title")" Class="@GetLockClass("Title")" />
+            </K7SettingRow>
+
+            @if (!_isPersonMode)
+            {
+                <K7SettingRow Label="@L["SortTitle"]">
+                    <K7TextField @bind-Value="_sortTitle" Variant="outlined" MaxLength="500"
+                                 Class="@GetFieldClass("SortTitle")" ReadOnly="@IsFieldLocked("SortTitle")" />
+                    <K7IconButton Icon="@GetLockIcon("SortTitle")" OnClick="@(() => ToggleLock("SortTitle"))" Title="@GetLockTooltip("SortTitle")" Class="@GetLockClass("SortTitle")" />
+                </K7SettingRow>
+            }
+
+            @if (_showOriginalTitle)
+            {
+                <K7SettingRow Label="@L["OriginalTitle"]">
+                    <K7TextField @bind-Value="_originalTitle" Variant="outlined" MaxLength="500"
+                                 Class="@GetFieldClass("OriginalTitle")" ReadOnly="@IsFieldLocked("OriginalTitle")" />
+                    <K7IconButton Icon="@GetLockIcon("OriginalTitle")" OnClick="@(() => ToggleLock("OriginalTitle"))" Title="@GetLockTooltip("OriginalTitle")" Class="@GetLockClass("OriginalTitle")" />
+                </K7SettingRow>
+            }
+
+            @if (_showReleaseDate)
+            {
+                <K7SettingRow Label="@_releaseDateLabel" Hint="YYYY-MM-DD">
+                    <K7TextField TValue="string" Value="@_releaseDateStr" ValueChanged="OnReleaseDateChanged"
+                                 Variant="outlined"
+                                 Validation="ValidateDate" Class="@GetFieldClass("ReleaseDate")" ReadOnly="@IsFieldLocked("ReleaseDate")" />
+                    <K7IconButton Icon="@GetLockIcon("ReleaseDate")" OnClick="@(() => ToggleLock("ReleaseDate"))" Title="@GetLockTooltip("ReleaseDate")" Class="@GetLockClass("ReleaseDate")" />
+                </K7SettingRow>
+            }
+
+            @if (_showOverview)
+            {
+                <K7SettingRow Label="@L["Overview"]" Stacked="true">
+                    <K7TextField @bind-Value="_overview" Variant="outlined" Lines="4" MaxLength="10000"
+                                 Class="@GetFieldClass("Overview")" ReadOnly="@IsFieldLocked("Overview")" />
+                    <K7IconButton Icon="@GetLockIcon("Overview")" OnClick="@(() => ToggleLock("Overview"))" Title="@GetLockTooltip("Overview")" Class="@GetLockClass("Overview")" />
+                </K7SettingRow>
+            }
+
+            @if (_showGenres)
+            {
+                <K7SettingRow Label="@L["Genres"]" Hint="@L["GenresHelper"]" Stacked="true">
+                    <K7TextField @bind-Value="_genresStr" Variant="outlined"
+                                 Class="@GetFieldClass("Genres")" ReadOnly="@IsFieldLocked("Genres")" />
+                    <K7IconButton Icon="@GetLockIcon("Genres")" OnClick="@(() => ToggleLock("Genres"))" Title="@GetLockTooltip("Genres")" Class="@GetLockClass("Genres")" />
+                </K7SettingRow>
+            }
+
+            @if (_showTagline)
+            {
+                <K7SettingRow Label="@L["Tagline"]" Stacked="true">
+                    <K7TextField @bind-Value="_tagline" Variant="outlined" MaxLength="1000"
+                                 Class="@GetFieldClass("Tagline")" ReadOnly="@IsFieldLocked("Tagline")" />
+                    <K7IconButton Icon="@GetLockIcon("Tagline")" OnClick="@(() => ToggleLock("Tagline"))" Title="@GetLockTooltip("Tagline")" Class="@GetLockClass("Tagline")" />
+                </K7SettingRow>
+            }
+
+            @if (_showOriginalLanguage)
+            {
+                <K7SettingRow Label="@L["OriginalLanguage"]">
+                    <K7LanguageSelect Value="@_originalLanguage" ValueChanged="OnOriginalLanguageChanged"
+                                      Variant="outlined"
+                                      Disabled="@IsFieldLocked("OriginalLanguage")" />
+                    <K7IconButton Icon="@GetLockIcon("OriginalLanguage")" OnClick="@(() => ToggleLock("OriginalLanguage"))" Title="@GetLockTooltip("OriginalLanguage")" Class="@GetLockClass("OriginalLanguage")" />
+                </K7SettingRow>
+            }
+
+            @if (_showContentRating)
+            {
+                <K7SettingRow Label="@L["ContentRating"]">
+                    <K7TextField @bind-Value="_contentRating" Variant="outlined" MaxLength="50"
+                                 Class="@GetFieldClass("ContentRating")" ReadOnly="@IsFieldLocked("ContentRating")" />
+                    <K7IconButton Icon="@GetLockIcon("ContentRating")" OnClick="@(() => ToggleLock("ContentRating"))" Title="@GetLockTooltip("ContentRating")" Class="@GetLockClass("ContentRating")" />
+                </K7SettingRow>
+            }
+
+            @if (_showBudgetRevenue)
+            {
+                <K7SettingRow Label="@L["Budget"]">
+                    <K7TextField TValue="long?" @bind-Value="_budget" Variant="outlined" Type="number"
+                                 Class="@GetFieldClass("Budget")" ReadOnly="@IsFieldLocked("Budget")" />
+                    <K7IconButton Icon="@GetLockIcon("Budget")" OnClick="@(() => ToggleLock("Budget"))" Title="@GetLockTooltip("Budget")" Class="@GetLockClass("Budget")" />
+                </K7SettingRow>
+                <K7SettingRow Label="@L["Revenue"]">
+                    <K7TextField TValue="long?" @bind-Value="_revenue" Variant="outlined" Type="number"
+                                 Class="@GetFieldClass("Revenue")" ReadOnly="@IsFieldLocked("Revenue")" />
+                    <K7IconButton Icon="@GetLockIcon("Revenue")" OnClick="@(() => ToggleLock("Revenue"))" Title="@GetLockTooltip("Revenue")" Class="@GetLockClass("Revenue")" />
+                </K7SettingRow>
+            }
+
+            @if (_showStatus)
+            {
+                <K7SettingRow Label="@L["Status"]">
+                    <K7TextField @bind-Value="_status" Variant="outlined" MaxLength="50"
+                                 Class="@GetFieldClass("Status")" ReadOnly="@IsFieldLocked("Status")" />
+                    <K7IconButton Icon="@GetLockIcon("Status")" OnClick="@(() => ToggleLock("Status"))" Title="@GetLockTooltip("Status")" Class="@GetLockClass("Status")" />
+                </K7SettingRow>
+            }
+
+            @if (_showNetwork)
+            {
+                <K7SettingRow Label="@L["Network"]">
+                    <K7TextField @bind-Value="_network" Variant="outlined" MaxLength="200"
+                                 Class="@GetFieldClass("Network")" ReadOnly="@IsFieldLocked("Network")" />
+                    <K7IconButton Icon="@GetLockIcon("Network")" OnClick="@(() => ToggleLock("Network"))" Title="@GetLockTooltip("Network")" Class="@GetLockClass("Network")" />
+                </K7SettingRow>
+            }
+
+            @if (_showRuntime)
+            {
+                <K7SettingRow Label="@L["Runtime"]">
+                    <K7TextField TValue="int?" @bind-Value="_runtime" Variant="outlined" Type="number"
+                                 Class="@GetFieldClass("Runtime")" ReadOnly="@IsFieldLocked("Runtime")" />
+                    <K7IconButton Icon="@GetLockIcon("Runtime")" OnClick="@(() => ToggleLock("Runtime"))" Title="@GetLockTooltip("Runtime")" Class="@GetLockClass("Runtime")" />
+                </K7SettingRow>
+            }
+
+            @if (_showBiography)
+            {
+                <K7SettingRow Label="@L["Biography"]" Stacked="true">
+                    <K7TextField @bind-Value="_biography" Variant="outlined" Lines="4" MaxLength="50000"
+                                 Class="@GetFieldClass("Biography")" ReadOnly="@IsFieldLocked("Biography")" />
+                    <K7IconButton Icon="@GetLockIcon("Biography")" OnClick="@(() => ToggleLock("Biography"))" Title="@GetLockTooltip("Biography")" Class="@GetLockClass("Biography")" />
+                </K7SettingRow>
+            }
+
+            @if (_showCountry)
+            {
+                <K7SettingRow Label="@L["Country"]">
+                    <K7TextField @bind-Value="_country" Variant="outlined" MaxLength="100"
+                                 Class="@GetFieldClass("Country")" ReadOnly="@IsFieldLocked("Country")" />
+                    <K7IconButton Icon="@GetLockIcon("Country")" OnClick="@(() => ToggleLock("Country"))" Title="@GetLockTooltip("Country")" Class="@GetLockClass("Country")" />
+                </K7SettingRow>
+            }
+
+            @if (_showBirthday)
+            {
+                <K7SettingRow Label="@L["Birthday"]" Hint="YYYY-MM-DD">
+                    <K7TextField TValue="string" Value="@_birthdayStr" ValueChanged="OnBirthdayChanged"
+                                 Variant="outlined"
+                                 Validation="ValidateDate" Class="@GetFieldClass("Birthday")" ReadOnly="@IsFieldLocked("Birthday")" />
+                    <K7IconButton Icon="@GetLockIcon("Birthday")" OnClick="@(() => ToggleLock("Birthday"))" Title="@GetLockTooltip("Birthday")" Class="@GetLockClass("Birthday")" />
+                </K7SettingRow>
+            }
+
+            @if (_showDeathday)
+            {
+                <K7SettingRow Label="@L["Deathday"]" Hint="YYYY-MM-DD">
+                    <K7TextField TValue="string" Value="@_deathdayStr" ValueChanged="OnDeathdayChanged"
+                                 Variant="outlined"
+                                 Validation="ValidateDate" Class="@GetFieldClass("Deathday")" ReadOnly="@IsFieldLocked("Deathday")" />
+                    <K7IconButton Icon="@GetLockIcon("Deathday")" OnClick="@(() => ToggleLock("Deathday"))" Title="@GetLockTooltip("Deathday")" Class="@GetLockClass("Deathday")" />
+                </K7SettingRow>
+            }
+
+            @if (_showBirthPlace)
+            {
+                <K7SettingRow Label="@L["BirthPlace"]">
+                    <K7TextField @bind-Value="_birthPlace" Variant="outlined" MaxLength="200"
+                                 Class="@GetFieldClass("BirthPlace")" ReadOnly="@IsFieldLocked("BirthPlace")" />
+                    <K7IconButton Icon="@GetLockIcon("BirthPlace")" OnClick="@(() => ToggleLock("BirthPlace"))" Title="@GetLockTooltip("BirthPlace")" Class="@GetLockClass("BirthPlace")" />
+                </K7SettingRow>
+            }
+
+            @if (_showTrackNumber)
+            {
+                <K7SettingRow Label="@L["TrackNumber"]">
+                    <K7TextField TValue="int?" @bind-Value="_trackNumber" Variant="outlined" Type="number"
+                                 Class="@GetFieldClass("TrackNumber")" ReadOnly="@IsFieldLocked("TrackNumber")" />
+                    <K7IconButton Icon="@GetLockIcon("TrackNumber")" OnClick="@(() => ToggleLock("TrackNumber"))" Title="@GetLockTooltip("TrackNumber")" Class="@GetLockClass("TrackNumber")" />
+                </K7SettingRow>
+                <K7SettingRow Label="@L["DiscNumber"]">
+                    <K7TextField TValue="int?" @bind-Value="_discNumber" Variant="outlined" Type="number"
+                                 Class="@GetFieldClass("DiscNumber")" ReadOnly="@IsFieldLocked("DiscNumber")" />
+                    <K7IconButton Icon="@GetLockIcon("DiscNumber")" OnClick="@(() => ToggleLock("DiscNumber"))" Title="@GetLockTooltip("DiscNumber")" Class="@GetLockClass("DiscNumber")" />
+                </K7SettingRow>
+            }
+
+            @if (_showLyrics)
+            {
+                <K7SettingRow Label="@L["Lyrics"]" Stacked="true">
+                    <K7TextField @bind-Value="_lyrics" Variant="outlined" Lines="4"
+                                 Class="@GetFieldClass("Lyrics")" ReadOnly="@IsFieldLocked("Lyrics")" />
+                    <K7IconButton Icon="@GetLockIcon("Lyrics")" OnClick="@(() => ToggleLock("Lyrics"))" Title="@GetLockTooltip("Lyrics")" Class="@GetLockClass("Lyrics")" />
+                </K7SettingRow>
+            }
         </div>
-
-        @if (!_isPersonMode)
-        {
-            <div class="field-row">
-                <K7TextField @bind-Value="_sortTitle" Label="@L["SortTitle"]" Variant="outlined" MaxLength="500"
-                             Class="@GetFieldClass("SortTitle")" ReadOnly="@IsFieldLocked("SortTitle")" />
-                <K7IconButton Icon="@GetLockIcon("SortTitle")" OnClick="@(() => ToggleLock("SortTitle"))" Title="@GetLockTooltip("SortTitle")" Class="@GetLockClass("SortTitle")" />
-            </div>
-        }
-
-        @if (_showOriginalTitle)
-        {
-            <div class="field-row">
-                <K7TextField @bind-Value="_originalTitle" Label="@L["OriginalTitle"]" Variant="outlined" MaxLength="500"
-                             Class="@GetFieldClass("OriginalTitle")" ReadOnly="@IsFieldLocked("OriginalTitle")" />
-                <K7IconButton Icon="@GetLockIcon("OriginalTitle")" OnClick="@(() => ToggleLock("OriginalTitle"))" Title="@GetLockTooltip("OriginalTitle")" Class="@GetLockClass("OriginalTitle")" />
-            </div>
-        }
-
-        @if (_showReleaseDate)
-        {
-            <div class="field-row">
-                <K7TextField TValue="string" Value="@_releaseDateStr" ValueChanged="OnReleaseDateChanged"
-                             Label="@_releaseDateLabel" Variant="outlined" HelperText="YYYY-MM-DD"
-                             Validation="ValidateDate" Class="@GetFieldClass("ReleaseDate")" ReadOnly="@IsFieldLocked("ReleaseDate")" />
-                <K7IconButton Icon="@GetLockIcon("ReleaseDate")" OnClick="@(() => ToggleLock("ReleaseDate"))" Title="@GetLockTooltip("ReleaseDate")" Class="@GetLockClass("ReleaseDate")" />
-            </div>
-        }
-
-        @if (_showOverview)
-        {
-            <div class="field-row">
-                <K7TextField @bind-Value="_overview" Label="@L["Overview"]" Variant="outlined" Lines="4" MaxLength="10000"
-                             Class="@GetFieldClass("Overview")" ReadOnly="@IsFieldLocked("Overview")" />
-                <K7IconButton Icon="@GetLockIcon("Overview")" OnClick="@(() => ToggleLock("Overview"))" Title="@GetLockTooltip("Overview")" Class="@GetLockClass("Overview")" />
-            </div>
-        }
-
-        @if (_showGenres)
-        {
-            <div class="field-row">
-                <K7TextField @bind-Value="_genresStr" Label="@L["Genres"]" Variant="outlined"
-                             HelperText="@L["GenresHelper"]" Class="@GetFieldClass("Genres")" ReadOnly="@IsFieldLocked("Genres")" />
-                <K7IconButton Icon="@GetLockIcon("Genres")" OnClick="@(() => ToggleLock("Genres"))" Title="@GetLockTooltip("Genres")" Class="@GetLockClass("Genres")" />
-            </div>
-        }
-
-        @if (_showTagline)
-        {
-            <div class="field-row">
-                <K7TextField @bind-Value="_tagline" Label="@L["Tagline"]" Variant="outlined" MaxLength="1000"
-                             Class="@GetFieldClass("Tagline")" ReadOnly="@IsFieldLocked("Tagline")" />
-                <K7IconButton Icon="@GetLockIcon("Tagline")" OnClick="@(() => ToggleLock("Tagline"))" Title="@GetLockTooltip("Tagline")" Class="@GetLockClass("Tagline")" />
-            </div>
-        }
-
-        @if (_showOriginalLanguage)
-        {
-            <div class="field-row">
-                <K7LanguageSelect Value="@_originalLanguage" ValueChanged="OnOriginalLanguageChanged"
-                                  Label="@L["OriginalLanguage"]" Variant="outlined"
-                                  Disabled="@IsFieldLocked("OriginalLanguage")" />
-                <K7IconButton Icon="@GetLockIcon("OriginalLanguage")" OnClick="@(() => ToggleLock("OriginalLanguage"))" Title="@GetLockTooltip("OriginalLanguage")" Class="@GetLockClass("OriginalLanguage")" />
-            </div>
-        }
-
-        @if (_showContentRating)
-        {
-            <div class="field-row">
-                <K7TextField @bind-Value="_contentRating" Label="@L["ContentRating"]" Variant="outlined" MaxLength="50"
-                             Class="@GetFieldClass("ContentRating")" ReadOnly="@IsFieldLocked("ContentRating")" />
-                <K7IconButton Icon="@GetLockIcon("ContentRating")" OnClick="@(() => ToggleLock("ContentRating"))" Title="@GetLockTooltip("ContentRating")" Class="@GetLockClass("ContentRating")" />
-            </div>
-        }
-
-        @if (_showBudgetRevenue)
-        {
-            <div class="field-row">
-                <K7TextField TValue="long?" @bind-Value="_budget" Label="@L["Budget"]" Variant="outlined" Type="number"
-                             Class="@GetFieldClass("Budget")" ReadOnly="@IsFieldLocked("Budget")" />
-                <K7IconButton Icon="@GetLockIcon("Budget")" OnClick="@(() => ToggleLock("Budget"))" Title="@GetLockTooltip("Budget")" Class="@GetLockClass("Budget")" />
-            </div>
-            <div class="field-row">
-                <K7TextField TValue="long?" @bind-Value="_revenue" Label="@L["Revenue"]" Variant="outlined" Type="number"
-                             Class="@GetFieldClass("Revenue")" ReadOnly="@IsFieldLocked("Revenue")" />
-                <K7IconButton Icon="@GetLockIcon("Revenue")" OnClick="@(() => ToggleLock("Revenue"))" Title="@GetLockTooltip("Revenue")" Class="@GetLockClass("Revenue")" />
-            </div>
-        }
-
-        @if (_showStatus)
-        {
-            <div class="field-row">
-                <K7TextField @bind-Value="_status" Label="@L["Status"]" Variant="outlined" MaxLength="50"
-                             Class="@GetFieldClass("Status")" ReadOnly="@IsFieldLocked("Status")" />
-                <K7IconButton Icon="@GetLockIcon("Status")" OnClick="@(() => ToggleLock("Status"))" Title="@GetLockTooltip("Status")" Class="@GetLockClass("Status")" />
-            </div>
-        }
-
-        @if (_showNetwork)
-        {
-            <div class="field-row">
-                <K7TextField @bind-Value="_network" Label="@L["Network"]" Variant="outlined" MaxLength="200"
-                             Class="@GetFieldClass("Network")" ReadOnly="@IsFieldLocked("Network")" />
-                <K7IconButton Icon="@GetLockIcon("Network")" OnClick="@(() => ToggleLock("Network"))" Title="@GetLockTooltip("Network")" Class="@GetLockClass("Network")" />
-            </div>
-        }
-
-        @if (_showRuntime)
-        {
-            <div class="field-row">
-                <K7TextField TValue="int?" @bind-Value="_runtime" Label="@L["Runtime"]" Variant="outlined" Type="number"
-                             Class="@GetFieldClass("Runtime")" ReadOnly="@IsFieldLocked("Runtime")" />
-                <K7IconButton Icon="@GetLockIcon("Runtime")" OnClick="@(() => ToggleLock("Runtime"))" Title="@GetLockTooltip("Runtime")" Class="@GetLockClass("Runtime")" />
-            </div>
-        }
-
-        @if (_showBiography)
-        {
-            <div class="field-row">
-                <K7TextField @bind-Value="_biography" Label="@L["Biography"]" Variant="outlined" Lines="4" MaxLength="50000"
-                             Class="@GetFieldClass("Biography")" ReadOnly="@IsFieldLocked("Biography")" />
-                <K7IconButton Icon="@GetLockIcon("Biography")" OnClick="@(() => ToggleLock("Biography"))" Title="@GetLockTooltip("Biography")" Class="@GetLockClass("Biography")" />
-            </div>
-        }
-
-        @if (_showCountry)
-        {
-            <div class="field-row">
-                <K7TextField @bind-Value="_country" Label="@L["Country"]" Variant="outlined" MaxLength="100"
-                             Class="@GetFieldClass("Country")" ReadOnly="@IsFieldLocked("Country")" />
-                <K7IconButton Icon="@GetLockIcon("Country")" OnClick="@(() => ToggleLock("Country"))" Title="@GetLockTooltip("Country")" Class="@GetLockClass("Country")" />
-            </div>
-        }
-
-        @if (_showBirthday)
-        {
-            <div class="field-row">
-                <K7TextField TValue="string" Value="@_birthdayStr" ValueChanged="OnBirthdayChanged"
-                             Label="@L["Birthday"]" Variant="outlined" HelperText="YYYY-MM-DD"
-                             Validation="ValidateDate" Class="@GetFieldClass("Birthday")" ReadOnly="@IsFieldLocked("Birthday")" />
-                <K7IconButton Icon="@GetLockIcon("Birthday")" OnClick="@(() => ToggleLock("Birthday"))" Title="@GetLockTooltip("Birthday")" Class="@GetLockClass("Birthday")" />
-            </div>
-        }
-
-        @if (_showDeathday)
-        {
-            <div class="field-row">
-                <K7TextField TValue="string" Value="@_deathdayStr" ValueChanged="OnDeathdayChanged"
-                             Label="@L["Deathday"]" Variant="outlined" HelperText="YYYY-MM-DD"
-                             Validation="ValidateDate" Class="@GetFieldClass("Deathday")" ReadOnly="@IsFieldLocked("Deathday")" />
-                <K7IconButton Icon="@GetLockIcon("Deathday")" OnClick="@(() => ToggleLock("Deathday"))" Title="@GetLockTooltip("Deathday")" Class="@GetLockClass("Deathday")" />
-            </div>
-        }
-
-        @if (_showBirthPlace)
-        {
-            <div class="field-row">
-                <K7TextField @bind-Value="_birthPlace" Label="@L["BirthPlace"]" Variant="outlined" MaxLength="200"
-                             Class="@GetFieldClass("BirthPlace")" ReadOnly="@IsFieldLocked("BirthPlace")" />
-                <K7IconButton Icon="@GetLockIcon("BirthPlace")" OnClick="@(() => ToggleLock("BirthPlace"))" Title="@GetLockTooltip("BirthPlace")" Class="@GetLockClass("BirthPlace")" />
-            </div>
-        }
-
-        @if (_showTrackNumber)
-        {
-            <div class="field-row">
-                <K7TextField TValue="int?" @bind-Value="_trackNumber" Label="@L["TrackNumber"]" Variant="outlined" Type="number"
-                             Class="@GetFieldClass("TrackNumber")" ReadOnly="@IsFieldLocked("TrackNumber")" />
-                <K7IconButton Icon="@GetLockIcon("TrackNumber")" OnClick="@(() => ToggleLock("TrackNumber"))" Title="@GetLockTooltip("TrackNumber")" Class="@GetLockClass("TrackNumber")" />
-            </div>
-            <div class="field-row">
-                <K7TextField TValue="int?" @bind-Value="_discNumber" Label="@L["DiscNumber"]" Variant="outlined" Type="number"
-                             Class="@GetFieldClass("DiscNumber")" ReadOnly="@IsFieldLocked("DiscNumber")" />
-                <K7IconButton Icon="@GetLockIcon("DiscNumber")" OnClick="@(() => ToggleLock("DiscNumber"))" Title="@GetLockTooltip("DiscNumber")" Class="@GetLockClass("DiscNumber")" />
-            </div>
-        }
-
-        @if (_showLyrics)
-        {
-            <div class="field-row">
-                <K7TextField @bind-Value="_lyrics" Label="@L["Lyrics"]" Variant="outlined" Lines="4"
-                             Class="@GetFieldClass("Lyrics")" ReadOnly="@IsFieldLocked("Lyrics")" />
-                <K7IconButton Icon="@GetLockIcon("Lyrics")" OnClick="@(() => ToggleLock("Lyrics"))" Title="@GetLockTooltip("Lyrics")" Class="@GetLockClass("Lyrics")" />
-            </div>
-        }
 
         @if (_externalIds.Count > 0 || _isPersonMode || Media is not null)
         {

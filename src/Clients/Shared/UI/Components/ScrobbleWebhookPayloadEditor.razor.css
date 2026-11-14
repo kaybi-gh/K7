@@ -1,0 +1,87 @@
+.webhook-editor {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+/* Five short event names: side by side instead of a tall list. */
+.webhook-editor ::deep .webhook-editor__events {
+    display: flex;
+    flex-wrap: wrap;
+    max-height: none;
+}
+
+.webhook-editor ::deep .webhook-editor__events .k7-checkbox-list__row {
+    flex: 1 1 7rem;
+    background: transparent;
+}
+
+.webhook-editor__payload {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.webhook-editor__toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}
+
+/* Template and its parameters side by side when there is room, so neither needs a long scroll. */
+.webhook-editor__columns {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 16rem);
+    gap: var(--space-3);
+    align-items: start;
+}
+
+.webhook-editor__columns--single {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.webhook-editor__params {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    min-width: 0;
+}
+
+.webhook-editor__params ::deep .k7-grouped-list {
+    max-height: 17rem;
+}
+
+.webhook-editor__note {
+    margin: 0;
+    font-size: var(--text-xs);
+    line-height: 1.4;
+    color: var(--color-text-muted);
+}
+
+.webhook-editor__preview {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    padding: var(--space-3);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+}
+
+.webhook-editor__preview-text {
+    margin: 0;
+    white-space: pre-wrap;
+    word-break: break-all;
+    font-size: var(--text-sm);
+}
+
+@media (max-width: 699.98px) {
+    .webhook-editor__columns {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .webhook-editor__params ::deep .k7-grouped-list {
+        max-height: 14rem;
+    }
+}

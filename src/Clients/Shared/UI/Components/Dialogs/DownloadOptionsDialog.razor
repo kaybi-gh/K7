@@ -8,32 +8,37 @@
     <div class="d-flex flex-col data-nav-col">
         @if (videoMetadata != null)
         {
-            <K7Select TValue="AudioFileTrackDto" @bind-Value="SelectedAudioTrack" Label="@L["AudioTrack"]" Variant="filled">
-                @if (videoMetadata.AudioTracks != null)
-                {
-                    @foreach (var track in videoMetadata.AudioTracks)
-                    {
-                        var audioLabel = $"{track.Language} - {track.Name} - {track.Codec} {track.ChannelLayout}";
-                        <K7SelectItem Value="@track" Text="@audioLabel">@audioLabel</K7SelectItem>
-                    }
-                }
-            </K7Select>
+            <div>
+                <K7SettingRow Label="@L["AudioTrack"]">
+                    <K7Select TValue="AudioFileTrackDto" @bind-Value="SelectedAudioTrack" Variant="filled">
+                        @if (videoMetadata.AudioTracks != null)
+                        {
+                            @foreach (var track in videoMetadata.AudioTracks)
+                            {
+                                var audioLabel = $"{track.Language} - {track.Name} - {track.Codec} {track.ChannelLayout}";
+                                <K7SelectItem Value="@track" Text="@audioLabel">@audioLabel</K7SelectItem>
+                            }
+                        }
+                    </K7Select>
+                </K7SettingRow>
 
-            <K7Select TValue="SubtitleFileTrackDto"
-                      @bind-Value="SelectedSubtitleTrack"
-                      Label="@L["SubtitleTrack"]"
-                      Variant="filled"
-                      Clearable="true"
-                      Disabled="@(videoMetadata.SubtitleTracks is not { Count: > 0 })">
-                @if (videoMetadata.SubtitleTracks != null)
-                {
-                    @foreach (var track in videoMetadata.SubtitleTracks)
-                    {
-                        var subtitleLabel = $"{track.Language} - {track.Name} - {track.Codec}";
-                        <K7SelectItem Value="@track" Text="@subtitleLabel">@subtitleLabel</K7SelectItem>
-                    }
-                }
-            </K7Select>
+                <K7SettingRow Label="@L["SubtitleTrack"]">
+                    <K7Select TValue="SubtitleFileTrackDto"
+                              @bind-Value="SelectedSubtitleTrack"
+                              Variant="filled"
+                              Clearable="true"
+                              Disabled="@(videoMetadata.SubtitleTracks is not { Count: > 0 })">
+                        @if (videoMetadata.SubtitleTracks != null)
+                        {
+                            @foreach (var track in videoMetadata.SubtitleTracks)
+                            {
+                                var subtitleLabel = $"{track.Language} - {track.Name} - {track.Codec}";
+                                <K7SelectItem Value="@track" Text="@subtitleLabel">@subtitleLabel</K7SelectItem>
+                            }
+                        }
+                    </K7Select>
+                </K7SettingRow>
+            </div>
         }
     </div>
 </div>

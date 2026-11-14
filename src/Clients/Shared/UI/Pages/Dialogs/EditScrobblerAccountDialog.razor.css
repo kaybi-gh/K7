@@ -1,0 +1,10 @@
+/* A field and its "open settings" link can share the control side of a row. */
+.scrobbler-account-editor ::deep .k7-setting-row__control {
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.scrobbler-account-editor__summary {
+    color: var(--color-text-muted);
+}

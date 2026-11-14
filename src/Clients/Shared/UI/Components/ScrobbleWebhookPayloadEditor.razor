@@ -2,66 +2,79 @@
 @using K7.Shared.Dtos.Notifications
 @inject IStringLocalizer<ScrobbleWebhookPayloadEditor> L
 
-<div class="d-flex flex-col gap-3">
-    @if (ReadOnly)
-    {
-        <p class="text-caption" style="color: var(--color-text-muted);">@L["PresetReadOnlyHint"]</p>
-    }
-
+<div class="webhook-editor">
     <div>
-        <p class="text-sm mb-1">@L["Events"]</p>
-        <K7CheckboxList TItem="string"
-                        Items="_allEvents"
-                        IsChecked="@(e => EnabledEvents.Contains(e))"
-                        CheckedChanged="@(e => OnEventToggled(e.Item, e.Checked))"
-                        ItemLabel="@GetEventLabel" />
-        <p class="text-caption mt-1" style="color: var(--color-text-muted);">@L["EventsHint"]</p>
-        <p class="text-caption" style="color: var(--color-text-muted);">@L["SharedProfileHint"]</p>
+        <K7SettingRow Label="@L["Events"]" Hint="@L["EventsHint"]" Stacked="true">
+            <HintContent>@L["SharedProfileHint"]</HintContent>
+            <ChildContent>
+                <K7CheckboxList TItem="string"
+                                Items="_allEvents"
+                                IsChecked="@(e => EnabledEvents.Contains(e))"
+                                CheckedChanged="@(e => OnEventToggled(e.Item, e.Checked))"
+                                ItemLabel="@GetEventLabel"
+                                Class="webhook-editor__events" />
+            </ChildContent>
+        </K7SettingRow>
     </div>
 
     @if (EnabledEvents.Count > 0)
     {
-        <div class="d-flex align-center justify-between gap-2">
-            <K7Tabs TValue="string" Tabs="_tabOptions" Value="_activeTab" ValueChanged="OnTabChanged" />
-            <K7ButtonGroup TValue="bool" Options="_previewModeOptions" Value="_isPreviewMode"
-                           ValueChanged="@(v => _isPreviewMode = v)" AriaLabel="@L["EditPreview"]" />
-        </div>
+        @* What is sent for each event: folded by default, since presets and the default
+           templates work as they are. *@
+        <K7ExpansionPanel Text="@(ReadOnly ? L["PayloadTitleReadOnly"] : L["PayloadTitle"])">
+            <div class="webhook-editor__payload">
+                @if (ReadOnly)
+                {
+                    <p class="webhook-editor__note">@L["PresetReadOnlyHint"]</p>
+                }
 
-        @if (!_isPreviewMode)
-        {
-            <K7TextField @ref="_templateField"
-                         TValue="string"
-                         Value="@GetActiveTemplate()"
-                         ValueChanged="OnActiveTemplateChanged"
-                         Label="@GetEventLabel(_activeTab)"
-                         Variant="outlined"
-                         Lines="8"
-                         Immediate="true"
-                         ReadOnly="ReadOnly"
-                         HelperText="@(ReadOnly ? L["TemplateReadOnlyHelper"] : L["TemplateHelper"])" />
-        }
-        else
-        {
-            <K7Paper Outlined="true" Class="pa-4">
-                <span class="text-caption" style="color: var(--color-text-muted);">@L["PreviewNote"]</span>
-                <pre class="mt-2" style="white-space: pre-wrap; word-break: break-all; font-size: 0.85em;">@RenderPreview(GetActiveTemplate())</pre>
-            </K7Paper>
-        }
+                <div class="webhook-editor__toolbar">
+                    <K7Tabs TValue="string" Tabs="_tabOptions" Value="_activeTab" ValueChanged="OnTabChanged" />
+                    <K7ButtonGroup TValue="bool" Options="_previewModeOptions" Value="_isPreviewMode"
+                                   ValueChanged="@(v => _isPreviewMode = v)" AriaLabel="@L["EditPreview"]" />
+                </div>
 
-        @if (!ReadOnly)
-        {
-            <div>
-                <span class="text-caption" style="color: var(--color-text-muted);">@L["AvailableParams"]</span>
-                <K7GroupedList TItem="NotificationParameterInfoDto"
-                               Groups="ParameterGroups"
-                               Searchable="true"
-                               SearchPlaceholder="@L["SearchParams"]"
-                               ItemLabel="@(p => p.DisplayName)"
-                               ItemDescription="@(p => FormatParamDescription(p))"
-                               ItemKeywords="@(p => new[] { p.Name, p.DisplayName })"
-                               ItemKeySelector="@(p => p.Name)"
-                               ItemClicked="@(p => InsertParam(p.Name))" />
+                <div class="webhook-editor__columns @(ReadOnly ? "webhook-editor__columns--single" : "")">
+                    <div class="webhook-editor__template">
+                        @if (!_isPreviewMode)
+                        {
+                            <K7TextField @ref="_templateField"
+                                         TValue="string"
+                                         Value="@GetActiveTemplate()"
+                                         ValueChanged="OnActiveTemplateChanged"
+                                         Label="@GetEventLabel(_activeTab)"
+                                         Variant="outlined"
+                                         Lines="10"
+                                         Immediate="true"
+                                         ReadOnly="ReadOnly"
+                                         HelperText="@(ReadOnly ? L["TemplateReadOnlyHelper"] : L["TemplateHelper"])" />
+                        }
+                        else
+                        {
+                            <div class="webhook-editor__preview">
+                                <span class="webhook-editor__note">@L["PreviewNote"]</span>
+                                <pre class="webhook-editor__preview-text">@RenderPreview(GetActiveTemplate())</pre>
+                            </div>
+                        }
+                    </div>
+
+                    @if (!ReadOnly)
+                    {
+                        <div class="webhook-editor__params">
+                            <span class="webhook-editor__note">@L["AvailableParams"]</span>
+                            <K7GroupedList TItem="NotificationParameterInfoDto"
+                                           Groups="ParameterGroups"
+                                           Searchable="true"
+                                           SearchPlaceholder="@L["SearchParams"]"
+                                           ItemLabel="@(p => p.DisplayName)"
+                                           ItemDescription="@(p => FormatParamDescription(p))"
+                                           ItemKeywords="@(p => new[] { p.Name, p.DisplayName })"
+                                           ItemKeySelector="@(p => p.Name)"
+                                           ItemClicked="@(p => InsertParam(p.Name))" />
+                        </div>
+                    }
+                </div>
             </div>
-        }
+        </K7ExpansionPanel>
     }
 </div>

@@ -23,4 +23,6 @@
   <data name="GroupPlayback" xml:space="preserve"><value>Lecture</value></data>
   <data name="EditPreview" xml:space="preserve"><value>Éditer / Prévisualiser</value></data>
   <data name="PreviewNote" xml:space="preserve"><value>Aperçu avec des données d'exemple :</value></data>
+  <data name="PayloadTitle" xml:space="preserve"><value>Contenu envoyé pour chaque événement</value></data>
+  <data name="PayloadTitleReadOnly" xml:space="preserve"><value>Voir le contenu envoyé par ce modèle</value></data>
 </root>

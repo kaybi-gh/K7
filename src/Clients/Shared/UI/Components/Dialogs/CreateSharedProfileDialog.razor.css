@@ -1,0 +1,26 @@
+/* Two buttons can share the right side of the PIN row. */
+.shared-profile-editor ::deep .k7-setting-row__control {
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+/* The member list and its warning take the full width of the stacked row. */
+.shared-profile-editor__members {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 100%;
+    gap: var(--space-2);
+    min-width: 0;
+}
+
+.shared-profile-editor__name {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+    color: var(--color-text);
+}

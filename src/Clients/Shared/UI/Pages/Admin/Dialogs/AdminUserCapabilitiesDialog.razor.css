@@ -1,12 +1,16 @@
-.exclusions__hint {
+.capabilities__intro {
+    margin: 0 0 var(--space-2);
     font-size: var(--text-sm);
     color: var(--color-text-secondary);
-    margin-bottom: 0.75rem;
 }
 
-.exclusions__name {
-    font-size: var(--text-sm);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+.capabilities__heading {
+    margin: 0 0 var(--space-1);
+}
+
+/* An overridden capability shows a reset button beside its switch. */
+.capabilities ::deep .k7-setting-row__control {
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
 }

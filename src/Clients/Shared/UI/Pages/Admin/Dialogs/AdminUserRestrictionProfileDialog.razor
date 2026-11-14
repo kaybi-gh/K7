@@ -6,15 +6,21 @@
     else
     {
         <h6>@L["AgeFilterTitle"]</h6>
-        <K7Switch Label="@L["AgeRestrictionEnabled"]" @bind-Value="_ageRestrictionEnabled" />
-        <K7Alert Severity="K7Severity.Info" Icon="@Phosphor.Info">@L["AgeRestrictionHelp"]</K7Alert>
-        <K7TextField TValue="string" Type="date" Label="@L["DateOfBirth"]"
-                     @bind-Value="_dateOfBirthText"
-                     Required="_ageRestrictionEnabled"
-                     HelperText="@L["DateOfBirthHelp"]" />
-        <K7Switch Label="@L["HideUnratedTitles"]"
-                  @bind-Value="_hideUnratedTitles"
-                  Disabled="@(!_ageRestrictionEnabled)" />
+        <div>
+            <K7SettingRow Label="@L["AgeRestrictionEnabled"]" Hint="@L["AgeRestrictionHelp"]">
+                <K7Switch AriaLabel="@L["AgeRestrictionEnabled"]" @bind-Value="_ageRestrictionEnabled" />
+            </K7SettingRow>
+            <K7SettingRow Label="@L["DateOfBirth"]" Hint="@L["DateOfBirthHelp"]" Required="_ageRestrictionEnabled">
+                <K7TextField TValue="string" Type="date"
+                             @bind-Value="_dateOfBirthText"
+                             Required="_ageRestrictionEnabled" />
+            </K7SettingRow>
+            <K7SettingRow Label="@L["HideUnratedTitles"]">
+                <K7Switch AriaLabel="@L["HideUnratedTitles"]"
+                          @bind-Value="_hideUnratedTitles"
+                          Disabled="@(!_ageRestrictionEnabled)" />
+            </K7SettingRow>
+        </div>
         @if (_validationError is not null)
         {
             <K7Alert Severity="K7Severity.Error">@_validationError</K7Alert>
@@ -23,19 +29,23 @@
         <hr class="k7-divider my-2" />
 
         <h6>@L["CustomProfilesTitle"]</h6>
-        <K7Select TValue="Guid?" @bind-Value="_selectedProfileId" Label="@L["ProfileLabel"]"
-                   Variant="outlined" Clearable="true">
-            @foreach (var profile in _profiles)
-            {
-                <K7SelectItem TValue="Guid?" Value="@profile.Id">
-                    @profile.Name
-                    @if (!string.IsNullOrWhiteSpace(profile.Description))
+        <div>
+            <K7SettingRow Label="@L["ProfileLabel"]">
+                <K7Select TValue="Guid?" @bind-Value="_selectedProfileId"
+                          Variant="outlined" Clearable="true">
+                    @foreach (var profile in _profiles)
                     {
-                        <span class="text-caption" Color="secondary"> - @profile.Description</span>
+                        <K7SelectItem TValue="Guid?" Value="@profile.Id">
+                            @profile.Name
+                            @if (!string.IsNullOrWhiteSpace(profile.Description))
+                            {
+                                <span class="text-caption" Color="secondary"> - @profile.Description</span>
+                            }
+                        </K7SelectItem>
                     }
-                </K7SelectItem>
-            }
-        </K7Select>
+                </K7Select>
+            </K7SettingRow>
+        </div>
     }
 </div>
 <div class="k7-dialog-actions">

@@ -1,33 +1,27 @@
-.picker-row {
+.group-editor {
     display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 0;
-    border-bottom: 1px solid var(--color-border);
+    flex-direction: column;
+    gap: var(--space-3);
 }
 
-.picker-row__label {
+/* Several controls can share the right side of a row (preview + Choose + Remove). */
+.group-editor ::deep .k7-setting-row__control {
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.group-editor__icon-preview {
+    font-size: var(--text-xl);
+    color: var(--color-text);
+}
+
+.group-editor__none {
     font-size: var(--text-sm);
     color: var(--color-text-secondary);
-    width: 100px;
-    flex-shrink: 0;
 }
 
-.picker-row__value {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    min-height: 36px;
-    min-width: 0;
-}
-
-.picker-row__icon-preview {
-    font-size: var(--text-xl);
-    color: var(--color-text-primary);
-}
-
-.picker-row__cover-preview {
+.group-editor ::deep .group-editor__cover-preview {
     width: 48px;
     height: 48px;
     border-radius: var(--radius-sm);
@@ -36,41 +30,11 @@
     overflow: hidden;
 }
 
-.color-picker-row {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: flex-end;
-    gap: var(--space-3);
+.group-editor__preview {
+    width: 280px;
+    max-width: 100%;
 }
 
-.color-picker-row ::deep .k7-color-picker {
-    flex: 1;
-    min-width: 160px;
-}
-
-.color-picker-row__action {
-    margin-bottom: 2px;
-}
-
-.tap-action-field {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-2);
-}
-
-.tap-action-field__label {
-    font-size: var(--text-sm);
-    color: var(--color-text-secondary);
-}
-
-.tap-action-field ::deep .k7-button-group {
-    align-self: flex-start;
-}
-
-.library-group-card-preview {
-    max-width: 280px;
-}
-
-.library-group-card-preview ::deep .k7-category-card {
+.group-editor__preview ::deep .k7-category-card {
     height: 96px;
 }

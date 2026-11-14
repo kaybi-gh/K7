@@ -33,6 +33,7 @@ public partial class CreateLibraryDialog
     private int _autoScanIntervalHours = 6;
     private int? _metadataRefreshIntervalDays;
     private bool _isSubmitting;
+    private string _configTab = "General";
     private bool _introDetectionEnabled = true;
     private bool _themeSongGenerationEnabled = true;
     private bool _seekbarThumbnailGenerationEnabled = true;
@@ -105,6 +106,15 @@ public partial class CreateLibraryDialog
         LibraryMediaType.Music => S["MediaTypeMusic"],
         _ => type.ToString()
     };
+
+    /// <summary>Sections of the configuration step as tabs, so no section needs a long scroll.</summary>
+    private IReadOnlyList<TabOption<string>> ConfigTabs =>
+    [
+        new("General", L["SectionGeneralTitle"]),
+        new("Metadata", L["SectionMetadataTitle"]),
+        new("Scan", L["SectionScanTitle"]),
+        new("Capabilities", L["SectionCapabilitiesTitle"])
+    ];
 
     private bool CanAdvance() => _activeStep switch
     {

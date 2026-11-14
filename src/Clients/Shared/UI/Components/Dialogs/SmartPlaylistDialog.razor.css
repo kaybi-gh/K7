@@ -21,10 +21,3 @@
     border-color: var(--color-accent-text);
     color: var(--color-text);
 }
-
-.ai-smart-playlist-dialog ::deep .k7-field-helper,
-.ai-smart-playlist-dialog ::deep .mud-input-helper-text {
-    font-size: 0.6875rem !important;
-    line-height: 1.3;
-    opacity: 0.85;
-}

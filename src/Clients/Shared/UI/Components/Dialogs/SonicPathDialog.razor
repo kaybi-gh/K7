@@ -18,8 +18,8 @@
         <TrackSearchField Label="@L["EndTrack"]" SelectedTrack="_endTrack" SelectedTrackChanged="t => _endTrack = t" />
 
         <div class="d-flex gap-2 justify-end">
-            <K7Button OnClick="Cancel" Variant="K7ButtonVariant.Text">@L["Cancel"]</K7Button>
-            <K7Button OnClick="PlayAsync" Variant="K7ButtonVariant.Filled" Disabled="_startTrack is null || _endTrack is null || _loading">
+            <K7Button OnClick="Cancel" Variant="text">@L["Cancel"]</K7Button>
+            <K7Button OnClick="PlayAsync" Variant="filled" Disabled="_startTrack is null || _endTrack is null || _loading">
                 @if (_loading)
                 {
                     <K7Spinner Size="16" />

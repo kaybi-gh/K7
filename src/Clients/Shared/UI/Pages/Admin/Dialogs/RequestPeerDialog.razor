@@ -5,10 +5,13 @@
 
 <div class="k7-dialog-content">
     <p>@L["Message"]</p>
-    <K7TextField @bind-Value="_remoteUrl"
-                 Label="@L["UrlLabel"]"
-                 Variant="outlined"
-                 Placeholder="https://peer-server.example.com" />
+    <div>
+        <K7SettingRow Label="@L["UrlLabel"]" Stacked="true">
+            <K7TextField @bind-Value="_remoteUrl"
+                         Variant="outlined"
+                         Placeholder="https://peer-server.example.com" />
+        </K7SettingRow>
+    </div>
 </div>
 <div class="k7-dialog-actions">
     <K7Button OnClick="Cancel">@S["Cancel"]</K7Button>

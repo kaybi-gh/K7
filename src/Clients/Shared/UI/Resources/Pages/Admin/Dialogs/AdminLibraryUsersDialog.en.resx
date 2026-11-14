@@ -6,4 +6,6 @@
   <data name="Hint" xml:space="preserve"><value>Enable or disable access to this library for each user.</value></data>
   <data name="AutoExcluded" xml:space="preserve"><value>auto</value></data>
   <data name="SaveError" xml:space="preserve"><value>Error: {0}</value></data>
+  <data name="SearchPlaceholder" xml:space="preserve"><value>Search for a user</value></data>
+  <data name="NoMatch" xml:space="preserve"><value>No matching user.</value></data>
 </root>

@@ -1,20 +1,29 @@
 .transcoding-panel {
     display: flex;
     flex-direction: column;
-    gap: var(--space-4);
+    gap: var(--space-5);
 }
 
-::deep .transcoding-panel__card {
-    padding: var(--space-4);
+.transcoding-panel__heading {
+    margin: 0 0 var(--space-1);
 }
 
-::deep .transcoding-panel__card--loading {
-    padding: var(--space-6);
-    text-align: center;
+/* What the server detected, apart from the settings and their Save button above. */
+.transcoding-panel__capabilities {
+    padding-top: var(--space-5);
+    border-top: 1px solid var(--color-border-subtle);
 }
 
-.transcoding-panel__hint {
-    color: var(--color-text-muted);
+/* Left-aligned, so a long value that drops under its label reads from the same edge. */
+.transcoding-panel__value {
+    font-size: var(--text-sm);
+    color: var(--color-text-secondary);
+    text-align: start;
+    overflow-wrap: anywhere;
+}
+
+.transcoding-panel__test {
+    font-size: var(--text-sm);
 }
 
 .transcoding-panel__test--ok {

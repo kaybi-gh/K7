@@ -404,6 +404,21 @@
         </div>
     </section>
 
+    <section id="k7-hint-link" class="ds-section">
+        <h2>K7HintLink</h2>
+        <p class="ds-description">Outgoing link inside a row hint (<code>K7SettingRow.HintContent</code>), so the control keeps its place on the right: text with the "opens elsewhere" icon.</p>
+        <div class="ds-preview ds-preview--column">
+            <K7SettingRow Label="Service token" Hint="Create or copy the token on the service's settings page.">
+                <HintContent>
+                    <K7HintLink Label="Open the service settings" />
+                </HintContent>
+                <ChildContent>
+                    <K7TextField TValue="string" Type="password" />
+                </ChildContent>
+            </K7SettingRow>
+        </div>
+    </section>
+
     <section id="k7-setting-row" class="ds-section">
         <h2>K7SettingRow</h2>
         <p class="ds-description">One setting per line: label and hint on the left, a compact control on the right. Selects keep a fixed width instead of stretching. <code>Stacked</code> puts the control under the label (option lists, sliders). Under 600px, anything wider than a switch drops under its label.</p>
@@ -434,7 +449,7 @@
 
     <section id="k7-settings-split" class="ds-section">
         <h2>K7SettingsSplit</h2>
-        <p class="ds-description">Long settings page split into an index (<code>K7SettingsNavItem</code>: icon, title, short description) and one sub-page at a time. Wide screens show both side by side. Under 1200px and on TV it behaves like a menu: the index alone, then the sub-page as its own screen (<code>Header</code> hidden, back link on top) once <code>DetailOpen</code> is set. <code>Footer</code> holds page-wide actions such as reset, and <code>SaveState</code> shows a <code>K7SaveIndicator</code> beside them on pages that save on change.</p>
+        <p class="ds-description">Long settings page split into an index (<code>K7SettingsNavItem</code>: icon, title, short description) and one sub-page at a time. Wide screens show both side by side. When the content area is narrower than about 52rem (window under 1100px with the page sidebar open, 900px with it folded) and on TV it behaves like a menu: the index alone, then the sub-page as its own screen (<code>Header</code> hidden, back link on top) once <code>DetailOpen</code> is set. <code>Footer</code> holds page-wide actions such as reset, and <code>SaveState</code> shows a <code>K7SaveIndicator</code> beside them on pages that save on change.</p>
         <div class="ds-preview ds-preview--column">
             <K7SettingsSplit IndexLabel="Video playback"
                              DetailTitle="Next episode"

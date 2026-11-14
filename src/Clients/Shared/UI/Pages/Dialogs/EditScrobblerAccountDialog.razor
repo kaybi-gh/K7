@@ -6,47 +6,61 @@
 @inject IK7Snackbar Snackbar
 @inject IExternalLinkService ExternalLinks
 
-<div class="k7-dialog-content">
+<div class="k7-dialog-content scrobbler-account-editor">
     <div class="d-flex flex-col mt-2 gap-4" data-initial-focus=".k7-select.focusable, .k7-input.focusable, .focusable">
-        <p class="text-caption" style="color: var(--color-text-muted);">@ProviderLabel · @CapabilityHint</p>
+        <p class="text-caption scrobbler-account-editor__summary">@ProviderLabel · @CapabilityHint</p>
 
-        <K7TextField @bind-Value="_displayName" Label="@L["DisplayName"]" Variant="outlined" />
+        <div>
+            <K7SettingRow Label="@L["DisplayName"]">
+                <K7TextField @bind-Value="_displayName" Variant="outlined" />
+            </K7SettingRow>
 
-        @if (_provider is not ScrobblerProvider.Webhook)
-        {
-            <K7Switch @bind-Value="_includeNowPlaying" Label="@L["IncludeNowPlaying"]" />
-        }
-
-        @if (ShowsMediaTypePicker)
-        {
-            <div>
-                <p class="text-sm mb-1">@L["MediaTypes"]</p>
-                <K7CheckboxList TItem="MediaType"
-                                Items="_availableMediaTypes"
-                                IsChecked="@(type => _selectedMediaTypes.Contains(type))"
-                                CheckedChanged="@(e => ToggleMediaType(e.Item, e.Checked))"
-                                ItemLabel="@GetMediaTypeLabel" />
-            </div>
-        }
-
-        @if (_provider == ScrobblerProvider.ListenBrainz)
-        {
-            <K7TextField @bind-Value="_token" Label="@L["ListenBrainzToken"]" Type="password" Variant="outlined"
-                         HelperText="@L["TokenReplaceHint"]" />
-            <K7Button Variant="text" OnClick="() => ExternalLinks.OpenAsync(ScrobblerSetupUrls.ListenBrainzTokenSettings)">
-                @L["OpenListenBrainzSettings"]
-            </K7Button>
-        }
-        else if (_provider == ScrobblerProvider.Webhook)
-        {
-            <K7TextField @bind-Value="_url" Label="@L["WebhookUrl"]" Variant="outlined"
-                         HelperText="@WebhookUrlHelperText" />
-            @if (!string.IsNullOrWhiteSpace(_setupHelpUrl))
+            @if (_provider is not ScrobblerProvider.Webhook)
             {
-                <K7Button Variant="text" OnClick="() => ExternalLinks.OpenAsync(_setupHelpUrl)">
-                    @L["OpenTokenSettings"]
-                </K7Button>
+                <K7SettingRow Label="@L["IncludeNowPlaying"]">
+                    <K7Switch @bind-Value="_includeNowPlaying" AriaLabel="@L["IncludeNowPlaying"]" />
+                </K7SettingRow>
             }
+
+            @if (ShowsMediaTypePicker)
+            {
+                <K7SettingRow Label="@L["MediaTypes"]" Stacked="true">
+                    <K7CheckboxList TItem="MediaType"
+                                    Items="_availableMediaTypes"
+                                    IsChecked="@(type => _selectedMediaTypes.Contains(type))"
+                                    CheckedChanged="@(e => ToggleMediaType(e.Item, e.Checked))"
+                                    ItemLabel="@GetMediaTypeLabel" />
+                </K7SettingRow>
+            }
+
+            @if (_provider == ScrobblerProvider.ListenBrainz)
+            {
+                <K7SettingRow Label="@L["ListenBrainzToken"]" Hint="@L["TokenReplaceHint"]">
+                    <HintContent>
+                        <K7HintLink Label="@L["OpenListenBrainzSettings"]"
+                                    OnClick="@(() => ExternalLinks.OpenAsync(ScrobblerSetupUrls.ListenBrainzTokenSettings))" />
+                    </HintContent>
+                    <ChildContent>
+                        <K7TextField @bind-Value="_token" Type="password" Variant="outlined" />
+                    </ChildContent>
+                </K7SettingRow>
+            }
+            else if (_provider == ScrobblerProvider.Webhook)
+            {
+                <K7SettingRow Label="@L["WebhookUrl"]" Hint="@WebhookUrlHelperText" Stacked="true">
+                    <K7TextField @bind-Value="_url" Variant="outlined" />
+                    @if (!string.IsNullOrWhiteSpace(_setupHelpUrl))
+                    {
+                        <K7Button Variant="text" OnClick="() => ExternalLinks.OpenAsync(_setupHelpUrl)">
+                            @L["OpenTokenSettings"]
+                        </K7Button>
+                    }
+                </K7SettingRow>
+            }
+        </div>
+
+        @if (_provider == ScrobblerProvider.Webhook)
+        {
             <ScrobbleWebhookPayloadEditor EnabledEvents="@_webhookEvents"
                                           EnabledEventsChanged="OnWebhookEventsChanged"
                                           ReadOnly="@(!IsCustomWebhook)"

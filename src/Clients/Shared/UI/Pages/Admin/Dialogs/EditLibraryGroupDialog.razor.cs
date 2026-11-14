@@ -119,7 +119,7 @@ public partial class EditLibraryGroupDialog
         parameters.Add(x => x.Pictures, pictures);
         parameters.Add(x => x.CancelText, S["Cancel"].Value);
         parameters.Add(x => x.ConfirmText, S["Confirm"].Value);
-        var options = new K7DialogOptions { MaxWidth = K7DialogMaxWidth.Medium, FullWidth = true, CloseOnEscapeKey = true };
+        var options = new K7DialogOptions { MaxWidth = K7DialogMaxWidth.Large, FullWidth = true, CloseOnEscapeKey = true };
         var dialog = await DialogService.ShowAsync<K7CoverPickerDialog>(L["CoverLabel"].Value, parameters, options);
         var result = await dialog.Result;
         if (result is { Canceled: false, Data: CoverPickerResult cover })

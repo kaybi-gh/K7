@@ -4,7 +4,7 @@
     gap: var(--space-1);
     width: 100%;
     min-width: 0;
-    margin-bottom: var(--space-6);
+    margin-bottom: 0;
     overflow: hidden;
 }
 

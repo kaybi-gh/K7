@@ -12,19 +12,22 @@
 
 <div class="k7-dialog-content">
     <div class="d-flex flex-col gap-4 pa-4 ai-smart-playlist-dialog">
-        <K7Select TValue="AiPlaylistMode" Value="_mode" ValueChanged="OnModeChanged" Label="@L["ModeLabel"]" Variant="outlined">
-            @if (_instantPlaylistAvailable)
-            {
-                <K7SelectItem TValue="AiPlaylistMode" Value="AiPlaylistMode.Prompt" Text="@L["ModePrompt"]">@L["ModePrompt"]</K7SelectItem>
-            }
-            <K7SelectItem TValue="AiPlaylistMode" Value="AiPlaylistMode.Sonic" Text="@L["ModeSonic"]">@L["ModeSonic"]</K7SelectItem>
-            <K7SelectItem TValue="AiPlaylistMode" Value="AiPlaylistMode.Lyrics" Text="@L["ModeLyrics"]">@L["ModeLyrics"]</K7SelectItem>
-        </K7Select>
-
-        <K7TextField @bind-Value="_prompt"
-                     Label="@L["Prompt"]"
-                     Placeholder="@GetPlaceholder()"
-                     HelperText="@GetHelperText()" />
+        <div>
+            <K7SettingRow Label="@L["ModeLabel"]">
+                <K7Select TValue="AiPlaylistMode" Value="_mode" ValueChanged="OnModeChanged" Variant="outlined">
+                    @if (_instantPlaylistAvailable)
+                    {
+                        <K7SelectItem TValue="AiPlaylistMode" Value="AiPlaylistMode.Prompt" Text="@L["ModePrompt"]">@L["ModePrompt"]</K7SelectItem>
+                    }
+                    <K7SelectItem TValue="AiPlaylistMode" Value="AiPlaylistMode.Sonic" Text="@L["ModeSonic"]">@L["ModeSonic"]</K7SelectItem>
+                    <K7SelectItem TValue="AiPlaylistMode" Value="AiPlaylistMode.Lyrics" Text="@L["ModeLyrics"]">@L["ModeLyrics"]</K7SelectItem>
+                </K7Select>
+            </K7SettingRow>
+            <K7SettingRow Label="@L["Prompt"]" Hint="@GetHelperText()" Stacked="true">
+                <K7TextField @bind-Value="_prompt"
+                             Placeholder="@GetPlaceholder()" />
+            </K7SettingRow>
+        </div>
 
         @if (_examples.Length > 0)
         {
@@ -41,8 +44,8 @@
         }
 
         <div class="d-flex gap-2 justify-end">
-            <K7Button OnClick="Cancel" Variant="K7ButtonVariant.Text">@L["Cancel"]</K7Button>
-            <K7Button OnClick="Generate" Variant="K7ButtonVariant.Filled" Disabled="string.IsNullOrWhiteSpace(_prompt) || _loading">
+            <K7Button OnClick="Cancel" Variant="text">@L["Cancel"]</K7Button>
+            <K7Button OnClick="Generate" Variant="filled" Disabled="string.IsNullOrWhiteSpace(_prompt) || _loading">
                 @if (_loading)
                 {
                     <K7Spinner Size="16" />

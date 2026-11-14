@@ -1,0 +1,16 @@
+@namespace K7.Clients.Shared.UI.Components
+
+<button type="button" class="k7-hint-link focusable @Class" @onclick="OnClick">
+    <span>@Label</span>
+    <K7Icon Icon="@Phosphor.ArrowSquareOut" IconSize="@K7IconSize.Xs" />
+</button>
+
+@code {
+    /// <summary>
+    /// Outgoing link placed in a hint (<c>K7SettingRow.HintContent</c>): text with the "opens
+    /// elsewhere" icon. A button, because the host opens external pages through a service.
+    /// </summary>
+    [Parameter, EditorRequired] public string Label { get; set; } = "";
+    [Parameter] public EventCallback OnClick { get; set; }
+    [Parameter] public string Class { get; set; } = "";
+}

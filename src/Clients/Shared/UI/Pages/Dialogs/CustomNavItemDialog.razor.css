@@ -1,33 +1,27 @@
-.picker-row {
+.custom-nav-editor {
     display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 0;
-    border-bottom: 1px solid var(--color-border);
+    flex-direction: column;
+    gap: var(--space-3);
 }
 
-.picker-row__label {
+/* Several controls can share the right side of a row (preview + Choose + Remove). */
+.custom-nav-editor ::deep .k7-setting-row__control {
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.custom-nav-editor__icon-preview {
+    font-size: var(--text-xl);
+    color: var(--color-text);
+}
+
+.custom-nav-editor__none {
     font-size: var(--text-sm);
     color: var(--color-text-secondary);
-    width: 100px;
-    flex-shrink: 0;
 }
 
-.picker-row__value {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    min-height: 36px;
-    min-width: 0;
-}
-
-.picker-row__icon-preview {
-    font-size: var(--text-xl);
-    color: var(--color-text-primary);
-}
-
-.picker-row__cover-preview {
+.custom-nav-editor ::deep .custom-nav-editor__cover-preview {
     width: 48px;
     height: 48px;
     border-radius: var(--radius-sm);
@@ -36,22 +30,7 @@
     overflow: hidden;
 }
 
-.color-picker-row {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: flex-end;
-    gap: var(--space-3);
-}
-
-.color-picker-row ::deep .k7-color-picker {
-    flex: 1;
-    min-width: 160px;
-}
-
-.color-picker-row__action {
-    margin-bottom: 2px;
-}
-
-.custom-nav-card-preview {
+.custom-nav-editor__preview {
     width: 240px;
+    max-width: 100%;
 }

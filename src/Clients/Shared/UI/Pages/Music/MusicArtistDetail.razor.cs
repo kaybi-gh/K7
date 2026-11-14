@@ -410,7 +410,7 @@ public partial class MusicArtistDetail : IDisposable
             { x => x.Media, _artist }
         };
 
-        var options = new K7DialogOptions { CloseOnEscapeKey = true, MaxWidth = K7DialogMaxWidth.Medium, FullWidth = true };
+        var options = new K7DialogOptions { CloseOnEscapeKey = true, MaxWidth = K7DialogMaxWidth.Large, FullWidth = true };
         var dialog = await DialogService.ShowAsync<EditMetadataDialog>(L["EditMetadata"], parameters, options);
         var result = await dialog.Result;
 

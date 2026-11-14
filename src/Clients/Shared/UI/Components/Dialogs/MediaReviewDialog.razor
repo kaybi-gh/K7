@@ -1,43 +1,41 @@
 @inject IStringLocalizer<MediaReviewDialog> L
 
-<div class="k7-dialog-content">
+<div class="k7-dialog-content media-review-dialog">
     @if (_loading)
     {
         <K7ProgressBar Indeterminate="true" />
     }
     else
     {
-        <div class="d-flex flex-col gap-3 mt-2">
-            @if (!string.IsNullOrWhiteSpace(MediaTitle))
-            {
-                <p class="text-sm text-secondary">@MediaTitle</p>
-            }
-            <div class="media-review-dialog-rating">
-                <span class="text-sm">@L["Rating"]</span>
+        @if (!string.IsNullOrWhiteSpace(MediaTitle))
+        {
+            <p class="text-sm text-secondary">@MediaTitle</p>
+        }
+        <div>
+            <K7SettingRow Label="@L["Rating"]">
                 <RatingStars MediaId="MediaId"
                              Value="_rating"
                              ValueChanged="OnRatingChanged"
                              DeferPersistence="true" />
-            </div>
-            <K7TextField @bind-Value="_text" Label="@L["ReviewText"]" Lines="4" Variant="outlined" />
-            <div class="picker-row">
-                <span class="picker-row__label">@L["EmojiOptional"]</span>
-                <div class="picker-row__value">
-                    @if (!string.IsNullOrEmpty(_emoji))
-                    {
-                        <span class="media-review-dialog-emoji-preview" aria-hidden="true">@_emoji</span>
-                    }
-                    else
-                    {
-                        <span class="text-sm text-secondary">@L["EmojiNone"]</span>
-                    }
-                </div>
+            </K7SettingRow>
+            <K7SettingRow Label="@L["ReviewText"]" Stacked="true">
+                <K7TextField @bind-Value="_text" Lines="4" Variant="outlined" />
+            </K7SettingRow>
+            <K7SettingRow Label="@L["EmojiOptional"]">
+                @if (!string.IsNullOrEmpty(_emoji))
+                {
+                    <span class="media-review-dialog-emoji-preview" aria-hidden="true">@_emoji</span>
+                }
+                else
+                {
+                    <span class="text-sm text-secondary">@L["EmojiNone"]</span>
+                }
                 <K7Button Variant="outlined" Size="sm" OnClick="OpenEmojiPickerAsync">@L["EmojiChange"]</K7Button>
                 @if (!string.IsNullOrEmpty(_emoji))
                 {
                     <K7Button Variant="text" Size="sm" OnClick="ClearEmoji">@L["EmojiRemove"]</K7Button>
                 }
-            </div>
+            </K7SettingRow>
         </div>
     }
 </div>

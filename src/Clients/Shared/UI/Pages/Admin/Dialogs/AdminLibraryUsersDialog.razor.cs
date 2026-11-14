@@ -17,6 +17,22 @@ public partial class AdminLibraryUsersDialog
     private List<UserDto> _users = [];
     private HashSet<Guid> _excludedUserIds = [];
     private Dictionary<Guid, List<Guid>> _originalExclusions = new();
+    private string _search = "";
+
+    private List<UserDto> FilteredUsers
+    {
+        get
+        {
+            var search = _search.Trim();
+            if (search.Length == 0)
+                return _users;
+
+            return _users
+                .Where(u => (u.UserName?.Contains(search, StringComparison.OrdinalIgnoreCase) ?? false)
+                    || (u.Email?.Contains(search, StringComparison.OrdinalIgnoreCase) ?? false))
+                .ToList();
+        }
+    }
 
     protected bool IsSelfExcluded(UserDto user) =>
         user.LibraryExclusions.Any(e => e.LibraryId == LibraryId && e.IsSelfExcluded);

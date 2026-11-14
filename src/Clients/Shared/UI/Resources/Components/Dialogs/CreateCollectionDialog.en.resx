@@ -28,4 +28,5 @@
   <data name="Error" xml:space="preserve"><value>Error creating collection</value></data>
   <data name="MediaType" xml:space="preserve"><value>Media type (optional)</value></data>
   <data name="MediaTypeMixed" xml:space="preserve"><value>Mixed</value></data>
+  <data name="VisibilityScope" xml:space="preserve"><value>Visibility</value></data>
 </root>
