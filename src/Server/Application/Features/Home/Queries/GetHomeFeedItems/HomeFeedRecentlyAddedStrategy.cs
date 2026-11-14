@@ -28,16 +28,34 @@ internal sealed class HomeFeedRecentlyAddedStrategy(
         var skip = (request.PageNumber - 1) * fetchSize;
         var leafTypes = ResolveLeafMediaTypes(request.MediaTypes);
 
-        var pageIds = request.LibraryIds is { Length: > 0 }
-            ? await ResolveRecentlyAddedMediaIdsFromLibrariesAsync(
-                request.LibraryIds, leafTypes, userId, sharedProfileId, skip, fetchSize, cancellationToken)
-            : await ResolveRecentlyAddedMediaIdsFromAllMediaAsync(
-                request, leafTypes, userId, sharedProfileId, skip, fetchSize, cancellationToken);
+        Task<List<Guid>> ResolveIdsAsync(int offset) => request.LibraryIds is { Length: > 0 }
+            ? ResolveRecentlyAddedMediaIdsFromLibrariesAsync(
+                request.LibraryIds, leafTypes, userId, sharedProfileId, offset, fetchSize, cancellationToken)
+            : ResolveRecentlyAddedMediaIdsFromAllMediaAsync(
+                request, leafTypes, userId, sharedProfileId, offset, fetchSize, cancellationToken);
+
+        var pageIds = await ResolveIdsAsync(skip);
 
         if (pageIds.Count == 0)
             return new PaginatedList<HomeFeedItemDto>([], 0, request.PageNumber, request.PageSize);
 
         var rawItems = await LoadRecentlyAddedMediasAsync(pageIds, cancellationToken);
+
+        // One freshly added season is dozens of episodes that end up as a single card. With only
+        // the first window, a couple of new seasons filled it and everything else (movies, other
+        // series) never showed. Keep reading older additions until the row is full.
+        if (request.PageNumber == 1)
+        {
+            var seen = pageIds.ToHashSet();
+            for (var round = 1; round < MaxFetchRounds && CountCards(rawItems) < request.PageSize; round++)
+            {
+                var older = (await ResolveIdsAsync(skip + (round * fetchSize))).Where(seen.Add).ToList();
+                if (older.Count == 0)
+                    break;
+
+                rawItems.AddRange(await LoadRecentlyAddedMediasAsync(older, cancellationToken));
+            }
+        }
 
         if (userId.HasValue)
             await HomeFeedUserWatchState.ApplyAsync(context, rawItems, userId.Value, sharedProfileId, cancellationToken);
@@ -54,6 +72,25 @@ internal sealed class HomeFeedRecentlyAddedStrategy(
 
         return new PaginatedList<HomeFeedItemDto>(page, totalCount, request.PageNumber, request.PageSize);
     }
+
+    // Bounds the extra reads when a library is one huge series: after that the row stays short.
+    private const int MaxFetchRounds = 6;
+
+    /// <summary>
+    /// Number of cards these items make once episodes are grouped by series and tracks by album.
+    /// </summary>
+    internal static int CountCards(IEnumerable<BaseMedia> items) =>
+        items
+            .Select(item => item switch
+            {
+                SerieEpisode { Serie: not null } episode => (Guid?)episode.Serie.Id,
+                MusicTrack { Album: not null } track => track.Album.Id,
+                Serie or SerieSeason or MusicAlbum => null,
+                _ => item.Id
+            })
+            .Where(id => id is not null)
+            .Distinct()
+            .Count();
 
     private static HashSet<MediaType> ResolveLeafMediaTypes(HashSet<MediaType>? mediaTypes)
     {
