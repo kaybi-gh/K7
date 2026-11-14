@@ -129,6 +129,9 @@ export function attach(id, listEl, dotnetRef) {
         var handle = e.target.closest('.k7-sortable-list__handle');
         if (!handle || !listEl.contains(handle))
             return;
+        // A locked row shows a pin in place of its handle: nothing to grab.
+        if (handle.classList.contains('k7-sortable-list__handle--locked'))
+            return;
 
         var row = handle.closest('.k7-sortable-list__row');
         if (!row || row.parentElement !== listEl)

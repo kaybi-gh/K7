@@ -23,4 +23,5 @@
   <data name="ReorderHint" xml:space="preserve"><value>Glisser pour réordonner. Entrée pour saisir, flèches pour déplacer, Entrée pour déposer, Échap pour annuler</value></data>
   <data name="Grabbing" xml:space="preserve"><value>Déposer l'élément</value></data>
   <data name="GrabbingHint" xml:space="preserve"><value>Flèches pour déplacer, Entrée pour déposer, Échap pour annuler</value></data>
+  <data name="Locked" xml:space="preserve"><value>Position fixe</value></data>
 </root>

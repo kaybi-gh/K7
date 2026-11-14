@@ -23,4 +23,5 @@
   <data name="ReorderHint" xml:space="preserve"><value>Drag to reorder. Enter to pick up, arrows to move, Enter to drop, Escape to cancel</value></data>
   <data name="Grabbing" xml:space="preserve"><value>Drop item</value></data>
   <data name="GrabbingHint" xml:space="preserve"><value>Arrows to move, Enter to drop, Escape to cancel</value></data>
+  <data name="Locked" xml:space="preserve"><value>Fixed position</value></data>
 </root>

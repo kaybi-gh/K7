@@ -10,21 +10,34 @@
         var index = i;
         var item = Items[index];
         var grabbing = IsGrabbing(item, index);
+        var locked = IsLocked?.Invoke(item) == true;
         <div @key="GetKey(item, index)"
              class="k7-sortable-list__row @(grabbing ? "k7-sortable-list__row--grabbing" : "")"
              role="listitem">
-            <button type="button"
-                    class="k7-sortable-list__handle focusable @(grabbing ? "k7-sortable-list__handle--grabbing" : "")"
-                    disabled="@Disabled"
-                    tabindex="@(Disabled ? -1 : 0)"
-                    data-sn-activatable="@(!Disabled ? true : null)"
-                    data-sn-editing="@(grabbing ? "true" : null)"
-                    aria-pressed="@grabbing"
-                    aria-label="@(grabbing ? L["Grabbing"] : L["Reorder"])"
-                    title="@(grabbing ? L["GrabbingHint"] : L["ReorderHint"])"
-                    @onkeydown="@(e => OnHandleKeyDownAsync(e, index))">
-                <K7Icon Icon="@Phosphor.DotsSixVertical" IconSize="@K7IconSize.Sm" />
-            </button>
+            @if (locked)
+            {
+                <span class="k7-sortable-list__handle k7-sortable-list__handle--locked"
+                      role="img"
+                      aria-label="@L["Locked"]"
+                      title="@L["Locked"]">
+                    <K7Icon Icon="@Phosphor.PushPin" IconSize="@K7IconSize.Sm" />
+                </span>
+            }
+            else
+            {
+                <button type="button"
+                        class="k7-sortable-list__handle focusable @(grabbing ? "k7-sortable-list__handle--grabbing" : "")"
+                        disabled="@Disabled"
+                        tabindex="@(Disabled ? -1 : 0)"
+                        data-sn-activatable="@(!Disabled ? true : null)"
+                        data-sn-editing="@(grabbing ? "true" : null)"
+                        aria-pressed="@grabbing"
+                        aria-label="@(grabbing ? L["Grabbing"] : L["Reorder"])"
+                        title="@(grabbing ? L["GrabbingHint"] : L["ReorderHint"])"
+                        @onkeydown="@(e => OnHandleKeyDownAsync(e, index))">
+                    <K7Icon Icon="@Phosphor.DotsSixVertical" IconSize="@K7IconSize.Sm" />
+                </button>
+            }
             <div class="k7-sortable-list__content">
                 @if (ChildContent is not null)
                 {

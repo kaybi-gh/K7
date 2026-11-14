@@ -22,6 +22,9 @@ public partial class K7SortableList<TItem> : IAsyncDisposable
     [Parameter] public EventCallback Reordered { get; set; }
     [Parameter] public Func<TItem, object>? ItemKey { get; set; }
 
+    /// <summary>Rows that keep their place: they show a pin instead of a handle and cannot be grabbed.</summary>
+    [Parameter] public Func<TItem, bool>? IsLocked { get; set; }
+
     [Inject] private IJSRuntime JSRuntime { get; set; } = default!;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
