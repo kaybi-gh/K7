@@ -7,7 +7,8 @@
 
 .detail-sidebar {
     position: fixed;
-    top: var(--nav-height, 56px);
+    /* Starts under the top bar and the optional custom navigation bar, like the page content. */
+    top: calc(var(--nav-height, 56px) + var(--custom-nav-height, 0px) + var(--k7-safe-top, 0px));
     right: 0;
     bottom: 0;
     width: 360px;
