@@ -37,6 +37,10 @@
                 {
                     @SelectedContent
                 }
+                else if (SelectedItemContent is { } itemContent)
+                {
+                    @itemContent
+                }
                 else
                 {
                     @DisplayText

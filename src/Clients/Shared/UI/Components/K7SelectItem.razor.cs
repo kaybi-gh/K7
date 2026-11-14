@@ -17,7 +17,7 @@ public partial class K7SelectItem<TValue> : IDisposable
 
     protected override void OnInitialized()
     {
-        _registration = new SelectItemRegistration<TValue>(Value, _displayText);
+        _registration = new SelectItemRegistration<TValue>(Value, _displayText, Text is not null) { Content = ChildContent };
         ParentSelect?.RegisterItem(_registration);
     }
 
@@ -25,12 +25,16 @@ public partial class K7SelectItem<TValue> : IDisposable
     {
         if (_registration is not null &&
             (_registration.DisplayText != _displayText ||
+             _registration.HasText != (Text is not null) ||
              !EqualityComparer<TValue>.Default.Equals(_registration.Value, Value)))
         {
             ParentSelect?.UnregisterItem(_registration);
-            _registration = new SelectItemRegistration<TValue>(Value, _displayText);
+            _registration = new SelectItemRegistration<TValue>(Value, _displayText, Text is not null);
             ParentSelect?.RegisterItem(_registration);
         }
+
+        if (_registration is not null)
+            _registration.Content = ChildContent;
     }
 
     private async Task OnClick()

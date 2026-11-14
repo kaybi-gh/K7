@@ -1,4 +1,4 @@
-﻿using K7.Clients.Shared.Interfaces;
+using K7.Clients.Shared.Interfaces;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 
@@ -41,7 +41,7 @@ public partial class K7Select<TValue> : IAsyncDisposable
             if (ToStringFunc is not null)
                 return ToStringFunc(Value) ?? "";
 
-            var item = _items.FirstOrDefault(i => EqualityComparer<TValue>.Default.Equals(i.Value, Value));
+            var item = SelectedItem;
             if (item?.DisplayText is not null)
                 return item.DisplayText;
 
@@ -51,6 +51,17 @@ public partial class K7Select<TValue> : IAsyncDisposable
             return Value.ToString() ?? "";
         }
     }
+
+    private SelectItemRegistration<TValue>? SelectedItem =>
+        _items.FirstOrDefault(i => EqualityComparer<TValue>.Default.Equals(i.Value, Value));
+
+    /// <summary>
+    /// Markup of the selected item when it has no <c>Text</c>: shown in the trigger as is, so an
+    /// item written as content (name plus a secondary text) does not fall back to its raw value,
+    /// such as an id.
+    /// </summary>
+    private RenderFragment? SelectedItemContent =>
+        ToStringFunc is null && SelectedItem is { HasText: false, Content: { } content } ? content : null;
 
     internal void RegisterItem(SelectItemRegistration<TValue> item)
     {
@@ -166,8 +177,14 @@ public partial class K7Select<TValue> : IAsyncDisposable
     }
 }
 
-public sealed class SelectItemRegistration<TValue>(TValue? value, string? displayText)
+public sealed class SelectItemRegistration<TValue>(TValue? value, string? displayText, bool hasText = true)
 {
     public TValue? Value { get; } = value;
     public string? DisplayText { get; } = displayText;
+
+    /// <summary>False when the item gave no <c>Text</c> and <see cref="DisplayText"/> is only its raw value.</summary>
+    public bool HasText { get; } = hasText;
+
+    /// <summary>Latest markup of the item, refreshed on each render of the item.</summary>
+    public RenderFragment? Content { get; set; }
 }

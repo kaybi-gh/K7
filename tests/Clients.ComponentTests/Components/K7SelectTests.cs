@@ -55,6 +55,36 @@ public class K7SelectTests
     }
 
     [Test]
+    public void Render_ShouldDisplayItemContent_NotValue_WhenItemHasNoText()
+    {
+        // Arrange
+        using var ctx = new BunitContext();
+        ctx.Services.AddSingleton(Substitute.For<ISpatialNavService>());
+        var id = Guid.NewGuid();
+
+        // Act
+        var cut = ctx.Render(builder =>
+        {
+            builder.OpenComponent<K7Select<Guid?>>(0);
+            builder.AddAttribute(1, nameof(K7Select<Guid?>.Value), (Guid?)id);
+            builder.AddAttribute(2, nameof(K7Select<Guid?>.ChildContent), (RenderFragment)(childBuilder =>
+            {
+                childBuilder.OpenComponent<K7SelectItem<Guid?>>(0);
+                childBuilder.AddAttribute(1, nameof(K7SelectItem<Guid?>.Value), (Guid?)id);
+                childBuilder.AddAttribute(2, nameof(K7SelectItem<Guid?>.ChildContent), (RenderFragment)(itemBuilder =>
+                    itemBuilder.AddContent(0, "Family profile")));
+                childBuilder.CloseComponent();
+            }));
+            builder.CloseComponent();
+        });
+
+        // Assert
+        var text = cut.Find(".k7-select-text").TextContent;
+        text.Should().Contain("Family profile");
+        text.Should().NotContain(id.ToString());
+    }
+
+    [Test]
     public void Render_ShouldShowHelperText_WhenProvided()
     {
         // Arrange
