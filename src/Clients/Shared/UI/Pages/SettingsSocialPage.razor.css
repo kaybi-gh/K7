@@ -1,7 +1,6 @@
-/* The switch, the table and the note use the full width of the page. The table reacts to that
-   width, not the window's: the sidebar takes a variable share. */
+/* The switch, the table and the note use the full width of the page. */
 .social-matrix-wrap {
-    container-type: inline-size;
+    min-width: 0;
 }
 
 .social-matrix {
@@ -65,7 +64,9 @@
     color: var(--color-text-muted);
 }
 
-@container (max-width: 40rem) {
+/* Columns stack when the page gets narrow. A window threshold, not a container query: early
+   container-query engines anchor fixed-position children (the select dropdowns) to the container. */
+@media (max-width: 899.98px) {
     .social-matrix__head {
         display: none;
     }

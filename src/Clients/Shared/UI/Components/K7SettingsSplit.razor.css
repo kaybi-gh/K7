@@ -4,20 +4,27 @@
     min-width: 0;
 }
 
+/*
+ * Menu mode is the base: one pane at a time, the index, then the sub-page as its own screen.
+ * Both panes show side by side only where the content area is wide enough (see the end of the
+ * file), which depends on the window and on the page sidebar being open or folded.
+ */
 .k7-settings-split__panes {
     display: grid;
-    grid-template-columns: minmax(0, 22rem) minmax(0, 56rem);
-    grid-template-rows: auto 1fr;
+    grid-template-columns: minmax(0, 56rem);
+    grid-template-rows: auto;
     grid-template-areas:
-        "index detail"
-        "footer detail";
+        "index"
+        "footer";
     align-items: start;
     gap: var(--space-4) var(--space-6);
     padding: var(--space-4);
 }
 
-.k7-settings-split--wide-index .k7-settings-split__panes {
-    grid-template-columns: minmax(0, 30rem) minmax(0, 56rem);
+.k7-settings-split--detail-open .k7-settings-split__panes {
+    grid-template-areas:
+        "detail"
+        "footer";
 }
 
 .k7-settings-split__index {
@@ -34,9 +41,13 @@
     flex-direction: column;
     gap: var(--space-3);
     min-width: 0;
-    padding: var(--space-4) var(--space-5);
-    border: 1px solid var(--color-border-subtle);
     border-radius: var(--radius-lg);
+}
+
+.k7-settings-split--detail-open .k7-settings-split__intro,
+.k7-settings-split--detail-open .k7-settings-split__index,
+.k7-settings-split:not(.k7-settings-split--detail-open) .k7-settings-split__detail {
+    display: none;
 }
 
 .k7-settings-split__footer {
@@ -46,7 +57,6 @@
     align-items: center;
     gap: var(--space-3);
     min-width: 0;
-    padding: 0 var(--space-3);
 }
 
 .k7-settings-split__header {
@@ -56,7 +66,7 @@
 }
 
 .k7-settings-split__back {
-    display: none;
+    display: inline-flex;
     align-items: center;
     gap: var(--space-2);
     align-self: flex-start;
@@ -79,88 +89,94 @@
     min-width: 0;
 }
 
-/* Side by side: the open sub-page is marked in the index. */
-.k7-settings-split__index ::deep .k7-settings-nav-item--active {
-    background: var(--color-surface-2);
-    border-color: var(--color-border);
-}
-
-/* Menu mode (one pane at a time): narrow screens. */
-@media (max-width: 1199.98px) {
-    .k7-settings-split__panes {
-        grid-template-columns: minmax(0, 56rem);
-        grid-template-rows: auto;
+/*
+ * Side by side once the content area reaches about 52rem. The page sidebar takes 16.25rem open
+ * and 56px folded, so the window width that gives that room differs. TV always stays in menu
+ * mode, so each screen fits without scrolling. Container queries would say this directly, but
+ * engines that shipped them early also made the container the anchor of fixed-position
+ * children (select dropdowns), so the thresholds are spelled out on the window instead.
+ * Keep them in sync with the save bar rule in layout.css (settings-form-page--section-actions).
+ */
+@media (min-width: 1100px) {
+    html:not(.platform-tv) .k7-settings-split__panes {
+        grid-template-columns: minmax(0, 22rem) minmax(0, 56rem);
+        grid-template-rows: auto 1fr;
         grid-template-areas:
-            "index"
-            "footer";
+            "index detail"
+            "footer detail";
     }
 
-    .k7-settings-split--detail-open .k7-settings-split__panes {
-        grid-template-areas:
-            "detail"
-            "footer";
+    html:not(.platform-tv) .k7-settings-split--wide-index .k7-settings-split__panes {
+        grid-template-columns: minmax(0, 30rem) minmax(0, 56rem);
     }
 
-    .k7-settings-split--detail-open .k7-settings-split__intro,
-    .k7-settings-split--detail-open .k7-settings-split__index,
-    .k7-settings-split:not(.k7-settings-split--detail-open) .k7-settings-split__detail {
+    html:not(.platform-tv) .k7-settings-split .k7-settings-split__intro {
+        display: block;
+    }
+
+    html:not(.platform-tv) .k7-settings-split .k7-settings-split__index,
+    html:not(.platform-tv) .k7-settings-split .k7-settings-split__detail {
+        display: flex;
+    }
+
+    html:not(.platform-tv) .k7-settings-split__detail {
+        padding: var(--space-4) var(--space-5);
+        border: 1px solid var(--color-border-subtle);
+    }
+
+    html:not(.platform-tv) .k7-settings-split__footer {
+        padding: 0 var(--space-3);
+    }
+
+    html:not(.platform-tv) .k7-settings-split__back {
         display: none;
     }
 
-    .k7-settings-split__back {
-        display: inline-flex;
-    }
-
-    .k7-settings-split__detail {
-        padding: 0;
-        border: none;
-    }
-
-    .k7-settings-split__footer {
-        padding: 0;
-    }
-
-    .k7-settings-split__index ::deep .k7-settings-nav-item--active {
-        background: transparent;
-        border-color: transparent;
+    /* The open sub-page is marked in the index. */
+    html:not(.platform-tv) .k7-settings-split__index ::deep .k7-settings-nav-item--active {
+        background: var(--color-surface-2);
+        border-color: var(--color-border);
     }
 }
 
-/* Menu mode on TV, whatever its width, so each screen fits without scrolling. */
-html.platform-tv .k7-settings-split__panes {
-    grid-template-columns: minmax(0, 56rem);
-    grid-template-rows: auto;
-    grid-template-areas:
-        "index"
-        "footer";
-}
+@media (min-width: 900px) {
+    html:not(.platform-tv) .page-with-sidebar--rail .k7-settings-split__panes {
+        grid-template-columns: minmax(0, 22rem) minmax(0, 56rem);
+        grid-template-rows: auto 1fr;
+        grid-template-areas:
+            "index detail"
+            "footer detail";
+    }
 
-html.platform-tv .k7-settings-split--detail-open .k7-settings-split__panes {
-    grid-template-areas:
-        "detail"
-        "footer";
-}
+    html:not(.platform-tv) .page-with-sidebar--rail .k7-settings-split--wide-index .k7-settings-split__panes {
+        grid-template-columns: minmax(0, 30rem) minmax(0, 56rem);
+    }
 
-html.platform-tv .k7-settings-split--detail-open .k7-settings-split__intro,
-html.platform-tv .k7-settings-split--detail-open .k7-settings-split__index,
-html.platform-tv .k7-settings-split:not(.k7-settings-split--detail-open) .k7-settings-split__detail {
-    display: none;
-}
+    html:not(.platform-tv) .page-with-sidebar--rail .k7-settings-split .k7-settings-split__intro {
+        display: block;
+    }
 
-html.platform-tv .k7-settings-split__back {
-    display: inline-flex;
-}
+    html:not(.platform-tv) .page-with-sidebar--rail .k7-settings-split .k7-settings-split__index,
+    html:not(.platform-tv) .page-with-sidebar--rail .k7-settings-split .k7-settings-split__detail {
+        display: flex;
+    }
 
-html.platform-tv .k7-settings-split__detail {
-    padding: 0;
-    border: none;
-}
+    html:not(.platform-tv) .page-with-sidebar--rail .k7-settings-split__detail {
+        padding: var(--space-4) var(--space-5);
+        border: 1px solid var(--color-border-subtle);
+    }
 
-html.platform-tv .k7-settings-split__footer {
-    padding: 0;
-}
+    html:not(.platform-tv) .page-with-sidebar--rail .k7-settings-split__footer {
+        padding: 0 var(--space-3);
+    }
 
-html.platform-tv .k7-settings-split__index ::deep .k7-settings-nav-item--active {
-    background: transparent;
-    border-color: transparent;
+    html:not(.platform-tv) .page-with-sidebar--rail .k7-settings-split__back {
+        display: none;
+    }
+
+    /* The open sub-page is marked in the index. */
+    html:not(.platform-tv) .page-with-sidebar--rail .k7-settings-split__index ::deep .k7-settings-nav-item--active {
+        background: var(--color-surface-2);
+        border-color: var(--color-border);
+    }
 }

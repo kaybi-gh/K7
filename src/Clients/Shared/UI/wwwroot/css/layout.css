@@ -735,9 +735,17 @@ html .app-nav-main .k7-btn.active {
     visibility: hidden;
 }
 
-/* Bar that belongs to one sub-page of a K7SettingsSplit: no bar under the index alone. */
-@media (max-width: 1199.98px) {
+/* Bar that belongs to one sub-page of a K7SettingsSplit: no bar under the index alone, i.e.
+   wherever the split is in menu mode. Same thresholds as K7SettingsSplit.razor.css: 1100px with
+   the page sidebar open, 900px with it folded. */
+@media (max-width: 899.98px) {
     .settings-form-page--section-actions:has(.k7-settings-split:not(.k7-settings-split--detail-open)) .k7-settings-action-bar {
+        display: none;
+    }
+}
+
+@media (min-width: 900px) and (max-width: 1099.98px) {
+    .page-with-sidebar:not(.page-with-sidebar--rail) .settings-form-page--section-actions:has(.k7-settings-split:not(.k7-settings-split--detail-open)) .k7-settings-action-bar {
         display: none;
     }
 }
