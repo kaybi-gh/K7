@@ -137,17 +137,6 @@
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    color: var(--color-warning);
-}
-
-.home-tv-hero__genres {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-}
-
-::deep .home-tv-hero__genres .k7-chip {
-    font-size: var(--text-sm);
 }
 
 .home-tv-hero__overview {

@@ -54,16 +54,12 @@
                 {
                     <span class="home-tv-hero__meta-item">@FormatRuntime(DisplayModel.RuntimeMinutes!.Value)</span>
                 }
+                @* Genres sit in the same quiet line as the rest, like the banner of the other devices. *@
+                @if (DisplayModel.Genres is { Count: > 0 })
+                {
+                    <span class="home-tv-hero__meta-item">@string.Join(", ", DisplayModel.Genres.Take(2))</span>
+                }
             </div>
-            @if (DisplayModel.Genres is { Count: > 0 })
-            {
-                <div class="home-tv-hero__genres">
-                    @foreach (var genre in DisplayModel.Genres.Take(4))
-                    {
-                        <K7Chip Size="sm" Variant="outlined">@genre</K7Chip>
-                    }
-                </div>
-            }
             @if (!string.IsNullOrEmpty(DisplayModel.Overview))
             {
                 <p class="home-tv-hero__overview">@TruncateOverview(DisplayModel.Overview)</p>
