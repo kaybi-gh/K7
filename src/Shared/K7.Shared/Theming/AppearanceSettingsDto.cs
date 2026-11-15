@@ -14,9 +14,13 @@ public sealed record AppearanceSettingsDto
     public AppearanceTextSize TextSize { get; set; }
     public AppearanceCornerStyle CornerStyle { get; set; }
 
+    /// <summary>Place of the mini music player on wide screens. Phones are not concerned.</summary>
+    public MiniPlayerPlacement MiniPlayer { get; set; }
+
     public bool IsDefault =>
         ThemeId is null
         && AccentColor is null
         && TextSize == AppearanceTextSize.Default
-        && CornerStyle == AppearanceCornerStyle.Default;
+        && CornerStyle == AppearanceCornerStyle.Default
+        && MiniPlayer == MiniPlayerPlacement.Auto;
 }

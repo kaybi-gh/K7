@@ -25,6 +25,12 @@ public partial class MiniMusicPlayer : IAsyncDisposable
     /// </summary>
     [Parameter] public string? VisibleMediaQuery { get; set; }
 
+    /// <summary>
+    /// Shows as a playback bar across the whole screen (the bottom placement on wide screens),
+    /// with shuffle, previous and repeat, instead of the compact player of the navigation bar.
+    /// </summary>
+    [Parameter] public bool Bar { get; set; }
+
     private ElementReference _progressBarRef;
     private bool _isDragging;
     private bool _showVolumeControls = true;
@@ -38,6 +44,9 @@ public partial class MiniMusicPlayer : IAsyncDisposable
     private volatile bool _disposed;
     private bool _slotVisible = true;
     private int? _slotObservationId;
+    private string? _observedQuery;
+    private bool _slotObserved;
+    private bool _renderedBar;
 
     private AudioQueueItem? DisplayedTrack => Audio.CurrentDisplayedTrack ?? Audio.CurrentPlayingTrack;
 
@@ -114,7 +123,27 @@ public partial class MiniMusicPlayer : IAsyncDisposable
             }
 
             await ObserveSlotAsync();
+            _slotObserved = true;
         }
+    }
+
+    // The slot can move while the app runs (the user changes where the mini player sits). This
+    // runs on every parameter change, even for the hidden copy, which skips its renders.
+    protected override async Task OnParametersSetAsync()
+    {
+        // Renders are gated: a change of shape has to ask for one.
+        if (Bar != _renderedBar)
+        {
+            _renderedBar = Bar;
+            _needsRender = true;
+        }
+
+        if (!_slotObserved || string.Equals(VisibleMediaQuery, _observedQuery, StringComparison.Ordinal))
+            return;
+
+        await ObserveSlotAsync();
+        if (_slotVisible)
+            RequestRender();
     }
 
     public async ValueTask DisposeAsync()
@@ -322,8 +351,24 @@ public partial class MiniMusicPlayer : IAsyncDisposable
 
     private async Task ObserveSlotAsync()
     {
+        if (_slotObservationId is { } previous)
+        {
+            _slotObservationId = null;
+            try
+            {
+                await JS.InvokeVoidAsync("K7.MiniPlayerSlot.unobserve", previous);
+            }
+            catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException)
+            {
+            }
+        }
+
+        _observedQuery = VisibleMediaQuery;
         if (string.IsNullOrEmpty(VisibleMediaQuery) || _disposed)
+        {
+            _slotVisible = true;
             return;
+        }
 
         try
         {

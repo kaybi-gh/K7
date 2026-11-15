@@ -1,4 +1,5 @@
 @inherits LayoutComponentBase
+@using K7.Clients.Shared.UI.Helpers
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.Extensions.Localization
 @inject ThemeService ThemeService
@@ -16,7 +17,7 @@
 @inject IStringLocalizer<MainLayout> L
 
 
-<div class="app-shell @(_showCustomNavBar ? "app-shell--custom-nav" : null) @(!_chromeReady ? "app-shell--pending" : null)">
+<div class="app-shell @(_showCustomNavBar ? "app-shell--custom-nav" : null) @(!_chromeReady ? "app-shell--pending" : null) @(PlayerAtBottom ? "app-shell--player-bottom" : null)">
     @if (_showOverlay)
     {
         <div class="reconnection-overlay">
@@ -36,7 +37,7 @@
             <ChildContent>
                 <MediaPlayer />
                 <div class="mini-player-dock">
-                    <MiniMusicPlayer VisibleMediaQuery="(max-width: 599.98px)" />
+                    <MiniMusicPlayer VisibleMediaQuery="@MiniPlayerSlots.DockQuery(ThemeService.Settings.MiniPlayer)" Bar="PlayerAtBottom" />
                 </div>
                 <FullScreenMusicPlayer />
             </ChildContent>

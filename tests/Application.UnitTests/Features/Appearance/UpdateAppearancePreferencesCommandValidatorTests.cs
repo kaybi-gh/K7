@@ -83,6 +83,14 @@ public class UpdateAppearancePreferencesCommandValidatorTests
     }
 
     [Test]
+    public void Validate_ShouldCheckTheMiniPlayerPlacement()
+    {
+        IsValid(new AppearancePreferencesDto { Default = { MiniPlayer = MiniPlayerPlacement.Bottom } }).Should().BeTrue();
+        IsValid(new AppearancePreferencesDto { Default = { MiniPlayer = (MiniPlayerPlacement)99 } }).Should().BeFalse();
+        new AppearanceSettingsDto { MiniPlayer = MiniPlayerPlacement.Bottom }.IsDefault.Should().BeFalse();
+    }
+
+    [Test]
     public void Validate_ShouldPass_WhenThemeIsAServerTheme()
     {
         IsValid(new AppearancePreferencesDto { Default = { ThemeId = "server-abc123" } }).Should().BeTrue();

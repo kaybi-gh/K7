@@ -1,4 +1,5 @@
 @implements IDisposable
+@using K7.Clients.Shared.UI.Helpers
 @using Microsoft.AspNetCore.Components.Authorization
 
 <div class="app-nav-backdrop @(IsAnyMenuOpen ? "open" : "")"
@@ -40,7 +41,7 @@
         </div>
 
         <div class="app-nav-player">
-            <MiniMusicPlayer VisibleMediaQuery="(min-width: 600px)" />
+            <MiniMusicPlayer VisibleMediaQuery="@MiniPlayerSlots.BarQuery(ThemeService.Settings.MiniPlayer)" />
         </div>
 
         <div class="app-nav-spacer"></div>

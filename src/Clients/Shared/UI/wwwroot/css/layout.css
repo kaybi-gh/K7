@@ -186,6 +186,16 @@ html.platform-tv .app-shell--custom-nav {
     }
 }
 
+/* Mini player at the bottom on wide screens (appearance setting). The page area gives it its
+   room instead of running underneath: nothing is covered, on scrolling pages as on the fixed
+   TV pages, and no page needs a spacer of its own. Only while something is playing. */
+@media (min-width: 600px) {
+    .app-shell--player-bottom .app-main:has(.mini-player-dock .music-mini-player) {
+        /* Height of the bar: its content plus the progress line on top. */
+        padding-bottom: calc(var(--mini-player-height) + 4px);
+    }
+}
+
 /* ============================================================
    Sidebar (page-level sidebar used by AdminLayout, SettingsLayout)
    ============================================================ */

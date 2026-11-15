@@ -12074,6 +12074,9 @@
           "cornerStyle": {
             "$ref": "#/components/schemas/AppearanceCornerStyle"
           },
+          "miniPlayer": {
+            "$ref": "#/components/schemas/MiniPlayerPlacement"
+          },
           "isDefault": {
             "type": "boolean"
           }
@@ -19589,6 +19592,9 @@
         }
       },
       "MetadataTagKind": {
+        "type": "integer"
+      },
+      "MiniPlayerPlacement": {
         "type": "integer"
       },
       "MusicAlbumDto": {

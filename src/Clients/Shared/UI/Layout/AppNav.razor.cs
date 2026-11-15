@@ -40,6 +40,7 @@ public partial class AppNav : IDisposable
     private bool _savedSessionsKnown;
 
     [Inject] private NavigationManager NavigationManager { get; set; } = default!;
+    [Inject] private ThemeService ThemeService { get; set; } = default!;
     [Inject] private ISpatialNavService SpatialNav { get; set; } = default!;
     [Inject] private ICustomAuthenticationStateProvider CustomAuthenticationStateProvider { get; set; } = default!;
     [Inject] private AuthenticationStateProvider AuthenticationStateProvider { get; set; } = default!;
@@ -64,6 +65,7 @@ public partial class AppNav : IDisposable
 
     protected override async Task OnInitializedAsync()
     {
+        ThemeService.ThemeOnChange += OnAppearanceChanged;
         NavigationManager.LocationChanged += OnLocationChanged;
         AuthenticationStateProvider.AuthenticationStateChanged += OnAuthStateChanged;
         HubClient.ConnectionStateChanged += OnConnectionStateChanged;
@@ -246,6 +248,9 @@ public partial class AppNav : IDisposable
         };
     }
 
+    // The slot of the mini player depends on an appearance setting.
+    private void OnAppearanceChanged() => InvokeAsync(StateHasChanged).FireAndForget();
+
     private void SwitchUser()
     {
         CloseAll();
@@ -355,6 +360,7 @@ public partial class AppNav : IDisposable
 
     public void Dispose()
     {
+        ThemeService.ThemeOnChange -= OnAppearanceChanged;
         NavigationManager.LocationChanged -= OnLocationChanged;
         AuthenticationStateProvider.AuthenticationStateChanged -= OnAuthStateChanged;
         HubClient.ConnectionStateChanged -= OnConnectionStateChanged;

@@ -1,6 +1,6 @@
 @if (Audio.IsVisible && DisplayedTrack is not null)
 {
-    <div class="music-mini-player">
+    <div class="music-mini-player @(Bar ? "music-mini-player--bar" : null)">
         <div class="mini-player-progress @(_seekbarFocusable ? "focusable" : "")" @ref="_progressBarRef"
              tabindex="@(_seekbarFocusable ? 0 : -1)"
              role="slider"
@@ -40,10 +40,27 @@
 
             <div class="mini-player-center">
                 <div class="mini-player-controls">
+                    @* The bottom bar has the room of a full playback bar: shuffle and previous before
+                       play, repeat after next. They hide again where the bar gets narrow. *@
+                    @if (Bar)
+                    {
+                        <span class="mini-player-extra">
+                            <K7IconButton Icon="@Phosphor.Shuffle" OnClick="Audio.ToggleShuffle" AriaLabel="Toggle shuffle" Color="@(Audio.Shuffle ? "active" : "")" Disabled="@(Audio.Queue.Count <= 1)" />
+                        </span>
+                        <span class="mini-player-extra">
+                            <K7IconButton Icon="@Phosphor.SkipBack" OnClick="OnPrevious" AriaLabel="Previous" />
+                        </span>
+                    }
                     <div class="mini-player-fab-wrap @(IsBuffering ? "buffering" : "")" @onpointerdown="OnFabPointerDown" @onpointerup="OnFabPointerUp" @onpointerleave="OnFabPointerUp" @onkeydown="OnFabKeyDown" @onkeyup="OnFabKeyUp">
-                        <K7FabButton Icon="@PlayPauseIcon" OnClick="TogglePlayPause" AriaLabel="Play pause" />
+                        <K7FabButton Icon="@PlayPauseIcon" Size="@(Bar ? "sm" : "")" OnClick="TogglePlayPause" AriaLabel="Play pause" />
                     </div>
                     <K7IconButton Icon="@Phosphor.SkipForward" OnClick="OnNext" AriaLabel="Next" />
+                    @if (Bar)
+                    {
+                        <span class="mini-player-extra">
+                            <K7IconButton Icon="@RepeatIcon" OnClick="Audio.CycleRepeatMode" AriaLabel="Toggle repeat" Color="@(Audio.Repeat != RepeatMode.Off ? "active" : "")" />
+                        </span>
+                    }
                 </div>
             </div>
 

@@ -22,3 +22,14 @@
         padding: 0;
     }
 }
+
+/* Mini player at the bottom on wide screens: a playback bar across the whole screen, flush with
+   its edges. */
+@media (min-width: 600px) {
+    .app-shell--player-bottom .mini-player-dock {
+        display: block;
+        inset-inline: 0;
+        bottom: 0;
+        padding: 0;
+    }
+}

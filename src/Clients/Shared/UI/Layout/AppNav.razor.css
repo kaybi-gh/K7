@@ -560,12 +560,16 @@
         min-width: 0;
     }
 
+    /* Sizes below are in rem like the text next to them: the cover and the buttons grow with
+       the text (TV base size, text size setting) and the player stays inside the bar. */
     .app-nav-player ::deep .music-mini-player {
         background: color-mix(in srgb, var(--color-surface) 60%, transparent);
         border: 1px solid var(--color-border);
         border-radius: var(--radius-lg);
         box-shadow: none;
         max-width: 560px;
+        /* Never taller than the bar, even with the largest text sizes combined. */
+        max-height: calc(var(--nav-height) - 4px);
         width: auto;
     }
 
@@ -595,28 +599,30 @@
     }
 
     .app-nav-player ::deep .mini-player-cover {
-        width: 28px !important;
-        height: 28px !important;
+        width: 1.75rem !important;
+        height: 1.75rem !important;
     }
 
     .app-nav-player ::deep .mini-player-cover-placeholder {
-        width: 28px;
-        height: 28px;
+        width: 1.75rem;
+        height: 1.75rem;
     }
 
     .app-nav-player ::deep .mini-player-title {
         font-size: var(--text-sm);
+        line-height: var(--leading-tight);
     }
 
     .app-nav-player ::deep .mini-player-artist {
         font-size: var(--text-2xs);
+        line-height: var(--leading-tight);
     }
 
     .app-nav-player ::deep .mini-player-controls .k7-icon-btn {
-        width: 24px;
-        height: 24px;
-        min-width: 24px;
-        min-height: 24px;
+        width: 1.5rem;
+        height: 1.5rem;
+        min-width: 1.5rem;
+        min-height: 1.5rem;
     }
 
     .app-nav-player ::deep .mini-player-controls .k7-icon-btn .k7-icon {
@@ -624,10 +630,10 @@
     }
 
     .app-nav-player ::deep .k7-fab {
-        width: 30px;
-        height: 30px;
-        min-width: 30px;
-        min-height: 30px;
+        width: 1.875rem;
+        height: 1.875rem;
+        min-width: 1.875rem;
+        min-height: 1.875rem;
     }
 
     .app-nav-player ::deep .k7-fab .k7-icon {
@@ -647,10 +653,10 @@
     }
 
     .app-nav-player ::deep .mini-player-secondary-controls .k7-icon-btn {
-        width: 24px;
-        height: 24px;
-        min-width: 24px;
-        min-height: 24px;
+        width: 1.5rem;
+        height: 1.5rem;
+        min-width: 1.5rem;
+        min-height: 1.5rem;
     }
 
     .app-nav-player ::deep .mini-player-secondary-controls .k7-icon {
@@ -681,4 +687,11 @@
         min-width: 36px;
         justify-content: center;
     }
+}
+
+/* Mini player moved to the bottom of the screen: its slot in the bar stays, empty. It is what
+   pushes search and the profile to the right. The copy it holds stops rendering and keeps its
+   last markup, so it is hidden here. */
+.app-shell--player-bottom .app-nav-player ::deep .music-mini-player {
+    display: none;
 }

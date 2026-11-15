@@ -85,6 +85,12 @@ public partial class AppearanceSettingsPanel : IDisposable
         new(AppearanceCornerStyle.Round, L["Corners_Round"])
     ];
 
+    private IReadOnlyList<ButtonGroupOption<MiniPlayerPlacement>> MiniPlayerOptions =>
+    [
+        new(MiniPlayerPlacement.Auto, L["MiniPlayer_Bar"]),
+        new(MiniPlayerPlacement.Bottom, L["MiniPlayer_Bottom"])
+    ];
+
     protected override async Task OnInitializedAsync()
     {
         _deviceType = await DeviceService.GetDeviceTypeAsync();
@@ -188,6 +194,12 @@ public partial class AppearanceSettingsPanel : IDisposable
     private void RemoveScopeOverride()
     {
         _preferences.DeviceOverrides.Remove(_scope);
+        Commit();
+    }
+
+    private void OnMiniPlayerChanged(MiniPlayerPlacement placement)
+    {
+        Editable().MiniPlayer = placement;
         Commit();
     }
 

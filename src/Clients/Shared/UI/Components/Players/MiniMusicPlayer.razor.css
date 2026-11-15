@@ -248,6 +248,37 @@
 }
 
 /* Palier 1 — < 1280px : rating masque */
+/* Extra controls of the bottom bar. */
+.mini-player-extra {
+    display: inline-flex;
+}
+
+/* Bottom bar (appearance setting, wide screens): a playback bar edge to edge, not a card. */
+@container (min-width: 600px) {
+    .music-mini-player--bar {
+        border: 0;
+        border-radius: 0;
+        box-shadow: 0 -1px 0 var(--color-border);
+    }
+
+    .music-mini-player--bar .mini-player-content {
+        min-height: 60px;
+        padding-block: 0;
+        padding-inline: var(--space-4);
+    }
+
+    .music-mini-player--bar .mini-player-controls {
+        gap: var(--space-2);
+    }
+}
+
+/* Not enough room for a full playback bar: back to play and next. */
+@container (max-width: 768px) {
+    .mini-player-extra {
+        display: none;
+    }
+}
+
 @container (max-width: 1280px) {
     .mini-player-rating {
         display: none;

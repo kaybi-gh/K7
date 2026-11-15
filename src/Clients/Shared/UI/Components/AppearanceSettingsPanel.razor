@@ -59,6 +59,13 @@ else
                        ValueChanged="OnCornerStyleChanged"
                        AriaLabel="@L["Corners"]" />
     </K7SettingRow>
+    <K7SettingRow Label="@L["MiniPlayer"]" Hint="@L["MiniPlayerHint"]">
+        <K7ButtonGroup TValue="MiniPlayerPlacement"
+                       Options="MiniPlayerOptions"
+                       Value="Current.MiniPlayer"
+                       ValueChanged="OnMiniPlayerChanged"
+                       AriaLabel="@L["MiniPlayer"]" />
+    </K7SettingRow>
     <K7SettingRow Label="@L["MyThemes"]" Hint="@L["MyThemesHint"]" Stacked="true">
         <CustomThemeList Themes="_preferences.CustomThemes"
                          OnAdded="AddTheme"

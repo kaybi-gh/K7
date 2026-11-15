@@ -35,4 +35,8 @@
   <data name="ScopeHint_Own" xml:space="preserve"><value>Réglages propres pour {0}. Les autres appareils gardent les leurs.</value></data>
   <data name="ScopeUseShared" xml:space="preserve"><value>Reprendre les réglages communs</value></data>
   <data name="ScopePreviewNote" xml:space="preserve"><value>Aperçu : cet appareil retrouvera ses propres réglages quand vous quitterez la page.</value></data>
+  <data name="MiniPlayer" xml:space="preserve"><value>Mini-lecteur de musique</value></data>
+  <data name="MiniPlayerHint" xml:space="preserve"><value>Sur ordinateur, tablette et TV. Sur téléphone, il reste au-dessus de la barre du bas.</value></data>
+  <data name="MiniPlayer_Bar" xml:space="preserve"><value>Dans la barre</value></data>
+  <data name="MiniPlayer_Bottom" xml:space="preserve"><value>En bas</value></data>
 </root>

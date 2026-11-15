@@ -112,6 +112,51 @@ public class MiniMusicPlayerTests
     }
 
     [Test]
+    public void SlotChange_ShouldWatchTheNewQueryAndShowTheCopy_WhenThePlayerIsMovedToThisSlot()
+    {
+        var audio = CreateAudioService();
+        var first = CreateTrack();
+        var second = CreateTrack("Incoming Track", "Incoming Artist");
+        audio.IsVisible.Returns(true);
+        StubTracks(audio, first);
+        audio.PlaybackState = PlaybackState.Playing;
+
+        using var ctx = CreateContext(audio);
+        ctx.JSInterop.Setup<int>("K7.MiniPlayerSlot.observe", _ => true).SetResult(1);
+        ctx.JSInterop.SetupVoid("K7.MiniPlayerSlot.unobserve", _ => true).SetVoidResult();
+        ctx.JSInterop.Setup<bool>("K7.MiniPlayerSlot.matches", "not all").SetResult(false);
+        ctx.JSInterop.Setup<bool>("K7.MiniPlayerSlot.matches", "all").SetResult(true);
+
+        // Hidden copy: it does not follow a track change.
+        var cut = ctx.Render<MiniMusicPlayer>(p => p.Add(x => x.VisibleMediaQuery, "not all"));
+        StubTracks(audio, second);
+        audio.CurrentTrackChanged += Raise.Event<Action<AudioQueueItem?>>(second);
+        cut.Markup.Should().NotContain("Incoming Track");
+
+        // The player is moved to this slot: the copy catches up.
+        cut.Render(p => p.Add(x => x.VisibleMediaQuery, "all"));
+
+        cut.WaitForAssertion(() => cut.Markup.Should().Contain("Incoming Track"));
+        ctx.JSInterop.VerifyInvoke("K7.MiniPlayerSlot.unobserve");
+    }
+
+    [TestCase(true, 3)]
+    [TestCase(false, 0)]
+    public void Render_ShouldAddShufflePreviousAndRepeat_OnlyAsABar(bool bar, int expectedExtras)
+    {
+        var audio = CreateAudioService();
+        audio.IsVisible.Returns(true);
+        StubTracks(audio, CreateTrack());
+        audio.PlaybackState = PlaybackState.Playing;
+
+        using var ctx = CreateContext(audio);
+        var cut = ctx.Render<MiniMusicPlayer>(p => p.Add(x => x.Bar, bar));
+
+        cut.FindAll(".mini-player-extra").Should().HaveCount(expectedExtras);
+        cut.Find(".music-mini-player").ClassList.Contains("music-mini-player--bar").Should().Be(bar);
+    }
+
+    [Test]
     public void Render_ShouldShowDisplayedTrack_WhenPlayingTrackHasAlreadyAdvanced()
     {
         var audio = CreateAudioService();

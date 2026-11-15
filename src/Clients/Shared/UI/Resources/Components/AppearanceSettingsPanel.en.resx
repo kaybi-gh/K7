@@ -35,4 +35,8 @@
   <data name="ScopeHint_Own" xml:space="preserve"><value>Separate settings for {0}. Your other devices keep theirs.</value></data>
   <data name="ScopeUseShared" xml:space="preserve"><value>Use the shared settings</value></data>
   <data name="ScopePreviewNote" xml:space="preserve"><value>Preview: this device goes back to its own settings when you leave the page.</value></data>
+  <data name="MiniPlayer" xml:space="preserve"><value>Mini music player</value></data>
+  <data name="MiniPlayerHint" xml:space="preserve"><value>On desktop, tablet and TV. On a phone it stays above the bottom bar.</value></data>
+  <data name="MiniPlayer_Bar" xml:space="preserve"><value>In the bar</value></data>
+  <data name="MiniPlayer_Bottom" xml:space="preserve"><value>At the bottom</value></data>
 </root>

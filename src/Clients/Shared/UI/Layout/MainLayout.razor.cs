@@ -4,6 +4,7 @@ using K7.Clients.Shared.Services;
 using K7.Clients.Shared.UI.Helpers;
 using K7.Server.Domain.Enums;
 using K7.Shared;
+using K7.Shared.Enums;
 using K7.Shared.Interfaces;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
@@ -45,6 +46,9 @@ public partial class MainLayout : IDisposable
     private bool _showCustomNavBar;
     private bool _chromeReady;
     private MediaCardStyleContext? _cardStyles;
+
+    // The layout re-renders on every appearance change, so this follows the setting.
+    private bool PlayerAtBottom => ThemeService.Settings.MiniPlayer == MiniPlayerPlacement.Bottom;
 
     // The account whose appearance preferences came from the server in this session. From then
     // on every change is copied to the device, and the copy on the device is no longer applied.
