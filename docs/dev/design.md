@@ -17,7 +17,7 @@ Small private installs: the owner plus family/friends. Same people on desktop, p
 
 ## Loading
 
-Page shells (home, explore feeds, movie, serie, season, episode, person, music artist, music album) use **skeletons** that match the layout. Desktop season loading uses the season skeleton (logo, icon actions, episode rows). TV season loading keeps the compact hero plus backdrop carousel. Person loading reuses the person hero shell (2:3 portrait, bio, filmography below the fold) so phone, desktop, and TV breakpoints match the loaded page. Library browse (`/library-groups/{id}`) shows a **CSS spinner** until the first page is ready, then MediaCards. Poster decode on those cards uses the CSS spinner, not a skeleton. **Spinners** stay for inline waits: saving, search, player buffering, dialogs, and admin jobs.
+Page shells (home, explore feeds, movie, serie, season, episode, person, music artist, music album) use **skeletons** that match the layout. The home skeleton takes the shape of the home layout (`IHomeFeedStore.SkeletonRows`: the layout being loaded, else the previous one, kept on the device under `HomeSkeletonShape` with the id of its user so it is there when the app opens): a banner row holds the place of its banner and a landscape row shows wide placeholders. A `MediaCard` skeleton follows the card style of the user (hidden title or subtitle, details line, hover effect). Desktop season loading uses the season skeleton (logo, icon actions, episode rows). TV season loading keeps the compact hero plus backdrop carousel. Person loading reuses the person hero shell (2:3 portrait, bio, filmography below the fold) so phone, desktop, and TV breakpoints match the loaded page. Library browse (`/library-groups/{id}`) shows a **CSS spinner** until the first page is ready, then MediaCards. Poster decode on those cards uses the CSS spinner, not a skeleton. **Spinners** stay for inline waits: saving, search, player buffering, dialogs, and admin jobs.
 
 TV (`html.platform-tv`) never uses `backdrop-filter`: a global rule in `app.css` removes it, so blurred surfaces fall back to their tinted background. Media cards only promote the title marquee to a compositor layer while it scrolls.
 
@@ -37,7 +37,7 @@ Themes are a product surface, and they are data, never CSS. A theme is nine colo
 - **Built-in themes** (`BuiltInThemes`) and **custom themes** (made in the editor or imported as a `k7-theme` JSON file, stored with the user's appearance preferences) layer their palette over a base.
 - **Server themes** (`ServerThemes`, server setting `ServerThemes`) are custom themes made by an administrator under Admin -> Experience -> Interface -> Appearance. Same palette and file format, ids prefixed `server-`. They travel in `ServerInfoDto.ServerThemes`, show in every account's theme picker, and can be the server default theme. Deleting the default one puts the default back on `default-dark`.
 - Every palette must pass `ThemePaletteValidator` (WCAG AA for text and accent, 3:1 for muted text). Built-in themes are covered by a test; the editor and the import refuse a palette that fails.
-- **Appearance preferences** (`AppearancePreferencesDto`, user setting `Appearance`): theme, optional accent override, text size, corner style, plus an optional set per device type (desktop, phone, tablet, TV). They follow the account. The last look is cached in `localStorage` so `theme.js` restores it before Blazor starts.
+- **Appearance preferences** (`AppearancePreferencesDto`, user setting `Appearance`): theme, optional accent override, text size, corner style, plus an optional set per device type (desktop, phone, tablet, TV). They follow the account. The last look is cached in `localStorage` so `theme.js` restores it before Blazor starts. The preferences themselves are also copied to the device with the id of their user (`AppearanceCache`, key `AppearancePreferencesCache`, with the card style of the server): `MainLayout` applies the copy of the last user at start, so cards open in the right style and the home asks for the right feed before the server answers. The server answer replaces the copy.
 - Text size scales the root font size (type tokens are in `rem`). Corner style overrides the `--radius-*` scale. Keep new sizes in `rem` and radii on the tokens so both keep working.
 - The rules below (copper accent, no pure `#000` / `#fff`) describe the two default themes. Other themes may use their own accent, and the Black theme uses a true black background for OLED screens.
 
@@ -65,6 +65,74 @@ Type, space, and radius stay in `tokens.css` (Open Props-style scales, not the p
 4. Colors, spacing, and type that matter go through design tokens (themes are a product feature).
 5. WCAG AA minimum: contrast, keyboard/spatial focus, semantic controls. Keep core features available on small screens.
 
+## Home rows
+
+A home row has a display type (`HomeRowDisplayType`, saved in the layout: only add values at the end), in two
+families the row dialog asks for in two steps: a carousel (`Carousel` for posters and covers, the default, or
+`Landscape` for 16:9 cards) or a banner (`Featured` contained, `FeaturedBleed` edge to edge; `IsBanner()`).
+`HomeRowDisplay` picks the items and the card variant for both `HomeView` and `HomeLayoutPreview`, so the
+preview never drifts from the page. `HomeLayoutPreview` is live: it re-reads the rows on every render of the settings
+page, and only fetches a row again when what it lists changed (scope, sort, size), so reordering, hiding or
+restyling is instant. It is a reduced picture (`zoom: 0.6`) and `inert`: editing happens in the list.
+
+- Landscape cards use `MediaCardViewModel.LandscapeUrl` (backdrop, or still for an episode, at card size).
+  Every card of the row stays 16:9: an item without landscape art shows its poster or cover, cropped.
+- A banner row renders `HomeHero` with the first items that have a backdrop (no music), as many as the page
+  size of the row asks for (3 to 15 in the dialog, 15 at most). The logo of a media (`LogoUrl`) replaces its
+  title, which stays as the text alternative and comes back if the logo fails to load. The TV home hero
+  (`HomeTvHero`) does the same. It is a row
+  like the others: its place in the list, its libraries and its sort are the user's choice. Switching titles
+  is manual (dots) unless the row sets `AutoAdvanceSeconds` (off by default). Auto-advance pauses on hover and
+  on keyboard focus (a key released inside the banner; a click that leaves the focus behind does not hold it), shows a pause button, and does not run under `prefers-reduced-motion` or on a hidden page
+  (`js/home-hero.js`, a module loaded on the first tick). While it waits, the active dot is a track that
+  fills for the same duration and pauses with the same state (`home-hero--holding`). The banner itself is an arrow-key target (`focusable`,
+  `tabindex="-1"`) that relays the focus to its button: the button sits in a corner, and spatial navigation
+  only looks straight up or down, so the banner was skipped from the row below. A change of title
+  cross-fades: the previous artwork fades out underneath and is gone, so a partly transparent banner never
+  shows two pictures. It uses the same scrim tokens as the TV hero. On TV,
+  or with nothing to feature, the row shows as posters. Banner rows ask for the detailed feed (overview).
+  The bleed style drops the margins and the radius, lets the artwork and its scrim run past the banner, behind the
+  top of the next row (rows are stacked each above the one before, `.home-row`; the banner keeps its own place so its buttons stay clickable), with a long eased mask that fades to
+  nothing (the page shows through: painting `--color-bg` there left a visible edge), and raises its copy above the stretch that fades out (same on-media text tokens as the contained style). When it
+  is the first thing on the page it cancels the top padding of the page. With the shortcuts row of the custom navigation above it,
+  it still starts at the very top: the row leaves the flow and sits on the artwork, over a scrim of the page color (`HomeView.razor.css`).
+- A home has no banner or one banner, always first (`HomeLayoutRules`): `HomeRowList` snaps it back to the top
+  and the row dialog does not offer the banner when another row is one, both validators refuse anything else,
+  and `HomeLayoutSanitizer` fixes stored layouts when they are read.
+- `HomeRowList` edits the rows (order, visibility, add, edit, delete) for a personal home and for the server
+  default. Each row shows two summary lines built by `HomeRowSummary` with the labels of the dialog. The banner row is locked
+  (`K7SortableList.IsLocked`: a pin instead of a handle). Adding a row offers `HomeRowPresets`: the smart rows
+  of the default home, whose titles are translated keys and whose sorts the dialog does not list.
+
+## Media cards
+
+Card style is a user preference (`MediaCardPreferencesDto` in `AppearancePreferencesDto.Cards`, null to follow
+the server) with a server default (server setting `DefaultCardStyle`, sent in `ServerInfoDto.DefaultCards`,
+edited under Admin -> Experience -> Interface -> Media cards). `ThemeService.EffectiveCards` is the user's style,
+else the server default. `MediaCardStylePanel` edits both. A style is a common
+`MediaCardStyleDto` plus optional styles for movies, series and music (`CardMediaGroup`). A style says whether
+the title and subtitle show, which details show (`CardDetailField`), where they go (`CardDetailPlacement`:
+line under the card, badges on the artwork, badges on hover) and the hover effect (`CardHoverStyle`).
+
+- `MainLayout` cascades a `MediaCardStyleContext` around the page area. `MediaCard` takes it as a cascading
+  parameter and resolves its style from the kind of media, so no page passes anything. No context (default
+  preferences, tests, cards outside the layout) means the default card. TV applies it too: its shelves
+  measure their rows, so taller or shorter cards fit; only the virtual library grid has a row height in code,
+  which adds the details line when the style has one.
+- A new context instance is cascaded only when the card preferences changed, and it is part of
+  `MediaCard.RenderState`: a theme change does not re-render every card.
+- Details come from `MediaCardDetails`, in a fixed order, keeping only what the item has. Overview, runtime,
+  rating and genres only travel with the detailed home feed: `HomeView` asks for it through
+  `IHomeFeedStore.SetDetailedAsync` when `NeedsDetailedFeed` is true, and Explore rows (`HomeFeedCarouselRow`) do
+  the same, so accounts with default cards keep the light feed. Library grids ask for them the same way (`QueryMediasRequest.IncludeCardDetails`, filled by
+  `LiteMediaCardDetailsService` with three queries per page, cached with the page). Without the flag the
+  browse query and its cache key are unchanged, and TV never sets it (its grid shows the year only). A details line under the card adds
+  18px to the fixed footer height of the grid.
+- The hover effect applies to the pointer and to keyboard focus, and zoom and lift replace the accent outline
+  in both cases: the effect is then the focus indicator. A selected card and a card with its menu open keep the
+  outline, and so does focus under `prefers-reduced-motion`, where there is no movement to show it. Badges on hover stay visible on touch screens. Both respect `prefers-reduced-motion`.
+- Badges use `--media-watched-chip` and `--color-text-on-media`, like the watched badge.
+
 ## Settings pages
 
 Long settings pages must not turn into one tall scroll (painful with a remote) nor stretch
@@ -76,7 +144,7 @@ controls across a wide screen:
   TV it behaves like a menu: the index, then the sub-page as its own screen with a back link and
   the page header hidden. Each sub-page has its own route (`/settings/video-playback/{section}`).
 - Pages that stay separate components can still share one index: `InterfaceSettingsSplit` wraps
-  the appearance (theme, accent, text size, corners, own themes, language), home layout, navigation and theme songs pages (personal
+  the appearance (theme, accent, text size, corners, own themes, language), media cards, home layout, navigation and theme songs pages (personal
   and admin) under `/settings/interface` and `/admin/interface`. The former addresses stay
   routable because saved shortcuts point at them. Reset to defaults is per sub-page.
   `AdvancedSettingsSplit` does the same for the admin-only Advanced entry (transcoding, link

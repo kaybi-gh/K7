@@ -25,9 +25,4 @@
   <data name="ResetToDefault" xml:space="preserve"><value>Reset to default</value></data>
   <data name="ResetSuccess" xml:space="preserve"><value>Layout reset.</value></data>
   <data name="SaveSuccess" xml:space="preserve"><value>Layout saved.</value></data>
-  <data name="AddRow" xml:space="preserve"><value>Add row</value></data>
-  <data name="EditRow" xml:space="preserve"><value>Edit row</value></data>
-  <data name="DeleteRow" xml:space="preserve"><value>Delete row</value></data>
-  <data name="PreviewTitle" xml:space="preserve"><value>Preview</value></data>
-  <data name="PreviewRefresh" xml:space="preserve"><value>Refresh preview</value></data>
 </root>

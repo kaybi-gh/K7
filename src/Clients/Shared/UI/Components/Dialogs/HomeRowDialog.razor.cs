@@ -1,10 +1,20 @@
 using K7.Clients.Shared.Models;
+using K7.Clients.Shared.UI.Helpers;
+using K7.Clients.Shared.UI.Pages;
 using Microsoft.AspNetCore.Components;
+using Microsoft.Extensions.Localization;
 
-namespace K7.Clients.Shared.UI.Pages.Admin.Dialogs;
+namespace K7.Clients.Shared.UI.Components.Dialogs;
 
-public partial class AdminHomeRowDialog
+public partial class HomeRowDialog
 {
+    /// <summary>The two families of rows: cards side by side, or one title at a time.</summary>
+    private enum RowKind
+    {
+        Carousel,
+        Banner
+    }
+
     private enum CatalogScope
     {
         All,
@@ -26,18 +36,31 @@ public partial class AdminHomeRowDialog
         MediaOrderingOption.LastInteractedDesc,
         MediaOrderingOption.PopularityDesc,
         MediaOrderingOption.LocalRatingDesc,
-        MediaOrderingOption.PlayCountDesc
+        MediaOrderingOption.PlayCountDesc,
+        MediaOrderingOption.RecommendedForYou
     ];
+
+    private static readonly int[] _autoAdvanceOptions = [0, 5, 8, 12, 20];
 
     private static readonly int[] _pageSizeOptions = [10, 20, 50, 100];
 
+    // A banner shows one title at a time: a handful is plenty.
+    private static readonly int[] _bannerPageSizeOptions = [3, 5, 10, 15];
+
     [CascadingParameter] private IK7DialogInstance Dialog { get; set; } = null!;
+
+    [Inject] private IStringLocalizer<Home> HomeL { get; set; } = default!;
 
     [Parameter] public HomeRowEditModel? InitialModel { get; set; }
     [Parameter] public List<LibraryDto> Libraries { get; set; } = [];
     [Parameter] public List<LibraryGroupDto> LibraryGroups { get; set; } = [];
 
+    /// <summary>Title of the row that already is the banner of this home, if another row is. A home has one banner.</summary>
+    [Parameter] public string? ExistingBannerTitle { get; set; }
+
     private string _title = "";
+    private string? _titleKey;
+    private string? _translatedTitle;
     private HomeRowDisplayType _displayType = HomeRowDisplayType.Carousel;
     private bool _continueWatching;
     private CatalogScope _catalogScope = CatalogScope.All;
@@ -47,12 +70,19 @@ public partial class AdminHomeRowDialog
     private MediaOrderingOption _orderBy = MediaOrderingOption.CreatedDesc;
     private int _pageSize = 20;
 
+    // 0 stands for "off" in the select.
+    private int _autoAdvanceSeconds;
+
     protected override void OnParametersSet()
     {
         if (InitialModel is null)
             return;
 
-        _title = InitialModel.Title;
+        // A ready-made row stores a key the app translates. Show the translation, and keep the key
+        // unless the title is really changed, so the row still follows the language.
+        _titleKey = InitialModel.Title;
+        _translatedTitle = HomeLayoutRowTitleHelper.Localize(HomeL, InitialModel.Title);
+        _title = _translatedTitle;
         _displayType = InitialModel.DisplayType;
         _continueWatching = InitialModel.ContinueWatching;
         _libraryIds = new List<Guid>(InitialModel.LibraryIds);
@@ -60,7 +90,79 @@ public partial class AdminHomeRowDialog
         _mediaTypes = new List<MediaType>(InitialModel.MediaTypes);
         _orderBy = InitialModel.OrderBy;
         _pageSize = InitialModel.PageSize;
+        _autoAdvanceSeconds = InitialModel.AutoAdvanceSeconds ?? 0;
         _catalogScope = InferCatalogScope(InitialModel);
+    }
+
+    private string GetAutoAdvanceLabel(int seconds) =>
+        seconds == 0 ? L["AutoAdvanceOff"] : string.Format(L["AutoAdvanceSeconds"], seconds);
+
+    // The size saved on the row stays offered even when it is not one of the usual choices.
+    private IReadOnlyList<int> PageSizeOptions
+    {
+        get
+        {
+            var options = Kind == RowKind.Banner ? _bannerPageSizeOptions : _pageSizeOptions;
+            return options.Contains(_pageSize) ? options : [.. options.Append(_pageSize).Order()];
+        }
+    }
+
+    // A ready-made row can use a sort that is not offered for new rows: keep it selectable.
+    private IReadOnlyList<MediaOrderingOption> OrderOptions =>
+        _orderOptions.Contains(_orderBy) ? _orderOptions : [.. _orderOptions, _orderBy];
+
+    private RowKind Kind => _displayType.IsBanner() ? RowKind.Banner : RowKind.Carousel;
+
+    private bool BannerTaken => !string.IsNullOrEmpty(ExistingBannerTitle);
+
+    private IReadOnlyList<ButtonGroupOption<RowKind>> KindOptions => BannerTaken
+        ? [new(RowKind.Carousel, L["KindCarousel"], Phosphor.Rows)]
+        :
+        [
+            new(RowKind.Carousel, L["KindCarousel"], Phosphor.Rows),
+            new(RowKind.Banner, L["KindBanner"], Phosphor.Star)
+        ];
+
+    private string KindHint
+    {
+        get
+        {
+            if (BannerTaken)
+                return string.Format(L["KindBannerTakenHint"], ExistingBannerTitle);
+
+            return Kind == RowKind.Banner ? L["KindBannerHint"] : L["KindCarouselHint"];
+        }
+    }
+
+    // The second choice depends on the first: a card format for a carousel, a style for a banner.
+    private IReadOnlyList<ButtonGroupOption<HomeRowDisplayType>> DisplayOptions => Kind == RowKind.Banner
+        ?
+        [
+            new(HomeRowDisplayType.Featured, L["BannerContained"]),
+            new(HomeRowDisplayType.FeaturedBleed, L["BannerBleed"])
+        ]
+        :
+        [
+            new(HomeRowDisplayType.Carousel, L["DisplayCarousel"]),
+            new(HomeRowDisplayType.Landscape, L["DisplayLandscape"])
+        ];
+
+    private string DisplayHint => _displayType switch
+    {
+        HomeRowDisplayType.Landscape => L["DisplayLandscapeHint"],
+        HomeRowDisplayType.Featured => L["BannerContainedHint"],
+        HomeRowDisplayType.FeaturedBleed => L["BannerBleedHint"],
+        _ => L["DisplayCarouselHint"]
+    };
+
+    // Switching family lands on its first choice.
+    private void OnKindChanged(RowKind kind)
+    {
+        if (kind == Kind)
+            return;
+
+        _displayType = kind == RowKind.Banner ? HomeRowDisplayType.Featured : HomeRowDisplayType.Carousel;
+        _pageSize = kind == RowKind.Banner ? HomeRowDisplay.DefaultBannerCount : 20;
     }
 
     private static CatalogScope InferCatalogScope(HomeRowEditModel model)
@@ -148,6 +250,8 @@ public partial class AdminHomeRowDialog
         MediaOrderingOption.PopularityDesc => L["OrderPopularityDesc"],
         MediaOrderingOption.LocalRatingDesc => L["OrderLocalRatingDesc"],
         MediaOrderingOption.PlayCountDesc => L["OrderPlayCountDesc"],
+        MediaOrderingOption.RecommendedForYou => L["OrderRecommendedForYou"],
+        MediaOrderingOption.BecauseYouWatched => L["OrderBecauseYouWatched"],
         _ => option.ToString()
     };
 
@@ -165,7 +269,7 @@ public partial class AdminHomeRowDialog
         var model = new HomeRowEditModel
         {
             Id = InitialModel?.Id ?? Guid.NewGuid(),
-            Title = _title.Trim(),
+            Title = _titleKey is not null && _title.Trim() == _translatedTitle ? _titleKey : _title.Trim(),
             DisplayType = _displayType,
             ContinueWatching = _continueWatching,
             LibraryIds = libraryIds,
@@ -173,6 +277,7 @@ public partial class AdminHomeRowDialog
             MediaTypes = _continueWatching ? [] : new List<MediaType>(_mediaTypes),
             OrderBy = _orderBy,
             PageSize = _pageSize,
+            AutoAdvanceSeconds = Kind == RowKind.Banner && _autoAdvanceSeconds > 0 ? _autoAdvanceSeconds : null,
             IsVisible = InitialModel?.IsVisible ?? true,
             Order = InitialModel?.Order ?? 0
         };

@@ -1,3 +1,4 @@
+@using K7.Clients.Shared.UI.Helpers
 @using K7.Shared.Dtos.Home
 @inject IStringLocalizer<Home> L
 @inject IStringLocalizer<SharedResource> S
@@ -57,17 +58,48 @@ else
         }
         else if (!FeedStore.IsLoaded || isLoading)
         {
+            var skeletonRows = FeedStore.SkeletonRows;
             <CustomNavFeedRow />
-            @for (int i = 0; i < 3; i++)
+            @if (skeletonRows.Count == 0)
             {
-                <Carousel Skeleton="true">
-                    @for (int j = 0; j < 10; j++)
-                    {
-                        <CarouselItem>
-                            <MediaCard Skeleton="true" FooterVisible="true" />
-                        </CarouselItem>
-                    }
-                </Carousel>
+                @for (int i = 0; i < 3; i++)
+                {
+                    <Carousel Skeleton="true">
+                        @for (int j = 0; j < 10; j++)
+                        {
+                            <CarouselItem>
+                                <MediaCard Skeleton="true" FooterVisible="true" />
+                            </CarouselItem>
+                        }
+                    </Carousel>
+                }
+            }
+            else
+            {
+                @* The placeholders take the shape of the layout: a banner stays a banner, wide rows stay wide. *@
+                @foreach (var row in skeletonRows)
+                {
+                    <div class="home-row" @key="row.Id">
+                        @if (row.DisplayType.IsBanner())
+                        {
+                            <div class="home-hero-skeleton @(row.DisplayType == HomeRowDisplayType.FeaturedBleed ? "home-hero-skeleton--bleed" : "")" aria-hidden="true">
+                                <K7Skeleton />
+                            </div>
+                        }
+                        else
+                        {
+                            var variant = row.DisplayType == HomeRowDisplayType.Landscape ? MediaCardVariant.Backdrop : MediaCardVariant.Poster;
+                            <Carousel Skeleton="true" Title="@GetRowTitle(row.Title)">
+                                @for (int j = 0; j < 10; j++)
+                                {
+                                    <CarouselItem>
+                                        <MediaCard Skeleton="true" Variant="variant" FooterVisible="true" />
+                                    </CarouselItem>
+                                }
+                            </Carousel>
+                        }
+                    </div>
+                }
             }
         }
         else
@@ -77,7 +109,7 @@ else
             <CustomNavFeedRow />
             @foreach (var row in GetVisibleRows())
             {
-                <div @key="row.Config.Id">
+                <div class="home-row" @key="row.Config.Id">
                     @RenderCarousel(row.Config, row.Items, _canTrackProgress, _canTrackProgress, row.Config.ContinueWatching)
                 </div>
             }
@@ -113,14 +145,19 @@ else
 
 RenderFragment RenderCarousel(HomeRowConfigDto row, List<MediaCardViewModel> items, bool progress, bool watched, bool continueWatching = false)
 {
-    var carouselItems = items.DistinctBy(i => i.Id).ToList();
+    // A featured row is a banner, except on TV (which has its own hero) or with nothing to feature.
+    var featured = _isTv == false ? HomeRowDisplay.Featured(row.DisplayType, items, row.PageSize) : [];
+    if (featured.Count > 0)
+        return @<HomeHero Items="featured" Label="@GetRowTitle(row.Title)" Bleed="@(row.DisplayType == HomeRowDisplayType.FeaturedBleed)" AutoAdvanceSeconds="row.AutoAdvanceSeconds" HrefFor="GetHref" />;
+
+    var carouselItems = HomeRowDisplay.Items(items);
     return @<Carousel Title="@GetRowTitle(row.Title)" ContentKey="@GetCarouselContentKey(carouselItems)">
         @for (var cardIndex = 0; cardIndex < carouselItems.Count; cardIndex++)
         {
             var item = carouselItems[cardIndex];
             <CarouselItem @key="item.Id" ItemId="@GetHomeCardId(item.Id)">
                 <MediaCard Model="@item"
-                           Variant="GetVariant(item)"
+                           Variant="HomeRowDisplay.Variant(row.DisplayType, item)"
                            Href="@GetHref(item)"
                            OverlayEnabled="true"
                            ProgressEnabled="progress"

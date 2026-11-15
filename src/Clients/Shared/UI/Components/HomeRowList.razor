@@ -1,0 +1,70 @@
+@namespace K7.Clients.Shared.UI.Components
+@using K7.Clients.Shared.UI.Helpers
+@inject IStringLocalizer<HomeRowList> L
+
+<div class="home-row-list">
+    <K7SortableList TItem="HomeRowEditModel"
+                    Items="Rows"
+                    ItemKey="@(row => row.Id)"
+                    IsLocked="@(row => row.DisplayType.IsBanner())"
+                    Disabled="Disabled"
+                    Reordered="OnReorderedAsync">
+        <div class="home-row-list__info @(context.IsVisible ? "" : "home-row-list__info--hidden")">
+            <span class="home-row-list__name">
+                <span class="text-sm">@GetRowTitle(context.Title)</span>
+                @if (context.DisplayType.IsBanner())
+                {
+                    <span class="home-row-list__pinned">@L["PinnedFirst"]</span>
+                }
+            </span>
+            <span class="home-row-list__summary">@HomeRowSummary.Display(context, DialogL, L)</span>
+            <span class="home-row-list__summary">@HomeRowSummary.Content(context, _libraries, _libraryGroups, DialogL, L)</span>
+        </div>
+        <div class="home-row-list__actions">
+            <K7Switch Value="@context.IsVisible"
+                      ValueChanged="@(visible => SetVisibleAsync(context, visible))"
+                      AriaLabel="@string.Format(L["ShowRow"], GetRowTitle(context.Title))" />
+            <K7IconButton Icon="@Phosphor.PencilSimple"
+                          Disabled="Disabled"
+                          OnClick="() => EditAsync(context)"
+                          AriaLabel="@string.Format(L["EditRow"], GetRowTitle(context.Title))" />
+            <K7IconButton Icon="@Phosphor.Trash"
+                          Color="error"
+                          Disabled="Disabled"
+                          OnClick="() => DeleteAsync(context)"
+                          AriaLabel="@string.Format(L["DeleteRow"], GetRowTitle(context.Title))" />
+        </div>
+    </K7SortableList>
+
+    <div class="d-flex justify-start">
+        @* Always a menu, even when every ready-made row is already there: they stay listed, greyed
+           out, so it is clear what exists and why nothing more is offered. *@
+        @if (!AddDisabled)
+        {
+            <K7Menu>
+                <ActivatorContent>
+                    <K7Button Color="primary" Variant="outlined" StartIcon="@Phosphor.Plus" EndIcon="@Phosphor.CaretDown">
+                        @L["AddRow"]
+                    </K7Button>
+                </ActivatorContent>
+                <ChildContent>
+                    @foreach (var preset in Presets)
+                    {
+                        var row = preset.Row;
+                        <K7MenuItem Icon="@GetPresetIcon(row)"
+                                    Disabled="preset.OnHome"
+                                    Hint="@(preset.OnHome ? L["PresetOnHome"].Value : null)"
+                                    OnClick="() => AddPresetAsync(row)">@GetRowTitle(row.Title)</K7MenuItem>
+                    }
+                    <K7MenuItem Icon="@Phosphor.SlidersHorizontal" OnClick="AddAsync">@L["AddCustomRow"]</K7MenuItem>
+                </ChildContent>
+            </K7Menu>
+        }
+        else
+        {
+            <K7Button Color="primary" Variant="outlined" StartIcon="@Phosphor.Plus" Disabled="true">
+                @L["AddRow"]
+            </K7Button>
+        }
+    </div>
+</div>

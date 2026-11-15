@@ -9,6 +9,12 @@ public sealed record HomeRowConfigDto
     public required Guid Id { get; init; }
     public required string Title { get; init; }
     public required HomeRowDisplayType DisplayType { get; init; }
+
+    /// <summary>
+    /// Banner rows only: seconds before the banner moves to its next title on its own. Null keeps
+    /// it still, the default.
+    /// </summary>
+    public int? AutoAdvanceSeconds { get; init; }
     public IReadOnlyList<Guid>? LibraryIds { get; init; }
     public IReadOnlyList<Guid>? LibraryGroupIds { get; init; }
     public IReadOnlyList<MediaType>? MediaTypes { get; init; }

@@ -27,8 +27,28 @@
   <data name="OrderPopularityDesc" xml:space="preserve"><value>Popularity</value></data>
   <data name="OrderLocalRatingDesc" xml:space="preserve"><value>Highest rated</value></data>
   <data name="OrderPlayCountDesc" xml:space="preserve"><value>Most watched</value></data>
-  <data name="DisplayCarousel" xml:space="preserve"><value>Carousel</value></data>
   <data name="MediaTypeMovie" xml:space="preserve"><value>Movies</value></data>
   <data name="MediaTypeMusicAlbum" xml:space="preserve"><value>Music albums</value></data>
   <data name="MediaTypeSerie" xml:space="preserve"><value>TV series</value></data>
+  <data name="DisplayCarousel" xml:space="preserve"><value>Posters</value></data>
+  <data name="DisplayLandscape" xml:space="preserve"><value>Landscape</value></data>
+  <data name="DisplayCarouselHint" xml:space="preserve"><value>Posters and covers, like the rest of the app.</value></data>
+  <data name="DisplayLandscapeHint" xml:space="preserve"><value>Large wide cards with the backdrop of each title.</value></data>
+  <data name="KindCarousel" xml:space="preserve"><value>Carousel</value></data>
+  <data name="KindBanner" xml:space="preserve"><value>Banner</value></data>
+  <data name="KindCarouselHint" xml:space="preserve"><value>Cards side by side, to scroll through.</value></data>
+  <data name="CardFormat" xml:space="preserve"><value>Card format</value></data>
+  <data name="BannerStyle" xml:space="preserve"><value>Banner style</value></data>
+  <data name="BannerContained" xml:space="preserve"><value>Contained</value></data>
+  <data name="BannerBleed" xml:space="preserve"><value>Full bleed</value></data>
+  <data name="BannerContainedHint" xml:space="preserve"><value>Inside the page margins, with rounded corners.</value></data>
+  <data name="BannerBleedHint" xml:space="preserve"><value>Edge to edge, the artwork fades into the page. Best as the first row.</value></data>
+  <data name="AutoAdvance" xml:space="preserve"><value>Auto-advance</value></data>
+  <data name="AutoAdvanceHint" xml:space="preserve"><value>Moves to the next title on its own. Pauses on hover and focus, and stays still when your system reduces motion.</value></data>
+  <data name="AutoAdvanceOff" xml:space="preserve"><value>Off</value></data>
+  <data name="AutoAdvanceSeconds" xml:space="preserve"><value>Every {0} s</value></data>
+  <data name="KindBannerTakenHint" xml:space="preserve"><value>Cards side by side, to scroll through. The banner of Home is already the row "{0}": there is only one.</value></data>
+  <data name="KindBannerHint" xml:space="preserve"><value>One title at a time, with its artwork, details and overview. There is one banner, always at the top of Home. On TV it shows as a carousel.</value></data>
+  <data name="OrderRecommendedForYou" xml:space="preserve"><value>Recommended for you</value></data>
+  <data name="OrderBecauseYouWatched" xml:space="preserve"><value>Because you watched</value></data>
 </root>

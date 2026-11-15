@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="Featured" xml:space="preserve"><value>Featured</value></data>
+  <data name="Open" xml:space="preserve"><value>View details</value></data>
+  <data name="Pause" xml:space="preserve"><value>Pause auto-advance</value></data>
+  <data name="Resume" xml:space="preserve"><value>Resume auto-advance</value></data>
+</root>

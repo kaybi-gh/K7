@@ -22,6 +22,9 @@ public partial class HomeView : IAsyncDisposable
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
     [Inject] private IK7DialogService DialogService { get; set; } = default!;
     [Inject] private IHomeFeedStore FeedStore { get; set; } = default!;
+
+    /// <summary>Card styles of the user. When they show details, the home asks for the detailed feed.</summary>
+    [CascadingParameter] public MediaCardStyleContext? CardStyles { get; set; }
     [Inject] private IHomeNavigationState NavigationState { get; set; } = default!;
     [Inject] private IFeatureAccessService FeatureAccess { get; set; } = default!;
     [Inject] private ISpatialNavService SpatialNav { get; set; } = default!;
@@ -129,6 +132,7 @@ public partial class HomeView : IAsyncDisposable
     private async Task BindIdentityAndLoadAsync(Task<AuthenticationState>? authTask = null)
     {
         await BindIdentityAndCapabilitiesAsync(authTask);
+        await FeedStore.SetDetailedAsync(CardStyles?.NeedsDetailedFeed == true);
         await FeedStore.EnsureLoadedAsync(_canTrackProgress, _identityUserId);
     }
 
@@ -390,6 +394,11 @@ public partial class HomeView : IAsyncDisposable
         _focusRestored = true;
     }
 
+    // The card styles can arrive or change after the page is up (preferences loaded late, the
+    // settings page on a kept-alive Home).
+    protected override Task OnParametersSetAsync() =>
+        FeedStore.SetDetailedAsync(CardStyles?.NeedsDetailedFeed == true);
+
     private void OnFeedStoreChanged()
     {
         // While Home is parked (or another hub page is showing), skip re-renders.
@@ -464,13 +473,6 @@ public partial class HomeView : IAsyncDisposable
         href = $"{nav[..anchorIndex]}/episodes/{episodeNumber}";
         return true;
     }
-
-    private MediaCardVariant GetVariant(MediaCardViewModel item) => item.Kind switch
-    {
-        MediaCardKind.Cover => MediaCardVariant.Cover,
-        MediaCardKind.Episode => MediaCardVariant.Poster,
-        _ => MediaCardVariant.Poster
-    };
 
     private static string GetCarouselContentKey(IReadOnlyList<MediaCardViewModel> items) =>
         string.Join(',', items.Select(i => i.Id));

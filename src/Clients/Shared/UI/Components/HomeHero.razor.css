@@ -1,0 +1,425 @@
+.home-hero {
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    flex: 0 0 auto;
+    margin-inline: var(--carousel-margin-start, 16px);
+    overflow: hidden;
+    border-radius: var(--radius-xl);
+    min-height: clamp(18rem, 52vh, 34rem);
+    /* Page color, not a lighter surface: the rounded edge would show it as a thin bright line. */
+    background: var(--color-bg);
+    /* One layer for the artwork, the scrim and the copy, clipped together by the radius. */
+    isolation: isolate;
+    /* overflow + radius alone lets an animated image layer peek out as a bright line in the
+       rounded corners: clip-path cuts everything, composited layers included. */
+    clip-path: inset(0 round var(--radius-xl));
+    /* The copy sits on the scrim of the theme: light text on the dark scrim of dark themes. */
+    --home-hero-copy: var(--color-text-on-media);
+    --home-hero-copy-muted: var(--color-text-on-media-muted);
+}
+
+/* Light themes have a light scrim (--media-scrim is the page color there): the copy takes the
+   text colors of the theme, like the title block of media pages does. */
+[data-theme="default-light"] .home-hero {
+    --home-hero-copy: var(--color-text);
+    --home-hero-copy-muted: var(--color-text-secondary);
+}
+
+/* The banner only relays the focus to its button: it never shows a ring of its own. */
+.home-hero:focus {
+    outline: none;
+}
+
+/* One pixel past each edge, so no sub-pixel gap shows the background along the border. */
+.home-hero__backdrop {
+    position: absolute;
+    inset: -1px;
+    width: calc(100% + 2px);
+    height: calc(100% + 2px);
+    object-fit: cover;
+    object-position: center 20%;
+}
+
+/* Same scrim recipe as the TV home hero: readable copy on the left, artwork kept on the right. */
+.home-hero__scrim {
+    position: absolute;
+    inset: -1px;
+    background:
+        linear-gradient(
+            to right,
+            color-mix(in srgb, var(--media-scrim) 88%, transparent) 0%,
+            color-mix(in srgb, var(--media-scrim) 45%, transparent) 55%,
+            transparent 100%
+        ),
+        linear-gradient(
+            to top,
+            color-mix(in srgb, var(--media-scrim) 70%, transparent) 0%,
+            transparent 60%
+        );
+    pointer-events: none;
+}
+
+.home-hero__content {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    width: min(100%, 44rem);
+    min-width: 0;
+    padding: var(--space-6);
+}
+
+.home-hero__title {
+    margin: 0;
+    font-family: var(--font-heading);
+    font-size: var(--text-3xl);
+    font-weight: 700;
+    line-height: 1.15;
+    color: var(--home-hero-copy);
+    text-shadow: var(--media-copy-shadow);
+    overflow-wrap: anywhere;
+}
+
+/* A logo instead of the title: as wide as the copy allows, never taller than a few lines of title. */
+.home-hero__title--logo {
+    line-height: 0;
+}
+
+.home-hero__logo {
+    display: block;
+    max-width: min(100%, 26rem);
+    max-height: clamp(4rem, 16vh, 9rem);
+    object-fit: contain;
+    object-position: left bottom;
+}
+
+[dir="rtl"] .home-hero__logo {
+    object-position: right bottom;
+}
+
+.home-hero__meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-1) var(--space-3);
+    font-size: var(--text-sm);
+    color: var(--home-hero-copy-muted);
+    text-shadow: var(--media-copy-shadow);
+}
+
+.home-hero__badge {
+    padding: 1px 6px;
+    border: 1px solid color-mix(in srgb, var(--home-hero-copy) 40%, transparent);
+    border-radius: var(--radius-sm);
+    font-size: var(--text-xs);
+}
+
+.home-hero__rating {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+}
+
+.home-hero__overview {
+    display: -webkit-box;
+    margin: 0;
+    overflow: hidden;
+    font-size: var(--text-base);
+    line-height: 1.5;
+    color: var(--home-hero-copy-muted);
+    text-shadow: var(--media-copy-shadow);
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+}
+
+.home-hero__actions {
+    display: flex;
+    margin-top: var(--space-2);
+}
+
+.home-hero__dots {
+    position: absolute;
+    inset-block-end: var(--space-4);
+    inset-inline-end: var(--space-4);
+    display: flex;
+    gap: var(--space-1);
+}
+
+/* 24px target around an 8px dot. */
+.home-hero__dot {
+    display: grid;
+    place-items: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    padding: 0;
+    border: 0;
+    background: none;
+    cursor: pointer;
+}
+
+.home-hero__dot::before {
+    content: "";
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--home-hero-copy) 45%, transparent);
+}
+
+.home-hero__dot--active::before {
+    background: var(--color-accent);
+}
+
+.home-hero__dot:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: -2px;
+    border-radius: 50%;
+}
+
+/* The new artwork fades in over the previous one: a change, by hand or automatic, is a cross-fade. */
+.home-hero__backdrop--current {
+    animation: home-hero-fade 0.5s ease;
+}
+
+/* The previous artwork fades out underneath and is gone: a banner that is partly transparent
+   (bleed style) must never show two pictures at once. */
+.home-hero__backdrop--previous {
+    animation: home-hero-fade-out 0.5s ease forwards;
+}
+
+@keyframes home-hero-fade-out {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
+
+@keyframes home-hero-fade {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.home-hero__dots {
+    align-items: center;
+}
+
+/* Pause and resume the auto-advance. Same 24px target as a dot. */
+.home-hero__toggle {
+    display: grid;
+    place-items: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: none;
+    color: var(--home-hero-copy);
+    cursor: pointer;
+}
+
+.home-hero__toggle:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: -2px;
+}
+
+/* Auto-advance: the active dot stretches into a track that fills while the banner waits. */
+.home-hero__dot--timed {
+    width: 2.25rem;
+}
+
+.home-hero__dot--timed::before {
+    content: none;
+}
+
+.home-hero__dot-track {
+    display: block;
+    width: 1.75rem;
+    height: 0.5rem;
+    overflow: hidden;
+    border-radius: var(--radius-full);
+    background: color-mix(in srgb, var(--home-hero-copy) 45%, transparent);
+}
+
+.home-hero__dot-fill {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--color-accent);
+    transform-origin: left center;
+    animation: home-hero-wait var(--home-hero-delay, 8s) linear both;
+}
+
+[dir="rtl"] .home-hero__dot-fill {
+    transform-origin: right center;
+}
+
+/* Pointer or focus on the banner, or the pause button: the wait stops, and so does its indicator. */
+.home-hero--holding .home-hero__dot-fill {
+    animation-play-state: paused;
+}
+
+@keyframes home-hero-wait {
+    from { transform: scaleX(0); }
+    to { transform: scaleX(1); }
+}
+
+/* No movement: the banner does not advance on its own either, so the track just marks the title. */
+@media (prefers-reduced-motion: reduce) {
+    .home-hero__backdrop--current,
+    .home-hero__dot-fill {
+        animation: none;
+    }
+
+    .home-hero__backdrop--previous {
+        display: none;
+    }
+}
+
+/* Bleed style: edge to edge, taller, and melting into the page instead of ending on an edge. */
+.home-hero--bleed {
+    min-height: clamp(22rem, 68vh, 46rem);
+    margin-inline: 0;
+    border-radius: 0;
+    background: none;
+    clip-path: none;
+}
+
+/* The artwork runs past the bottom of the banner, behind the top of the next row, and fades out
+   slowly on the way: no line where the banner ends, the home just emerges from the picture.
+   It fades to nothing (not to a color), so whatever the page paints behind shows through. */
+.home-hero--bleed {
+    /* The host stacks the rows that follow above this one (see HomeView and HomeLayoutPreview):
+       the banner itself must stay where it is, or its buttons stop taking clicks. */
+    overflow: visible;
+    --home-hero-overhang: clamp(7rem, 26vh, 16rem);
+}
+
+.home-hero--bleed .home-hero__backdrop,
+.home-hero--bleed .home-hero__scrim {
+    inset: 0 0 auto;
+    width: 100%;
+    height: calc(100% + var(--home-hero-overhang));
+    pointer-events: none;
+    /* Many small steps instead of one straight ramp: a straight ramp still reads as an edge. */
+    mask-image: linear-gradient(
+        to bottom,
+        #000 0%,
+        #000 30%,
+        rgb(0 0 0 / 0.86) 42%,
+        rgb(0 0 0 / 0.64) 53%,
+        rgb(0 0 0 / 0.42) 63%,
+        rgb(0 0 0 / 0.24) 73%,
+        rgb(0 0 0 / 0.11) 83%,
+        rgb(0 0 0 / 0.03) 92%,
+        transparent 100%
+    );
+    -webkit-mask-image: linear-gradient(
+        to bottom,
+        #000 0%,
+        #000 30%,
+        rgb(0 0 0 / 0.86) 42%,
+        rgb(0 0 0 / 0.64) 53%,
+        rgb(0 0 0 / 0.42) 63%,
+        rgb(0 0 0 / 0.24) 73%,
+        rgb(0 0 0 / 0.11) 83%,
+        rgb(0 0 0 / 0.03) 92%,
+        transparent 100%
+    );
+}
+
+/* Only the side scrim, for the copy: the bottom is handled by the mask. */
+.home-hero--bleed .home-hero__scrim {
+    background: linear-gradient(
+        to right,
+        color-mix(in srgb, var(--color-bg) 92%, transparent) 0%,
+        color-mix(in srgb, var(--color-bg) 55%, transparent) 40%,
+        transparent 75%
+    );
+}
+
+/* Dark copy has no shadow to stand out with on a dark picture: on light themes the scrim reaches
+   further, so the end of a long title still sits on it. */
+[data-theme="default-light"] .home-hero__scrim {
+    background:
+        linear-gradient(
+            to right,
+            color-mix(in srgb, var(--media-scrim) 90%, transparent) 0%,
+            color-mix(in srgb, var(--media-scrim) 74%, transparent) 50%,
+            color-mix(in srgb, var(--media-scrim) 30%, transparent) 100%
+        ),
+        linear-gradient(
+            to top,
+            color-mix(in srgb, var(--media-scrim) 70%, transparent) 0%,
+            transparent 60%
+        );
+}
+
+[data-theme="default-light"] .home-hero--bleed .home-hero__scrim {
+    background: linear-gradient(
+        to right,
+        color-mix(in srgb, var(--color-bg) 92%, transparent) 0%,
+        color-mix(in srgb, var(--color-bg) 76%, transparent) 45%,
+        color-mix(in srgb, var(--color-bg) 36%, transparent) 78%,
+        transparent 100%
+    );
+}
+
+/* Copy and dots line up with the rows below. */
+/* The copy sits on the artwork, above the stretch where the banner fades out, not at its very bottom. */
+.home-hero--bleed .home-hero__content {
+    padding-inline: var(--carousel-margin-start, 16px);
+    padding-block-end: clamp(3.5rem, 13vh, 8rem);
+}
+
+.home-hero--bleed .home-hero__title {
+    font-size: var(--text-4xl);
+}
+
+.home-hero--bleed .home-hero__dots {
+    inset-block-end: clamp(3.5rem, 13vh, 8rem);
+    inset-inline-end: var(--carousel-margin-start, 16px);
+}
+
+@media (max-width: 599.98px) {
+    .home-hero.home-hero--bleed {
+        min-height: clamp(18rem, 56vh, 28rem);
+    }
+
+    .home-hero.home-hero--bleed .home-hero__title {
+        font-size: var(--text-3xl);
+    }
+
+    .home-hero.home-hero--bleed .home-hero__content {
+        padding-block-end: var(--space-8, 2rem);
+    }
+
+    .home-hero.home-hero--bleed {
+        --home-hero-overhang: clamp(4rem, 14vh, 8rem);
+    }
+
+    .home-hero.home-hero--bleed .home-hero__dots {
+        inset-block-end: auto;
+    }
+
+    .home-hero {
+        min-height: clamp(15rem, 44vh, 22rem);
+    }
+
+    .home-hero__content {
+        padding: var(--space-4);
+    }
+
+    .home-hero__title {
+        font-size: var(--text-2xl);
+    }
+
+    .home-hero__overview {
+        font-size: var(--text-sm);
+        -webkit-line-clamp: 2;
+    }
+
+    .home-hero__dots {
+        inset-block-end: auto;
+        inset-block-start: var(--space-2);
+        inset-inline-end: var(--space-2);
+    }
+}

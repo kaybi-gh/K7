@@ -1,35 +1,62 @@
-@if (_rows.Count > 0)
-{
-    @if (_loading)
-    {
-        @for (int i = 0; i < _rows.Count; i++)
+@using K7.Clients.Shared.UI.Helpers
+@inject IStringLocalizer<HomeLayoutPreview> L
+
+<section class="home-preview" aria-label="@L["Title"]">
+    <div class="home-preview__header">
+        <h3 class="home-preview__title">@L["Title"]</h3>
+        <span class="home-preview__hint">@L["Hint"]</span>
+    </div>
+    <div class="home-preview__frame" inert>
+        @if (_visible.Count == 0)
         {
-            <Carousel Skeleton="true">
-                @for (int j = 0; j < 6; j++)
+            <p class="home-preview__empty">@L["Empty"]</p>
+        }
+        @foreach (var row in _visible)
+        {
+            var config = row;
+            var title = HomeLayoutRowTitleHelper.Localize(HomeL, config.Title);
+            var loaded = ItemsOf(config);
+            <div class="home-preview__row" @key="config.Id">
+                @if (loaded is null)
                 {
-                    <CarouselItem><MediaCard Skeleton="true" /></CarouselItem>
+                    <Carousel Skeleton="true" Title="@title">
+                        @for (var i = 0; i < 6; i++)
+                        {
+                            <CarouselItem><MediaCard Skeleton="true" FooterVisible="true" /></CarouselItem>
+                        }
+                    </Carousel>
                 }
-            </Carousel>
-        }
-    }
-    else
-    {
-        @foreach (var (title, items) in _loaded)
-        {
-            @if (items.Count > 0)
-            {
-                <Carousel Title="@title">
-                    @foreach (var item in items)
+                else
+                {
+                    var featured = HomeRowDisplay.Featured(config.DisplayType, loaded, config.PageSize);
+                    var items = HomeRowDisplay.Items(loaded);
+                    @if (featured.Count > 0)
                     {
-                        <CarouselItem @key="item.Id">
-                            <MediaCard Model="@item"
-                                       Variant="@GetVariant(item)"
-                                       Href="#"
-                                       FooterVisible="true" />
-                        </CarouselItem>
+                        <HomeHero Items="featured"
+                                  Label="@title"
+                                  Bleed="@(config.DisplayType == HomeRowDisplayType.FeaturedBleed)"
+                                  HrefFor="@(_ => "#")" />
                     }
-                </Carousel>
-            }
+                    else if (items.Count > 0)
+                    {
+                        <Carousel Title="@title">
+                            @foreach (var item in items)
+                            {
+                                <CarouselItem @key="item.Id">
+                                    <MediaCard Model="@item"
+                                               Variant="@HomeRowDisplay.Variant(config.DisplayType, item)"
+                                               Href="#"
+                                               FooterVisible="true" />
+                                </CarouselItem>
+                            }
+                        </Carousel>
+                    }
+                    else
+                    {
+                        <p class="home-preview__empty-row">@string.Format(L["EmptyRow"], title)</p>
+                    }
+                }
+            </div>
         }
-    }
-}
+    </div>
+</section>

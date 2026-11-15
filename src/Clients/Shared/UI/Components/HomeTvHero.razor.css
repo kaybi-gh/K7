@@ -88,6 +88,20 @@
     text-overflow: ellipsis;
 }
 
+/* A logo instead of the title: same place, never taller than a couple of title lines. */
+.home-tv-hero__title--logo {
+    overflow: visible;
+    line-height: 0;
+}
+
+.home-tv-hero__logo {
+    display: block;
+    max-width: min(100%, 40vw);
+    max-height: clamp(3.5rem, 16vh, 8rem);
+    object-fit: contain;
+    object-position: left bottom;
+}
+
 .home-tv-hero__subtitle {
     margin: 0;
     font-size: var(--text-base);

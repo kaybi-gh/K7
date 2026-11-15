@@ -20,9 +20,6 @@ public partial class SettingsHomePage : IDisposable
 
     private List<HomeRowEditModel> _rows = [];
     private bool _isLoading = true;
-    private HomeLayoutPreview? _preview;
-    private bool _previewLoading;
-    private bool _hasUserOverride;
     private readonly SettingsFormTracker<HomeFormState> _formTracker = new();
     private readonly SettingsAutoSaveSession<HomeFormState> _autoSave;
 
@@ -37,7 +34,7 @@ public partial class SettingsHomePage : IDisposable
             ReportError);
     }
 
-    private bool ResetDisabled => !_autoSave.IsDirty && !_hasUserOverride;
+    private bool ResetDisabled { get => !_autoSave.IsDirty && !field; set; }
 
     public void Dispose() => _autoSave.Dispose();
 
@@ -66,18 +63,6 @@ public partial class SettingsHomePage : IDisposable
 
     private void CaptureFormState() => _formTracker.Capture(new HomeFormState(_rows));
 
-    private void OnRowVisibilityChanged(HomeRowEditModel row, bool value)
-    {
-        row.IsVisible = value;
-        StateHasChanged();
-    }
-
-    private void RenumberRows()
-    {
-        for (var i = 0; i < _rows.Count; i++)
-            _rows[i].Order = i;
-    }
-
     private async Task PersistAsync()
     {
         var layout = new HomeLayoutDto { Rows = _rows.Select(m => m.ToDto()).ToList() };
@@ -100,19 +85,8 @@ public partial class SettingsHomePage : IDisposable
     private void ReportError(Exception ex) =>
         Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), K7Severity.Error);
 
-    private async Task RefreshPreviewAsync()
-    {
-        if (_preview is null)
-            return;
-
-        _previewLoading = true;
-        StateHasChanged();
-        await _preview.RefreshAsync();
-        _previewLoading = false;
-    }
-
     private string GetRowTitle(string rowTitle) => HomeLayoutRowTitleHelper.Localize(HomeL, rowTitle);
 
     private async Task RefreshOverrideStateAsync() =>
-        _hasUserOverride = await UserPreferenceOverrideHelper.HasHomeLayoutOverrideAsync(PreferencesService);
+        ResetDisabled = await UserPreferenceOverrideHelper.HasHomeLayoutOverrideAsync(PreferencesService);
 }

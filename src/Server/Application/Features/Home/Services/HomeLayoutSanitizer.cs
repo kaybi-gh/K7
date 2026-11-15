@@ -28,7 +28,8 @@ public static class HomeLayoutSanitizer
             cleanedRows.Add(sanitized with { Order = order++ });
         }
 
-        return new HomeLayoutDto { Rows = cleanedRows };
+        // Layouts saved before the rule existed, or edited by hand: one banner, first.
+        return new HomeLayoutDto { Rows = HomeLayoutRules.ApplyBannerRule(cleanedRows) };
     }
 
     public static bool HasChanges(HomeLayoutDto original, HomeLayoutDto sanitized) =>

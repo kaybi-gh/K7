@@ -102,6 +102,25 @@ public class HomeTvHeroTests
         MediaType = MediaType.Movie
     };
 
+    [Test]
+    public void Render_ShouldShowTheLogoInsteadOfTheTitle_AndGiveTheTitleBackIfItFails()
+    {
+        using var ctx = CreateContext();
+        ctx.JSInterop.Mode = JSRuntimeMode.Loose;
+        var model = Card("1", "https://img.test/a.jpg") with { Title = "Dune", LogoUrl = "https://img.test/logo.png" };
+
+        var cut = ctx.Render<HomeTvHero>(p => p.Add(h => h.Model, model));
+
+        var logo = cut.Find(".home-tv-hero__title img.home-tv-hero__logo");
+        logo.GetAttribute("src").Should().Be("https://img.test/logo.png");
+        logo.GetAttribute("alt").Should().Be("Dune");
+
+        logo.TriggerEvent("onerror", new Microsoft.AspNetCore.Components.Web.ErrorEventArgs());
+
+        cut.FindAll(".home-tv-hero__logo").Should().BeEmpty();
+        cut.Find(".home-tv-hero__title").TextContent.Should().Be("Dune");
+    }
+
     private static BunitContext CreateContext()
     {
         var ctx = new BunitContext();

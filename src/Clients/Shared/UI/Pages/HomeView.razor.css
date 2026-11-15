@@ -6,9 +6,124 @@
     flex: 1;
     min-height: 0;
     gap: 24px;
-    padding-top: var(--space-6);
+    --home-page-padding-top: var(--space-6);
+    padding-top: var(--home-page-padding-top);
     padding-bottom: 32px;
     --carousel-margin-start: 40px;
+}
+
+/* Each row stacks above the one before: the artwork of a bleed banner, which runs past its
+   bottom, slides behind the row that follows instead of covering it. */
+.home-row {
+    position: relative;
+    z-index: 1;
+}
+
+/* Placeholder of a banner while the home loads. Same sizes as HomeHero, so nothing jumps. */
+.home-hero-skeleton {
+    position: relative;
+    min-height: clamp(18rem, 52vh, 34rem);
+    margin-inline: var(--carousel-margin-start, 16px);
+    overflow: hidden;
+    border-radius: var(--radius-xl);
+}
+
+/* Fades out towards the bottom like the banner it stands for: a flat grey slab across the whole
+   page read as a broken screen. */
+.home-hero-skeleton--bleed {
+    min-height: clamp(22rem, 68vh, 46rem);
+    margin-inline: 0;
+    border-radius: 0;
+    mask-image: linear-gradient(
+        to bottom,
+        #000 0%,
+        #000 25%,
+        rgb(0 0 0 / 0.7) 45%,
+        rgb(0 0 0 / 0.4) 62%,
+        rgb(0 0 0 / 0.18) 78%,
+        rgb(0 0 0 / 0.05) 90%,
+        transparent 100%
+    );
+    -webkit-mask-image: linear-gradient(
+        to bottom,
+        #000 0%,
+        #000 25%,
+        rgb(0 0 0 / 0.7) 45%,
+        rgb(0 0 0 / 0.4) 62%,
+        rgb(0 0 0 / 0.18) 78%,
+        rgb(0 0 0 / 0.05) 90%,
+        transparent 100%
+    );
+}
+
+.home-hero-skeleton ::deep .k7-skeleton {
+    position: absolute;
+    inset: 0;
+    border-radius: 0;
+}
+
+.home-page > .home-row:first-child > .home-hero-skeleton--bleed {
+    margin-top: calc(-1 * var(--home-page-padding-top));
+}
+
+@media (max-width: 599.98px) {
+    .home-hero-skeleton {
+        min-height: clamp(15rem, 44vh, 22rem);
+    }
+
+    .home-hero-skeleton--bleed {
+        min-height: clamp(18rem, 56vh, 28rem);
+    }
+}
+
+/* Shortcuts row above a bleed banner: the artwork goes up to the top bar, behind the row,
+   like when the banner opens the page, and a scrim of the page color at its top carries the
+   row. The row leaves the flow for that, so its height does not have to be known; the banner
+   is tall and keeps its copy at the bottom, so the two never meet. */
+.home-page:has(> .custom-nav-feed-row + .home-row .home-hero--bleed) ::deep .custom-nav-feed-row,
+.home-page:has(> .custom-nav-feed-row + .home-row > .home-hero-skeleton--bleed) ::deep .custom-nav-feed-row {
+    position: absolute;
+    top: var(--home-page-padding-top);
+    left: 0;
+    right: 0;
+    z-index: 2;
+}
+
+.home-page:has(> .custom-nav-feed-row + .home-row .home-hero--bleed) ::deep .home-hero--bleed,
+.home-page > .custom-nav-feed-row + .home-row > .home-hero-skeleton--bleed {
+    margin-top: calc(-1 * var(--home-page-padding-top));
+}
+
+/* The scrim: nearly the page color under the top bar, gone a little under the row. The
+   placeholder shown while the home loads gets the same, so nothing changes when the banner
+   replaces it. */
+.home-page:has(> .custom-nav-feed-row + .home-row .home-hero--bleed) ::deep .home-hero--bleed::before,
+.home-page > .custom-nav-feed-row + .home-row > .home-hero-skeleton--bleed::after {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto;
+    height: clamp(10rem, 30vh, 16rem);
+    z-index: 1;
+    pointer-events: none;
+    background: linear-gradient(
+        to bottom,
+        color-mix(in srgb, var(--color-bg) 92%, transparent) 0%,
+        color-mix(in srgb, var(--color-bg) 78%, transparent) 30%,
+        color-mix(in srgb, var(--color-bg) 50%, transparent) 58%,
+        color-mix(in srgb, var(--color-bg) 20%, transparent) 82%,
+        transparent 100%
+    );
+}
+
+/* A bleed banner that opens the page starts at the very top, under nothing but the app bar. */
+.home-page > div:first-child ::deep .home-hero--bleed {
+    margin-top: calc(-1 * var(--home-page-padding-top));
+}
+
+/* On TV the shelf carries its own bottom margin (below): a second one here only pushed the
+   cards up and wasted the bottom of the screen. */
+.home-page--tv {
+    padding-bottom: 0;
 }
 
 .home-page--tv ::deep .vertical-carousel {
@@ -24,7 +139,8 @@
         margin-top: calc(-1 * var(--k7-safe-top));
         --carousel-margin-start: 16px;
         gap: 16px;
-        padding-top: calc(var(--space-3) + var(--k7-safe-top));
+        --home-page-padding-top: calc(var(--space-3) + var(--k7-safe-top));
+        padding-top: var(--home-page-padding-top);
     }
 }
 

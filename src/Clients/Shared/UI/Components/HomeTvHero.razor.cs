@@ -11,6 +11,7 @@ public partial class HomeTvHero : IAsyncDisposable
 {
     private readonly string?[] _layerUrls = [null, null];
     private readonly bool[] _layerSoft = [false, false];
+    private readonly HashSet<string> _failedLogos = [];
     private int _activeLayer;
     private int _swapGeneration;
     private bool _disposed;
@@ -150,6 +151,16 @@ public partial class HomeTvHero : IAsyncDisposable
 
         _activeLayer = targetLayer;
         await InvokeAsync(StateHasChanged);
+    }
+
+    // The logo stands for the title when the media has one. A logo that fails to load gives the title back.
+    private bool ShowsLogo(MediaCardViewModel model) =>
+        !string.IsNullOrEmpty(model.LogoUrl) && !_failedLogos.Contains(model.LogoUrl);
+
+    private void OnLogoFailed(MediaCardViewModel model)
+    {
+        if (model.LogoUrl is not null)
+            _failedLogos.Add(model.LogoUrl);
     }
 
     private static bool ShouldShowSubtitle(MediaCardViewModel model)

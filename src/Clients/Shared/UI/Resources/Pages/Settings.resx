@@ -65,8 +65,6 @@
   <data name="HomePageDefaultDescription" xml:space="preserve"><value>Vous utilisez la disposition par défaut du serveur.</value></data>
   <data name="HomeResetLayout" xml:space="preserve"><value>Réinitialiser la disposition</value></data>
   <data name="HomeResetSuccess" xml:space="preserve"><value>Disposition réinitialisée.</value></data>
-  <data name="PreviewTitle" xml:space="preserve"><value>Aperçu</value></data>
-  <data name="PreviewRefresh" xml:space="preserve"><value>Actualiser l'aperçu</value></data>
   <data name="HiddenPageTitle" xml:space="preserve"><value>Masqués</value></data>
   <data name="HiddenPageSubtitle" xml:space="preserve"><value>Médias que vous avez choisi de ne plus afficher.</value></data>
   <data name="HiddenPageEmpty" xml:space="preserve"><value>Vous n'avez masqué aucun média.</value></data>

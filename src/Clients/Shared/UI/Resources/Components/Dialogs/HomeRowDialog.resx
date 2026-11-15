@@ -27,8 +27,28 @@
   <data name="OrderPopularityDesc" xml:space="preserve"><value>Popularité</value></data>
   <data name="OrderLocalRatingDesc" xml:space="preserve"><value>Mieux noté</value></data>
   <data name="OrderPlayCountDesc" xml:space="preserve"><value>Plus regardé</value></data>
-  <data name="DisplayCarousel" xml:space="preserve"><value>Carrousel</value></data>
   <data name="MediaTypeMovie" xml:space="preserve"><value>Films</value></data>
   <data name="MediaTypeMusicAlbum" xml:space="preserve"><value>Albums musicaux</value></data>
   <data name="MediaTypeSerie" xml:space="preserve"><value>Séries</value></data>
+  <data name="DisplayCarousel" xml:space="preserve"><value>Affiches</value></data>
+  <data name="DisplayLandscape" xml:space="preserve"><value>Paysage</value></data>
+  <data name="DisplayCarouselHint" xml:space="preserve"><value>Affiches et pochettes, comme dans le reste de l'app.</value></data>
+  <data name="DisplayLandscapeHint" xml:space="preserve"><value>Grandes cartes larges avec l'image de fond de chaque titre.</value></data>
+  <data name="KindCarousel" xml:space="preserve"><value>Carrousel</value></data>
+  <data name="KindBanner" xml:space="preserve"><value>Bannière</value></data>
+  <data name="KindCarouselHint" xml:space="preserve"><value>Des cartes côte à côte, à faire défiler.</value></data>
+  <data name="CardFormat" xml:space="preserve"><value>Format des cartes</value></data>
+  <data name="BannerStyle" xml:space="preserve"><value>Style de la bannière</value></data>
+  <data name="BannerContained" xml:space="preserve"><value>Encadrée</value></data>
+  <data name="BannerBleed" xml:space="preserve"><value>Fondue</value></data>
+  <data name="BannerContainedHint" xml:space="preserve"><value>Dans les marges de la page, avec des coins arrondis.</value></data>
+  <data name="BannerBleedHint" xml:space="preserve"><value>Sur toute la largeur, l'image se fond dans la page. Idéale en première ligne.</value></data>
+  <data name="AutoAdvance" xml:space="preserve"><value>Défilement automatique</value></data>
+  <data name="AutoAdvanceHint" xml:space="preserve"><value>Passe au titre suivant tout seul. Se met en pause au survol et au focus, et reste à l'arrêt si votre système réduit les animations.</value></data>
+  <data name="AutoAdvanceOff" xml:space="preserve"><value>Désactivé</value></data>
+  <data name="AutoAdvanceSeconds" xml:space="preserve"><value>Toutes les {0} s</value></data>
+  <data name="KindBannerTakenHint" xml:space="preserve"><value>Des cartes côte à côte, à faire défiler. La bannière de l'accueil est déjà la ligne « {0} » : il n'y en a qu'une.</value></data>
+  <data name="KindBannerHint" xml:space="preserve"><value>Un titre à la fois, avec son image, ses infos et son résumé. Il n'y a qu'une bannière, toujours en haut de l'accueil. Sur TV, elle s'affiche en carrousel.</value></data>
+  <data name="OrderRecommendedForYou" xml:space="preserve"><value>Recommandé pour vous</value></data>
+  <data name="OrderBecauseYouWatched" xml:space="preserve"><value>Parce que vous avez regardé</value></data>
 </root>

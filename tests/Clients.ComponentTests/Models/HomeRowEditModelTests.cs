@@ -100,4 +100,27 @@ public class HomeRowEditModelTests
         roundTrip.LibraryGroupIds.Should().Equal(GroupA);
         roundTrip.LibraryIds.Should().BeNull();
     }
+
+    [Test]
+    public void ToDto_ShouldKeepAutoAdvance_OnlyForABanner()
+    {
+        var banner = new HomeRowEditModel
+        {
+            Id = Guid.NewGuid(),
+            Title = "Spotlight",
+            DisplayType = HomeRowDisplayType.FeaturedBleed,
+            AutoAdvanceSeconds = 8
+        };
+        var carousel = new HomeRowEditModel
+        {
+            Id = Guid.NewGuid(),
+            Title = "Movies",
+            DisplayType = HomeRowDisplayType.Carousel,
+            AutoAdvanceSeconds = 8
+        };
+
+        banner.ToDto().AutoAdvanceSeconds.Should().Be(8);
+        HomeRowEditModel.FromDto(banner.ToDto()).AutoAdvanceSeconds.Should().Be(8);
+        carousel.ToDto().AutoAdvanceSeconds.Should().BeNull();
+    }
 }

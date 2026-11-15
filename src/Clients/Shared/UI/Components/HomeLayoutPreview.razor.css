@@ -1,0 +1,61 @@
+.home-preview {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    min-width: 0;
+}
+
+.home-preview__header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--space-1) var(--space-3);
+}
+
+.home-preview__title {
+    margin: 0;
+    font-family: var(--font-heading);
+    font-size: var(--text-base);
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.home-preview__hint {
+    font-size: var(--text-xs);
+    color: var(--color-text-secondary);
+}
+
+/* The home, on its own page background, inside the settings column. */
+.home-preview__frame {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-5, 20px);
+    padding-block: var(--space-4);
+    overflow: hidden;
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg);
+    --carousel-margin-start: 16px;
+    /* A reduced picture: more of the home fits on screen at once. */
+    zoom: 0.6;
+}
+
+/* Each row above the one before, like on the home page: a bleed banner slides behind the next row. */
+.home-preview__row {
+    position: relative;
+    z-index: 1;
+    min-width: 0;
+}
+
+/* A bleed banner that opens the preview starts at the top of the frame, like on the page. */
+.home-preview__row:first-child ::deep .home-hero--bleed {
+    margin-top: calc(-1 * var(--space-4));
+}
+
+.home-preview__empty,
+.home-preview__empty-row {
+    margin: 0;
+    padding-inline: var(--space-4);
+    font-size: var(--text-sm);
+    color: var(--color-text-secondary);
+}

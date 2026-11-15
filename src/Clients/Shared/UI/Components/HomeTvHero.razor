@@ -19,7 +19,17 @@
     </div>
     <div class="home-tv-hero">
         <div class="home-tv-hero__content">
-            <h2 class="home-tv-hero__title">@DisplayModel.Title</h2>
+            @if (ShowsLogo(DisplayModel))
+            {
+                var logoItem = DisplayModel;
+                <h2 class="home-tv-hero__title home-tv-hero__title--logo">
+                    <img class="home-tv-hero__logo" src="@logoItem.LogoUrl" alt="@logoItem.Title" decoding="async" @key="logoItem.LogoUrl" @onerror="() => OnLogoFailed(logoItem)" />
+                </h2>
+            }
+            else
+            {
+                <h2 class="home-tv-hero__title">@DisplayModel.Title</h2>
+            }
             @if (ShouldShowSubtitle(DisplayModel))
             {
                 <p class="home-tv-hero__subtitle">@DisplayModel.AdditionalInformations</p>

@@ -1,6 +1,7 @@
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Services;
 using K7.Server.Domain.Enums;
+using K7.Shared;
 using K7.Shared.Dtos;
 using K7.Shared.Dtos.Home;
 using K7.Shared.Dtos.Requests;
@@ -95,6 +96,114 @@ public class HomeFeedStoreTests
         sut.Rows.Should().ContainSingle()
             .Which.Items.Should().ContainSingle()
             .Which.Id.Should().Be(id.ToString());
+    }
+
+    [Test]
+    public async Task SetDetailedAsync_ShouldAskForTheDetailedFeed_WhenSetBeforeTheFirstLoad()
+    {
+        var media = Substitute.For<IMediaService>();
+        media.GetHomeFeedAsync(Arg.Any<GetHomeFeedQuery>(), Arg.Any<CancellationToken>())
+            .Returns(_ => FeedPage(CreateItem("Movie A")));
+        using var sut = CreateStore(media);
+
+        await sut.SetDetailedAsync(true);
+        await sut.EnsureLoadedAsync(canTrackProgress: true, identityUserId: "user-a");
+
+        await media.Received().GetHomeFeedAsync(
+            Arg.Is<GetHomeFeedQuery>(q => q.Detailed == true), Arg.Any<CancellationToken>());
+        await media.DidNotReceive().GetHomeFeedAsync(
+            Arg.Is<GetHomeFeedQuery>(q => q.Detailed != true), Arg.Any<CancellationToken>());
+    }
+
+    [Test]
+    public async Task SetDetailedAsync_ShouldFetchTheRowsAgain_WhenTurnedOnAfterTheLoad()
+    {
+        var media = Substitute.For<IMediaService>();
+        media.GetHomeFeedAsync(Arg.Any<GetHomeFeedQuery>(), Arg.Any<CancellationToken>())
+            .Returns(_ => FeedPage(CreateItem("Movie A")));
+        using var sut = CreateStore(media);
+        await sut.EnsureLoadedAsync(canTrackProgress: true, identityUserId: "user-a");
+        await media.DidNotReceive().GetHomeFeedAsync(
+            Arg.Is<GetHomeFeedQuery>(q => q.Detailed == true), Arg.Any<CancellationToken>());
+
+        await sut.SetDetailedAsync(true);
+
+        await media.Received().GetHomeFeedAsync(
+            Arg.Is<GetHomeFeedQuery>(q => q.Detailed == true), Arg.Any<CancellationToken>());
+    }
+
+    [Test]
+    public async Task SetDetailedAsync_ShouldNotFetchAgain_WhenNothingChanged()
+    {
+        var media = Substitute.For<IMediaService>();
+        media.GetHomeFeedAsync(Arg.Any<GetHomeFeedQuery>(), Arg.Any<CancellationToken>())
+            .Returns(_ => FeedPage(CreateItem("Movie A")));
+        using var sut = CreateStore(media);
+        await sut.EnsureLoadedAsync(canTrackProgress: true, identityUserId: "user-a");
+        media.ClearReceivedCalls();
+
+        await sut.SetDetailedAsync(false);
+
+        await media.DidNotReceive().GetHomeFeedAsync(Arg.Any<GetHomeFeedQuery>(), Arg.Any<CancellationToken>());
+    }
+
+    [Test]
+    public async Task SkeletonRows_ShouldKeepTheShapeOfTheLastLayout_AcrossAReload()
+    {
+        var media = Substitute.For<IMediaService>();
+        media.GetHomeFeedAsync(Arg.Any<GetHomeFeedQuery>(), Arg.Any<CancellationToken>())
+            .Returns(_ => FeedPage(CreateItem("Movie A")));
+        using var sut = CreateStore(media);
+        sut.SkeletonRows.Should().BeEmpty();
+
+        await sut.EnsureLoadedAsync(canTrackProgress: true, identityUserId: "user-a");
+        sut.SkeletonRows.Select(r => r.Title).Should().Equal("Keep watching");
+
+        // A reload clears the rows: the placeholders still know what the home looks like.
+        var reload = sut.ResetAndReloadAsync();
+        sut.SkeletonRows.Select(r => r.Title).Should().Equal("Keep watching");
+        await reload;
+    }
+
+    [Test]
+    public async Task SkeletonRows_ShouldComeFromTheDevice_WhenTheAppStartsForTheSameUser()
+    {
+        var media = Substitute.For<IMediaService>();
+        media.GetHomeFeedAsync(Arg.Any<GetHomeFeedQuery>(), Arg.Any<CancellationToken>())
+            .Returns(_ => FeedPage(CreateItem("Movie A")));
+        string? stored = null;
+        var storage = Substitute.For<IDeviceStorageService>();
+        storage.When(s => s.Set(PreferenceKeys.HOME_SKELETON_SHAPE, Arg.Any<string>()))
+            .Do(call => stored = call.ArgAt<string>(1));
+        storage.Get(PreferenceKeys.HOME_SKELETON_SHAPE, Arg.Any<string?>()).Returns(_ => stored);
+
+        using (var first = CreateStore(media, deviceStorage: storage))
+            await first.EnsureLoadedAsync(canTrackProgress: true, identityUserId: "user-a");
+        stored.Should().NotBeNullOrEmpty();
+
+        // A new store is the app starting again: nothing loaded yet, the shape is already there.
+        using var sameUser = CreateStore(media, deviceStorage: storage);
+        var load = sameUser.EnsureLoadedAsync(canTrackProgress: true, identityUserId: "user-a");
+        sameUser.SkeletonRows.Select(r => r.Title).Should().Equal("Keep watching");
+        await load;
+    }
+
+    [Test]
+    public async Task SkeletonRows_ShouldIgnoreTheShapeOfAnotherUser()
+    {
+        var media = Substitute.For<IMediaService>();
+        var storage = Substitute.For<IDeviceStorageService>();
+        storage.Get(PreferenceKeys.HOME_SKELETON_SHAPE, Arg.Any<string?>())
+            .Returns("{\"UserId\":\"user-a\",\"Rows\":[{\"Id\":\"11111111-1111-1111-1111-111111111111\",\"Title\":\"Theirs\",\"DisplayType\":2,\"PageSize\":5,\"ContinueWatching\":false,\"IsVisible\":true,\"Order\":0}]}");
+        var prefs = Substitute.For<IUserPreferencesService>();
+        using var sut = CreateStore(media, prefs, deviceStorage: storage);
+        prefs.GetHomeLayoutAsync(Arg.Any<CancellationToken>())
+            .Returns(new TaskCompletionSource<HomeLayoutDto>().Task);
+
+        _ = sut.EnsureLoadedAsync(canTrackProgress: true, identityUserId: "user-b");
+        await Task.Delay(50);
+
+        sut.SkeletonRows.Should().BeEmpty();
     }
 
     [Test]
@@ -302,7 +411,8 @@ public class HomeFeedStoreTests
         IMediaService media,
         IUserPreferencesService? prefs = null,
         K7HubClient? hubClient = null,
-        MediaCacheStore? cacheStore = null)
+        MediaCacheStore? cacheStore = null,
+        IDeviceStorageService? deviceStorage = null)
     {
         prefs ??= Substitute.For<IUserPreferencesService>();
         prefs.GetHomeLayoutAsync(Arg.Any<CancellationToken>()).Returns(CreateLayout());
@@ -332,6 +442,7 @@ public class HomeFeedStoreTests
             hubClient ?? new K7HubClient(NullLogger<K7HubClient>.Instance),
             cacheStore ?? new MediaCacheStore(),
             device,
+            deviceStorage ?? Substitute.For<IDeviceStorageService>(),
             connectivity,
             session,
             NullLogger<HomeFeedStore>.Instance);

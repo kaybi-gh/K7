@@ -758,6 +758,83 @@
         </div>
     </section>
 
+    <section id="home-rows" class="ds-section">
+        <h2>Home rows</h2>
+        <p class="ds-description">A home row is a carousel (posters by default, or wide landscape cards) or a banner (contained or bleed). <code>HomeRowDisplay</code> picks the items and the card shape; <code>HomeRowList</code> is the editor used in the personal and admin home settings.</p>
+        <h3 class="ds-sub-heading">Landscape</h3>
+        <div class="ds-preview ds-preview--block">
+            <Carousel Title="Landscape">
+                @foreach (var card in _landscapeCards)
+                {
+                    <CarouselItem>
+                        <MediaCard Model="card" Variant="HomeRowDisplay.Variant(HomeRowDisplayType.Landscape, card)" FooterVisible="true" />
+                    </CarouselItem>
+                }
+            </Carousel>
+        </div>
+        <h3 class="ds-sub-heading">Banner, contained style (HomeHero)</h3>
+        <p class="ds-description">A banner row features one title at a time on desktop, tablet and phone. Dots switch between up to five titles. This one auto-advances every 8 seconds: the active dot fills while it waits. On TV the row shows as posters.</p>
+        <div class="ds-preview ds-preview--block">
+            <div style="width:100%">
+                <HomeHero Items="_heroCards" Label="New movies" AutoAdvanceSeconds="8" HrefFor="@(_ => "/components#home-rows")" />
+            </div>
+        </div>
+        <h3 class="ds-sub-heading">Banner, bleed style</h3>
+        <p class="ds-description">Edge to edge. The artwork runs behind the top of the next row and fades out slowly. Meant as the first row of Home. This one auto-advances every 5 seconds: it pauses on hover and focus and has a pause button.</p>
+        <div class="ds-preview ds-preview--block" style="padding:0;isolation:isolate;overflow:hidden">
+            <div style="width:100%">
+                <div style="position:relative;z-index:1">
+                    <HomeHero Items="_heroCards" Label="New movies" Bleed="true" AutoAdvanceSeconds="5" HrefFor="@(_ => "/components#home-rows")" />
+                </div>
+                <div style="position:relative;z-index:1">
+                <Carousel Title="Next row">
+                    @foreach (var card in _posterCards)
+                    {
+                        <CarouselItem>
+                            <MediaCard Model="card" Variant="MediaCardVariant.Poster" FooterVisible="true" />
+                        </CarouselItem>
+                    }
+                </Carousel>
+                </div>
+            </div>
+        </div>
+        <h3 class="ds-sub-heading">Card styles</h3>
+        <p class="ds-description">Card style preferences (<code>MediaCardStyleContext</code>, cascaded by the main layout): details under the card or as badges, hidden title or subtitle, hover effect.</p>
+        @foreach (var (name, context) in _cardStyleDemos)
+        {
+            <div class="ds-preview ds-preview--block">
+                <CascadingValue Value="context">
+                    <Carousel Title="@name">
+                        @foreach (var card in _heroCards)
+                        {
+                            <CarouselItem>
+                                <MediaCard Model="card" Variant="MediaCardVariant.Poster" FooterVisible="true" OverlayEnabled="true" ContextMenuEnabled="false" />
+                            </CarouselItem>
+                        }
+                    </Carousel>
+                </CascadingValue>
+            </div>
+        }
+        <h3 class="ds-sub-heading">Badges on a card in progress</h3>
+        <p class="ds-description">On hover or focus, the "time left" label takes its own line above the badges, and the badges leave the corner to the menu button.</p>
+        <div class="ds-preview ds-preview--block">
+            <CascadingValue Value="_cardStyleDemos[1].Context">
+                <Carousel Title="Continue watching">
+                    @foreach (var card in _heroCards)
+                    {
+                        <CarouselItem>
+                            <MediaCard Model="@(card with { Progress = 40 })" Variant="MediaCardVariant.Poster" FooterVisible="true" OverlayEnabled="true" ProgressEnabled="true" Href="/components#home-rows" />
+                        </CarouselItem>
+                    }
+                </Carousel>
+            </CascadingValue>
+        </div>
+        <h3 class="ds-sub-heading">HomeRowList</h3>
+        <div class="ds-preview ds-preview--block">
+            <HomeRowList Rows="_homeRows" OnChanged="StateHasChanged" />
+        </div>
+    </section>
+
     <section id="rating-stars" class="ds-section">
         <h2>RatingStars</h2>
         <p class="ds-description">10-point scale shown as 0-5 stars with half-star steps. Drag (or click) to set; drag left to clear.</p>
@@ -1008,6 +1085,68 @@
     [
         new() { Id = Guid.NewGuid().ToString(), Title = "Breaking Bad - S01E01", PictureUrl = "https://picsum.photos/seed/bb/320/180", Kind = MediaCardKind.Episode },
         new() { Id = Guid.NewGuid().ToString(), Title = "The Witcher - S01E01", PictureUrl = "https://picsum.photos/seed/tw/320/180", Kind = MediaCardKind.Episode },
+    ];
+
+    private static readonly List<MediaCardViewModel> _landscapeCards =
+    [
+        new() { Id = "landscape-1", Title = "Inception", AdditionalInformations = "2010", PictureUrl = "https://picsum.photos/seed/inception/200/300", LandscapeUrl = "https://picsum.photos/seed/inception-wide/640/360", Kind = MediaCardKind.Poster },
+        new() { Id = "landscape-2", Title = "Interstellar", AdditionalInformations = "2014", PictureUrl = "https://picsum.photos/seed/interstellar/200/300", LandscapeUrl = "https://picsum.photos/seed/interstellar-wide/640/360", Kind = MediaCardKind.Poster },
+        new() { Id = "landscape-3", Title = "No backdrop", AdditionalInformations = "Poster, cropped", PictureUrl = "https://picsum.photos/seed/matrix/200/300", Kind = MediaCardKind.Poster },
+        new() { Id = "landscape-4", Title = "Abbey Road", AdditionalInformations = "Cover, cropped", PictureUrl = "https://picsum.photos/seed/ar/200/200", Kind = MediaCardKind.Cover },
+    ];
+
+    private static readonly CardDetailField[] _cardDetailFields =
+        [CardDetailField.Year, CardDetailField.Runtime, CardDetailField.Rating];
+
+    private static readonly (string Name, MediaCardStyleContext Context)[] _cardStyleDemos =
+    [
+        ("Details under the card", CardStyle(new() { Details = [.. _cardDetailFields] })),
+        ("Badges on the artwork, zoom on hover", CardStyle(new()
+        {
+            Details = [.. _cardDetailFields], DetailsPlacement = CardDetailPlacement.Overlay, Hover = CardHoverStyle.Zoom
+        })),
+        ("Badges on hover, no subtitle, lift on hover", CardStyle(new()
+        {
+            Details = [.. _cardDetailFields], DetailsPlacement = CardDetailPlacement.Hover, ShowSubtitle = false, Hover = CardHoverStyle.Lift
+        })),
+        ("Artwork only", CardStyle(new() { ShowTitle = false, ShowSubtitle = false })),
+    ];
+
+    private static MediaCardStyleContext CardStyle(MediaCardStyleDto style) =>
+        new(new MediaCardPreferencesDto { Default = style });
+
+    private static readonly List<MediaCardViewModel> _heroCards =
+    [
+        new()
+        {
+            Id = "hero-1", Title = "Interstellar", AdditionalInformations = "Christopher Nolan", MediaType = MediaType.Movie,
+            PictureUrl = "https://picsum.photos/seed/interstellar/200/300",
+            BackdropUrl = "https://picsum.photos/seed/interstellar-wide/1280/720",
+            ReleaseYear = 2014, RuntimeMinutes = 169, Rating = 8.4, ContentRating = "PG-13",
+            Genres = ["Science Fiction", "Drama"],
+            Overview = "A team of explorers travels through a wormhole in space in an attempt to ensure the survival of humanity, while a father tries to keep a promise made to his daughter."
+        },
+        new()
+        {
+            Id = "hero-2", Title = "A much longer title to check how the hero wraps on narrow screens", MediaType = MediaType.Serie,
+            PictureUrl = "https://picsum.photos/seed/longtitle/200/300",
+            BackdropUrl = "https://picsum.photos/seed/longtitle-wide/1280/720",
+            ReleaseYear = 2022, Rating = 7.1, Genres = ["Comedy"],
+            Overview = "Short overview."
+        },
+        new()
+        {
+            Id = "hero-3", Title = "No details", MediaType = MediaType.Movie,
+            PictureUrl = "https://picsum.photos/seed/nodetails/200/300",
+            BackdropUrl = "https://picsum.photos/seed/nodetails-wide/1280/720"
+        },
+    ];
+
+    private readonly List<HomeRowEditModel> _homeRows =
+    [
+        new() { Id = Guid.NewGuid(), Title = "Spotlight", DisplayType = HomeRowDisplayType.FeaturedBleed, PageSize = 5, AutoAdvanceSeconds = 8, MediaTypes = [MediaType.Movie], Order = 0 },
+        new() { Id = Guid.NewGuid(), Title = "Continue watching", ContinueWatching = true, Order = 1 },
+        new() { Id = Guid.NewGuid(), Title = "New movies", DisplayType = HomeRowDisplayType.Landscape, MediaTypes = [MediaType.Movie, MediaType.Serie], IsVisible = false, Order = 2 },
     ];
 
     private static readonly List<MediaCardViewModel> _coverCards =

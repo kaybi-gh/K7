@@ -3,8 +3,6 @@ using K7.Clients.Shared.Models;
 using K7.Clients.Shared.UI.Components;
 using K7.Clients.Shared.UI.Helpers;
 using K7.Clients.Shared.UI.Pages;
-using K7.Clients.Shared.UI.Pages.Admin.Dialogs;
-using K7.Shared.Dtos.Entities;
 using K7.Shared.Dtos.Home;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Localization;
@@ -16,33 +14,19 @@ public partial class AdminHomeLayoutPanel
     private sealed record HomeFormState(List<HomeRowEditModel> Rows);
 
     [Inject] private IServerPreferencesService ServerPreferencesService { get; set; } = default!;
-    [Inject] private ILibraryService LibraryService { get; set; } = default!;
     [Inject] private IHomeFeedStore HomeFeedStore { get; set; } = default!;
-    [Inject] private IK7DialogService DialogService { get; set; } = default!;
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
     [Inject] private IStringLocalizer<Home> HomeL { get; set; } = default!;
 
     private List<HomeRowEditModel> _rows = [];
-    private List<LibraryDto> _libraries = [];
-    private List<LibraryGroupDto> _libraryGroups = [];
     private bool _isLoading = true;
     private bool _saving;
-    private HomeLayoutPreview? _preview;
-    private bool _previewLoading;
-    private bool _hasServerOverride;
     private readonly SettingsFormTracker<HomeFormState> _formTracker = new();
 
     private bool IsDirty => _formTracker.IsDirty(new HomeFormState(_rows));
-    private bool ResetDisabled => !IsDirty && !_hasServerOverride;
+    private bool ResetDisabled { get => !IsDirty && !field; set; }
 
-    protected override async Task OnInitializedAsync()
-    {
-        var librariesTask = LibraryService.GetLibrariesAsync();
-        var groupsTask = LibraryService.GetLibraryGroupsAsync();
-        await LoadLayoutAsync();
-        _libraries = await librariesTask;
-        _libraryGroups = await groupsTask;
-    }
+    protected override Task OnInitializedAsync() => LoadLayoutAsync();
 
     private async Task LoadLayoutAsync()
     {
@@ -64,50 +48,6 @@ public partial class AdminHomeLayoutPanel
     private void CancelChanges()
     {
         _rows = _formTracker.Restore().Rows;
-    }
-
-    private void OnRowVisibilityChanged(HomeRowEditModel row, bool value)
-    {
-        row.IsVisible = value;
-        StateHasChanged();
-    }
-
-    private void DeleteRow(HomeRowEditModel row)
-    {
-        _rows.Remove(row);
-        RenumberRows();
-    }
-
-    private async Task AddRow()
-    {
-        var parameters = new K7DialogParameters<AdminHomeRowDialog>();
-        parameters.Add(d => d.Libraries, _libraries);
-        parameters.Add(d => d.LibraryGroups, _libraryGroups);
-        var dialog = await DialogService.ShowAsync<AdminHomeRowDialog>(L["AddRow"], parameters);
-        var result = await dialog.Result;
-        if (result.Canceled)
-            return;
-        var model = (HomeRowEditModel)result.Data!;
-        model.Order = _rows.Count;
-        _rows.Add(model);
-        RenumberRows();
-    }
-
-    private async Task EditRow(HomeRowEditModel row)
-    {
-        var parameters = new K7DialogParameters<AdminHomeRowDialog>();
-        parameters.Add(d => d.Libraries, _libraries);
-        parameters.Add(d => d.LibraryGroups, _libraryGroups);
-        parameters.Add(d => d.InitialModel, row);
-        var dialog = await DialogService.ShowAsync<AdminHomeRowDialog>(L["EditRow"], parameters);
-        var result = await dialog.Result;
-        if (result.Canceled)
-            return;
-        var updated = (HomeRowEditModel)result.Data!;
-        updated.Order = row.Order;
-        var index = _rows.IndexOf(row);
-        _rows[index] = updated;
-        StateHasChanged();
     }
 
     private void RenumberRows()
@@ -163,19 +103,8 @@ public partial class AdminHomeLayoutPanel
         }
     }
 
-    private async Task RefreshPreviewAsync()
-    {
-        if (_preview is null)
-            return;
-
-        _previewLoading = true;
-        StateHasChanged();
-        await _preview.RefreshAsync();
-        _previewLoading = false;
-    }
-
     private string GetRowTitle(string rowTitle) => HomeLayoutRowTitleHelper.Localize(HomeL, rowTitle);
 
     private async Task RefreshOverrideStateAsync() =>
-        _hasServerOverride = await ServerPreferenceOverrideHelper.HasHomeLayoutOverrideAsync(ServerPreferencesService);
+        ResetDisabled = await ServerPreferenceOverrideHelper.HasHomeLayoutOverrideAsync(ServerPreferencesService);
 }

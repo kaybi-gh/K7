@@ -5555,6 +5555,13 @@
             }
           },
           {
+            "name": "IncludeCardDetails",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
             "name": "PageNumber",
             "in": "query",
             "required": true,
@@ -11449,6 +11456,29 @@
         }
       }
     },
+    "/api/admin/settings/cards": {
+      "put": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "UpdateDefaultCardStyle",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateDefaultCardStyleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/admin/settings/default-language": {
       "put": {
         "tags": [
@@ -12010,6 +12040,16 @@
             "items": {
               "$ref": "#/components/schemas/CustomThemeDto"
             }
+          },
+          "cards": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MediaCardPreferencesDto"
+              }
+            ]
           }
         }
       },
@@ -12722,6 +12762,15 @@
             "type": "boolean"
           }
         }
+      },
+      "CardDetailField": {
+        "type": "integer"
+      },
+      "CardDetailPlacement": {
+        "type": "integer"
+      },
+      "CardHoverStyle": {
+        "type": "integer"
       },
       "ChangePasswordRequest": {
         "required": [
@@ -14859,6 +14908,15 @@
           "displayType": {
             "$ref": "#/components/schemas/HomeRowDisplayType"
           },
+          "autoAdvanceSeconds": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
           "libraryIds": {
             "type": [
               "null",
@@ -15800,6 +15858,44 @@
           }
         }
       },
+      "LiteMediaCardDetailsDto": {
+        "type": "object",
+        "properties": {
+          "genre": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "contentRating": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "runtimeMinutes": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "rating": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "isEmpty": {
+            "type": "boolean"
+          }
+        }
+      },
       "LiteMediaDto": {
         "required": [
           "$type"
@@ -15906,6 +16002,16 @@
               "string"
             ],
             "format": "int32"
+          },
+          "details": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/LiteMediaCardDetailsDto"
+              }
+            ]
           }
         }
       },
@@ -15987,6 +16093,16 @@
               "string"
             ],
             "format": "int32"
+          },
+          "details": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/LiteMediaCardDetailsDto"
+              }
+            ]
           }
         }
       },
@@ -16097,6 +16213,16 @@
               "string"
             ],
             "format": "int32"
+          },
+          "details": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/LiteMediaCardDetailsDto"
+              }
+            ]
           }
         }
       },
@@ -16280,6 +16406,16 @@
               "string"
             ],
             "format": "int32"
+          },
+          "details": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/LiteMediaCardDetailsDto"
+              }
+            ]
           }
         }
       },
@@ -16348,6 +16484,16 @@
               "string"
             ],
             "format": "int32"
+          },
+          "details": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/LiteMediaCardDetailsDto"
+              }
+            ]
           }
         }
       },
@@ -16536,6 +16682,16 @@
               "string"
             ],
             "format": "int32"
+          },
+          "details": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/LiteMediaCardDetailsDto"
+              }
+            ]
           }
         }
       },
@@ -16649,6 +16805,16 @@
               "string"
             ],
             "format": "int32"
+          },
+          "details": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/LiteMediaCardDetailsDto"
+              }
+            ]
           }
         }
       },
@@ -16717,6 +16883,16 @@
               "string"
             ],
             "format": "int32"
+          },
+          "details": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/LiteMediaCardDetailsDto"
+              }
+            ]
           }
         }
       },
@@ -16895,6 +17071,16 @@
               "string"
             ],
             "format": "int32"
+          },
+          "details": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/LiteMediaCardDetailsDto"
+              }
+            ]
           }
         }
       },
@@ -17403,6 +17589,16 @@
               "string"
             ],
             "format": "int32"
+          },
+          "details": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/LiteMediaCardDetailsDto"
+              }
+            ]
           }
         }
       },
@@ -17511,6 +17707,16 @@
               "string"
             ],
             "format": "int32"
+          },
+          "details": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/LiteMediaCardDetailsDto"
+              }
+            ]
           }
         }
       },
@@ -17568,6 +17774,55 @@
             "items": {
               "type": "string"
             }
+          }
+        }
+      },
+      "MediaCardPreferencesDto": {
+        "type": "object",
+        "properties": {
+          "default": {
+            "$ref": "#/components/schemas/MediaCardStyleDto"
+          },
+          "overrides": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/MediaCardStyleDto"
+            }
+          },
+          "isDefault": {
+            "type": "boolean"
+          },
+          "needsDetailedFeed": {
+            "type": "boolean"
+          }
+        }
+      },
+      "MediaCardStyleDto": {
+        "type": "object",
+        "properties": {
+          "showTitle": {
+            "type": "boolean"
+          },
+          "showSubtitle": {
+            "type": "boolean"
+          },
+          "details": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CardDetailField"
+            }
+          },
+          "detailsPlacement": {
+            "$ref": "#/components/schemas/CardDetailPlacement"
+          },
+          "hover": {
+            "$ref": "#/components/schemas/CardHoverStyle"
+          },
+          "isDefault": {
+            "type": "boolean"
+          },
+          "needsDetailedFeed": {
+            "type": "boolean"
           }
         }
       },
@@ -22833,6 +23088,17 @@
           },
           "ruleFilter": {
             "$ref": "#/components/schemas/RuleGroupDto"
+          }
+        }
+      },
+      "UpdateDefaultCardStyleRequest": {
+        "required": [
+          "cards"
+        ],
+        "type": "object",
+        "properties": {
+          "cards": {
+            "$ref": "#/components/schemas/MediaCardPreferencesDto"
           }
         }
       },

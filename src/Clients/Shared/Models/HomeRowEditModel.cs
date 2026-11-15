@@ -10,6 +10,7 @@ public sealed class HomeRowEditModel
     public Guid Id { get; init; }
     public string Title { get; set; } = string.Empty;
     public HomeRowDisplayType DisplayType { get; set; } = HomeRowDisplayType.Carousel;
+    public int? AutoAdvanceSeconds { get; set; }
     public bool ContinueWatching { get; set; }
     public List<Guid> LibraryIds { get; set; } = [];
     public List<Guid> LibraryGroupIds { get; set; } = [];
@@ -24,6 +25,7 @@ public sealed class HomeRowEditModel
         Id = dto.Id,
         Title = dto.Title,
         DisplayType = dto.DisplayType,
+        AutoAdvanceSeconds = dto.AutoAdvanceSeconds,
         ContinueWatching = dto.ContinueWatching,
         LibraryIds = dto.LibraryIds?.ToList() ?? [],
         LibraryGroupIds = dto.LibraryGroupIds?.ToList() ?? [],
@@ -52,6 +54,8 @@ public sealed class HomeRowEditModel
             Id = Id,
             Title = Title,
             DisplayType = DisplayType,
+            // Only a banner moves: a leftover value must not follow a row turned back into a carousel.
+            AutoAdvanceSeconds = DisplayType.IsBanner() ? AutoAdvanceSeconds : null,
             ContinueWatching = ContinueWatching,
             LibraryIds = libraryIds,
             LibraryGroupIds = libraryGroupIds,

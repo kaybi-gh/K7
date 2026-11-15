@@ -1,12 +1,15 @@
 using System.Net.Http;
+using System.Text.Json;
 using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Mappings;
 using K7.Clients.Shared.Models;
 using K7.Server.Domain.Enums;
+using K7.Shared;
 using K7.Shared.Dtos.Home;
 using K7.Shared.Dtos.Notifications;
 using K7.Shared.Dtos.Requests;
+using K7.Shared.Enums;
 using K7.Shared.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -34,6 +37,11 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
     private int _catalogRefreshGeneration;
     private int _loadGeneration;
     private bool _isTv;
+    private bool _detailedRequested;
+    private readonly IDeviceStorageService _deviceStorage;
+    private string? _skeletonUserId;
+
+    // Survives a reload: the next load shows placeholders of the same shape straight away.
     private bool _hubHandlersRegistered;
     private bool _pendingRefresh;
     private bool _hasFeedContext;
@@ -73,6 +81,7 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
         K7HubClient hubClient,
         MediaCacheStore cacheStore,
         IDeviceService deviceService,
+        IDeviceStorageService deviceStorage,
         IConnectivityService connectivity,
         ISharedProfileSessionService sharedProfileSession,
         ILogger<HomeFeedStore> logger)
@@ -81,11 +90,70 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
         _hubClient = hubClient;
         _cacheStore = cacheStore;
         _deviceService = deviceService;
+        _deviceStorage = deviceStorage;
         _connectivity = connectivity;
         _sharedProfileSession = sharedProfileSession;
         _logger = logger;
         _connectivity.ConnectivityChanged += OnConnectivityChanged;
         _sharedProfileSession.ActiveGroupChanged += OnActiveGroupChanged;
+    }
+
+    public async Task SetDetailedAsync(bool detailed, CancellationToken cancellationToken = default)
+    {
+        if (_detailedRequested == detailed)
+            return;
+
+        _detailedRequested = detailed;
+        if (!IsLoaded)
+            return;
+
+        // Cached rows were fetched without (or with) the details: fetch them again.
+        InvalidateCache();
+        await RefreshAsync(cancellationToken);
+    }
+
+    public IReadOnlyList<HomeRowConfigDto> SkeletonRows { get; private set; } = [];
+
+    /// <summary>Shape of the home as stored on the device: whose home it is, and its visible rows.</summary>
+    private sealed record SkeletonShape(string? UserId, List<HomeRowConfigDto> Rows);
+
+    // The shape kept in memory belongs to one user. For another user (or after a restart of the
+    // app) it comes from the device, if this user is the one whose home was stored there.
+    private void RestoreSkeletonRows(string? identityUserId)
+    {
+        if (SkeletonRows.Count > 0 && string.Equals(_skeletonUserId, identityUserId, StringComparison.Ordinal))
+            return;
+
+        _skeletonUserId = identityUserId;
+        SkeletonRows = [];
+
+        try
+        {
+            var json = _deviceStorage.Get(PreferenceKeys.HOME_SKELETON_SHAPE);
+            if (string.IsNullOrEmpty(json))
+                return;
+
+            var shape = JsonSerializer.Deserialize<SkeletonShape>(json);
+            if (shape?.Rows is { Count: > 0 } rows && string.Equals(shape.UserId, identityUserId, StringComparison.Ordinal))
+                SkeletonRows = rows;
+        }
+        catch (Exception ex) when (ex is JsonException or InvalidOperationException or NotSupportedException)
+        {
+            // Unreadable or from another version: the home falls back to generic placeholders.
+        }
+    }
+
+    private void SaveSkeletonRows(string? identityUserId, List<HomeRowConfigDto> rows)
+    {
+        _skeletonUserId = identityUserId;
+        try
+        {
+            _deviceStorage.Set(PreferenceKeys.HOME_SKELETON_SHAPE, JsonSerializer.Serialize(new SkeletonShape(identityUserId, rows)));
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or NotSupportedException)
+        {
+            // Storage not available (private mode, quota): only the next cold start loses the shape.
+        }
     }
 
     public Task ResetAndReloadAsync(CancellationToken cancellationToken = default)
@@ -99,6 +167,7 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
         string? identityUserId,
         CancellationToken cancellationToken = default)
     {
+        RestoreSkeletonRows(identityUserId);
         var capabilityEnabled = !CanTrackProgress && canTrackProgress;
         CanTrackProgress = canTrackProgress;
 
@@ -330,7 +399,13 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
             _rows.Clear();
             foreach (var config in rowConfigs)
                 _rows.Add(new HomeFeedRow { Config = config });
+            SkeletonRows = rowConfigs;
         }
+
+        SaveSkeletonRows(identityAtStart, rowConfigs);
+
+        // The layout is known before its items: placeholders can take its shape now.
+        NotifyChanged();
 
         var rowsSnapshot = GetRowsSnapshot();
         var tasks = rowsSnapshot
@@ -1063,7 +1138,9 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
     }
 
     private GetHomeFeedQuery BuildQuery(HomeRowConfigDto config) =>
-        BuildFeedQuery(config, detailed: _isTv);
+        BuildFeedQuery(
+            config,
+            detailed: _isTv || _detailedRequested || config.DisplayType.IsBanner());
 
     /// <summary>
     /// Builds the home-feed API query for a layout row. Library-group scope wins over library ids.

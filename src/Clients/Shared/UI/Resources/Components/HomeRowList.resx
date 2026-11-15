@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="AddRow" xml:space="preserve"><value>Ajouter une ligne</value></data>
+  <data name="EditRowTitle" xml:space="preserve"><value>Modifier la ligne</value></data>
+  <data name="EditRow" xml:space="preserve"><value>Modifier la ligne {0}</value></data>
+  <data name="DeleteRow" xml:space="preserve"><value>Supprimer la ligne {0}</value></data>
+  <data name="ShowRow" xml:space="preserve"><value>Afficher la ligne {0}</value></data>
+  <data name="SummaryItems" xml:space="preserve"><value>{0} éléments</value></data>
+  <data name="SummaryMore" xml:space="preserve"><value>+{0}</value></data>
+  <data name="PinnedFirst" xml:space="preserve"><value>Toujours en premier</value></data>
+  <data name="AddCustomRow" xml:space="preserve"><value>Ligne personnalisée...</value></data>
+  <data name="PresetOnHome" xml:space="preserve"><value>Déjà sur l'accueil</value></data>
+</root>

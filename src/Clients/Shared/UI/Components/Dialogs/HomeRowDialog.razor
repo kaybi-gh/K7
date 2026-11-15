@@ -1,15 +1,12 @@
-@inject IStringLocalizer<AdminHomeRowDialog> L
+@inject IStringLocalizer<HomeRowDialog> L
 @inject IStringLocalizer<SharedResource> S
+@namespace K7.Clients.Shared.UI.Components.Dialogs
 
 <div class="k7-dialog-content home-row-dialog">
     <div>
         <K7SettingRow Label="@L["Title"]" Required="true">
             <K7TextField @bind-Value="_title" Required="true" Variant="outlined" />
         </K7SettingRow>
-        <K7SettingRow Label="@L["ContinueWatching"]">
-            <K7Switch @bind-Value="_continueWatching" AriaLabel="@L["ContinueWatching"]" />
-        </K7SettingRow>
-
         @if (!_continueWatching)
         {
             <K7SettingRow Label="@L["CatalogScope"]">
@@ -57,7 +54,7 @@
 
             <K7SettingRow Label="@L["Sort"]">
                 <K7Select TValue="MediaOrderingOption" @bind-Value="_orderBy" Variant="outlined">
-                    @foreach (var option in _orderOptions)
+                    @foreach (var option in OrderOptions)
                     {
                         <K7SelectItem Value="@option" Text="@GetOrderLabel(option)">@GetOrderLabel(option)</K7SelectItem>
                     }
@@ -65,15 +62,36 @@
             </K7SettingRow>
         }
 
-        <K7SettingRow Label="@L["Display"]">
-            <K7Select TValue="HomeRowDisplayType" @bind-Value="_displayType" Variant="outlined">
-                <K7SelectItem Value="@HomeRowDisplayType.Carousel" Text="@L["DisplayCarousel"]">@L["DisplayCarousel"]</K7SelectItem>
-            </K7Select>
+        <K7SettingRow Label="@L["Display"]" Hint="@KindHint">
+            <K7ButtonGroup TValue="RowKind"
+                           Options="KindOptions"
+                           Value="Kind"
+                           ValueChanged="OnKindChanged"
+                           AriaLabel="@L["Display"]" />
         </K7SettingRow>
+        <K7SettingRow Label="@(Kind == RowKind.Banner ? L["BannerStyle"] : L["CardFormat"])" Hint="@DisplayHint">
+            <K7ButtonGroup TValue="HomeRowDisplayType"
+                           Options="DisplayOptions"
+                           Value="_displayType"
+                           ValueChanged="@(value => _displayType = value)"
+                           AriaLabel="@(Kind == RowKind.Banner ? L["BannerStyle"] : L["CardFormat"])" />
+        </K7SettingRow>
+
+        @if (Kind == RowKind.Banner)
+        {
+            <K7SettingRow Label="@L["AutoAdvance"]" Hint="@L["AutoAdvanceHint"]">
+                <K7Select TValue="int" @bind-Value="_autoAdvanceSeconds" Variant="outlined">
+                    @foreach (var seconds in _autoAdvanceOptions)
+                    {
+                        <K7SelectItem Value="@seconds" Text="@GetAutoAdvanceLabel(seconds)">@GetAutoAdvanceLabel(seconds)</K7SelectItem>
+                    }
+                </K7Select>
+            </K7SettingRow>
+        }
 
         <K7SettingRow Label="@L["ItemCount"]">
             <K7Select TValue="int" @bind-Value="_pageSize" Variant="outlined">
-                @foreach (var size in _pageSizeOptions)
+                @foreach (var size in PageSizeOptions)
                 {
                     <K7SelectItem Value="@size" Text="@size.ToString()">@size</K7SelectItem>
                 }

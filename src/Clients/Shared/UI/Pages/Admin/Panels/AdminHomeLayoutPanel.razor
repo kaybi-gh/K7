@@ -18,40 +18,9 @@
                 <div class="d-flex flex-col gap-4">
                     <p class="settings-field-hint">@L["Description"]</p>
 
-                    <K7SortableList TItem="HomeRowEditModel"
-                                    Items="_rows"
-                                    ItemKey="@(row => row.Id)"
-                                    Disabled="_saving"
-                                    Reordered="RenumberRows">
-                        <span class="text-sm">@GetRowTitle(context.Title)</span>
-                        <div class="home-row-actions">
-                            <K7Switch Value="@context.IsVisible" ValueChanged="@(v => OnRowVisibilityChanged(context, v))" />
-                            <K7IconButton Icon="@Phosphor.PencilSimple" OnClick="() => EditRow(context)"
-                                    AriaLabel="@L["EditRow"]" />
-                            <K7IconButton Icon="@Phosphor.Trash" Color="error" OnClick="() => DeleteRow(context)"
-                                    AriaLabel="@L["DeleteRow"]" />
-                        </div>
-                    </K7SortableList>
+                    <HomeRowList Rows="_rows" Disabled="_saving" OnChanged="StateHasChanged" />
 
-                    <div class="d-flex justify-start">
-                        <K7Button Color="primary" Variant="outlined" StartIcon="@Phosphor.Plus"
-                                  OnClick="AddRow" Disabled="_saving">
-                            @L["AddRow"]
-                        </K7Button>
-                    </div>
-
-                    <K7ExpansionPanel>
-                        <TitleContent>@L["PreviewTitle"]</TitleContent>
-                        <ChildContent>
-                            <div class="d-flex justify-end mb-2">
-                                <K7Button Color="secondary" Variant="text" StartIcon="@Phosphor.ArrowClockwise"
-                                          OnClick="RefreshPreviewAsync" Disabled="_previewLoading">
-                                    @L["PreviewRefresh"]
-                                </K7Button>
-                            </div>
-                            <HomeLayoutPreview @ref="_preview" Rows="_rows" />
-                        </ChildContent>
-                    </K7ExpansionPanel>
+                    <HomeLayoutPreview Rows="_rows" />
                 </div>
             }
         </InterfaceSettingsSplit>

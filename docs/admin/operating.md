@@ -88,6 +88,11 @@ Shortcuts are library groups, collections, playlists (including dynamic playlist
 
 Admin -> Experience -> Interface -> Appearance sets the default theme, shown to every account that picked nothing: one of the built-in themes or a server theme. **Server themes** are made there (editor, or import of a `k7-theme` JSON file, up to 20) and are offered to every account next to the built-in ones. They are saved as soon as they change. The default theme is saved with the Save bar. Deleting a server theme sends the accounts using it back to the default theme, and if it was the default, the default goes back to K7 dark. A theme only holds a name and colors, never CSS. Details for users: [guide - Themes](../user/guide.md#themes).
 
+
+### Media cards
+
+Admin -> Experience -> Interface -> Media cards sets the default card style of the server: title and subtitle under the card, extra details (year, runtime, rating, content rating, genre), where they go (under the card, badges on the artwork, badges on hover) and the hover and focus effect, for every card or for movies, series or music. Accounts that never changed their own card settings follow it; an account that did keeps its own style until it resets.
+
 ### Theme songs
 
 Detail pages can play an ambient theme when a file is available (user toggle: Settings -> Interface -> Theme songs. Optional per-device disable on the same page. Server default: Admin -> Experience -> Interface -> Theme songs). Theme continues across related series pages (serie / season / episode) and cast person digressions. A finished theme (natural end, watch, or trailer) does not restart on return to the same media. Playback pauses when the app is not visible. Leaving that media context fades out, and opening another media with a theme crossfades.

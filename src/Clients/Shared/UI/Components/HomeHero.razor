@@ -1,0 +1,102 @@
+@namespace K7.Clients.Shared.UI.Components
+@inject IStringLocalizer<HomeHero> L
+@inject IStringLocalizer<SharedResource> S
+
+@if (Current is { } item)
+{
+    <section @ref="_root"
+             class="@RootClass focusable"
+             tabindex="-1"
+             style="@IndicatorStyle"
+             @onfocusin="OnBannerFocusedAsync"
+             @onmouseenter="() => _hovered = true"
+             @onmouseleave="() => _hovered = false"
+             @onkeyup="() => _focused = true"
+             @onpointerdown="() => _focused = false"
+             @onfocusout="() => _focused = false"
+             aria-label="@(string.IsNullOrEmpty(Label) ? L["Featured"] : Label)">
+        @if (!string.IsNullOrEmpty(_previousBackdropUrl))
+        {
+            <img class="home-hero__backdrop home-hero__backdrop--previous" src="@_previousBackdropUrl" alt="" decoding="async" @key="_previousBackdropUrl" />
+        }
+        <img class="home-hero__backdrop home-hero__backdrop--current" src="@item.BackdropUrl" alt="" decoding="async" @key="item.Id" />
+        <div class="home-hero__scrim"></div>
+        <div class="home-hero__content">
+            @if (ShowsLogo(item))
+            {
+                <h2 class="home-hero__title home-hero__title--logo">
+                    <img class="home-hero__logo" src="@item.LogoUrl" alt="@item.Title" decoding="async" @key="item.LogoUrl" @onerror="() => OnLogoFailed(item)" />
+                </h2>
+            }
+            else
+            {
+                <h2 class="home-hero__title">@item.Title</h2>
+            }
+            <div class="home-hero__meta">
+                @if (item.ReleaseYear.HasValue)
+                {
+                    <span>@item.ReleaseYear</span>
+                }
+                @if (!string.IsNullOrEmpty(item.ContentRating))
+                {
+                    <span class="home-hero__badge">@item.ContentRating</span>
+                }
+                @if (item.Rating is > 0)
+                {
+                    <span class="home-hero__rating">
+                        <K7Icon Icon="@Phosphor.Star" IconSize="@K7IconSize.Sm" />
+                        @item.Rating.Value.ToString("0.#")/10
+                    </span>
+                }
+                @if (item.RuntimeMinutes is > 0)
+                {
+                    <span>@FormatRuntime(item.RuntimeMinutes.Value)</span>
+                }
+                @if (item.Genres is { Count: > 0 })
+                {
+                    <span>@string.Join(", ", item.Genres.Take(2))</span>
+                }
+            </div>
+            @if (!string.IsNullOrEmpty(item.Overview))
+            {
+                <p class="home-hero__overview">@item.Overview</p>
+            }
+            <div class="home-hero__actions">
+                <K7Button Variant="filled" Color="primary" EndIcon="@Phosphor.ArrowRight" Href="@GetHref(item)">
+                    @L["Open"]
+                </K7Button>
+            </div>
+        </div>
+        @if (Items.Count > 1)
+        {
+            <div class="home-hero__dots">
+                @if (AutoAdvances)
+                {
+                    <button type="button"
+                            class="home-hero__toggle focusable"
+                            aria-label="@(_paused ? L["Resume"] : L["Pause"])"
+                            aria-pressed="@(_paused ? "true" : "false")"
+                            @onclick="TogglePause">
+                        <K7Icon Icon="@(_paused ? Phosphor.Play : Phosphor.Pause)" IconSize="@K7IconSize.Sm" />
+                    </button>
+                }
+                @for (var index = 0; index < Items.Count; index++)
+                {
+                    var target = index;
+                    <button type="button"
+                            class="home-hero__dot focusable @(target == _index ? "home-hero__dot--active" : "") @(AutoAdvances && target == _index ? "home-hero__dot--timed" : "")"
+                            aria-label="@Items[target].Title"
+                            aria-current="@(target == _index ? "true" : null)"
+                            @onclick="() => Select(target)">
+                        @if (AutoAdvances && target == _index)
+                        {
+                            <span class="home-hero__dot-track">
+                                <span class="home-hero__dot-fill" @key="(_index, _indicatorRun)"></span>
+                            </span>
+                        }
+                    </button>
+                }
+            </div>
+        }
+    </section>
+}
