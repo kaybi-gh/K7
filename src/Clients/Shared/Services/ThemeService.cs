@@ -23,6 +23,12 @@ public class ThemeService
     /// <summary>Themes made by an administrator, offered to every account.</summary>
     public IReadOnlyList<ThemeDefinition> ServerThemes { get; private set; } = [];
 
+    /// <summary>Card style an administrator set for accounts that chose none.</summary>
+    public MediaCardPreferencesDto? ServerDefaultCards { get; private set; }
+
+    /// <summary>The card style in effect: the user's own, else the server default, else the built-in card.</summary>
+    public MediaCardPreferencesDto? EffectiveCards => Preferences.Cards ?? ServerDefaultCards;
+
     /// <summary>
     /// False until the appearance to show is known. Until then the document keeps what the
     /// startup script restored from the previous visit.
@@ -67,6 +73,14 @@ public class ThemeService
 
         ServerDefaultThemeId = resolved;
         ServerThemes = themes;
+        if (IsResolved)
+            ThemeOnChange?.Invoke();
+    }
+
+    /// <summary>Sets the card style of the server. Accounts with their own style do not change.</summary>
+    public void SetServerDefaultCards(MediaCardPreferencesDto? cards)
+    {
+        ServerDefaultCards = cards;
         if (IsResolved)
             ThemeOnChange?.Invoke();
     }

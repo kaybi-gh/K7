@@ -23,6 +23,11 @@
                            Title="@L["Appearance"]"
                            Description="@L["AppearanceDescription"]"
                            Active="@(Section == InterfaceSettingsSections.Appearance)" />
+        <K7SettingsNavItem Href="@($"{BasePath}/{InterfaceSettingsSections.Cards}")"
+                           Icon="@Phosphor.Cards"
+                           Title="@L["Cards"]"
+                           Description="@L["CardsDescription"]"
+                           Active="@(Section == InterfaceSettingsSections.Cards)" />
         @if (!_isGuest)
         {
             <K7SettingsNavItem Href="@($"{BasePath}/{InterfaceSettingsSections.Home}")"

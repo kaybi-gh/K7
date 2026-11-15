@@ -44,6 +44,11 @@ public partial class MainLayout : IDisposable
     private string? _sessionUserId;
     private bool _showCustomNavBar;
     private bool _chromeReady;
+    private MediaCardStyleContext? _cardStyles;
+
+    // The account whose appearance preferences came from the server in this session. From then
+    // on every change is copied to the device, and the copy on the device is no longer applied.
+    private string? _appearanceUserId;
 
     private static readonly TimeSpan OverlayDelay = TimeSpan.FromSeconds(3);
 
@@ -67,11 +72,16 @@ public partial class MainLayout : IDisposable
     protected override async Task OnInitializedAsync()
     {
         ThemeService.ThemeOnChange += OnThemeChanged;
+        _cardStyles = MediaCardStyleContext.Next(
+            null,
+            ThemeService.EffectiveCards);
 
         if (DeviceService.GetClientType() == ClientType.Native && System.OperatingSystem.IsWindows())
             WebViewJsBridge.SetRuntime(JS);
 
         AuthenticationStateProvider.AuthenticationStateChanged += OnAuthenticationStateChanged;
+
+        RestoreCachedAppearanceAsync().FireAndForget(Logger, "Cached appearance restore failed");
 
         ThemeBootstrap.InitializeAsync(ThemeService, JS, ServerInfoService)
             .FireAndForget(Logger, "Theme bootstrap failed");
@@ -146,6 +156,7 @@ public partial class MainLayout : IDisposable
                     CustomNavStore.BindUser(null);
 
                 _sessionUserId = null;
+                _appearanceUserId = null;
                 return;
             }
 
@@ -161,13 +172,7 @@ public partial class MainLayout : IDisposable
 
             if (userChanged && Connectivity.IsOnline)
             {
-                ThemeBootstrap.LoadUserAsync(
-                        ThemeService,
-                        JS,
-                        ServerInfoService,
-                        Services.GetRequiredService<IUserPreferencesService>(),
-                        DeviceService)
-                    .FireAndForget(Logger, "Appearance preferences load failed");
+                LoadAppearanceAsync(userId).FireAndForget(Logger, "Appearance preferences load failed");
 
                 try
                 {
@@ -334,7 +339,53 @@ public partial class MainLayout : IDisposable
         {
         }
 
+        _cardStyles = MediaCardStyleContext.Next(
+            _cardStyles,
+            ThemeService.EffectiveCards);
+
+        // Changes made in the settings reach the device copy too, for the next start of the app.
+        if (_appearanceUserId is not null && _appearanceUserId == _sessionUserId)
+            AppearanceCache.Save(
+                Services.GetRequiredService<IDeviceStorageService>(),
+                _appearanceUserId,
+                ThemeService.Preferences,
+                ThemeService.ServerDefaultCards);
+
         await InvokeAsync(StateHasChanged);
+    }
+
+    // The last user of this device is almost always the one opening the app: show their look (card
+    // style included) before the session is even checked. The server answer replaces it.
+    private async Task RestoreCachedAppearanceAsync()
+    {
+        var storage = Services.GetRequiredService<IDeviceStorageService>();
+        var cached = AppearanceCache.TryLoad(storage, storage.Get(PreferenceKeys.LAST_ACTIVE_USER_ID));
+        if (cached is null)
+            return;
+
+        var deviceType = await DeviceService.GetDeviceTypeAsync();
+        if (_appearanceUserId is not null)
+            return;
+
+        ThemeService.SetServerDefaultCards(cached.ServerDefaultCards);
+        ThemeService.Apply(cached.Preferences, deviceType);
+    }
+
+    private async Task LoadAppearanceAsync(string userId)
+    {
+        await ThemeBootstrap.LoadUserAsync(
+            ThemeService,
+            JS,
+            ServerInfoService,
+            Services.GetRequiredService<IUserPreferencesService>(),
+            DeviceService);
+
+        _appearanceUserId = userId;
+        AppearanceCache.Save(
+            Services.GetRequiredService<IDeviceStorageService>(),
+            userId,
+            ThemeService.Preferences,
+            ThemeService.ServerDefaultCards);
     }
 
     private void OnConnectionStateChanged(HubConnectionState state)

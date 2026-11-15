@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="PageTitle" xml:space="preserve"><value>Cartes média</value></data>
+  <data name="Description" xml:space="preserve"><value>Choisissez ce que les cartes affichent et comment elles réagissent. L'aperçu suit vos choix. Sans réglage de votre part, les cartes suivent le style choisi par l'administrateur.</value></data>
+  <data name="Preview" xml:space="preserve"><value>Aperçu</value></data>
+  <data name="Scope" xml:space="preserve"><value>S'applique à</value></data>
+  <data name="Scope_All" xml:space="preserve"><value>Tout</value></data>
+  <data name="Scope_Movies" xml:space="preserve"><value>Films</value></data>
+  <data name="Scope_Series" xml:space="preserve"><value>Séries</value></data>
+  <data name="Scope_Music" xml:space="preserve"><value>Musique</value></data>
+  <data name="ScopeName_Movies" xml:space="preserve"><value>films</value></data>
+  <data name="ScopeName_Series" xml:space="preserve"><value>séries</value></data>
+  <data name="ScopeName_Music" xml:space="preserve"><value>albums et morceaux</value></data>
+  <data name="ScopeHint_All" xml:space="preserve"><value>Réglages communs à toutes les cartes.</value></data>
+  <data name="ScopeHint_Common" xml:space="preserve"><value>Les {0} suivent les réglages communs. Un changement ici leur donne leurs propres réglages.</value></data>
+  <data name="ScopeHint_Own" xml:space="preserve"><value>Les {0} ont leurs propres réglages.</value></data>
+  <data name="ScopeUseCommon" xml:space="preserve"><value>Reprendre les réglages communs</value></data>
+  <data name="ShowTitle" xml:space="preserve"><value>Titre sous la carte</value></data>
+  <data name="ShowSubtitle" xml:space="preserve"><value>Sous-titre</value></data>
+  <data name="ShowSubtitleHint" xml:space="preserve"><value>L'artiste, la série ou l'année, selon la carte.</value></data>
+  <data name="Details" xml:space="preserve"><value>Infos supplémentaires</value></data>
+  <data name="DetailsHint" xml:space="preserve"><value>Seules les infos connues d'un titre s'affichent.</value></data>
+  <data name="Detail_Year" xml:space="preserve"><value>Année</value></data>
+  <data name="Detail_Runtime" xml:space="preserve"><value>Durée</value></data>
+  <data name="Detail_Rating" xml:space="preserve"><value>Note</value></data>
+  <data name="Detail_ContentRating" xml:space="preserve"><value>Classification</value></data>
+  <data name="Detail_Genre" xml:space="preserve"><value>Genre</value></data>
+  <data name="Placement" xml:space="preserve"><value>Emplacement des infos supplémentaires</value></data>
+  <data name="Placement_Below" xml:space="preserve"><value>Sous la carte</value></data>
+  <data name="Placement_Overlay" xml:space="preserve"><value>Sur l'image</value></data>
+  <data name="Placement_Hover" xml:space="preserve"><value>Au survol</value></data>
+  <data name="PlacementHint_Below" xml:space="preserve"><value>Une ligne de texte sous le titre.</value></data>
+  <data name="PlacementHint_Overlay" xml:space="preserve"><value>Des pastilles en bas de l'image, toujours visibles.</value></data>
+  <data name="PlacementHint_Hover" xml:space="preserve"><value>Des pastilles qui apparaissent au survol ou au focus. Sur écran tactile, elles restent visibles.</value></data>
+  <data name="Hover" xml:space="preserve"><value>Effet au survol et au focus</value></data>
+  <data name="HoverHint" xml:space="preserve"><value>S'applique à la souris et au clavier. Le zoom et le soulevé remplacent le contour.</value></data>
+  <data name="Hover_Outline" xml:space="preserve"><value>Contour</value></data>
+  <data name="Hover_Zoom" xml:space="preserve"><value>Zoom</value></data>
+  <data name="Hover_Lift" xml:space="preserve"><value>Soulevé</value></data>
+  <data name="Sample_Movie" xml:space="preserve"><value>Un film</value></data>
+  <data name="Sample_Serie" xml:space="preserve"><value>Une série</value></data>
+  <data name="Sample_Album" xml:space="preserve"><value>Un album</value></data>
+  <data name="Sample_Artist" xml:space="preserve"><value>Artiste</value></data>
+  <data name="Sample_Genre" xml:space="preserve"><value>Aventure</value></data>
+  <data name="DescriptionAdmin" xml:space="preserve"><value>Style de carte proposé par défaut à tous les comptes. Chacun peut ensuite choisir le sien.</value></data>
+  <data name="DefaultSaved" xml:space="preserve"><value>Style de carte par défaut enregistré.</value></data>
+  <data name="DefaultReset" xml:space="preserve"><value>Style de carte par défaut réinitialisé.</value></data>
+</root>

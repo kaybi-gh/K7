@@ -26,6 +26,9 @@ namespace K7.Clients.Shared.UI.Pages;
 
 public partial class LibraryGroupView : IDisposable
 {
+    /// <summary>Card style of the user, cascaded by the main layout. None on TV.</summary>
+    [CascadingParameter] public MediaCardStyleContext? CardStyles { get; set; }
+
     [Inject] private NavigationManager Navigation { get; set; } = default!;
     [Inject] private ILibraryGroupContextStore ContextStore { get; set; } = default!;
     [Inject] private IFeatureAccessService FeatureAccess { get; set; } = default!;
@@ -54,6 +57,8 @@ public partial class LibraryGroupView : IDisposable
     // Desktop MediaCard footer fits in 44px; TV bumps title/subtitle so rows need more room.
     private const int DefaultGridFooterHeight = 44;
     private const int TvGridFooterHeight = 72;
+    private const int DetailsLineHeight = 18;
+    private const int TvDetailsLineHeight = 26;
     private const int PageSize = 50;
     private const int PageCacheCapacity = 32;
     private const int PrefetchPageCount = 1;
@@ -159,7 +164,16 @@ public partial class LibraryGroupView : IDisposable
 
     private int GridItemWidth => MediaCardLayout.GridItemWidth(GridCardVariant);
 
-    private int GridFooterHeight => _isTv ? TvGridFooterHeight : DefaultGridFooterHeight;
+    // Rows of the virtual grid have a fixed height: a details line under the card needs its room.
+    private int GridFooterHeight =>
+        (_isTv ? TvGridFooterHeight : DefaultGridFooterHeight)
+        + (CardStyles?.ShowsDetailsBelow == true ? (_isTv ? TvDetailsLineHeight : DetailsLineHeight) : 0);
+
+    /// <summary>
+    /// True when the card style shows details the plain browse query does not carry. Never on TV:
+    /// its grid is the heaviest screen of the app, so it only shows what it already has (the year).
+    /// </summary>
+    private bool NeedsCardDetails => !_isTv && CardStyles?.NeedsDetailedFeed == true;
 
     private MetadataPictureSize GridPictureSize =>
         GridCardVariant is MediaCardVariant.Backdrop
@@ -802,7 +816,8 @@ public partial class LibraryGroupView : IDisposable
             (int)_selectedMediaType,
             (int)_selectedSort,
             _selectedContentSource,
-            filterJson);
+            filterJson,
+            NeedsCardDetails);
     }
 
     private void InvalidateBrowseCaches()
@@ -903,6 +918,7 @@ public partial class LibraryGroupView : IDisposable
             OrderBy = orderBy is not null ? [orderBy.Value] : [_selectedSort],
             LocalOriginOnly = _selectedContentSource == ContentSourceLocal ? true : null,
             OriginPeerServerId = Guid.TryParse(_selectedContentSource, out var peerId) ? peerId : null,
+            IncludeCardDetails = NeedsCardDetails ? true : null,
             PageNumber = pageNumber,
             PageSize = pageSize
         };

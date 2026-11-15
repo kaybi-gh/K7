@@ -34,6 +34,10 @@ public partial class HomeFeedCarouselRow : IDisposable
     [CascadingParameter] private ExploreTvFocusContext? TvFocus { get; set; }
     [CascadingParameter] private ExploreFocusNavigationContext? ExploreFocus { get; set; }
     [CascadingParameter] private TvFeedRowViewport? RowViewport { get; set; }
+    [CascadingParameter] private MediaCardStyleContext? CardStyles { get; set; }
+
+    // The TV hero needs the details, and so do cards whose style shows them.
+    private bool UseDetailedFeed => (TvFocus?.UseDetailedFeed ?? false) || CardStyles?.NeedsDetailedFeed == true;
 
     private List<MediaCardViewModel> _items = [];
     private bool _loading = true;
@@ -160,7 +164,7 @@ public partial class HomeFeedCarouselRow : IDisposable
             LibraryGroupIds = LibraryGroupIds,
             MediaTypes = MediaTypes,
             OrderBy = OrderBy,
-            Detailed = TvFocus?.UseDetailedFeed ?? false,
+            Detailed = UseDetailedFeed,
             PageNumber = 1,
             PageSize = PageSize
         };
@@ -217,7 +221,7 @@ public partial class HomeFeedCarouselRow : IDisposable
         string.Join(',', OrderBy),
         PageSize,
         ProgressEnabled,
-        TvFocus?.UseDetailedFeed ?? false);
+        UseDetailedFeed);
 
     private static MediaCardVariant GetVariant(MediaCardViewModel item) => item.Kind switch
     {

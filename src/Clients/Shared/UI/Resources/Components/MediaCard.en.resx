@@ -28,5 +28,7 @@
   <data name="RemainingHoursMinutes" xml:space="preserve"><value>{0} h {1} min left</value></data>
   <data name="RemainingMinutes" xml:space="preserve"><value>{0} min left</value></data>
   <data name="SeasonNumber" xml:space="preserve"><value>Season {0}</value></data>
+  <data name="DetailHoursMinutes" xml:space="preserve"><value>{0} h {1} min</value></data>
+  <data name="DetailMinutes" xml:space="preserve"><value>{0} min</value></data>
 </root>
 

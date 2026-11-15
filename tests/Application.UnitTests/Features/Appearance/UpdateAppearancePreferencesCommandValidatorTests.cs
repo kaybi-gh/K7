@@ -40,6 +40,49 @@ public class UpdateAppearancePreferencesCommandValidatorTests
     }
 
     [Test]
+    public void Validate_ShouldPass_WhenCardStylesAreSetOrFollowTheServer()
+    {
+        var cards = new MediaCardPreferencesDto
+        {
+            Default =
+            {
+                ShowSubtitle = false,
+                Details = [CardDetailField.Year, CardDetailField.Rating],
+                DetailsPlacement = CardDetailPlacement.Hover,
+                Hover = CardHoverStyle.Lift
+            },
+            Overrides = { [CardMediaGroup.Music] = new MediaCardStyleDto { ShowTitle = false } }
+        };
+
+        IsValid(new AppearancePreferencesDto { Cards = cards }).Should().BeTrue();
+        IsValid(new AppearancePreferencesDto { Cards = null }).Should().BeTrue();
+    }
+
+    [Test]
+    public void Validate_ShouldFail_WhenACardStyleIsNotValid()
+    {
+        IsValid(new AppearancePreferencesDto
+        {
+            Cards = new MediaCardPreferencesDto { Default = { Details = [(CardDetailField)99] } }
+        }).Should().BeFalse();
+        IsValid(new AppearancePreferencesDto
+        {
+            Cards = new MediaCardPreferencesDto { Default = { Hover = (CardHoverStyle)99 } }
+        }).Should().BeFalse();
+    }
+
+    [Test]
+    public void NeedsDetailedFeed_ShouldBeTrue_OnlyWhenAStyleShowsMoreThanTheYear()
+    {
+        new MediaCardPreferencesDto().NeedsDetailedFeed.Should().BeFalse();
+        new MediaCardPreferencesDto { Default = { Details = [CardDetailField.Year] } }.NeedsDetailedFeed.Should().BeFalse();
+        new MediaCardPreferencesDto
+        {
+            Overrides = { [CardMediaGroup.Movies] = new MediaCardStyleDto { Details = [CardDetailField.Runtime] } }
+        }.NeedsDetailedFeed.Should().BeTrue();
+    }
+
+    [Test]
     public void Validate_ShouldPass_WhenThemeIsAServerTheme()
     {
         IsValid(new AppearancePreferencesDto { Default = { ThemeId = "server-abc123" } }).Should().BeTrue();

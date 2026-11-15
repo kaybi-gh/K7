@@ -19,6 +19,7 @@ public static class ThemeBootstrap
         CancellationToken cancellationToken = default)
     {
         var serverInfo = await serverInfoService.GetServerInfoAsync(cancellationToken);
+        themeService.SetServerDefaultCards(serverInfo?.DefaultCards);
         themeService.SetServerDefault(serverInfo?.DefaultTheme, serverInfo?.ServerThemes);
 
         if (themeService.IsResolved)
@@ -39,6 +40,7 @@ public static class ThemeBootstrap
         CancellationToken cancellationToken = default)
     {
         var serverInfo = await serverInfoService.GetServerInfoAsync(cancellationToken);
+        themeService.SetServerDefaultCards(serverInfo?.DefaultCards);
         themeService.SetServerDefault(serverInfo?.DefaultTheme, serverInfo?.ServerThemes);
 
         var deviceType = await deviceService.GetDeviceTypeAsync();

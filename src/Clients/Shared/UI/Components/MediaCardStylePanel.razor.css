@@ -1,0 +1,67 @@
+.card-style-panel {
+    display: flex;
+    flex-direction: column;
+}
+
+/* The samples stay in view while the settings below are changed. */
+.card-style-panel__preview {
+    position: sticky;
+    inset-block-start: 0;
+    z-index: 3;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    gap: var(--space-4);
+    padding: var(--space-4);
+    margin-block-end: var(--space-2);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface);
+}
+
+.card-style-panel__sample {
+    flex: 0 1 9rem;
+    min-width: 0;
+    transition: opacity 0.15s ease;
+}
+
+/* Samples the picked kind of media does not change. */
+.card-style-panel__sample--muted {
+    opacity: 0.35;
+}
+
+.card-style-panel__scope {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+    max-width: 100%;
+}
+
+.card-style-panel__scope ::deep .k7-button-group {
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+/* The checkbox list fills its stacked row. */
+::deep .card-style-panel__details {
+    flex: 1 1 100%;
+    min-width: 0;
+}
+
+@media (max-width: 599.98px) {
+    .card-style-panel__preview {
+        gap: var(--space-2);
+        padding: var(--space-3);
+    }
+
+    .card-style-panel__sample {
+        flex-basis: 6.5rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .card-style-panel__sample {
+        transition: none;
+    }
+}

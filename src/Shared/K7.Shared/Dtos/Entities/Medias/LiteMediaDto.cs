@@ -20,4 +20,7 @@ public abstract record LiteMediaDto
     public IReadOnlyList<MetadataPictureDto>? Pictures { get; init; }
     public UserMediaStateDto? UserState { get; init; }
     public int? UserRating { get; init; }
+
+    /// <summary>Card details, only when the query asked for them and the media has some.</summary>
+    public LiteMediaCardDetailsDto? Details { get; init; }
 }

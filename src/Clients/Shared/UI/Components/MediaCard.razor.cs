@@ -1,13 +1,16 @@
-﻿using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Helpers;
+using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
+using K7.Clients.Shared.UI.Helpers;
 using K7.Server.Domain.Enums;
+using K7.Shared.Enums;
 using K7.Shared.Interfaces;
+using K7.Shared.Theming;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.Localization;
-using Microsoft.JSInterop;
 using Microsoft.Extensions.Logging;
+using Microsoft.JSInterop;
 
 namespace K7.Clients.Shared.UI.Components;
 
@@ -45,6 +48,9 @@ public partial class MediaCard : IDisposable
     [Parameter] public string? TypeBadgeIcon { get; set; }
     /// <summary>Native img loading hint. Prefer lazy; TV browse preloads nearby pages separately.</summary>
     [Parameter] public string ImageLoading { get; set; } = "lazy";
+
+    /// <summary>Card style preferences of the user, cascaded by the main layout. None means the defaults.</summary>
+    [CascadingParameter] public MediaCardStyleContext? CardStyles { get; set; }
 
     [Inject] private NavigationManager NavigationManager { get; set; } = default!;
     [Inject] private IJSRuntime JS { get; set; } = default!;
@@ -105,6 +111,42 @@ public partial class MediaCard : IDisposable
         }
     }
 
+    private MediaCardStyleDto CardStyle => MediaCardStyleContext.Resolve(CardStyles, Model);
+
+    private string? ShownSubtitle => CardStyle.ShowSubtitle ? DisplaySubtitle : null;
+
+    private string? DetailsLine => CardStyle.DetailsPlacement == CardDetailPlacement.Below
+        ? MediaCardDetails.Build(Model, CardStyle.Details, ShownSubtitle, L)
+        : null;
+
+    private IReadOnlyList<string> DetailBadges => CardStyle.DetailsPlacement == CardDetailPlacement.Below
+        ? []
+        : MediaCardDetails.Parts(Model, CardStyle.Details, ShownSubtitle, L);
+
+    // The "time left" label of a card in progress, shown on hover and focus.
+    private bool ShowsProgressLabel => ProgressEnabled && Model is not null && !ProgressBarIsHidden();
+
+    private string BadgesClass => CardStyle.DetailsPlacement == CardDetailPlacement.Hover
+        ? "media-card-badges media-card-badges--hover"
+        : "media-card-badges";
+
+    // A skeleton has no item yet: it reserves the details line whenever the style has one.
+    private bool SkeletonDetailsShown =>
+        CardStyle.Details.Count > 0 && CardStyle.DetailsPlacement == CardDetailPlacement.Below;
+
+    private bool SkeletonFooterShown =>
+        FooterVisible && (CardStyle.ShowTitle || CardStyle.ShowSubtitle || SkeletonDetailsShown);
+
+    // A footer with nothing in it would only leave a gap under the artwork.
+    private bool FooterShown =>
+        FooterVisible && (CardStyle.ShowTitle || CardStyle.ShowSubtitle || DetailsLine is not null);
+
+    // A wide card shows the backdrop when the item has one, else its poster or cover, cropped.
+    private string? CardPictureUrl =>
+        Variant == MediaCardVariant.Backdrop && !string.IsNullOrEmpty(Model.LandscapeUrl)
+            ? Model.LandscapeUrl
+            : Model.PictureUrl;
+
     private string? TitleLinkHref =>
         !string.IsNullOrEmpty(Model?.TitleHref) ? Model.TitleHref : Href;
 
@@ -119,6 +161,10 @@ public partial class MediaCard : IDisposable
             classes.Add("media-card--menu-open");
         if (Selected)
             classes.Add("media-card--selected");
+        if (CardStyle.Hover == CardHoverStyle.Zoom)
+            classes.Add("media-card--hover-zoom");
+        else if (CardStyle.Hover == CardHoverStyle.Lift)
+            classes.Add("media-card--hover-lift");
         return string.Join(" ", classes);
     }
 
@@ -201,6 +247,7 @@ public partial class MediaCard : IDisposable
         PlaceholderIcon,
         TypeBadgeIcon,
         ImageLoading,
+        CardStyles,
         OnActivated.HasDelegate,
         OnFocused.HasDelegate,
         OnWatchStateChanged.HasDelegate,
@@ -229,6 +276,7 @@ public partial class MediaCard : IDisposable
         string? PlaceholderIcon,
         string? TypeBadgeIcon,
         string ImageLoading,
+        MediaCardStyleContext? CardStyles,
         bool HasActivated,
         bool HasFocused,
         bool HasWatchStateChanged,
@@ -683,10 +731,11 @@ public partial class MediaCard : IDisposable
             return;
         }
 
-        if (!string.IsNullOrEmpty(Model.PictureUrl))
+        var pictureUrl = CardPictureUrl;
+        if (!string.IsNullOrEmpty(pictureUrl))
         {
             builder.OpenComponent<K7Image>(1);
-            builder.AddAttribute(2, "Src", Model.PictureUrl);
+            builder.AddAttribute(2, "Src", pictureUrl);
             builder.AddAttribute(3, "Alt", Model.Title);
             builder.AddAttribute(4, "Class", "rounded-lg");
             builder.AddAttribute(5, "Fluid", true);

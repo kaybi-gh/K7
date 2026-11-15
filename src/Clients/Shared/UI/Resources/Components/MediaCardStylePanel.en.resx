@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="PageTitle" xml:space="preserve"><value>Media cards</value></data>
+  <data name="Description" xml:space="preserve"><value>Choose what cards show and how they react. The preview follows your choices. Until you change something, cards follow the style chosen by the administrator.</value></data>
+  <data name="Preview" xml:space="preserve"><value>Preview</value></data>
+  <data name="Scope" xml:space="preserve"><value>Applies to</value></data>
+  <data name="Scope_All" xml:space="preserve"><value>All</value></data>
+  <data name="Scope_Movies" xml:space="preserve"><value>Movies</value></data>
+  <data name="Scope_Series" xml:space="preserve"><value>Series</value></data>
+  <data name="Scope_Music" xml:space="preserve"><value>Music</value></data>
+  <data name="ScopeName_Movies" xml:space="preserve"><value>Movies</value></data>
+  <data name="ScopeName_Series" xml:space="preserve"><value>Series</value></data>
+  <data name="ScopeName_Music" xml:space="preserve"><value>Albums and tracks</value></data>
+  <data name="ScopeHint_All" xml:space="preserve"><value>Settings shared by every card.</value></data>
+  <data name="ScopeHint_Common" xml:space="preserve"><value>{0} follow the shared settings. A change here gives them their own.</value></data>
+  <data name="ScopeHint_Own" xml:space="preserve"><value>{0} have their own settings.</value></data>
+  <data name="ScopeUseCommon" xml:space="preserve"><value>Use the shared settings</value></data>
+  <data name="ShowTitle" xml:space="preserve"><value>Title under the card</value></data>
+  <data name="ShowSubtitle" xml:space="preserve"><value>Subtitle</value></data>
+  <data name="ShowSubtitleHint" xml:space="preserve"><value>The artist, the series or the year, depending on the card.</value></data>
+  <data name="Details" xml:space="preserve"><value>Extra details</value></data>
+  <data name="DetailsHint" xml:space="preserve"><value>Only what is known about a title is shown.</value></data>
+  <data name="Detail_Year" xml:space="preserve"><value>Year</value></data>
+  <data name="Detail_Runtime" xml:space="preserve"><value>Runtime</value></data>
+  <data name="Detail_Rating" xml:space="preserve"><value>Rating</value></data>
+  <data name="Detail_ContentRating" xml:space="preserve"><value>Content rating</value></data>
+  <data name="Detail_Genre" xml:space="preserve"><value>Genre</value></data>
+  <data name="Placement" xml:space="preserve"><value>Where extra details go</value></data>
+  <data name="Placement_Below" xml:space="preserve"><value>Under the card</value></data>
+  <data name="Placement_Overlay" xml:space="preserve"><value>On the artwork</value></data>
+  <data name="Placement_Hover" xml:space="preserve"><value>On hover</value></data>
+  <data name="PlacementHint_Below" xml:space="preserve"><value>A line of text under the title.</value></data>
+  <data name="PlacementHint_Overlay" xml:space="preserve"><value>Badges at the bottom of the artwork, always visible.</value></data>
+  <data name="PlacementHint_Hover" xml:space="preserve"><value>Badges that appear on hover or focus. On touch screens they stay visible.</value></data>
+  <data name="Hover" xml:space="preserve"><value>Hover and focus effect</value></data>
+  <data name="HoverHint" xml:space="preserve"><value>Applies to the mouse and the keyboard. Zoom and lift replace the outline.</value></data>
+  <data name="Hover_Outline" xml:space="preserve"><value>Outline</value></data>
+  <data name="Hover_Zoom" xml:space="preserve"><value>Zoom</value></data>
+  <data name="Hover_Lift" xml:space="preserve"><value>Lift</value></data>
+  <data name="Sample_Movie" xml:space="preserve"><value>A movie</value></data>
+  <data name="Sample_Serie" xml:space="preserve"><value>A series</value></data>
+  <data name="Sample_Album" xml:space="preserve"><value>An album</value></data>
+  <data name="Sample_Artist" xml:space="preserve"><value>Artist</value></data>
+  <data name="Sample_Genre" xml:space="preserve"><value>Adventure</value></data>
+  <data name="DescriptionAdmin" xml:space="preserve"><value>Card style offered by default to every account. Each account can then pick its own.</value></data>
+  <data name="DefaultSaved" xml:space="preserve"><value>Default card style saved.</value></data>
+  <data name="DefaultReset" xml:space="preserve"><value>Default card style reset.</value></data>
+</root>

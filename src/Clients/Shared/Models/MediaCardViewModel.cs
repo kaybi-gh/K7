@@ -16,7 +16,13 @@ public record MediaCardViewModel
     public string? Title { get; init; }
     public string? PictureUrl { get; init; }
     public string? BackdropUrl { get; init; }
+
+    /// <summary>Card-sized wide picture (backdrop, or still for an episode) for landscape cards.</summary>
+    public string? LandscapeUrl { get; init; }
     public bool SoftHeroBackdrop { get; init; }
+
+    /// <summary>Title treatment (logo) of the media, when it has one. Banners show it instead of the title.</summary>
+    public string? LogoUrl { get; init; }
     public string? AdditionalInformations { get; init; }
     public string? SubtitleHref { get; init; }
     public string? TitleHref { get; init; }

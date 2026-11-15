@@ -17,6 +17,11 @@ public sealed record QueryMediasRequest
     public bool? LocalOriginOnly { get; init; }
     public string? SearchText { get; init; }
     public RuleGroupDto Filter { get; init; } = new() { MatchCondition = RuleMatchCondition.All, Items = [] };
+    /// <summary>
+    /// Asks for <c>LiteMediaDto.Details</c> (genre, content rating, runtime, rating). Leave unset
+    /// unless cards show them: it adds queries on the server.
+    /// </summary>
+    public bool? IncludeCardDetails { get; init; }
     public required int PageNumber { get; init; } = 1;
     public required int PageSize { get; init; } = 10;
 }

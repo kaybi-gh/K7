@@ -11,6 +11,7 @@ public static class InterfaceSettingsSections
 
     public const string Appearance = "appearance";
     public const string Home = "home";
+    public const string Cards = "cards";
     public const string Navigation = "navigation";
     public const string ThemeSongs = "theme-songs";
 

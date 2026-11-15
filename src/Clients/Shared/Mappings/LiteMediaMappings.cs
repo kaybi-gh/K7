@@ -92,7 +92,11 @@ public static class LiteMediaMappings
             Progress = userState?.ProgressPercentage ?? 0,
             SerieSeasonCount = episodeDto?.SerieSeasonCount ?? 1,
             SerieReleaseYear = episodeDto?.SerieReleaseDate?.Year,
-            ReleaseYear = item.ReleaseDate?.Year
+            ReleaseYear = item.ReleaseDate?.Year,
+            Genres = item.Details?.Genre is { } genre ? [genre] : null,
+            ContentRating = item.Details?.ContentRating,
+            RuntimeMinutes = item.Details?.RuntimeMinutes,
+            Rating = item.Details?.Rating
         };
     }
 
@@ -203,6 +207,10 @@ public static class LiteMediaMappings
             RelatedLinks = relatedLinks,
             PictureUrl = ResolveCardPictureUrl(bestPicture, apiClient, pictureSize),
             BackdropUrl = ResolveHeroPictureUrl(backdropPicture, apiClient),
+            LandscapeUrl = ResolveLandscapeCardUrl(backdropPicture, apiClient),
+            LogoUrl = ResolveCardPictureUrl(
+                item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Logo),
+                apiClient),
             SoftHeroBackdrop = MetadataPictureDisplayHelper.ShouldSoftenTvHeroBackdrop(
                 item.MediaType,
                 backdropPicture),
@@ -396,6 +404,12 @@ public static class LiteMediaMappings
         var uri = apiClient.GetAbsoluteUri(picture.GetUri(size)?.OriginalString)?.AbsoluteUri;
         return uri;
     }
+
+    // Wide card picture: only real landscape art. Covers and posters keep their own shape.
+    private static string? ResolveLandscapeCardUrl(MetadataPictureDto? picture, IK7ServerService apiClient) =>
+        picture?.Type is MetadataPictureType.Backdrop or MetadataPictureType.Still
+            ? ResolveCardPictureUrl(picture, apiClient)
+            : null;
 
     private static string? ResolveHeroPictureUrl(
         MetadataPictureDto? picture,

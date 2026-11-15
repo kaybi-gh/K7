@@ -10,5 +10,8 @@ public class ServerInfoDto
 
     /// <summary>Themes made by an administrator, offered to every account next to the built-in ones.</summary>
     public List<CustomThemeDto> ServerThemes { get; set; } = [];
+
+    /// <summary>Card style for accounts that chose none. Null means the built-in card.</summary>
+    public MediaCardPreferencesDto? DefaultCards { get; set; }
     public PasswordPolicyDto PasswordPolicy { get; set; } = PasswordPolicyDto.Defaults;
 }

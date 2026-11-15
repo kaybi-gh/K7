@@ -674,4 +674,127 @@ public class LiteMediaMappingsTests
         Kind = MediaCardKind.Poster,
         MediaType = mediaType
     };
+
+    [Test]
+    public void ToCardViewModel_ShouldCarryTheCardDetails_WhenTheBrowseQuerySentThem()
+    {
+        var item = new LiteMovieDto
+        {
+            Id = Guid.NewGuid(),
+            Title = "Dune",
+            ReleaseDate = new DateOnly(2021, 9, 15),
+            Details = new LiteMediaCardDetailsDto
+            {
+                Genre = "Science Fiction",
+                ContentRating = "PG-13",
+                RuntimeMinutes = 155,
+                Rating = 8.0
+            }
+        };
+
+        var result = item.ToCardViewModel(Substitute.For<IK7ServerService>(), n => $"Season {n}");
+
+        result!.Genres.Should().Equal("Science Fiction");
+        result.ContentRating.Should().Be("PG-13");
+        result.RuntimeMinutes.Should().Be(155);
+        result.Rating.Should().Be(8.0);
+        result.ReleaseYear.Should().Be(2021);
+    }
+
+    [Test]
+    public void ToCardViewModel_ShouldLeaveCardDetailsEmpty_WhenTheBrowseQueryDidNotAsk()
+    {
+        var item = new LiteMovieDto { Id = Guid.NewGuid(), Title = "Dune" };
+
+        var result = item.ToCardViewModel(Substitute.For<IK7ServerService>(), n => $"Season {n}");
+
+        result!.Genres.Should().BeNull();
+        result.RuntimeMinutes.Should().BeNull();
+        result.Rating.Should().BeNull();
+    }
+
+    private static IK7ServerService ApiClient()
+    {
+        var apiClient = Substitute.For<IK7ServerService>();
+        apiClient.GetAbsoluteUri(Arg.Any<string?>()).Returns(call =>
+            call.Arg<string?>() is null ? null : new Uri($"https://localhost{call.Arg<string?>()}", UriKind.Absolute));
+        return apiClient;
+    }
+
+    private static MetadataPictureDto Picture(MetadataPictureType type, string path) => new()
+    {
+        Id = Guid.NewGuid(),
+        Type = type,
+        Uri = new Uri(path, UriKind.Relative)
+    };
+
+    [Test]
+    public void ToCardViewModel_ShouldGiveALandscapePicture_WhenHomeFeedMovieHasABackdrop()
+    {
+        var item = new HomeFeedItemDto
+        {
+            Id = Guid.NewGuid(),
+            Title = "Dune",
+            MediaType = MediaType.Movie,
+            NavigationTarget = "/movies/1",
+            Pictures =
+            [
+                Picture(MetadataPictureType.Poster, "/pictures/poster.jpg"),
+                Picture(MetadataPictureType.Backdrop, "/pictures/backdrop.jpg")
+            ]
+        };
+
+        var result = item.ToCardViewModel(ApiClient());
+
+        result.LandscapeUrl.Should().Contain("backdrop");
+        result.PictureUrl.Should().Contain("poster");
+        result.LogoUrl.Should().BeNull();
+    }
+
+    [Test]
+    public void ToCardViewModel_ShouldUseTheStillAsLandscapePicture_ForHomeFeedEpisode()
+    {
+        var item = new HomeFeedItemDto
+        {
+            Id = Guid.NewGuid(),
+            Title = "Pilot",
+            MediaType = MediaType.SerieEpisode,
+            NavigationTarget = "/series/1/seasons/1#ep-1",
+            Pictures =
+            [
+                Picture(MetadataPictureType.Poster, "/pictures/poster.jpg"),
+                Picture(MetadataPictureType.Still, "/pictures/still.jpg"),
+                Picture(MetadataPictureType.Logo, "/pictures/logo.png")
+            ]
+        };
+
+        var result = item.ToCardViewModel(ApiClient());
+
+        result.LogoUrl.Should().Contain("logo");
+        result.LandscapeUrl.Should().Contain("still");
+    }
+
+    [Test]
+    public void ToCardViewModel_ShouldLeaveLandscapePictureEmpty_WhenHomeFeedItemOnlyHasACoverOrPoster()
+    {
+        var album = new HomeFeedItemDto
+        {
+            Id = Guid.NewGuid(),
+            Title = "Discovery",
+            MediaType = MediaType.MusicAlbum,
+            NavigationTarget = "/music/albums/1",
+            Pictures = [Picture(MetadataPictureType.Cover, "/pictures/cover.jpg")]
+        };
+        var movie = new HomeFeedItemDto
+        {
+            Id = Guid.NewGuid(),
+            Title = "Dune",
+            MediaType = MediaType.Movie,
+            NavigationTarget = "/movies/1",
+            Pictures = [Picture(MetadataPictureType.Poster, "/pictures/poster.jpg")]
+        };
+
+        album.ToCardViewModel(ApiClient()).LandscapeUrl.Should().BeNull();
+        movie.ToCardViewModel(ApiClient()).LandscapeUrl.Should().BeNull();
+    }
 }

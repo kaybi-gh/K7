@@ -14,6 +14,12 @@ public sealed record AppearancePreferencesDto
     public Dictionary<DeviceType, AppearanceSettingsDto> DeviceOverrides { get; set; } = [];
     public List<CustomThemeDto> CustomThemes { get; set; } = [];
 
+    /// <summary>
+    /// How media cards look. Null follows the default card style of the server. Shared by every
+    /// device type; ignored on TV.
+    /// </summary>
+    public MediaCardPreferencesDto? Cards { get; set; }
+
     public bool HasDeviceOverride(DeviceType deviceType) => DeviceOverrides.ContainsKey(deviceType);
 
     public AppearanceSettingsDto Resolve(DeviceType deviceType) =>

@@ -1,0 +1,63 @@
+@namespace K7.Clients.Shared.UI.Components
+@inject IStringLocalizer<MediaCardStylePanel> L
+
+<div class="card-style-panel">
+    <div class="card-style-panel__preview" aria-label="@L["Preview"]" role="group">
+        <CascadingValue Value="PreviewContext">
+            @foreach (var sample in _samples)
+            {
+                <div class="card-style-panel__sample @(IsInScope(sample) ? "" : "card-style-panel__sample--muted")" @key="sample.Id">
+                    <MediaCard Model="sample"
+                               Variant="@(sample.Kind == MediaCardKind.Cover ? MediaCardVariant.Cover : MediaCardVariant.Poster)"
+                               OverlayEnabled="true"
+                               ContextMenuEnabled="false"
+                               FooterVisible="true"
+                               OnActivated="IgnoreActivation" />
+                </div>
+            }
+        </CascadingValue>
+    </div>
+
+    <K7SettingRow Label="@L["Scope"]" Hint="@ScopeHint" Stacked="true">
+        <div class="card-style-panel__scope">
+            <K7ButtonGroup TValue="CardScope"
+                           Options="ScopeOptions"
+                           Value="_scope"
+                           ValueChanged="OnScopeChanged"
+                           AriaLabel="@L["Scope"]" />
+            @if (ScopeHasOverride)
+            {
+                <K7Button Variant="text" Disabled="Disabled" OnClick="RemoveScopeOverride">@L["ScopeUseCommon"]</K7Button>
+            }
+        </div>
+    </K7SettingRow>
+    <K7SettingRow Label="@L["ShowTitle"]">
+        <K7Switch Value="Current.ShowTitle" ValueChanged="OnShowTitleChanged" Disabled="Disabled" AriaLabel="@L["ShowTitle"]" />
+    </K7SettingRow>
+    <K7SettingRow Label="@L["ShowSubtitle"]" Hint="@L["ShowSubtitleHint"]">
+        <K7Switch Value="Current.ShowSubtitle" ValueChanged="OnShowSubtitleChanged" Disabled="Disabled" AriaLabel="@L["ShowSubtitle"]" />
+    </K7SettingRow>
+    <K7SettingRow Label="@L["Details"]" Hint="@L["DetailsHint"]" Stacked="true">
+        <K7CheckboxList TItem="CardDetailField"
+                        Items="_detailFields"
+                        IsChecked="@(detail => Current.Details.Contains(detail))"
+                        IsDisabled="@(_ => Disabled)"
+                        CheckedChanged="@(change => OnDetailChanged(change.Item, change.Checked))"
+                        ItemLabel="@GetDetailLabel"
+                        Class="card-style-panel__details" />
+    </K7SettingRow>
+    <K7SettingRow Label="@L["Placement"]" Hint="@PlacementHint">
+        <K7ButtonGroup TValue="CardDetailPlacement"
+                       Options="PlacementOptions"
+                       Value="Current.DetailsPlacement"
+                       ValueChanged="OnPlacementChanged"
+                       AriaLabel="@L["Placement"]" />
+    </K7SettingRow>
+    <K7SettingRow Label="@L["Hover"]" Hint="@L["HoverHint"]">
+        <K7ButtonGroup TValue="CardHoverStyle"
+                       Options="HoverOptions"
+                       Value="Current.Hover"
+                       ValueChanged="OnHoverChanged"
+                       AriaLabel="@L["Hover"]" />
+    </K7SettingRow>
+</div>

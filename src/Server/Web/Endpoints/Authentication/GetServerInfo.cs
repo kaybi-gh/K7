@@ -39,6 +39,7 @@ public class GetServerInfo : IEndpoint
             var defaultLanguage = await serverSettings.GetAsync(ServerSettingKeys.DefaultLanguage, cancellationToken) ?? "en";
             var defaultTheme = await serverSettings.GetAsync(ServerSettingKeys.DefaultTheme, cancellationToken) ?? "default-dark";
             var serverThemes = ServerThemes.Parse(await serverSettings.GetAsync(ServerSettingKeys.ServerThemes, cancellationToken));
+            var defaultCards = MediaCardStyles.Parse(await serverSettings.GetAsync(ServerSettingKeys.DefaultCardStyle, cancellationToken));
             var policy = await passwordPolicy.GetAsync(cancellationToken);
 
             return Results.Ok(new ServerInfoDto
@@ -47,6 +48,7 @@ public class GetServerInfo : IEndpoint
                 DefaultLanguage = defaultLanguage,
                 DefaultTheme = defaultTheme,
                 ServerThemes = serverThemes,
+                DefaultCards = defaultCards,
                 PasswordPolicy = policy
             });
         })

@@ -37,13 +37,16 @@ public record GetMediasWithPaginationQuery : IRequest<PaginatedList<LiteMediaDto
     /// <summary>When true, only local-origin media (<c>PeerServerId == null</c>).</summary>
     public bool? LocalOriginOnly { get; init; }
     public string? SearchText { get; init; }
+
+    /// <summary>Adds the card details to each item. Off by default: it costs extra queries.</summary>
+    public bool? IncludeCardDetails { get; init; }
     public required int PageNumber { get; init; } = 1;
     public required int PageSize { get; init; } = PagingDefaults.CompactPageSize;
 }
 
 public record QueryMediasQuery(QueryMediasRequest Request) : IRequest<PaginatedList<LiteMediaDto>>;
 
-public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentUser, IBoundedMemoryCache cache, IMediaQueryCacheInvalidator cacheInvalidator, MediaAccessFilter mediaAccessFilter, IPlaybackPolicySettingsProvider playbackPolicySettingsProvider, LiteMediaProjectionService liteMediaProjection, IDatabaseCapabilities databaseCapabilities)
+public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentUser, IBoundedMemoryCache cache, IMediaQueryCacheInvalidator cacheInvalidator, MediaAccessFilter mediaAccessFilter, IPlaybackPolicySettingsProvider playbackPolicySettingsProvider, LiteMediaProjectionService liteMediaProjection, LiteMediaCardDetailsService liteMediaCardDetails, IDatabaseCapabilities databaseCapabilities)
     : IRequestHandler<GetMediasWithPaginationQuery, PaginatedList<LiteMediaDto>>,
       IRequestHandler<QueryMediasQuery, PaginatedList<LiteMediaDto>>
 {
@@ -120,6 +123,8 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
             parts.Add($"st:{request.SearchText.Trim()}");
         if (filter is { Items.Count: > 0 })
             parts.Add($"f:{HashFilter(filter)}");
+        if (includePagination && request.IncludeCardDetails == true)
+            parts.Add("cd");
         if (includePagination)
         {
             parts.Add($"p:{request.PageNumber}");
@@ -196,6 +201,8 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
             return new PaginatedList<LiteMediaDto>([], totalCount, request.PageNumber, request.PageSize);
 
         var ordered = await liteMediaProjection.GetLiteMediaDtosAsync(pageIds, userId, cancellationToken);
+        if (request.IncludeCardDetails == true)
+            ordered = await liteMediaCardDetails.ApplyAsync(ordered, cancellationToken);
 
         return new PaginatedList<LiteMediaDto>(ordered, totalCount, request.PageNumber, request.PageSize);
     }
@@ -332,6 +339,7 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
         OriginPeerServerId = request.OriginPeerServerId,
         LocalOriginOnly = request.LocalOriginOnly,
         SearchText = request.SearchText,
+        IncludeCardDetails = request.IncludeCardDetails,
         PageNumber = request.PageNumber,
         PageSize = request.PageSize
     };

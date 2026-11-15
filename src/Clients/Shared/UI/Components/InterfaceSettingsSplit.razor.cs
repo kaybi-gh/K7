@@ -29,6 +29,7 @@ public partial class InterfaceSettingsSplit
     private string ActiveTitle => Section switch
     {
         InterfaceSettingsSections.Home => L["Home"],
+        InterfaceSettingsSections.Cards => L["Cards"],
         InterfaceSettingsSections.Navigation => L["Navigation"],
         InterfaceSettingsSections.ThemeSongs => L["ThemeSongs"],
         _ => L["Appearance"]

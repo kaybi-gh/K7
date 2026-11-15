@@ -1,0 +1,31 @@
+@page "/settings/interface/cards"
+@layout SettingsLayout
+@inject IStringLocalizer<MediaCardStylePanel> L
+@inject IStringLocalizer<SharedResource> S
+
+<PageTitle>@L["PageTitle"]</PageTitle>
+
+<div class="settings-form-page settings-form-page--section-actions">
+    <div class="settings-form-page__body">
+        <InterfaceSettingsSplit Section="@InterfaceSettingsSections.Cards">
+            @if (!_loaded)
+            {
+                <K7ProgressBar Indeterminate="true" />
+            }
+            else
+            {
+                <p class="settings-field-hint">@L["Description"]</p>
+                <MediaCardStylePanel Cards="_cards" OnChanged="OnCardsChanged" />
+            }
+        </InterfaceSettingsSplit>
+    </div>
+
+    @if (_loaded)
+    {
+        <K7SettingsActionBar AutoSave="true"
+                             SaveState="SaveState"
+                             IsSaving="IsBusy"
+                             ResetDisabled="@(_preferences.Cards is null)"
+                             OnResetToDefaults="ResetAsync" />
+    }
+</div>

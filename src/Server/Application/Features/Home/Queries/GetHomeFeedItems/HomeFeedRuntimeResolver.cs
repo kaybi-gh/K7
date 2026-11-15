@@ -39,6 +39,27 @@ internal static class HomeFeedRuntimeResolver
         return Merge(items, directMinutes, serieMinutes, seasonMinutes);
     }
 
+    /// <summary>
+    /// Runtime in minutes of movies, series, seasons and episodes, by media id. Same rules as the
+    /// home feed, for callers that do not hold feed items (library browse).
+    /// </summary>
+    public static async Task<IReadOnlyDictionary<Guid, int>> ResolveMinutesAsync(
+        IApplicationDbContext context,
+        IReadOnlyCollection<(Guid Id, MediaType Type)> medias,
+        CancellationToken cancellationToken)
+    {
+        var stubs = medias
+            .Where(m => IsVideoHeroType(m.Type))
+            .Select(m => new HomeFeedItemDto { Id = m.Id, Title = "", MediaType = m.Type, NavigationTarget = "" })
+            .ToList();
+
+        var resolved = await ApplyAsync(context, stubs, cancellationToken);
+        return resolved
+            .Where(item => item.RuntimeMinutes is > 0)
+            .GroupBy(item => item.Id)
+            .ToDictionary(group => group.Key, group => group.First().RuntimeMinutes!.Value);
+    }
+
     internal static IReadOnlyList<HomeFeedItemDto> Merge(
         IReadOnlyCollection<HomeFeedItemDto> items,
         IReadOnlyDictionary<Guid, int> directMinutes,

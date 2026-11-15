@@ -23,6 +23,9 @@ public class UpdateAppearancePreferencesCommandValidator : AbstractValidator<Upd
         if (preferences.DeviceOverrides.Any(o => !Enum.IsDefined(o.Key) || !IsValidSettings(o.Value)))
             return false;
 
+        if (preferences.Cards is not null && !MediaCardStyles.IsValid(preferences.Cards))
+            return false;
+
         if (preferences.CustomThemes.Count > AppearancePreferencesDto.MaxCustomThemes
             || preferences.CustomThemes.Any(t => !ThemePaletteValidator.IsValidTheme(t, CustomThemeDto.IdPrefix)))
         {

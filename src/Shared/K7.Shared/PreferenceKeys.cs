@@ -8,6 +8,18 @@ public sealed class PreferenceKey<T>(string name)
 public static class PreferenceKeys
 {
     public static readonly PreferenceKey<string> K7_SERVER_URL = new("BackendUrl");
+
+    /// <summary>
+    /// Shape of the home of the last user on this device (its rows, as JSON), so the home shows
+    /// placeholders of the right shape as soon as the app opens.
+    /// </summary>
+    public static readonly PreferenceKey<string> HOME_SKELETON_SHAPE = new("HomeSkeletonShape");
+
+    /// <summary>
+    /// Appearance preferences of the last user on this device (JSON, with their id), so the app
+    /// opens with their card style and asks for the right home feed before the server answers.
+    /// </summary>
+    public static readonly PreferenceKey<string> APPEARANCE_PREFERENCES_CACHE = new("AppearancePreferencesCache");
     public static readonly PreferenceKey<string> DEVICE_ID = new("DeviceId");
     public static readonly PreferenceKey<string> DEVICE_NAME = new("DeviceName");
     public static readonly PreferenceKey<string> DEVICE_ATTACHED_USER_ID = new("DeviceAttachedUserId");

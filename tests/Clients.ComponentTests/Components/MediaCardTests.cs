@@ -5,8 +5,11 @@ using K7.Clients.Shared.Services;
 using K7.Clients.Shared.UI;
 using K7.Clients.Shared.UI.Components;
 using K7.Clients.Shared.UI.Components.Dialogs;
+using K7.Clients.Shared.UI.Helpers;
 using K7.Server.Domain.Enums;
+using K7.Shared.Enums;
 using K7.Shared.Interfaces;
+using K7.Shared.Theming;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Rendering;
 using Microsoft.AspNetCore.Components.Web;
@@ -283,6 +286,230 @@ public class MediaCardTests
         cut.FindAll(".k7-menu-item-text").Select(item => item.TextContent.Trim())
             .Should().StartWith(new[] { "Resume", "PlayFromStart" });
         cut.Find(".k7-menu-item--primary").TextContent.Should().Contain("Resume");
+    }
+
+    [TestCase(MediaCardVariant.Backdrop, "https://localhost/backdrop.jpg")]
+    [TestCase(MediaCardVariant.Poster, "https://localhost/poster.jpg")]
+    public void Render_ShouldShowTheLandscapePicture_OnlyOnAWideCard(MediaCardVariant variant, string expected)
+    {
+        using var ctx = CreateContext();
+        ctx.Services.AddSingleton(Substitute.For<IK7ServerService>());
+        var model = new MediaCardViewModel
+        {
+            Id = "1",
+            Title = "Dune",
+            PictureUrl = "https://localhost/poster.jpg",
+            LandscapeUrl = "https://localhost/backdrop.jpg"
+        };
+
+        var cut = ctx.Render<MediaCard>(p => p
+            .Add(c => c.Model, model)
+            .Add(c => c.Variant, variant));
+
+        cut.Markup.Should().Contain(expected);
+    }
+
+    [Test]
+    public void Render_ShouldKeepThePoster_WhenAWideCardHasNoLandscapePicture()
+    {
+        using var ctx = CreateContext();
+        ctx.Services.AddSingleton(Substitute.For<IK7ServerService>());
+        var model = new MediaCardViewModel { Id = "1", Title = "Dune", PictureUrl = "https://localhost/poster.jpg" };
+
+        var cut = ctx.Render<MediaCard>(p => p
+            .Add(c => c.Model, model)
+            .Add(c => c.Variant, MediaCardVariant.Backdrop));
+
+        cut.Markup.Should().Contain("https://localhost/poster.jpg");
+    }
+
+    private static readonly MediaCardViewModel _styledMovie = new()
+    {
+        Id = "1",
+        Title = "Dune",
+        MediaType = MediaType.Movie,
+        AdditionalInformations = "Denis Villeneuve",
+        ReleaseYear = 2021,
+        ContentRating = "PG-13"
+    };
+
+    private static IRenderedComponent<MediaCard> RenderStyled(BunitContext ctx, MediaCardStyleDto style) =>
+        ctx.Render<MediaCard>(p => p
+            .Add(c => c.Model, _styledMovie)
+            .Add(c => c.FooterVisible, true)
+            .AddCascadingValue(new MediaCardStyleContext(new MediaCardPreferencesDto { Default = style })));
+
+    [Test]
+    public void Render_ShouldAddADetailsLine_WhenDetailsGoUnderTheCard()
+    {
+        using var ctx = CreateContext();
+
+        var cut = RenderStyled(ctx, new MediaCardStyleDto
+        {
+            Details = [CardDetailField.ContentRating, CardDetailField.Year]
+        });
+
+        cut.Find(".media-card-details").TextContent.Should().Be($"2021{MediaCardDetails.Separator}PG-13");
+        cut.FindAll(".media-card-badges").Should().BeEmpty();
+    }
+
+    [TestCase(CardDetailPlacement.Overlay, false)]
+    [TestCase(CardDetailPlacement.Hover, true)]
+    public void Render_ShouldShowDetailsAsBadges_WhenTheyGoOnTheArtwork(CardDetailPlacement placement, bool onHover)
+    {
+        using var ctx = CreateContext();
+
+        var cut = RenderStyled(ctx, new MediaCardStyleDto
+        {
+            Details = [CardDetailField.Year, CardDetailField.ContentRating],
+            DetailsPlacement = placement
+        });
+
+        cut.FindAll(".media-card-badge").Select(b => b.TextContent).Should().Equal("2021", "PG-13");
+        cut.Find(".media-card-badges").ClassList.Contains("media-card-badges--hover").Should().Be(onHover);
+        cut.FindAll(".media-card-details").Should().BeEmpty();
+    }
+
+    [Test]
+    public void Render_ShouldStackTheTimeLeftWithTheBadges_WhenACardInProgressHasBadges()
+    {
+        using var ctx = CreateContext();
+        var inProgress = _styledMovie with { Progress = 40, RuntimeMinutes = 100 };
+
+        var cut = ctx.Render<MediaCard>(p => p
+            .Add(c => c.Model, inProgress)
+            .Add(c => c.OverlayEnabled, true)
+            .Add(c => c.ProgressEnabled, true)
+            .Add(c => c.Href, "/movies/1")
+            .AddCascadingValue(new MediaCardStyleContext(new MediaCardPreferencesDto
+            {
+                Default = { Details = [CardDetailField.Year], DetailsPlacement = CardDetailPlacement.Overlay }
+            })));
+
+        // One label only: inside the badge stack, not the separate overlay label that would cover the badges.
+        cut.FindAll(".media-card-badges .media-card-badges-progress").Should().ContainSingle();
+        cut.FindAll(".media-card-overlay-progress").Should().BeEmpty();
+        cut.FindAll(".media-card-badges > .media-card-badge").Select(b => b.TextContent).Should().Equal("2021");
+    }
+
+    [Test]
+    public void Render_ShouldKeepTheTimeLeftInTheOverlay_WhenThereAreNoBadges()
+    {
+        using var ctx = CreateContext();
+        var inProgress = _styledMovie with { Progress = 40, RuntimeMinutes = 100 };
+
+        var cut = ctx.Render<MediaCard>(p => p
+            .Add(c => c.Model, inProgress)
+            .Add(c => c.OverlayEnabled, true)
+            .Add(c => c.ProgressEnabled, true)
+            .Add(c => c.Href, "/movies/1"));
+
+        cut.FindAll(".media-card-overlay-progress").Should().ContainSingle();
+        cut.FindAll(".media-card-badges-progress").Should().BeEmpty();
+    }
+
+    private static IRenderedComponent<MediaCard> RenderSkeleton(BunitContext ctx, MediaCardStyleDto? style) =>
+        ctx.Render<MediaCard>(p =>
+        {
+            p.Add(c => c.Skeleton, true).Add(c => c.FooterVisible, true);
+            if (style is not null)
+                p.AddCascadingValue(new MediaCardStyleContext(new MediaCardPreferencesDto { Default = style }));
+        });
+
+    [Test]
+    public void Skeleton_ShouldKeepTitleAndSubtitleLines_ByDefault()
+    {
+        using var ctx = CreateContext();
+
+        var cut = RenderSkeleton(ctx, null);
+
+        cut.FindAll(".media-card-footer-skeleton .k7-skeleton").Should().HaveCount(2);
+        cut.Find(".media-card").ClassList.Where(c => c.StartsWith("media-card--hover-", StringComparison.Ordinal))
+            .Should().BeEmpty();
+    }
+
+    [Test]
+    public void Skeleton_ShouldTakeTheShapeAndHoverEffectOfTheCardStyle()
+    {
+        using var ctx = CreateContext();
+
+        var withDetails = RenderSkeleton(ctx, new MediaCardStyleDto
+        {
+            ShowSubtitle = false,
+            Details = [CardDetailField.Year],
+            Hover = CardHoverStyle.Zoom
+        });
+        withDetails.FindAll(".media-card-footer-skeleton .k7-skeleton").Should().HaveCount(2);
+        withDetails.Find(".media-card").ClassList.Should().Contain("media-card--hover-zoom");
+
+        var artworkOnly = RenderSkeleton(ctx, new MediaCardStyleDto { ShowTitle = false, ShowSubtitle = false });
+        artworkOnly.FindAll(".media-card-footer").Should().BeEmpty();
+
+        var badges = RenderSkeleton(ctx, new MediaCardStyleDto
+        {
+            Details = [CardDetailField.Year],
+            DetailsPlacement = CardDetailPlacement.Overlay
+        });
+        badges.FindAll(".media-card-footer-skeleton .k7-skeleton").Should().HaveCount(2);
+    }
+
+    [Test]
+    public void Render_ShouldHideTitleAndSubtitle_WhenTheStyleHidesThem()
+    {
+        using var ctx = CreateContext();
+
+        var titleOnly = RenderStyled(ctx, new MediaCardStyleDto { ShowSubtitle = false });
+        titleOnly.FindAll(".media-card-title").Should().ContainSingle();
+        titleOnly.FindAll(".media-card-subtitle").Should().BeEmpty();
+
+        var bare = RenderStyled(ctx, new MediaCardStyleDto { ShowTitle = false, ShowSubtitle = false });
+        bare.FindAll(".media-card-footer").Should().BeEmpty();
+    }
+
+    [TestCase(CardHoverStyle.Outline, null)]
+    [TestCase(CardHoverStyle.Zoom, "media-card--hover-zoom")]
+    [TestCase(CardHoverStyle.Lift, "media-card--hover-lift")]
+    public void Render_ShouldFlagTheHoverStyle(CardHoverStyle hover, string? expectedClass)
+    {
+        using var ctx = CreateContext();
+
+        var cut = RenderStyled(ctx, new MediaCardStyleDto { Hover = hover });
+
+        var classes = cut.Find(".media-card").ClassList;
+        classes.Where(c => c.StartsWith("media-card--hover-", StringComparison.Ordinal))
+            .Should().BeEquivalentTo(expectedClass is null ? [] : new[] { expectedClass });
+    }
+
+    [Test]
+    public void Render_ShouldKeepTheDefaultCard_WhenThereIsNoStyle()
+    {
+        using var ctx = CreateContext();
+
+        var cut = ctx.Render<MediaCard>(p => p
+            .Add(c => c.Model, _styledMovie)
+            .Add(c => c.FooterVisible, true));
+
+        cut.FindAll(".media-card-title").Should().ContainSingle();
+        cut.FindAll(".media-card-subtitle").Should().ContainSingle();
+        cut.FindAll(".media-card-details").Should().BeEmpty();
+        cut.FindAll(".media-card-badges").Should().BeEmpty();
+    }
+
+    [Test]
+    public void Rerender_ShouldApplyANewStyle_WhenTheCascadedContextChanges()
+    {
+        using var ctx = CreateContext();
+        var cut = ctx.Render<CascadingValue<MediaCardStyleContext>>(p => p
+            .Add(c => c.Value, new MediaCardStyleContext(new MediaCardPreferencesDto()))
+            .AddChildContent<MediaCard>(card => card
+                .Add(c => c.Model, _styledMovie)
+                .Add(c => c.FooterVisible, true)));
+        cut.FindAll(".media-card-subtitle").Should().ContainSingle();
+
+        cut.Render(p => p.Add(c => c.Value, new MediaCardStyleContext(
+            new MediaCardPreferencesDto { Default = { ShowSubtitle = false } })));
+
+        cut.FindAll(".media-card-subtitle").Should().BeEmpty();
     }
 
     [Test]

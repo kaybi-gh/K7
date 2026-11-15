@@ -1,0 +1,32 @@
+@page "/admin/interface/cards"
+@layout AdminLayout
+@inject IStringLocalizer<MediaCardStylePanel> L
+@inject IStringLocalizer<SharedResource> S
+
+<PageTitle>@L["PageTitle"]</PageTitle>
+
+<div class="settings-form-page settings-form-page--section-actions">
+    <div class="settings-form-page__body">
+        <InterfaceSettingsSplit Section="@InterfaceSettingsSections.Cards" Admin="true">
+            @if (_isLoading)
+            {
+                <K7ProgressBar Indeterminate="true" />
+            }
+            else
+            {
+                <p class="settings-field-hint">@L["DescriptionAdmin"]</p>
+                <MediaCardStylePanel Cards="_cards" Disabled="_saving" OnChanged="StateHasChanged" />
+            }
+        </InterfaceSettingsSplit>
+    </div>
+
+    @if (!_isLoading)
+    {
+        <K7SettingsActionBar IsDirty="IsDirty"
+                             IsSaving="_saving"
+                             ResetDisabled="@(!IsDirty && _cards.IsDefault)"
+                             OnSave="SaveAsync"
+                             OnCancel="CancelChanges"
+                             OnResetToDefaults="ResetAsync" />
+    }
+</div>

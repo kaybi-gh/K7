@@ -46,6 +46,7 @@ public static class DependencyInjection
         // Named Scrobble client is registered in ExternalServices with a capped resilience policy.
         services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
         services.AddScoped<LiteMediaProjectionService>();
+        services.AddScoped<LiteMediaCardDetailsService>();
         services.AddScoped<MediaAccessFilter>();
         services.AddScoped<IMediaLibraryAvailabilityService, MediaLibraryAvailabilityService>();
 

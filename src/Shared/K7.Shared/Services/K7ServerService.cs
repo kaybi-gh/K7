@@ -1016,6 +1016,12 @@ public partial class K7ServerService : IK7ServerService, IMediaService, ILibrary
         response.EnsureSuccessStatusCode();
     }
 
+    public async Task UpdateDefaultCardStyleAsync(Theming.MediaCardPreferencesDto cards, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PutAsJsonAsync("api/admin/settings/cards", new { Cards = cards }, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
     public async Task<List<ActiveStreamDto>?> GetActiveStreamsAsync(CancellationToken cancellationToken = default)
     {
         return await HttpClient.GetFromJsonAsync<List<ActiveStreamDto>>("api/admin/streams", _serializerOptions, cancellationToken);

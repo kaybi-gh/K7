@@ -1,16 +1,27 @@
 @if (Skeleton)
 {
-    <div class="media-card @VariantClass">
+    @* Same shape and same hover effect as the card it stands for: no jump when the card arrives. *@
+    <div class="media-card @VariantClass @GetRootClass()">
         <div class="media-card-container">
             <K7Skeleton />
         </div>
 
-        @if (FooterVisible)
+        @if (SkeletonFooterShown)
         {
             <div class="media-card-footer mt-1">
                 <div class="media-card-footer-skeleton">
-                    <K7Skeleton Shape="text" Width="78%" Class="media-card-skeleton-title" />
-                    <K7Skeleton Shape="text" Width="44%" Class="media-card-skeleton-subtitle" />
+                    @if (CardStyle.ShowTitle)
+                    {
+                        <K7Skeleton Shape="text" Width="78%" Class="media-card-skeleton-title" />
+                    }
+                    @if (CardStyle.ShowSubtitle)
+                    {
+                        <K7Skeleton Shape="text" Width="44%" Class="media-card-skeleton-subtitle" />
+                    }
+                    @if (SkeletonDetailsShown)
+                    {
+                        <K7Skeleton Shape="text" Width="60%" Class="media-card-skeleton-subtitle" />
+                    }
                 </div>
             </div>
         }
@@ -40,6 +51,7 @@ else
                @onkeydown="OnKeyDown"
                @onkeyup="OnKeyUp">
                 @CoverVisual
+                @CardBadges
 
                 @if (!string.IsNullOrEmpty(TypeBadgeIcon))
                 {
@@ -93,6 +105,7 @@ else
                  @onkeydown="OnKeyDown"
                  @onkeyup="OnKeyUp">
                 @CoverVisual
+                @CardBadges
 
                 @if (!string.IsNullOrEmpty(TypeBadgeIcon))
                 {
@@ -131,6 +144,7 @@ else
             {
             <div class="media-card-link">
                 @CoverVisual
+                @CardBadges
 
                 @if (!string.IsNullOrEmpty(TypeBadgeIcon))
                 {
@@ -169,36 +183,46 @@ else
 
         </div>
 
-        @if (FooterVisible)
+        @if (FooterShown)
         {
             <div class="media-card-footer mt-1">
                 <div class="d-flex flex-col">
-                    <span class="media-card-title">
-                        @if (!string.IsNullOrEmpty(TitleLinkHref))
-                        {
-                            <a class="media-card-title-inner media-card-title-link"
-                               href="@TitleLinkHref"
-                               tabindex="-1"
-                               @onclick:stopPropagation="true">@Model.Title</a>
-                        }
-                        else
-                        {
-                            <span class="media-card-title-inner">@Model.Title</span>
-                        }
-                    </span>
-                    <span class="media-card-subtitle">
-                        @if (!string.IsNullOrEmpty(DisplaySubtitle) && !string.IsNullOrEmpty(Model.SubtitleHref))
-                        {
-                            <a class="media-card-subtitle-inner media-card-subtitle-link"
-                               href="@Model.SubtitleHref"
-                               tabindex="-1"
-                               @onclick:stopPropagation="true">@DisplaySubtitle</a>
-                        }
-                        else
-                        {
-                            <span class="media-card-subtitle-inner">@DisplaySubtitle</span>
-                        }
-                    </span>
+                    @if (CardStyle.ShowTitle)
+                    {
+                        <span class="media-card-title">
+                            @if (!string.IsNullOrEmpty(TitleLinkHref))
+                            {
+                                <a class="media-card-title-inner media-card-title-link"
+                                   href="@TitleLinkHref"
+                                   tabindex="-1"
+                                   @onclick:stopPropagation="true">@Model.Title</a>
+                            }
+                            else
+                            {
+                                <span class="media-card-title-inner">@Model.Title</span>
+                            }
+                        </span>
+                    }
+                    @if (CardStyle.ShowSubtitle)
+                    {
+                        <span class="media-card-subtitle">
+                            @if (!string.IsNullOrEmpty(DisplaySubtitle) && !string.IsNullOrEmpty(Model.SubtitleHref))
+                            {
+                                <a class="media-card-subtitle-inner media-card-subtitle-link"
+                                   href="@Model.SubtitleHref"
+                                   tabindex="-1"
+                                   @onclick:stopPropagation="true">@DisplaySubtitle</a>
+                            }
+                            else
+                            {
+                                <span class="media-card-subtitle-inner">@DisplaySubtitle</span>
+                            }
+                        </span>
+                    }
+                    @if (DetailsLine is { } details)
+                    {
+                        <span class="media-card-details">@details</span>
+                    }
                 </div>
             </div>
         }
@@ -210,8 +234,27 @@ else
         <K7Icon Icon="@ResolvedPlaceholderIcon" Class="media-card-placeholder-icon" />
     </div>;
 
+    private RenderFragment CardBadges => @<text>
+        @if (DetailBadges is { Count: > 0 } badges)
+        {
+            <div class="@BadgesClass">
+                @if (ShowsProgressLabel)
+                {
+                    @* With badges, the remaining time joins their stack instead of landing on top of them. *@
+                    <span class="media-card-badges-progress">
+                        <span class="media-card-badge">@GetOverlayProgressLabel()</span>
+                    </span>
+                }
+                @foreach (var badge in badges)
+                {
+                    <span class="media-card-badge">@badge</span>
+                }
+            </div>
+        }
+    </text>;
+
     private RenderFragment OverlayProgress => @<text>
-        @if (ProgressEnabled && !ProgressBarIsHidden())
+        @if (ShowsProgressLabel && DetailBadges.Count == 0)
         {
             <div class="media-card-overlay-progress">
                 <span class="media-card-overlay-progress-label">@GetOverlayProgressLabel()</span>

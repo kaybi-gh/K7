@@ -50,24 +50,26 @@
         </K7ErrorBoundary>
         <SyncPlayListener />
         <PlaybackHandoverListener />
-        <div class="page-viewport">
-            <FeedHubPageHost />
-            <div class="page-route @(FeedHub.IsEnabled && FeedHub.IsHubRouteActive ? "page-route--hub-delegated" : null)">
-                <K7ErrorBoundary @ref="_errorBoundary">
-                    <ChildContent>
-                        @Body
-                    </ChildContent>
-                    <ErrorContent>
-                        <div class="error-state">
-                            <K7Icon Name="warning-circle"  IconSize="@K7IconSize.Xl" class="error-icon" />
-                            <p class="error-state-title">@L["UnexpectedError"]</p>
-                            <p class="error-state-description">@L["UnexpectedErrorDescription"]</p>
-                            <button class="k7-btn k7-btn--filled k7-btn--primary mt-4 focusable" @onclick="Recover">@L["Retry"]</button>
-                        </div>
-                    </ErrorContent>
-                </K7ErrorBoundary>
+        <CascadingValue Value="_cardStyles" IsFixed="false">
+            <div class="page-viewport">
+                <FeedHubPageHost />
+                <div class="page-route @(FeedHub.IsEnabled && FeedHub.IsHubRouteActive ? "page-route--hub-delegated" : null)">
+                    <K7ErrorBoundary @ref="_errorBoundary">
+                        <ChildContent>
+                            @Body
+                        </ChildContent>
+                        <ErrorContent>
+                            <div class="error-state">
+                                <K7Icon Name="warning-circle"  IconSize="@K7IconSize.Xl" class="error-icon" />
+                                <p class="error-state-title">@L["UnexpectedError"]</p>
+                                <p class="error-state-description">@L["UnexpectedErrorDescription"]</p>
+                                <button class="k7-btn k7-btn--filled k7-btn--primary mt-4 focusable" @onclick="Recover">@L["Retry"]</button>
+                            </div>
+                        </ErrorContent>
+                    </K7ErrorBoundary>
+                </div>
             </div>
-        </div>
+        </CascadingValue>
     </main>
 </div>
 

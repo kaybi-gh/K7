@@ -17,6 +17,7 @@ public static class ServerSettingKeys
 
     /// <summary>JSON list of the themes made by an administrator and offered to every account.</summary>
     public static readonly SettingKey<string> ServerThemes = new("ServerThemes");
+    public static readonly SettingKey<string> DefaultCardStyle = new("DefaultCardStyle");
     public static readonly SettingKey<int> BackgroundTaskWorkerCount = new("BackgroundTaskWorkerCount", BackgroundTaskScheduling.DefaultWorkerCount);
 
     /// <summary>
