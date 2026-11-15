@@ -712,7 +712,8 @@ public class UpdatePlaybackProgressCommandHandler(
     /// <summary>
     /// Progress ticks race on bookmark delete / state updates. Without row versions EF still
     /// throws concurrency when a DELETE/UPDATE affects 0 rows. Retry so completion domain
-    /// events (scrobble Watched) are not dropped.
+    /// events (scrobble Watched) are not dropped. Concurrent first ticks can also both insert
+    /// the resume bookmark; the loser folds its values into the row that won and retries.
     /// </summary>
     private async Task SavePlaybackChangesAsync(CancellationToken cancellationToken)
     {
@@ -750,7 +751,62 @@ public class UpdatePlaybackProgressCommandHandler(
                     entry.OriginalValues.SetValues(databaseValues);
                 }
             }
+            catch (DbUpdateException ex) when (attempt < maxAttempts && IsDuplicateItemBookmark(ex))
+            {
+                _logger.LogWarning(
+                    ex,
+                    "Playback bookmark insert conflict on attempt {Attempt}, retrying",
+                    attempt);
+
+                if (!await MergeDuplicateItemBookmarksAsync(cancellationToken))
+                    throw;
+            }
         }
+    }
+
+    /// <summary>
+    /// Replaces pending bookmark inserts that lost a race with an update of the stored row.
+    /// Returns false when nothing could be reconciled, so the caller does not retry blindly.
+    /// </summary>
+    private async Task<bool> MergeDuplicateItemBookmarksAsync(CancellationToken cancellationToken)
+    {
+        var pending = _context.PlaybackBookmarks.Local
+            .OfType<ItemPlaybackBookmark>()
+            .Where(b => _context.Entry(b).State is EntityState.Added)
+            .ToList();
+
+        var merged = false;
+        foreach (var bookmark in pending)
+        {
+            var query = _context.PlaybackBookmarks
+                .OfType<ItemPlaybackBookmark>()
+                .Where(b => b.Id != bookmark.Id && b.MediaId == bookmark.MediaId);
+
+            query = bookmark.UserId is { } userId
+                ? query.Where(b => b.UserId == userId)
+                : query.Where(b => b.SharedProfileId == bookmark.SharedProfileId);
+
+            var stored = await query.FirstOrDefaultAsync(cancellationToken);
+            if (stored is null)
+                continue;
+
+            _context.Entry(bookmark).State = EntityState.Detached;
+            stored.PositionSeconds = bookmark.PositionSeconds;
+            stored.DurationSeconds = bookmark.DurationSeconds > 0 ? bookmark.DurationSeconds : stored.DurationSeconds;
+            stored.UpdatedAt = bookmark.UpdatedAt;
+            merged = true;
+        }
+
+        return merged;
+    }
+
+    private static bool IsDuplicateItemBookmark(DbUpdateException ex)
+    {
+        var message = ex.InnerException?.Message ?? ex.Message;
+        return message.Contains("IX_PlaybackBookmarks_UserId_MediaId_Item", StringComparison.OrdinalIgnoreCase)
+            || message.Contains("IX_PlaybackBookmarks_SharedProfileId_MediaId_Item", StringComparison.OrdinalIgnoreCase)
+            || message.Contains("PlaybackBookmarks.UserId, PlaybackBookmarks.MediaId", StringComparison.OrdinalIgnoreCase)
+            || message.Contains("PlaybackBookmarks.SharedProfileId, PlaybackBookmarks.MediaId", StringComparison.OrdinalIgnoreCase);
     }
 
     private static bool IsDuplicateSessionId(DbUpdateException ex)

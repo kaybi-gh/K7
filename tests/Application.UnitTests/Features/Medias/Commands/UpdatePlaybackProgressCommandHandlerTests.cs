@@ -514,4 +514,51 @@ public class UpdatePlaybackProgressCommandHandlerTests
         session.State.Should().Be(PlaybackState.Idle);
         session.CompletedAt.Should().BeNull();
     }
+
+    [Test]
+    public async Task Handle_ShouldUpdateStoredBookmark_WhenConcurrentTickAlreadyInsertedIt()
+    {
+        _context.PlaybackBookmarks.Add(new ItemPlaybackBookmark
+        {
+            UserId = _userId,
+            MediaId = _movieId,
+            PositionSeconds = 5,
+            DurationSeconds = 100,
+            UpdatedAt = DateTime.UtcNow.AddSeconds(-1)
+        });
+        await _context.SaveChangesAsync();
+        _context.ChangeTracker.Clear();
+
+        // Simulates the losing side of the race: the lookup ran before the other tick committed,
+        // so the updater queues a second insert for the same user and media.
+        _stateUpdater.ApplyAsync(
+                Arg.Any<Guid>(), Arg.Any<BaseMedia>(), Arg.Any<Guid>(), Arg.Any<double>(), Arg.Any<double>(),
+                Arg.Any<DateTime>(), Arg.Any<CancellationToken>())
+            .Returns(call =>
+            {
+                _context.PlaybackBookmarks.Add(new ItemPlaybackBookmark
+                {
+                    UserId = _userId,
+                    MediaId = _movieId,
+                    PositionSeconds = call.ArgAt<double>(3),
+                    DurationSeconds = call.ArgAt<double>(4),
+                    UpdatedAt = call.ArgAt<DateTime>(5)
+                });
+                return new UserMediaStateUpdateResult(10, false, false, null);
+            });
+
+        var sessionId = Guid.NewGuid();
+        await _handler.Handle(new UpdatePlaybackProgressCommand(
+            _movieId,
+            sessionId,
+            Guid.NewGuid(),
+            Position: 10,
+            Duration: 100,
+            State: PlaybackState.Playing), CancellationToken.None);
+
+        _context.ChangeTracker.Clear();
+        var bookmark = await _context.PlaybackBookmarks.OfType<ItemPlaybackBookmark>().SingleAsync();
+        bookmark.PositionSeconds.Should().Be(10);
+        (await _context.MediaPlaybackSessions.SingleAsync(s => s.SessionId == sessionId)).PositionSeconds.Should().Be(10);
+    }
 }
