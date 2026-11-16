@@ -9,6 +9,89 @@ namespace K7.Clients.ComponentTests.Services;
 public class ThemeServiceTests
 {
     [Test]
+    public void ApplyRemote_ShouldShowAChangeMadeOnAnotherDevice()
+    {
+        var service = new ThemeService();
+        service.Apply(new AppearancePreferencesDto(), DeviceType.TV);
+        var changes = 0;
+        var remote = 0;
+        service.ThemeOnChange += () => changes++;
+        service.RemoteApplied += () => remote++;
+
+        var applied = service.ApplyRemote(new AppearancePreferencesDto { Default = { ThemeId = "oled" } });
+
+        applied.Should().BeTrue();
+        service.Theme.Id.Should().Be("oled");
+        // The device type it shows is kept.
+        service.DeviceType.Should().Be(DeviceType.TV);
+        changes.Should().Be(1);
+        remote.Should().Be(1);
+    }
+
+    [Test]
+    public void ApplyRemote_ShouldIgnoreTheEchoOfAStateThisDeviceAlreadyShowed()
+    {
+        var service = new ThemeService();
+        service.Apply(new AppearancePreferencesDto { Default = { ThemeId = "paper" } }, DeviceType.Desktop);
+        service.Apply(new AppearancePreferencesDto { Default = { ThemeId = "oled" } }, DeviceType.Desktop);
+        var remote = 0;
+        service.RemoteApplied += () => remote++;
+
+        // The server sends back the first change after the second one was made here.
+        var applied = service.ApplyRemote(new AppearancePreferencesDto { Default = { ThemeId = "paper" } });
+
+        applied.Should().BeFalse();
+        service.Theme.Id.Should().Be("oled");
+        remote.Should().Be(0);
+    }
+
+    [Test]
+    public void ApplyRemote_ShouldApplyAStateAgain_WhenAnotherDeviceComesBackToIt()
+    {
+        var clock = new ManualTimeProvider();
+        var service = new ThemeService(clock);
+        service.Apply(new AppearancePreferencesDto(), DeviceType.TV);
+        clock.Advance(TimeSpan.FromMinutes(1));
+
+        // A setting switched on, then off again, on another device.
+        service.ApplyRemote(new AppearancePreferencesDto { Default = { ThemeId = "oled" } }).Should().BeTrue();
+        service.ApplyRemote(new AppearancePreferencesDto()).Should().BeTrue();
+        service.Settings.ThemeId.Should().BeNull();
+
+        service.ApplyRemote(new AppearancePreferencesDto { Default = { ThemeId = "oled" } }).Should().BeTrue();
+        service.Settings.ThemeId.Should().Be("oled");
+    }
+
+    [Test]
+    public void ApplyRemote_ShouldOnlyTakeAStateForAnEcho_RightAfterThisDeviceShowedIt()
+    {
+        var clock = new ManualTimeProvider();
+        var service = new ThemeService(clock);
+        service.Apply(new AppearancePreferencesDto { Default = { ThemeId = "paper" } }, DeviceType.Desktop);
+        service.Apply(new AppearancePreferencesDto { Default = { ThemeId = "oled" } }, DeviceType.Desktop);
+
+        // Long after, another device picks the theme this one showed once: a real change.
+        clock.Advance(TimeSpan.FromMinutes(1));
+
+        service.ApplyRemote(new AppearancePreferencesDto { Default = { ThemeId = "paper" } }).Should().BeTrue();
+        service.Theme.Id.Should().Be("paper");
+    }
+
+    [Test]
+    public void ApplyRemote_ShouldDoNothing_WhenTheStateIsAlreadyOnScreen()
+    {
+        var clock = new ManualTimeProvider();
+        var service = new ThemeService(clock);
+        service.Apply(new AppearancePreferencesDto { Default = { ThemeId = "oled" } }, DeviceType.Desktop);
+        clock.Advance(TimeSpan.FromMinutes(1));
+        var remote = 0;
+        service.RemoteApplied += () => remote++;
+
+        service.ApplyRemote(new AppearancePreferencesDto { Default = { ThemeId = "oled" } }).Should().BeFalse();
+        remote.Should().Be(0);
+    }
+
+    [Test]
     public void Theme_ShouldFollowServerDefault_WhenUserPickedNothing()
     {
         var service = new ThemeService();
@@ -161,5 +244,14 @@ public class ThemeServiceTests
 
         changes.Should().Be(1);
         service.Theme.Palette.Accent.Should().Be("#ff8800");
+    }
+
+    private sealed class ManualTimeProvider : TimeProvider
+    {
+        private DateTimeOffset _now = new(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
+
+        public override DateTimeOffset GetUtcNow() => _now;
+
+        public void Advance(TimeSpan by) => _now += by;
     }
 }

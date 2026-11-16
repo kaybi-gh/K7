@@ -88,7 +88,7 @@ Migrations: always add for **both** providers - commands in [CONTRIBUTING.md](..
 
 ## SignalR and transcoding
 
-The Web host exposes a SignalR hub for remote control, Sync Play, and live UI updates (playback progress, user ratings, library changes). Proxies must allow WebSockets.
+The Web host exposes a SignalR hub for remote control, Sync Play, and live UI updates (playback progress, user ratings, library changes, appearance preferences: a save sends `ReceiveAppearancePreferencesUpdated` to the group of the user, every open device applies it with `ThemeService.ApplyRemote`, which ignores the echo of a state the device already showed). A saved home layout sends `ReceiveHomeLayoutUpdated` the same way and `HomeFeedStore` loads the home again. Proxies must allow WebSockets.
 
 User ratings: `RateMedia` (and review upsert) broadcast `ReceiveUserRatingUpdated` to the acting user's hub group. Clients keep a session overlay (`IUserRatingSync`) so playlist/album/player `RatingStars` instances update immediately, including the originating session before the hub echo arrives.
 

@@ -7,12 +7,18 @@ namespace K7.Server.Application.Features.Home.Commands.DeleteUserHomeLayout;
 [Authorize]
 public record DeleteUserHomeLayoutCommand : IRequest;
 
-public class DeleteUserHomeLayoutCommandHandler(IUserSettingsService userSettingsService, IUser currentUser)
+public class DeleteUserHomeLayoutCommandHandler(
+    IUserSettingsService userSettingsService,
+    IUser currentUser,
+    IUserHomeLayoutNotifier homeLayoutNotifier)
     : IRequestHandler<DeleteUserHomeLayoutCommand>
 {
     public async Task Handle(DeleteUserHomeLayoutCommand request, CancellationToken cancellationToken)
     {
         var userId = Guard.Against.Null(currentUser.Id);
         await userSettingsService.RemoveAsync(userId, UserSettingKeys.HomeLayout, cancellationToken);
+
+        if (currentUser.IdentityId is { } identityId)
+            await homeLayoutNotifier.NotifyHomeLayoutUpdatedAsync(identityId, cancellationToken);
     }
 }

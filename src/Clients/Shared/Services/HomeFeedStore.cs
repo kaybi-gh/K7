@@ -230,6 +230,11 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
 
     public void InvalidateCache() => _cacheStore.InvalidateByPrefix("home-feed");
 
+    // The layout changed on another device of the user (rows, their order, the style of the
+    // banner): the home follows at once. The device that made the change reloads as well, on
+    // top of the reload it did itself: the same layout, so nothing moves.
+    private void OnHomeLayoutUpdated() => ResetAndReloadAsync().FireAndForget();
+
     public async Task RefreshAsync(CancellationToken cancellationToken = default)
     {
         if (!IsLoaded || IsLoading || IsOffline)
@@ -518,6 +523,7 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
         _hubClient.MediaMetadataRefreshed += OnMediaMetadataRefreshed;
         _hubClient.MediaPicturesUpdated += OnMediaPicturesUpdated;
         _hubClient.ProgressUpdated += OnProgressUpdated;
+        _hubClient.HomeLayoutUpdated += OnHomeLayoutUpdated;
         _cacheStore.HomeFeedInvalidated += OnHomeFeedInvalidated;
     }
 
@@ -533,6 +539,7 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
         _hubClient.MediaMetadataRefreshed -= OnMediaMetadataRefreshed;
         _hubClient.MediaPicturesUpdated -= OnMediaPicturesUpdated;
         _hubClient.ProgressUpdated -= OnProgressUpdated;
+        _hubClient.HomeLayoutUpdated -= OnHomeLayoutUpdated;
         _cacheStore.HomeFeedInvalidated -= OnHomeFeedInvalidated;
     }
 

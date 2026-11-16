@@ -1,3 +1,4 @@
+using System.Text.Json;
 using K7.Server.Domain.Enums;
 using K7.Shared.Theming;
 
@@ -10,9 +11,23 @@ namespace K7.Clients.Shared.Services;
 /// </summary>
 public class ThemeService
 {
+    // How long a state shown here is expected back from the server as an echo of its own save.
+    private static readonly TimeSpan EchoWindow = TimeSpan.FromSeconds(10);
+
+    private readonly TimeProvider _timeProvider;
+    private readonly List<(string State, DateTimeOffset At)> _pendingEchoes = [];
+    private string? _currentState;
     private ThemeDefinition? _preview;
 
+    public ThemeService(TimeProvider? timeProvider = null) => _timeProvider = timeProvider ?? TimeProvider.System;
+
     public event Action? ThemeOnChange;
+
+    /// <summary>
+    /// Raised after preferences changed on another device were applied here: a page that edits
+    /// them takes them as its new starting point.
+    /// </summary>
+    public event Action? RemoteApplied;
 
     public AppearancePreferencesDto Preferences { get; private set; } = new();
 
@@ -93,7 +108,43 @@ public class ThemeService
         Preferences = preferences;
         DeviceType = deviceType;
         IsResolved = true;
+        ExpectEcho(JsonSerializer.Serialize(preferences));
         ThemeOnChange?.Invoke();
+    }
+
+    /// <summary>
+    /// Applies preferences sent by the server after a change on one of the devices of the user.
+    /// The device that made the change gets them back too: a state it showed itself a moment
+    /// ago is the echo of its own save, possibly older than what is on screen now, and is
+    /// ignored. Only that: a state another device sent earlier is applied again when it comes
+    /// back, or a setting switched on then off elsewhere would stay on here. Returns false when
+    /// nothing was applied.
+    /// </summary>
+    public bool ApplyRemote(AppearancePreferencesDto preferences)
+    {
+        var state = JsonSerializer.Serialize(preferences);
+        lock (_pendingEchoes)
+        {
+            DropExpiredEchoes();
+            var echo = _pendingEchoes.FindIndex(e => e.State == state);
+            if (echo >= 0)
+            {
+                _pendingEchoes.RemoveAt(echo);
+                return false;
+            }
+
+            // Already what is on screen: nothing to change, and no page has to start over.
+            if (state == _currentState)
+                return false;
+
+            _currentState = state;
+        }
+
+        Preferences = preferences;
+        IsResolved = true;
+        ThemeOnChange?.Invoke();
+        RemoteApplied?.Invoke();
+        return true;
     }
 
     public void Update(AppearancePreferencesDto preferences) => Apply(preferences, DeviceType);
@@ -104,6 +155,24 @@ public class ThemeService
         _preview = theme;
         IsResolved = true;
         ThemeOnChange?.Invoke();
+    }
+
+    // A state shown from this device: its save will come back from the server.
+    private void ExpectEcho(string state)
+    {
+        lock (_pendingEchoes)
+        {
+            DropExpiredEchoes();
+            _currentState = state;
+            if (!_pendingEchoes.Exists(e => e.State == state))
+                _pendingEchoes.Add((state, _timeProvider.GetUtcNow()));
+        }
+    }
+
+    private void DropExpiredEchoes()
+    {
+        var limit = _timeProvider.GetUtcNow() - EchoWindow;
+        _pendingEchoes.RemoveAll(e => e.At < limit);
     }
 
     private ThemeDefinition? FindShared(string? themeId) =>

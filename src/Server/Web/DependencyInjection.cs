@@ -146,6 +146,8 @@ public static class DependencyInjection
         services.AddSingleton<IUserRatingNotifier, UserRatingNotifier>();
         services.AddSingleton<IUserVideoPlayerSettingsNotifier, UserVideoPlayerSettingsNotifier>();
         services.AddSingleton<IUserCustomNavNotifier, UserCustomNavNotifier>();
+        services.AddSingleton<IUserAppearanceNotifier, UserAppearanceNotifier>();
+        services.AddSingleton<IUserHomeLayoutNotifier, UserHomeLayoutNotifier>();
         services.AddSingleton<MediaNotificationBatcher>();
         services.AddSingleton<ILibraryNotifier, LibraryNotifier>();
         services.AddSingleton<IBackgroundTaskNotifier, BackgroundTaskNotifier>();

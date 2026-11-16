@@ -6,6 +6,7 @@ using K7.Server.Domain.Enums;
 using K7.Shared;
 using K7.Shared.Enums;
 using K7.Shared.Interfaces;
+using K7.Shared.Theming;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Routing;
@@ -76,6 +77,7 @@ public partial class MainLayout : IDisposable
     protected override async Task OnInitializedAsync()
     {
         ThemeService.ThemeOnChange += OnThemeChanged;
+        K7HubClient.AppearancePreferencesUpdated += OnRemoteAppearance;
         _cardStyles = MediaCardStyleContext.Next(
             null,
             ThemeService.EffectiveCards);
@@ -333,6 +335,15 @@ public partial class MainLayout : IDisposable
 
     private void OnThemeChanged() => OnThemeChangedAsync().FireAndForget(Logger);
 
+    // Another device of the user changed the appearance: this one follows at once. Not before
+    // the preferences of the session were loaded, they would be replaced anyway.
+    private void OnRemoteAppearance(AppearancePreferencesDto preferences) =>
+        InvokeAsync(() =>
+        {
+            if (_appearanceUserId is not null && _appearanceUserId == _sessionUserId)
+                ThemeService.ApplyRemote(preferences);
+        }).FireAndForget(Logger);
+
     private async Task OnThemeChangedAsync()
     {
         try
@@ -418,6 +429,7 @@ public partial class MainLayout : IDisposable
     public void Dispose()
     {
         ThemeService.ThemeOnChange -= OnThemeChanged;
+        K7HubClient.AppearancePreferencesUpdated -= OnRemoteAppearance;
         AuthenticationStateProvider.AuthenticationStateChanged -= OnAuthenticationStateChanged;
         K7HubClient.ConnectionStateChanged -= OnConnectionStateChanged;
         FeedHub.Changed -= OnFeedHubChanged;

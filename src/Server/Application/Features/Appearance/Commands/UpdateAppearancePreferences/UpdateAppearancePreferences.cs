@@ -12,7 +12,10 @@ public record UpdateAppearancePreferencesCommand : IRequest
     public required AppearancePreferencesDto Preferences { get; init; }
 }
 
-public class UpdateAppearancePreferencesCommandHandler(IUserSettingsService userSettingsService, IUser currentUser)
+public class UpdateAppearancePreferencesCommandHandler(
+    IUserSettingsService userSettingsService,
+    IUser currentUser,
+    IUserAppearanceNotifier appearanceNotifier)
     : IRequestHandler<UpdateAppearancePreferencesCommand>
 {
     public async Task Handle(UpdateAppearancePreferencesCommand request, CancellationToken cancellationToken)
@@ -20,5 +23,9 @@ public class UpdateAppearancePreferencesCommandHandler(IUserSettingsService user
         var userId = Guard.Against.Null(currentUser.Id);
         var json = JsonSerializer.Serialize(request.Preferences);
         await userSettingsService.SetAsync(userId, UserSettingKeys.Appearance, json, cancellationToken);
+
+        // The other open devices of the user follow at once.
+        if (currentUser.IdentityId is { } identityId)
+            await appearanceNotifier.NotifyAppearancePreferencesUpdatedAsync(identityId, request.Preferences, cancellationToken);
     }
 }

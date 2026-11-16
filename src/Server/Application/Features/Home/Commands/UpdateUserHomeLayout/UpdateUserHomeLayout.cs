@@ -12,7 +12,10 @@ public record UpdateUserHomeLayoutCommand : IRequest
     public required HomeLayoutDto Layout { get; init; }
 }
 
-public class UpdateUserHomeLayoutCommandHandler(IUserSettingsService userSettingsService, IUser currentUser)
+public class UpdateUserHomeLayoutCommandHandler(
+    IUserSettingsService userSettingsService,
+    IUser currentUser,
+    IUserHomeLayoutNotifier homeLayoutNotifier)
     : IRequestHandler<UpdateUserHomeLayoutCommand>
 {
     public async Task Handle(UpdateUserHomeLayoutCommand request, CancellationToken cancellationToken)
@@ -20,5 +23,9 @@ public class UpdateUserHomeLayoutCommandHandler(IUserSettingsService userSetting
         var userId = Guard.Against.Null(currentUser.Id);
         var json = JsonSerializer.Serialize(request.Layout);
         await userSettingsService.SetAsync(userId, UserSettingKeys.HomeLayout, json, cancellationToken);
+
+        // The other open devices of the user load their home again.
+        if (currentUser.IdentityId is { } identityId)
+            await homeLayoutNotifier.NotifyHomeLayoutUpdatedAsync(identityId, cancellationToken);
     }
 }

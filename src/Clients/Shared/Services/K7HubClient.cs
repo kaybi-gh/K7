@@ -5,6 +5,7 @@ using K7.Shared.Dtos.CustomNav;
 using K7.Shared.Dtos.Entities;
 using K7.Shared.Dtos.Notifications;
 using K7.Shared.Interfaces;
+using K7.Shared.Theming;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.Logging;
 
@@ -38,6 +39,12 @@ public sealed class K7HubClient(ILogger<K7HubClient> logger) : IAsyncDisposable,
     public event Action<Guid, int>? UserRatingUpdated;
     public event Action<VideoPlayerSettingsDto>? VideoPlayerSettingsUpdated;
     public event Action<CustomNavLayoutDto>? CustomNavLayoutUpdated;
+
+    /// <summary>The home layout of the user changed on one of their devices.</summary>
+    public event Action? HomeLayoutUpdated;
+
+    /// <summary>The appearance preferences of the user changed on one of their devices.</summary>
+    public event Action<AppearancePreferencesDto>? AppearancePreferencesUpdated;
     public event Action<Guid, string?, string>? MediaAdded;
     public event Action<List<MediaBatchItem>>? MediaBatchAdded;
     public event Action<Guid>? MediaMetadataRefreshed;
@@ -174,6 +181,16 @@ public sealed class K7HubClient(ILogger<K7HubClient> logger) : IAsyncDisposable,
             _hubConnection.On<CustomNavLayoutDto>("ReceiveCustomNavLayoutUpdated", layout =>
             {
                 CustomNavLayoutUpdated?.Invoke(layout);
+            });
+
+            _hubConnection.On("ReceiveHomeLayoutUpdated", () =>
+            {
+                HomeLayoutUpdated?.Invoke();
+            });
+
+            _hubConnection.On<AppearancePreferencesDto>("ReceiveAppearancePreferencesUpdated", preferences =>
+            {
+                AppearancePreferencesUpdated?.Invoke(preferences);
             });
 
             _hubConnection.On<Guid, string?, string>("ReceiveMediaAdded", (mediaId, title, mediaType) =>
