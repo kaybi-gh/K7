@@ -188,6 +188,10 @@ else
                                     <K7MenuItem Icon="arrow-clockwise" OnClick="RefreshMetadataAsync">@L["RefreshMetadata"]</K7MenuItem>
                                     <K7MenuItem Icon="file-zip" OnClick="OpenIndexedFilesDialogAsync">@S["IndexedVersions"]</K7MenuItem>
                                 </K7MenuSection>
+                                @if (_movie is not null)
+                                {
+                                    <ShareMenuSection MediaId="_movie.Id" MediaType="K7.Server.Domain.Enums.MediaType.Movie" MediaTitle="@_movie.Title" />
+                                }
                             </ChildContent>
                         </K7Menu>
                     }

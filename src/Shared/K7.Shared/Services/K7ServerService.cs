@@ -30,7 +30,7 @@ using K7.Shared.QueryBuilders;
 
 namespace K7.Shared.Services;
 
-public partial class K7ServerService : IK7ServerService, IMediaService, ILibraryService, IPlaylistService, ICollectionService, ISearchService, IStreamingService, IDeviceApiService, IUserAdminService, IRatingService, IReviewService, ISocialUserService, IServerInfoService, IBackgroundTaskService, IDiagnosticsService, IUserPreferencesService, IServerPreferencesService, IDownloadService, INotificationAdminService, IFederationService, IApiKeyAdminService, IClientAppPasswordUserService, IMusicIntelligenceAdminService, IMusicIntelligenceClientService, ISharedProfileApi, ITranscodeAdminService, IScrobblingAdminService, IScrobblingUserService, IMusicSessionApi
+public partial class K7ServerService : IK7ServerService, IMediaService, ILibraryService, IPlaylistService, ICollectionService, ISearchService, IStreamingService, IDeviceApiService, IUserAdminService, IRatingService, IReviewService, ISocialUserService, IServerInfoService, IBackgroundTaskService, IDiagnosticsService, IUserPreferencesService, IServerPreferencesService, IDownloadService, INotificationAdminService, IFederationService, IApiKeyAdminService, IClientAppPasswordUserService, IMusicIntelligenceAdminService, IMusicIntelligenceClientService, ISharedProfileApi, ITranscodeAdminService, IScrobblingAdminService, IScrobblingUserService, IMusicSessionApi, IMediaShareService
 {
     public HttpClient HttpClient { get; }
     private readonly JsonSerializerOptions _serializerOptions;

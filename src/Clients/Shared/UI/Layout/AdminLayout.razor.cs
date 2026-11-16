@@ -2,7 +2,7 @@ namespace K7.Clients.Shared.UI.Layout;
 
 public partial class AdminLayout
 {
-    private static readonly string[] ContentRoutes = ["/admin/libraries", "/admin/library-groups"];
+    private static readonly string[] ContentRoutes = ["/admin/libraries", "/admin/library-groups", "/admin/shares"];
     private static readonly string[] MembersRoutes = ["/admin/users", "/admin/devices", "/admin/restrictions", "/admin/authentication"];
     private static readonly string[] ExperienceRoutes =
     [

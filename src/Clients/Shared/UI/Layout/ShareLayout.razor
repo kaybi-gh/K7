@@ -1,0 +1,37 @@
+@inherits LayoutComponentBase
+@layout EmptyLayout
+@using K7.Clients.Shared.UI.Helpers
+@using K7.Shared.Enums
+@inject IStringLocalizer<ShareLayout> L
+@implements IDisposable
+
+@* Shell of the public share pages. Same top bar as the app, reduced to the K7 symbol: a
+   visitor has no account, so there is nothing to navigate to. The players are the regular ones. *@
+<div class="share-layout">
+    <header class="share-layout__nav">
+        <div class="share-layout__nav-bar">
+            <span class="share-layout__logo" title="K7" aria-hidden="true">
+                <K7Icon Icon="@K7Brand.Symbol" IconSize="@K7IconSize.Lg" />
+            </span>
+        </div>
+    </header>
+
+    <main class="share-layout__main">
+        <K7ErrorBoundary>
+            <ChildContent>
+                <MediaPlayer />
+                <div class="share-layout__dock">
+                    <MiniMusicPlayer VisibleMediaQuery="@MiniPlayerSlots.DockQuery(MiniPlayerPlacement.Bottom)" Bar="true" />
+                </div>
+                <FullScreenMusicPlayer />
+            </ChildContent>
+            <ErrorContent>
+                <div class="error-state">
+                    <K7Icon Name="warning-circle" IconSize="@K7IconSize.Xl" class="error-icon" />
+                    <p class="error-state-title">@L["PlayerError"]</p>
+                </div>
+            </ErrorContent>
+        </K7ErrorBoundary>
+        @Body
+    </main>
+</div>

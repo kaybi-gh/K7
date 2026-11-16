@@ -189,6 +189,10 @@ else if (_episode is not null)
                                             }
                                         </K7MenuSection>
                                     </AuthorizeView>
+                                    @if (_episode is not null)
+                                    {
+                                        <ShareMenuSection MediaId="_episode.Id" MediaType="K7.Server.Domain.Enums.MediaType.SerieEpisode" MediaTitle="@_episode.Title" />
+                                    }
                                 </ChildContent>
                             </K7Menu>
                         </div>

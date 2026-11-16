@@ -886,6 +886,14 @@
         </div>
     </section>
 
+    <section id="share-media-view" class="ds-section">
+        <h2>ShareMediaView</h2>
+        <p class="ds-description">A media as a public share visitor sees it: what it is, what is below it, play and download. Nothing personal and no way up to its parents. Shown inside <code>ShareLayout</code> with <code>SharePlayer</code> on the public pages.</p>
+        <div class="ds-preview ds-preview--block">
+            <K7.Clients.Shared.UI.Components.Shares.ShareMediaView Media="_sharedAlbum" Session="_shareSession" />
+        </div>
+    </section>
+
     <section id="browse-view" class="ds-section">
         <h2>BrowseView</h2>
         <p class="ds-description">Switchable grid / list / table view with virtual scrolling and persistent layout preferences.</p>
@@ -1165,6 +1173,29 @@
         new() { Id = Guid.NewGuid().ToString(), Title = "Arrival", PictureUrl = "https://picsum.photos/seed/arr/200/300", Kind = MediaCardKind.Poster },
         new() { Id = Guid.NewGuid().ToString(), Title = "1917", PictureUrl = "https://picsum.photos/seed/1917/200/300", Kind = MediaCardKind.Poster },
     ];
+
+    private static readonly K7.Shared.Dtos.Shares.OpenShareResultDto _shareSession = new()
+    {
+        Outcome = K7.Shared.Dtos.Shares.OpenShareOutcome.Opened,
+        ShareId = Guid.NewGuid(),
+        AllowPlayback = true,
+        AllowDownload = true
+    };
+
+    private static readonly MusicAlbumDto _sharedAlbum = new()
+    {
+        Id = Guid.NewGuid(),
+        Title = "Random Access Memories",
+        ArtistName = "Daft Punk",
+        ReleaseDate = new DateOnly(2013, 5, 17),
+        Genres = ["Electronic", "Disco"],
+        Tracks =
+        [
+            new() { Id = Guid.NewGuid(), Title = "Give Life Back to Music", TrackNumber = 1, Duration = 274, IndexedFileId = Guid.NewGuid() },
+            new() { Id = Guid.NewGuid(), Title = "The Game of Love", TrackNumber = 2, Duration = 322, IndexedFileId = Guid.NewGuid() },
+            new() { Id = Guid.NewGuid(), Title = "Giorgio by Moroder", TrackNumber = 3, Duration = 544, IndexedFileId = Guid.NewGuid() }
+        ]
+    };
 
     private static readonly LiteActorDto _skeletonRole = new() { Id = Guid.Empty, MediaId = Guid.Empty };
 

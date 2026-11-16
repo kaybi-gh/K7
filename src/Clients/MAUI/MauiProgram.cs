@@ -240,6 +240,12 @@ public static partial class MauiProgram
         builder.Services.AddSingleton<IMusicSessionApi>(sp => sp.GetRequiredService<K7ServerService>());
         builder.Services.AddSingleton<IServerPreferencesService>(sp => sp.GetRequiredService<K7ServerService>());
         builder.Services.AddSingleton<IApiKeyAdminService>(sp => sp.GetRequiredService<K7ServerService>());
+        builder.Services.AddSingleton<IMediaShareService>(sp => sp.GetRequiredService<K7ServerService>());
+        builder.Services.AddSingleton<IMediaSharingAccess, MediaSharingAccess>();
+        builder.Services.AddSingleton<ISharePlaybackScope, SharePlaybackScope>();
+        // Share links open in a browser. The native app only creates and manages them.
+        builder.Services.AddSingleton<IPublicShareService>(sp =>
+            new PublicShareService(sp.GetRequiredService<K7ServerService>().HttpClient));
         builder.Services.AddSingleton<IClientAppPasswordUserService>(sp => sp.GetRequiredService<K7ServerService>());
         builder.Services.AddSingleton<IMusicIntelligenceAdminService>(sp => sp.GetRequiredService<K7ServerService>());
         builder.Services.AddSingleton<IScrobblingAdminService>(sp => sp.GetRequiredService<K7ServerService>());

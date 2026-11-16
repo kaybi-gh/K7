@@ -20,7 +20,11 @@ public interface IMediaAccessGuard
     Task<bool> CanAccessAsync(Guid mediaId, Guid userId, CancellationToken cancellationToken = default);
 }
 
-public class MediaAccessGuard(IApplicationDbContext context, IUser currentUser, MediaAccessFilter mediaAccessFilter)
+public class MediaAccessGuard(
+    IApplicationDbContext context,
+    IUser currentUser,
+    MediaAccessFilter mediaAccessFilter,
+    IShareVisitorAccess shareVisitorAccess)
     : IMediaAccessGuard
 {
     public Task EnsureAccessAsync(Guid mediaId, CancellationToken cancellationToken = default) =>
@@ -30,21 +34,55 @@ public class MediaAccessGuard(IApplicationDbContext context, IUser currentUser, 
         EnsureAccessCoreAsync(mediaId, ignoreMediaExclusion: true, cancellationToken);
 
     public Task<bool> CanAccessAsync(Guid mediaId, Guid userId, CancellationToken cancellationToken = default) =>
-        CanAccessCoreAsync(mediaId, userId, ignoreMediaExclusion: false, cancellationToken);
+        CanAccessCoreAsync(mediaId, userId, ignoreMediaExclusion: false, useCurrentSharedProfile: true, cancellationToken);
 
     private async Task EnsureAccessCoreAsync(Guid mediaId, bool ignoreMediaExclusion, CancellationToken cancellationToken)
     {
+        // A share visitor never falls through to the regular user rules: it only sees
+        // what one of its shares covers.
+        if (shareVisitorAccess.IsShareVisitor)
+        {
+            if (!await CanShareVisitorAccessAsync(mediaId, cancellationToken))
+                throw new NotFoundException(mediaId.ToString(), nameof(BaseMedia));
+
+            return;
+        }
+
         if (currentUser.Id is not { } userId)
             return;
 
-        if (!await CanAccessCoreAsync(mediaId, userId, ignoreMediaExclusion, cancellationToken))
+        if (!await CanAccessCoreAsync(mediaId, userId, ignoreMediaExclusion, useCurrentSharedProfile: true, cancellationToken))
             throw new NotFoundException(mediaId.ToString(), nameof(BaseMedia));
+    }
+
+    /// <summary>
+    /// A visitor reaches a media when one of its shares covers it and the user who created
+    /// that share can still access it. Sharing never gives more than its creator has.
+    /// </summary>
+    private async Task<bool> CanShareVisitorAccessAsync(Guid mediaId, CancellationToken cancellationToken)
+    {
+        var matches = await shareVisitorAccess.GetMatchingSharesAsync(mediaId, cancellationToken);
+        foreach (var creatorUserId in matches.Select(m => m.CreatedByUserId).Distinct())
+        {
+            if (await CanAccessCoreAsync(
+                    mediaId,
+                    creatorUserId,
+                    ignoreMediaExclusion: false,
+                    useCurrentSharedProfile: false,
+                    cancellationToken))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private async Task<bool> CanAccessCoreAsync(
         Guid mediaId,
         Guid userId,
         bool ignoreMediaExclusion,
+        bool useCurrentSharedProfile,
         CancellationToken cancellationToken)
     {
         var check = await context.Medias
@@ -76,7 +114,9 @@ public class MediaAccessGuard(IApplicationDbContext context, IUser currentUser, 
         if (!hasLibraryAccess)
             return false;
 
-        var sharedProfileId = await currentUser.GetSharedProfileIdAsync(cancellationToken);
+        var sharedProfileId = useCurrentSharedProfile
+            ? await currentUser.GetSharedProfileIdAsync(cancellationToken)
+            : null;
         var gates = await mediaAccessFilter.GetContentGatesAsync(userId, sharedProfileId, cancellationToken);
         var mediaQuery = context.Medias.AsNoTracking().Where(m => m.Id == mediaId);
 
@@ -95,6 +135,24 @@ public class MediaAccessGuard(IApplicationDbContext context, IUser currentUser, 
 
     public async Task EnsureAccessByIndexedFileAsync(Guid indexedFileId, CancellationToken cancellationToken = default)
     {
+        if (shareVisitorAccess.IsShareVisitor)
+        {
+            var fileMediaId = await context.IndexedFiles
+                .AsNoTracking()
+                .Where(f => f.Id == indexedFileId)
+                .Select(f => f.MediaId)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            // A file without a media is in no share: deny instead of the lenient user rule.
+            if (fileMediaId is not { } sharedMediaId
+                || !await CanShareVisitorAccessAsync(sharedMediaId, cancellationToken))
+            {
+                throw new NotFoundException(indexedFileId.ToString(), "IndexedFile");
+            }
+
+            return;
+        }
+
         if (currentUser.Id is not { } userId)
             return;
 

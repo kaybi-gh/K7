@@ -12,9 +12,16 @@ public record UpdateServerFeatureFlagsCommand : IRequest
     public required ServerFeatureFlagsDto Flags { get; init; }
 }
 
-public class UpdateServerFeatureFlagsCommandHandler(IServerSettingsService serverSettingsService)
+public class UpdateServerFeatureFlagsCommandHandler(
+    IServerSettingsService serverSettingsService,
+    IShareAccessInvalidator shareAccessInvalidator)
     : IRequestHandler<UpdateServerFeatureFlagsCommand>
 {
-    public Task Handle(UpdateServerFeatureFlagsCommand request, CancellationToken cancellationToken) =>
-        serverSettingsService.SetAsync(ApplicationSettingKeys.FeatureFlags, request.Flags, cancellationToken);
+    public async Task Handle(UpdateServerFeatureFlagsCommand request, CancellationToken cancellationToken)
+    {
+        await serverSettingsService.SetAsync(ApplicationSettingKeys.FeatureFlags, request.Flags, cancellationToken);
+
+        // Turning public shares off must cut visitors at once.
+        shareAccessInvalidator.Invalidate();
+    }
 }

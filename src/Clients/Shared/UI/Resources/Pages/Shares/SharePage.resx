@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="PasswordTitle" xml:space="preserve"><value>Partage protégé</value></data>
+  <data name="PasswordText" xml:space="preserve"><value>Saisissez le mot de passe qui vous a été communiqué.</value></data>
+  <data name="PasswordLabel" xml:space="preserve"><value>Mot de passe</value></data>
+  <data name="PasswordInvalid" xml:space="preserve"><value>Mot de passe incorrect.</value></data>
+  <data name="Open" xml:space="preserve"><value>Ouvrir</value></data>
+  <data name="BackToShare" xml:space="preserve"><value>Retour au partage</value></data>
+  <data name="NotFoundTitle" xml:space="preserve"><value>Lien introuvable</value></data>
+  <data name="NotFoundText" xml:space="preserve"><value>Ce lien de partage n'existe pas ou n'est plus valide.</value></data>
+  <data name="ExpiredTitle" xml:space="preserve"><value>Partage expiré</value></data>
+  <data name="ExpiredText" xml:space="preserve"><value>Ce partage est arrivé à expiration.</value></data>
+  <data name="ExhaustedTitle" xml:space="preserve"><value>Nombre d'accès atteint</value></data>
+  <data name="ExhaustedText" xml:space="preserve"><value>Ce partage a déjà été ouvert le nombre de fois autorisé.</value></data>
+  <data name="ConsumedTitle" xml:space="preserve"><value>Partage terminé</value></data>
+  <data name="ConsumedText" xml:space="preserve"><value>Ce partage a été fermé après sa consultation.</value></data>
+  <data name="ClosedTitle" xml:space="preserve"><value>Partage fermé</value></data>
+  <data name="ClosedText" xml:space="preserve"><value>Ce partage n'est plus disponible.</value></data>
+  <data name="SessionEndedTitle" xml:space="preserve"><value>Session terminée</value></data>
+  <data name="SessionEndedText" xml:space="preserve"><value>Rouvrez le lien de partage pour continuer.</value></data>
+  <data name="MediaNotInShareTitle" xml:space="preserve"><value>Contenu indisponible</value></data>
+  <data name="MediaNotInShareText" xml:space="preserve"><value>Ce contenu ne fait pas partie du partage.</value></data>
+  <data name="TooManyAttemptsTitle" xml:space="preserve"><value>Trop de tentatives</value></data>
+  <data name="TooManyAttemptsText" xml:space="preserve"><value>Patientez quelques minutes avant de réessayer.</value></data>
+  <data name="ErrorTitle" xml:space="preserve"><value>Une erreur est survenue</value></data>
+  <data name="ErrorText" xml:space="preserve"><value>Le partage n'a pas pu être chargé. Réessayez dans un instant.</value></data>
+  <data name="PlaybackError" xml:space="preserve"><value>La lecture n'a pas pu démarrer.</value></data>
+</root>

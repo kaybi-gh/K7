@@ -28,6 +28,10 @@ public enum QueueTab { UpNext, Previous, Similar, Suggestions }
 public partial class FullScreenMusicPlayer : IAsyncDisposable
 {
     [Inject] private IStringLocalizer<SharedResource> S { get; set; } = default!;
+    [Inject] private ISharePlaybackScope SharePlaybackScope { get; set; } = default!;
+
+    /// <summary>On a public share page: no account features in the player.</summary>
+    private bool IsShareVisitor => SharePlaybackScope.IsVisitorPage;
     [Inject] private IJSRuntime JS { get; set; } = default!;
     [Inject] private ICastOrchestrationService CastOrchestration { get; set; } = default!;
     [Inject] private RemotePlaybackLauncher RemotePlayback { get; set; } = default!;
@@ -87,19 +91,27 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
 
     private AudioQueueItem? DisplayedTrack => Audio.CurrentDisplayedTrack ?? Audio.CurrentPlayingTrack;
 
-    private string? DisplayTitle { get => IsRemoteMode
+    private string? DisplayTitle
+    {
+        get => IsRemoteMode
         ? RemoteControl.Title
         : _uiCommitted ? field : DisplayedTrack?.Title; set;
     }
-    private string? DisplayArtist { get => IsRemoteMode
+    private string? DisplayArtist
+    {
+        get => IsRemoteMode
         ? RemoteControl.Artist
         : _uiCommitted ? field : DisplayedTrack?.Artist; set;
     }
-    private string? DisplayAlbumTitle { get => IsRemoteMode
+    private string? DisplayAlbumTitle
+    {
+        get => IsRemoteMode
         ? RemoteControl.AlbumTitle
         : _uiCommitted ? field : DisplayedTrack?.AlbumTitle; set;
     }
-    private string? DisplayCoverUrl { get => ToFullscreenCoverUrl(
+    private string? DisplayCoverUrl
+    {
+        get => ToFullscreenCoverUrl(
         IsRemoteMode
             ? RemoteControl.CoverUrl
             : _uiCommitted ? field : DisplayedTrack?.CoverUrl); set;

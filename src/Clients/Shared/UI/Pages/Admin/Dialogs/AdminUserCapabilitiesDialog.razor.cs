@@ -20,7 +20,7 @@ public partial class AdminUserCapabilitiesDialog
             Capability.CanTranscode,
             Capability.CanScrobble
         ]),
-        ("GroupContent", [Capability.CanRate, Capability.CanCreatePlaylist]),
+        ("GroupContent", [Capability.CanRate, Capability.CanCreatePlaylist, Capability.CanShareMedia]),
         ("GroupHistory",
         [
             Capability.CanViewHistory,
@@ -102,6 +102,7 @@ public partial class AdminUserCapabilitiesDialog
         Capability.CanReportPlaybackProgress => L["CapCanReportPlaybackProgress"],
         Capability.CanTranscode => L["CapCanTranscode"],
         Capability.CanScrobble => L["CapCanScrobble"],
+        Capability.CanShareMedia => L["CapCanShareMedia"],
         _ => cap.ToString()
     };
 }

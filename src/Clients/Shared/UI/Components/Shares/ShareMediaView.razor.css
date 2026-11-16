@@ -1,0 +1,252 @@
+/* Same shell and hero as the regular media pages (see media-hero.css and Movie.razor.css). */
+.share-view {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    height: 100%;
+    overflow: hidden;
+}
+
+.share-view__main {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 100%;
+    flex-shrink: 0;
+    z-index: 2;
+    overflow: hidden;
+}
+
+.media-hero.share-view__hero {
+    width: fit-content;
+    max-width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    position: relative;
+    flex: 1;
+    min-height: 0;
+    overflow: visible;
+}
+
+@media (min-width: 600px) {
+    .media-hero.share-view__hero {
+        padding: var(--space-10);
+        gap: var(--space-6);
+    }
+
+    .share-view__tagline,
+    .share-view__overview {
+        max-width: min(50vw, 800px);
+    }
+}
+
+.share-view__logo:not(.k7-img-wrap--custom-fallback) {
+    max-height: 180px;
+    max-width: 500px;
+}
+
+.share-view__logo ::deep .k7-img {
+    max-height: 180px;
+    max-width: 500px;
+    object-fit: scale-down;
+    object-position: left center;
+}
+
+.share-view__cover {
+    width: min(240px, 60vw);
+    aspect-ratio: 1;
+    border-radius: var(--radius-lg);
+    object-fit: cover;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+}
+
+.share-view__copy {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+.share-view__title {
+    margin: 0;
+    font-size: var(--text-3xl);
+    font-weight: 700;
+    line-height: 1.15;
+    overflow-wrap: anywhere;
+}
+
+.share-view__context {
+    margin: 0;
+    font-size: var(--text-md);
+    font-weight: 600;
+    opacity: 0.9;
+}
+
+.share-view__meta {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-2) var(--space-3);
+}
+
+.share-view__chips {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-1);
+}
+
+.share-view__chips ::deep .share-view__rating {
+    font-weight: 700;
+}
+
+.share-view__chips ::deep .share-view__genre {
+    font-weight: 600;
+    opacity: 0.9;
+}
+
+.share-view__details {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--text-sm);
+}
+
+.share-view__fact {
+    font-weight: 600;
+    opacity: 0.9;
+}
+
+.share-view__dot {
+    opacity: 0.5;
+}
+
+.share-view__tagline {
+    margin: 0;
+    font-style: italic;
+    font-weight: 500;
+    opacity: 0.8;
+}
+
+.share-view__overview {
+    margin: 0;
+    display: -webkit-box;
+    overflow: hidden;
+    font-size: var(--text-base);
+    line-height: 1.6;
+    opacity: 0.85;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 4;
+}
+
+.share-view__actions {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-3);
+    margin-top: var(--space-4);
+}
+
+.share-view__actions ::deep .share-view__play {
+    min-height: 48px;
+    padding: 10px 32px;
+    border-radius: var(--radius-md);
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+}
+
+.share-view__muted {
+    margin: 0;
+    font-size: var(--text-sm);
+    color: var(--color-text-secondary);
+}
+
+/* ---- Below the hero ---- */
+
+.share-view__sections {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+    padding: 0 var(--space-10);
+}
+
+.share-view__section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    max-width: 960px;
+}
+
+.share-view__heading {
+    margin: 0;
+    font-size: var(--text-lg);
+    font-weight: 600;
+}
+
+.share-view__list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+}
+
+.share-view__row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-md);
+}
+
+.share-view__row:hover {
+    background: var(--color-surface-hover);
+}
+
+.share-view__row-text {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: var(--space-1);
+    min-width: 0;
+}
+
+.share-view__row-link {
+    color: inherit;
+    text-decoration: none;
+}
+
+.share-view__row-title {
+    overflow-wrap: anywhere;
+}
+
+.share-view__row-actions {
+    display: flex;
+    flex-shrink: 0;
+    gap: var(--space-1);
+}
+
+.share-view__clamp {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+}
+
+@media (max-width: 599.98px) {
+    .share-view__sections {
+        padding: 0 var(--space-4);
+    }
+
+    .share-view__title {
+        font-size: var(--text-2xl);
+    }
+
+    .share-view__actions ::deep .share-view__play {
+        flex: 1;
+    }
+}

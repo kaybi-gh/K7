@@ -15,6 +15,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#0d0907" />
     <title>@PageTitle</title>
+    @if (IsPublicSharePath)
+    {
+        @* Share links are private by obscurity: keep them out of search engines and never
+           leak the page address to other sites. *@
+        <meta name="robots" content="noindex, nofollow" />
+        <meta name="referrer" content="no-referrer" />
+    }
     <meta name="description" content="@PageDescription" />
     <meta name="application-name" content="@ServerName" />
     <meta property="og:type" content="website" />
@@ -201,6 +208,8 @@
     private IComponentRenderMode? PageRenderMode => IsAuthSsrPath
         ? null
         : new InteractiveWebAssemblyRenderMode(false);
+
+    private bool IsPublicSharePath => HttpContext.Request.Path.StartsWithSegments("/share");
 
     private bool IsAuthSsrPath =>
         !HttpContext.AcceptsInteractiveRouting()

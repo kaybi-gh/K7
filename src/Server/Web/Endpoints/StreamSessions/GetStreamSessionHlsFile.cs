@@ -29,8 +29,21 @@ public sealed class GetStreamSessionHlsFile : IEndpoint
                 return Results.BadRequest();
             }
 
+            if (string.IsNullOrWhiteSpace(sessionInfo.RootDirectory))
+            {
+                return Results.NotFound();
+            }
+
             var relativePath = file.Replace('\\', '/');
-            var fullPath = Path.Combine(sessionInfo.RootDirectory, relativePath);
+            var rootPath = Path.GetFullPath(sessionInfo.RootDirectory)
+                .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
+            var fullPath = Path.GetFullPath(Path.Combine(rootPath, relativePath));
+
+            // The file name comes from the URL: never serve anything outside the session folder.
+            if (!fullPath.StartsWith(rootPath, StringComparison.OrdinalIgnoreCase))
+            {
+                return Results.NotFound();
+            }
 
             // For the master manifest, allow a short wait so that the
             // background ffmpeg process has time to create both the master

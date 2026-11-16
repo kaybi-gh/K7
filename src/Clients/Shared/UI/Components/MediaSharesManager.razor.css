@@ -1,0 +1,66 @@
+.media-shares {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+/* ---- Sheet of the selected share ---- */
+
+.share-sheet__media {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding-bottom: var(--space-3);
+}
+
+.share-sheet__picture {
+    width: 64px;
+    height: 96px;
+    flex-shrink: 0;
+    border-radius: var(--radius-md);
+    object-fit: cover;
+    background: var(--color-surface-variant);
+}
+
+.share-sheet__media-text {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    min-width: 0;
+}
+
+.share-sheet__media-title {
+    font-size: var(--text-lg);
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+.share-sheet__value {
+    font-size: var(--text-sm);
+    color: var(--color-text-secondary);
+    overflow-wrap: anywhere;
+}
+
+.share-sheet__heading {
+    margin: var(--space-5) 0 var(--space-2);
+}
+
+.share-sheet__actions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+}
+
+.share-sheet__visitor {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-2) var(--space-3);
+}
+
+.share-sheet__visitor-text {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    min-width: 0;
+}

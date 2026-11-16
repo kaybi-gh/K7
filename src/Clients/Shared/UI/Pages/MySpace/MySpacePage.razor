@@ -58,6 +58,17 @@
                             OnClick="@(() => NavigationManager.NavigateTo("/my-space/reviews"))" />
         }
 
+        @if (_canShare)
+        {
+            <K7CategoryCard Title="@L["Shares"]"
+                            Description="@L["SharesDesc"]"
+                            Icon="share-network"
+                            GradientStart="rgba(20,70,70,0.85)"
+                            IconColor="rgba(30,130,130,0.6)"
+                            Class="k7-category-card--lg"
+                            OnClick="@(() => NavigationManager.NavigateTo("/my-space/shares"))" />
+        }
+
         @if (DeviceService.GetClientType() != ClientType.Web)
         {
             <K7CategoryCard Title="@L["Downloads"]"

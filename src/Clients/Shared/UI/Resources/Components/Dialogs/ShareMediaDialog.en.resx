@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="Intro" xml:space="preserve"><value>Anyone with the link can open this media without an account, along with everything it contains.</value></data>
+  <data name="LabelField" xml:space="preserve"><value>Label</value></data>
+  <data name="LabelHint" xml:space="preserve"><value>Only shown in your list of shares.</value></data>
+  <data name="PasswordField" xml:space="preserve"><value>Password</value></data>
+  <data name="PasswordHint" xml:space="preserve"><value>Optional. Asked before the link opens.</value></data>
+  <data name="PasswordHintKeep" xml:space="preserve"><value>Leave empty to keep the current password.</value></data>
+  <data name="RemovePasswordField" xml:space="preserve"><value>Remove the password</value></data>
+  <data name="ExpirationField" xml:space="preserve"><value>Expiration</value></data>
+  <data name="ExpirationDateField" xml:space="preserve"><value>Date and time</value></data>
+  <data name="ExpirationNever" xml:space="preserve"><value>Never</value></data>
+  <data name="ExpirationOneHour" xml:space="preserve"><value>In 1 hour</value></data>
+  <data name="ExpirationOneDay" xml:space="preserve"><value>In 1 day</value></data>
+  <data name="ExpirationOneWeek" xml:space="preserve"><value>In 7 days</value></data>
+  <data name="ExpirationOneMonth" xml:space="preserve"><value>In 30 days</value></data>
+  <data name="ExpirationCustom" xml:space="preserve"><value>Specific date</value></data>
+  <data name="ExpirationKeep" xml:space="preserve"><value>Keep ({0})</value></data>
+  <data name="ExpirationKeepNever" xml:space="preserve"><value>Keep (never)</value></data>
+  <data name="MaxAccessField" xml:space="preserve"><value>Maximum number of accesses</value></data>
+  <data name="MaxAccessHint" xml:space="preserve"><value>One access is counted for each visitor who opens the link.</value></data>
+  <data name="Unlimited" xml:space="preserve"><value>Unlimited</value></data>
+  <data name="AllowPlaybackField" xml:space="preserve"><value>Allow playback</value></data>
+  <data name="AllowDownloadField" xml:space="preserve"><value>Allow download</value></data>
+  <data name="AllowDownloadHint" xml:space="preserve"><value>Visitors get the original file.</value></data>
+  <data name="CloseWhenConsumedField" xml:space="preserve"><value>Close once consumed</value></data>
+  <data name="CloseWhenConsumedHint" xml:space="preserve"><value>The share closes once the media was played to the end or downloaded.</value></data>
+  <data name="Create" xml:space="preserve"><value>Create link</value></data>
+  <data name="Save" xml:space="preserve"><value>Save</value></data>
+  <data name="Done" xml:space="preserve"><value>Done</value></data>
+  <data name="LinkWarning" xml:space="preserve"><value>Copy this link now: it will not be shown again. You can generate a new one from your shares.</value></data>
+  <data name="CopyLink" xml:space="preserve"><value>Copy link</value></data>
+  <data name="LinkCopied" xml:space="preserve"><value>Link copied</value></data>
+  <data name="ErrorNothingAllowed" xml:space="preserve"><value>Allow playback or download.</value></data>
+  <data name="ErrorMaxAccess" xml:space="preserve"><value>The number of accesses must be a whole number above zero.</value></data>
+  <data name="ErrorExpiration" xml:space="preserve"><value>Choose an expiration date in the future.</value></data>
+  <data name="ErrorPassword" xml:space="preserve"><value>The password needs at least 6 characters.</value></data>
+  <data name="ErrorSave" xml:space="preserve"><value>The share could not be saved.</value></data>
+</root>

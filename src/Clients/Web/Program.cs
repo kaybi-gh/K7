@@ -22,12 +22,15 @@ builder.Services.AddSingleton<UnauthorizedRedirectGate>();
 builder.Services.AddTransient<UnauthorizedRedirectHandler>();
 builder.Services.AddTransient<PerfTraceHttpHandler>();
 builder.Services.AddTransient<SharedProfileHeaderHandler>();
+builder.Services.AddSingleton<ISharePlaybackScope, SharePlaybackScope>();
+builder.Services.AddTransient<ShareVisitorHttpHandler>();
 builder.Services.AddHttpClient(nameof(K7ServerService), httpClient =>
 {
     httpClient.BaseAddress = new Uri(builder.HostEnvironment.BaseAddress);
 })
 .AddHttpMessageHandler<PerfTraceHttpHandler>()
 .AddHttpMessageHandler<SharedProfileHeaderHandler>()
+.AddHttpMessageHandler<ShareVisitorHttpHandler>()
 .AddHttpMessageHandler<UnauthorizedRedirectHandler>();
 
 builder.Services.AddSingleton<K7ServerService>(sp =>
@@ -57,6 +60,16 @@ builder.Services.AddSingleton<IServerPreferencesService>(sp => sp.GetRequiredSer
 builder.Services.AddSingleton<INotificationAdminService>(sp => sp.GetRequiredService<K7ServerService>());
 builder.Services.AddSingleton<IFederationService>(sp => sp.GetRequiredService<K7ServerService>());
 builder.Services.AddSingleton<IApiKeyAdminService>(sp => sp.GetRequiredService<K7ServerService>());
+builder.Services.AddSingleton<IMediaShareService>(sp => sp.GetRequiredService<K7ServerService>());
+builder.Services.AddSingleton<IMediaSharingAccess, MediaSharingAccess>();
+
+// Public share visitors are anonymous: this client has no sign-in redirect on purpose.
+builder.Services.AddHttpClient(PublicShareService.HttpClientName, httpClient =>
+{
+    httpClient.BaseAddress = new Uri(builder.HostEnvironment.BaseAddress);
+});
+builder.Services.AddSingleton<IPublicShareService>(sp =>
+    new PublicShareService(sp.GetRequiredService<IHttpClientFactory>().CreateClient(PublicShareService.HttpClientName)));
 builder.Services.AddSingleton<IClientAppPasswordUserService>(sp => sp.GetRequiredService<K7ServerService>());
 builder.Services.AddSingleton<IMusicIntelligenceAdminService>(sp => sp.GetRequiredService<K7ServerService>());
 builder.Services.AddSingleton<IScrobblingAdminService>(sp => sp.GetRequiredService<K7ServerService>());
@@ -81,7 +94,12 @@ builder.Services.AddSingleton<IAppExitService, AppExitService>();
 builder.Services.AddSingleton<IBrightnessService, BrightnessService>();
 builder.Services.AddSingleton<IVolumeService, VolumeService>();
 builder.Services.AddSingleton<ICustomAuthenticationStateProvider, CustomAuthenticationStateProvider>();
-builder.Services.AddSingleton<IStreamUriService, StreamUriService>();
+builder.Services.AddSingleton<StreamUriService>();
+// On a public share page the players stream through the share.
+builder.Services.AddSingleton<IStreamUriService>(sp => new ShareAwareStreamUriService(
+    sp.GetRequiredService<StreamUriService>(),
+    sp.GetRequiredService<ISharePlaybackScope>(),
+    sp.GetRequiredService<IPublicShareService>()));
 builder.Services.AddScoped<IFeatureAccessService, FeatureAccessService>();
 builder.Services.AddSingleton<IPlayerService, PlayerService>();
 builder.Services.AddSingleton<IAudioPlayerService, AudioPlayerService>();

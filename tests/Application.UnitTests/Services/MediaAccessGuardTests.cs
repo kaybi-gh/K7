@@ -83,7 +83,11 @@ public class MediaAccessGuardTests
         _currentUser.Id.Returns(_userId);
         _currentUser.GetSharedProfileIdAsync(Arg.Any<CancellationToken>()).Returns((Guid?)null);
         _filter = new MediaAccessFilter(_context);
-        _guard = new MediaAccessGuard(_context, _currentUser, _filter);
+        var shareVisitorAccess = new ShareVisitorAccess(
+            _context,
+            new NoShareVisitorContext(),
+            new ShareScopeResolver(_context));
+        _guard = new MediaAccessGuard(_context, _currentUser, _filter, shareVisitorAccess);
     }
 
     [TearDown]

@@ -27,6 +27,38 @@ public class TranscodeJobManager(
     private readonly SemaphoreSlim _jobLock = new(1, 1);
     private readonly PathsConfiguration _pathsConfig = pathsOptions.Value;
 
+    /// <summary>
+    /// Quality and codec names come from the request and name the output directory.
+    /// Anything that is not a plain token is refused, so a request can never point the
+    /// job (which deletes and creates files) outside the transcoding folder.
+    /// </summary>
+    internal static void EnsureSafeToken(string? value, string name)
+    {
+        if (value is null)
+            return;
+
+        var valid = value.Length is > 0 and <= 32;
+        foreach (var character in value)
+            valid &= char.IsAsciiLetterOrDigit(character) || character == '_';
+
+        if (!valid)
+        {
+            throw new K7.Server.Application.Common.Exceptions.ValidationException(
+            [
+                new FluentValidation.Results.ValidationFailure(name, "Invalid value.")
+            ]);
+        }
+    }
+
+    internal static void EnsureInsideRoot(string directory, string root)
+    {
+        var fullRoot = Path.GetFullPath(root).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
+            + Path.DirectorySeparatorChar;
+        var fullDirectory = Path.GetFullPath(directory);
+        if (!fullDirectory.StartsWith(fullRoot, StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException("Transcode output directory escapes the transcoding folder.");
+    }
+
     public async Task<TranscodeJob> GetOrStartJobAsync(
         Guid indexedFileId,
         string inputFilePath,
@@ -41,6 +73,10 @@ public class TranscodeJobManager(
         int? audioChannels = null,
         Func<TimeSpan, TimeSpan, CancellationToken, Task>? ensureInputCoverageAsync = null)
     {
+        EnsureSafeToken(quality, nameof(quality));
+        EnsureSafeToken(videoCodec, nameof(videoCodec));
+        EnsureSafeToken(audioCodec, nameof(audioCodec));
+
         var settings = await transcodeSettingsProvider.GetSettingsAsync(cancellationToken);
         EnsureTempQuotaAvailable(settings.TranscodeTempQuotaMb);
 
@@ -91,6 +127,8 @@ public class TranscodeJobManager(
             var outputDir = FfmpegStreamingArgs.NormalizeOutputDirectory(isAudioOnly
                 ? Path.Combine(transcodingPath, indexedFileId.ToString("N"), $"audio-{audioCodecId}-a{audioTrackIndex}")
                 : Path.Combine(transcodingPath, indexedFileId.ToString("N"), videoSubDir));
+
+            EnsureInsideRoot(outputDir, transcodingPath);
 
             if (Directory.Exists(outputDir))
             {

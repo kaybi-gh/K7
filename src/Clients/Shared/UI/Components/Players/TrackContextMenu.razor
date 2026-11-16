@@ -12,7 +12,11 @@
 @inject NavigationManager NavigationManager
 @inject IStringLocalizer<SharedResource> S
 @implements IDisposable
+@inject ISharePlaybackScope SharePlaybackScope
 
+@* Radio, playlists and catalog links need an account: no menu on a public share page. *@
+@if (!SharePlaybackScope.IsVisitorPage)
+{
 <span @ref="_triggerRef" class="track-context-menu" @onclick:stopPropagation="true">
     <button type="button"
             class="k7-icon-btn k7-icon-btn--sm focusable track-context-menu__trigger"
@@ -21,3 +25,4 @@
         <i class="ph ph-dots-three-vertical"></i>
     </button>
 </span>
+}

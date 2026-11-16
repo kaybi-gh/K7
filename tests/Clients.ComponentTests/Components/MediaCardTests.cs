@@ -738,6 +738,16 @@ public class MediaCardTests
         ctx.Services.AddSingleton(Substitute.For<IK7DialogService>());
         ctx.Services.AddSingleton(Substitute.For<IK7Snackbar>());
         ctx.Services.AddSingleton(new MediaCacheStore());
+
+        // The card menu carries the Share entry: these tests run without the right to share.
+        var sharingAccess = Substitute.For<IMediaSharingAccess>();
+        sharingAccess.GetAsync(Arg.Any<CancellationToken>())
+            .Returns(new K7.Shared.Dtos.Shares.MediaSharingAvailabilityDto());
+        ctx.Services.AddSingleton(sharingAccess);
+        var shareLocalizer = Substitute.For<IStringLocalizer<ShareMenuSection>>();
+        shareLocalizer[Arg.Any<string>()].Returns(call =>
+            new LocalizedString(call.Arg<string>(), call.Arg<string>()));
+        ctx.Services.AddSingleton(shareLocalizer);
         ctx.Services.AddSingleton<MediaCardContextMenuService>();
         ctx.Services.AddSingleton<IMediaCardContextMenuService>(sp => sp.GetRequiredService<MediaCardContextMenuService>());
         ctx.JSInterop.Mode = JSRuntimeMode.Loose;

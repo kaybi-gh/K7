@@ -17,6 +17,7 @@ using K7.Server.Domain.Entities.Restrictions;
 using K7.Server.Domain.Entities.Reviews;
 using K7.Server.Domain.Entities.Settings;
 using K7.Server.Domain.Entities.SharedProfiles;
+using K7.Server.Domain.Entities.Shares;
 using K7.Server.Domain.Entities.Users;
 using K7.Server.Infrastructure.Database.Context.Data.Configurations;
 using K7.Server.Infrastructure.Database.Context.Identity;
@@ -100,6 +101,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
     public DbSet<ClientAppPassword> ClientAppPasswords => Set<ClientAppPassword>();
     public DbSet<MediaLibraryAvailability> MediaLibraryAvailabilities => Set<MediaLibraryAvailability>();
     public DbSet<SyncPlayInvite> SyncPlayInvites => Set<SyncPlayInvite>();
+    public DbSet<MediaShare> MediaShares => Set<MediaShare>();
+    public DbSet<MediaShareSession> MediaShareSessions => Set<MediaShareSession>();
 
     public Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default) =>
         Database.BeginTransactionAsync(cancellationToken);

@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="Intro" xml:space="preserve"><value>Toute personne disposant du lien pourra ouvrir ce média sans compte, avec tout ce qu'il contient.</value></data>
+  <data name="LabelField" xml:space="preserve"><value>Libellé</value></data>
+  <data name="LabelHint" xml:space="preserve"><value>Visible uniquement dans votre liste de partages.</value></data>
+  <data name="PasswordField" xml:space="preserve"><value>Mot de passe</value></data>
+  <data name="PasswordHint" xml:space="preserve"><value>Facultatif. Demandé avant d'ouvrir le lien.</value></data>
+  <data name="PasswordHintKeep" xml:space="preserve"><value>Laissez vide pour conserver le mot de passe actuel.</value></data>
+  <data name="RemovePasswordField" xml:space="preserve"><value>Supprimer le mot de passe</value></data>
+  <data name="ExpirationField" xml:space="preserve"><value>Expiration</value></data>
+  <data name="ExpirationDateField" xml:space="preserve"><value>Date et heure</value></data>
+  <data name="ExpirationNever" xml:space="preserve"><value>Jamais</value></data>
+  <data name="ExpirationOneHour" xml:space="preserve"><value>Dans 1 heure</value></data>
+  <data name="ExpirationOneDay" xml:space="preserve"><value>Dans 1 jour</value></data>
+  <data name="ExpirationOneWeek" xml:space="preserve"><value>Dans 7 jours</value></data>
+  <data name="ExpirationOneMonth" xml:space="preserve"><value>Dans 30 jours</value></data>
+  <data name="ExpirationCustom" xml:space="preserve"><value>Date précise</value></data>
+  <data name="ExpirationKeep" xml:space="preserve"><value>Conserver ({0})</value></data>
+  <data name="ExpirationKeepNever" xml:space="preserve"><value>Conserver (jamais)</value></data>
+  <data name="MaxAccessField" xml:space="preserve"><value>Nombre maximum d'accès</value></data>
+  <data name="MaxAccessHint" xml:space="preserve"><value>Un accès est compté à chaque visiteur qui ouvre le lien.</value></data>
+  <data name="Unlimited" xml:space="preserve"><value>Illimité</value></data>
+  <data name="AllowPlaybackField" xml:space="preserve"><value>Autoriser la lecture</value></data>
+  <data name="AllowDownloadField" xml:space="preserve"><value>Autoriser le téléchargement</value></data>
+  <data name="AllowDownloadHint" xml:space="preserve"><value>Les visiteurs récupèrent le fichier d'origine.</value></data>
+  <data name="CloseWhenConsumedField" xml:space="preserve"><value>Fermer une fois consommé</value></data>
+  <data name="CloseWhenConsumedHint" xml:space="preserve"><value>Le partage se ferme quand le média a été lu en entier ou téléchargé.</value></data>
+  <data name="Create" xml:space="preserve"><value>Créer le lien</value></data>
+  <data name="Save" xml:space="preserve"><value>Enregistrer</value></data>
+  <data name="Done" xml:space="preserve"><value>Terminé</value></data>
+  <data name="LinkWarning" xml:space="preserve"><value>Copiez ce lien maintenant : il ne sera plus affiché. Vous pourrez en générer un nouveau depuis vos partages.</value></data>
+  <data name="CopyLink" xml:space="preserve"><value>Copier le lien</value></data>
+  <data name="LinkCopied" xml:space="preserve"><value>Lien copié</value></data>
+  <data name="ErrorNothingAllowed" xml:space="preserve"><value>Autorisez la lecture ou le téléchargement.</value></data>
+  <data name="ErrorMaxAccess" xml:space="preserve"><value>Le nombre d'accès doit être un entier supérieur à zéro.</value></data>
+  <data name="ErrorExpiration" xml:space="preserve"><value>Choisissez une date d'expiration dans le futur.</value></data>
+  <data name="ErrorPassword" xml:space="preserve"><value>Le mot de passe doit contenir au moins 6 caractères.</value></data>
+  <data name="ErrorSave" xml:space="preserve"><value>Le partage n'a pas pu être enregistré.</value></data>
+</root>

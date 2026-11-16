@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="Play" xml:space="preserve"><value>Lire</value></data>
+  <data name="Download" xml:space="preserve"><value>Télécharger</value></data>
+  <data name="DownloadWithSize" xml:space="preserve"><value>Télécharger ({0})</value></data>
+  <data name="NoFile" xml:space="preserve"><value>Aucun fichier disponible pour ce média.</value></data>
+  <data name="OtherVersions" xml:space="preserve"><value>Autres versions</value></data>
+  <data name="Seasons" xml:space="preserve"><value>Saisons</value></data>
+  <data name="Episodes" xml:space="preserve"><value>Épisodes</value></data>
+  <data name="Albums" xml:space="preserve"><value>Albums</value></data>
+  <data name="Tracks" xml:space="preserve"><value>Pistes</value></data>
+  <data name="Cast" xml:space="preserve"><value>Casting et équipe</value></data>
+  <data name="Members" xml:space="preserve"><value>Membres</value></data>
+  <data name="SeasonNumber" xml:space="preserve"><value>Saison {0}</value></data>
+  <data name="EpisodeNumber" xml:space="preserve"><value>Épisode {0}</value></data>
+  <data name="EpisodeCount" xml:space="preserve"><value>{0} épisodes</value></data>
+  <data name="TrackCount" xml:space="preserve"><value>{0} pistes</value></data>
+  <data name="PlayAll" xml:space="preserve"><value>Tout lire</value></data>
+  <data name="BackToShare" xml:space="preserve"><value>Retour au partage</value></data>
+</root>

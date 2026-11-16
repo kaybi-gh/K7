@@ -175,6 +175,10 @@ else if (_serie is not null)
                                         <K7MenuItem Icon="magnifying-glass" OnClick="OpenMediaReIdentifyDialogAsync">@L["ReIdentify"]</K7MenuItem>
                                         <K7MenuItem Icon="arrow-clockwise" OnClick="RefreshMetadataAsync">@L["RefreshMetadata"]</K7MenuItem>
                                     </K7MenuSection>
+                                    @if (_serie is not null)
+                                    {
+                                        <ShareMenuSection MediaId="_serie.Id" MediaType="K7.Server.Domain.Enums.MediaType.Serie" MediaTitle="@_serie.Title" />
+                                    }
                                 </ChildContent>
                             </K7Menu>
                         </AuthorizeView>

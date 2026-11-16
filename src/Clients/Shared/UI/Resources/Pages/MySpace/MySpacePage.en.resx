@@ -39,4 +39,6 @@
   <data name="ReviewsCount" xml:space="preserve"><value>{0} reviews</value></data>
   <data name="VideoHoursKpi" xml:space="preserve"><value>{0:0.#} h video</value></data>
   <data name="MusicHoursKpi" xml:space="preserve"><value>{0:0.#} h music</value></data>
+  <data name="Shares" xml:space="preserve"><value>My shares</value></data>
+  <data name="SharesDesc" xml:space="preserve"><value>Temporary public links to your media</value></data>
 </root>

@@ -1,0 +1,63 @@
+@page "/share"
+@page "/share/{ShareId:guid}/m/{MediaId:guid}"
+@layout ShareLayout
+@attribute [AllowAnonymous]
+@using K7.Clients.Shared.UI.Components.Shares
+@using K7.Server.Domain.Enums
+@using Microsoft.AspNetCore.Authorization
+@inject IStringLocalizer<SharePage> L
+
+@* Public share link. The landing page ("/share#token") opens the share, asking for its
+   password when it has one. Pages inside the share only need the visitor session. *@
+@switch (_state)
+{
+    case ShareViewState.Loading:
+        <div class="share-page__state">
+            <K7Spinner />
+        </div>
+        break;
+
+    case ShareViewState.PasswordRequired:
+        <div class="share-page__state">
+            <div class="share-page__card">
+                <K7Icon Icon="@Phosphor.Lock" IconSize="@K7IconSize.Lg" />
+                <h1 class="share-page__title">@L["PasswordTitle"]</h1>
+                <p class="share-page__text">@L["PasswordText"]</p>
+                <K7TextField @bind-Value="_password"
+                             Label="@L["PasswordLabel"]"
+                             Type="password"
+                             Variant="outlined"
+                             Immediate="true"
+                             Autofocus="true"
+                             OnKeyDown="OnPasswordKeyDown" />
+                @if (_passwordError is not null)
+                {
+                    <K7Alert Severity="K7Severity.Error">@_passwordError</K7Alert>
+                }
+                <K7Button Variant="filled" Color="primary" OnClick="SubmitPasswordAsync"
+                          Disabled="@(_isSubmitting || string.IsNullOrEmpty(_password))">
+                    @if (_isSubmitting)
+                    {
+                        <K7Spinner Size="sm" />
+                    }
+                    @L["Open"]
+                </K7Button>
+            </div>
+        </div>
+        break;
+
+    case ShareViewState.Content when _media is not null && _session is not null:
+        <ShareMediaView @key="_media.Id"
+                        Media="_media"
+                        Session="_session"
+                        BackHref="@BackHref"
+                        OnPlayVideo="OnPlayVideoAsync"
+                        OnPlayAudio="OnPlayAudioAsync" />
+        break;
+
+    default:
+        <div class="share-page__state">
+            <K7EmptyState Icon="@StateIcon" Title="@StateTitle" Subtitle="@StateText" />
+        </div>
+        break;
+}

@@ -4,7 +4,8 @@ namespace K7.Clients.Shared.UI.Components;
 
 public partial class PersonCard
 {
-    [Parameter, EditorRequired] public string Href { get; set; } = default!;
+    /// <summary>Where the card leads. Null shows the card without a link.</summary>
+    [Parameter] public string? Href { get; set; }
 
     [Parameter, EditorRequired] public string Title { get; set; } = default!;
 

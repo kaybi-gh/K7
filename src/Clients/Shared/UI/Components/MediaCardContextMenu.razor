@@ -1,6 +1,6 @@
 @inject IStringLocalizer<MediaCardContextMenu> L
 
-@* Sections in a fixed order, the same in every media menu: play and go to, my state, organize, hide. *@
+@* Sections in a fixed order, the same in every media menu: play and go to, my state, organize, share, hide. *@
 @if (ShowPlay || _relatedLinks.Count > 0)
 {
     <K7MenuSection>
@@ -66,6 +66,11 @@
             <K7MenuItem Icon="folders" OnClick="AddToCollectionAsync">@L["AddToCollection"]</K7MenuItem>
         }
     </K7MenuSection>
+}
+
+@if (_hasValidMediaId)
+{
+    <ShareMenuSection MediaId="_mediaId" MediaType="MenuMediaType" MediaTitle="@Model.Title" />
 }
 
 @if (ExcludeMenuEnabled)

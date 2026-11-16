@@ -1,0 +1,10 @@
+@namespace K7.Clients.Shared.UI.Components
+@inject IStringLocalizer<ShareMenuSection> L
+
+@* Own section of a media menu: only users allowed to share see it. *@
+@if (_canShare && MediaId != Guid.Empty)
+{
+    <K7MenuSection>
+        <K7MenuItem Icon="share-network" OnClick="OpenShareDialogAsync">@L["Share"]</K7MenuItem>
+    </K7MenuSection>
+}

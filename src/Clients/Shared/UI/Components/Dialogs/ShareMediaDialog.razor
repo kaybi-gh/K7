@@ -1,0 +1,86 @@
+@inject IStringLocalizer<ShareMediaDialog> L
+@inject IStringLocalizer<SharedResource> S
+
+@if (_createdLink is null)
+{
+    <div class="k7-dialog-content">
+        @if (!IsEdit)
+        {
+            <p class="share-dialog__intro">@L["Intro"]</p>
+        }
+        <div>
+            <K7SettingRow Label="@L["LabelField"]" Hint="@L["LabelHint"]">
+                <K7TextField @bind-Value="_label" Variant="outlined" MaxLength="200" />
+            </K7SettingRow>
+            <K7SettingRow Label="@L["PasswordField"]" Hint="@PasswordHint">
+                <K7TextField @bind-Value="_password" Variant="outlined" Type="password" MaxLength="128" />
+            </K7SettingRow>
+            @if (IsEdit && ExistingShare!.HasPassword)
+            {
+                <K7SettingRow Label="@L["RemovePasswordField"]">
+                    <K7Switch @bind-Value="_removePassword" AriaLabel="@L["RemovePasswordField"]" />
+                </K7SettingRow>
+            }
+            <K7SettingRow Label="@L["ExpirationField"]">
+                <K7Select TValue="ShareExpirationChoice" @bind-Value="_expiration" Variant="outlined">
+                    @foreach (var choice in ExpirationChoices)
+                    {
+                        <K7SelectItem TValue="ShareExpirationChoice" Value="choice" Text="@GetExpirationLabel(choice)">@GetExpirationLabel(choice)</K7SelectItem>
+                    }
+                </K7Select>
+            </K7SettingRow>
+            @if (_expiration == ShareExpirationChoice.Custom)
+            {
+                <K7SettingRow Label="@L["ExpirationDateField"]">
+                    <K7TextField @bind-Value="_customExpiration" Variant="outlined" Type="datetime-local" />
+                </K7SettingRow>
+            }
+            <K7SettingRow Label="@L["MaxAccessField"]" Hint="@L["MaxAccessHint"]">
+                <K7TextField @bind-Value="_maxAccessCount" Variant="outlined" Type="number" Placeholder="@L["Unlimited"]" />
+            </K7SettingRow>
+            <K7SettingRow Label="@L["AllowPlaybackField"]">
+                <K7Switch @bind-Value="_allowPlayback" AriaLabel="@L["AllowPlaybackField"]" />
+            </K7SettingRow>
+            <K7SettingRow Label="@L["AllowDownloadField"]" Hint="@L["AllowDownloadHint"]">
+                <K7Switch @bind-Value="_allowDownload" AriaLabel="@L["AllowDownloadField"]" />
+            </K7SettingRow>
+            @if (CanCloseWhenConsumed)
+            {
+                <K7SettingRow Label="@L["CloseWhenConsumedField"]" Hint="@L["CloseWhenConsumedHint"]">
+                    <K7Switch @bind-Value="_closeWhenConsumed" AriaLabel="@L["CloseWhenConsumedField"]" />
+                </K7SettingRow>
+            }
+        </div>
+        @if (_error is not null)
+        {
+            <K7Alert Severity="K7Severity.Error" Class="mt-3">@_error</K7Alert>
+        }
+    </div>
+    <div class="k7-dialog-actions">
+        <K7Button OnClick="Cancel">@S["Cancel"]</K7Button>
+        <K7Button Color="primary" Variant="filled" OnClick="Submit" Disabled="_isSubmitting">
+            @if (_isSubmitting)
+            {
+                <K7Spinner Size="sm" />
+            }
+            @(IsEdit ? L["Save"] : L["Create"])
+        </K7Button>
+    </div>
+}
+else
+{
+    <div class="k7-dialog-content">
+        <div class="share-dialog__created">
+            <K7Alert Severity="K7Severity.Warning" Icon="@Phosphor.WarningCircle">@L["LinkWarning"]</K7Alert>
+            <div class="share-dialog__link-row">
+                <code class="share-dialog__link">@_createdLink</code>
+                <K7Button OnClick="CopyLink" Variant="outlined" StartIcon="@Phosphor.Clipboard">
+                    @L["CopyLink"]
+                </K7Button>
+            </div>
+        </div>
+    </div>
+    <div class="k7-dialog-actions">
+        <K7Button Color="primary" Variant="filled" OnClick="Close">@L["Done"]</K7Button>
+    </div>
+}

@@ -1,0 +1,13 @@
+@page "/admin/shares"
+@page "/admin/shares/{ShareId:guid}"
+@layout AdminLayout
+@inject IStringLocalizer<AdminSharesPanel> L
+
+<PageTitle>@L["Title"]</PageTitle>
+
+@* Every user's public share links. Users manage their own from "My space". *@
+<MediaSharesManager Title="@L["Title"]"
+                    Subtitle="@L["Subtitle"]"
+                    BasePath="/admin/shares"
+                    ShareId="ShareId"
+                    ShowAllUsers="true" />

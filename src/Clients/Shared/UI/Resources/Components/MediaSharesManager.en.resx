@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="DisabledNotice" xml:space="preserve"><value>Public shares are turned off on this server: no link works until they are turned back on.</value></data>
+  <data name="Empty" xml:space="preserve"><value>No shares</value></data>
+  <data name="EmptyDescription" xml:space="preserve"><value>Share a media from its menu to create a temporary public link.</value></data>
+  <data name="ErrorLoad" xml:space="preserve"><value>The shares could not be loaded.</value></data>
+  <data name="ErrorAction" xml:space="preserve"><value>The action could not be completed.</value></data>
+  <data name="FieldStatus" xml:space="preserve"><value>Status</value></data>
+  <data name="FieldLabel" xml:space="preserve"><value>Label</value></data>
+  <data name="FieldCreatedBy" xml:space="preserve"><value>Created by</value></data>
+  <data name="FieldCreated" xml:space="preserve"><value>Created</value></data>
+  <data name="FieldExpiration" xml:space="preserve"><value>Expiration</value></data>
+  <data name="FieldAccesses" xml:space="preserve"><value>Accesses</value></data>
+  <data name="FieldAccessesHint" xml:space="preserve"><value>One access is counted for each visitor who opens the link.</value></data>
+  <data name="FieldLastAccess" xml:space="preserve"><value>Last access</value></data>
+  <data name="FieldPassword" xml:space="preserve"><value>Password protected</value></data>
+  <data name="FieldPlayback" xml:space="preserve"><value>Playback</value></data>
+  <data name="FieldDownload" xml:space="preserve"><value>Download</value></data>
+  <data name="FieldCloseWhenConsumed" xml:space="preserve"><value>Closes once consumed</value></data>
+  <data name="ConsumedOn" xml:space="preserve"><value>Consumed on {0}</value></data>
+  <data name="Never" xml:space="preserve"><value>Never</value></data>
+  <data name="NeverOpened" xml:space="preserve"><value>Never opened</value></data>
+  <data name="Accesses" xml:space="preserve"><value>Accesses: {0}</value></data>
+  <data name="AccessesOfMax" xml:space="preserve"><value>Accesses: {0} / {1}</value></data>
+  <data name="LastSeen" xml:space="preserve"><value>Last seen {0}</value></data>
+  <data name="SectionActions" xml:space="preserve"><value>Actions</value></data>
+  <data name="SectionVisitors" xml:space="preserve"><value>Recent visitors</value></data>
+  <data name="NoVisitors" xml:space="preserve"><value>Nobody has opened this share yet.</value></data>
+  <data name="ActionEdit" xml:space="preserve"><value>Edit</value></data>
+  <data name="ActionNewLink" xml:space="preserve"><value>Generate a new link</value></data>
+  <data name="ActionRevoke" xml:space="preserve"><value>Revoke</value></data>
+  <data name="ActionDelete" xml:space="preserve"><value>Delete</value></data>
+  <data name="NewLinkConfirmTitle" xml:space="preserve"><value>Generate a new link?</value></data>
+  <data name="NewLinkConfirmMessage" xml:space="preserve"><value>The current link stops working and current visitors will have to open the new one.</value></data>
+  <data name="RevokeConfirmTitle" xml:space="preserve"><value>Revoke this share?</value></data>
+  <data name="RevokeConfirmMessage" xml:space="preserve"><value>The share of "{0}" will be closed for everyone, including current visitors.</value></data>
+  <data name="DeleteConfirmTitle" xml:space="preserve"><value>Delete this share?</value></data>
+  <data name="DeleteConfirmMessage" xml:space="preserve"><value>The share of "{0}" and its visit history will be deleted.</value></data>
+  <data name="ShareUpdated" xml:space="preserve"><value>Share updated</value></data>
+  <data name="ShareRevoked" xml:space="preserve"><value>Share revoked</value></data>
+  <data name="ShareDeleted" xml:space="preserve"><value>Share deleted</value></data>
+  <data name="StatusActive" xml:space="preserve"><value>Active</value></data>
+  <data name="StatusExpired" xml:space="preserve"><value>Expired</value></data>
+  <data name="StatusExhausted" xml:space="preserve"><value>Exhausted</value></data>
+  <data name="StatusConsumed" xml:space="preserve"><value>Consumed</value></data>
+  <data name="StatusRevoked" xml:space="preserve"><value>Revoked</value></data>
+  <data name="StatusSuspended" xml:space="preserve"><value>Suspended</value></data>
+  <data name="StatusExhaustedHint" xml:space="preserve"><value>The maximum number of accesses is reached. Visitors already in keep their access.</value></data>
+  <data name="StatusConsumedHint" xml:space="preserve"><value>The media was played to the end or downloaded.</value></data>
+  <data name="StatusSuspendedHint" xml:space="preserve"><value>Its creator is no longer allowed to share.</value></data>
+  <data name="TypeMovie" xml:space="preserve"><value>Movie</value></data>
+  <data name="TypeSerie" xml:space="preserve"><value>Series</value></data>
+  <data name="TypeSeason" xml:space="preserve"><value>Season</value></data>
+  <data name="TypeEpisode" xml:space="preserve"><value>Episode</value></data>
+  <data name="TypeArtist" xml:space="preserve"><value>Artist</value></data>
+  <data name="TypeAlbum" xml:space="preserve"><value>Album</value></data>
+  <data name="TypeTrack" xml:space="preserve"><value>Track</value></data>
+  <data name="EnabledField" xml:space="preserve"><value>Allow public shares</value></data>
+  <data name="EnabledHint" xml:space="preserve"><value>A share link gives access to a media without an account. When off, every link stops working without being deleted.</value></data>
+</root>

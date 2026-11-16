@@ -138,6 +138,10 @@ else if (_artist is not null)
                                             <K7MenuItem Icon="arrow-clockwise" OnClick="RefreshMetadataAsync">@L["RefreshMetadata"]</K7MenuItem>
                                         </K7MenuSection>
                                     }
+                                    @if (_artist is not null)
+                                    {
+                                        <ShareMenuSection MediaId="_artist.Id" MediaType="K7.Server.Domain.Enums.MediaType.MusicArtist" MediaTitle="@_artist.Title" />
+                                    }
                                 </ChildContent>
                             </K7Menu>
                         }

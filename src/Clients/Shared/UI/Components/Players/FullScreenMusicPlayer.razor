@@ -47,62 +47,69 @@
                 }
                 @if (!IsRemoteMode)
                 {
-                    <PlayOnDevicePicker CastDeviceSelected="OnCastDeviceSelected" RemoteDeviceSelected="OnRemoteDeviceSelected" />
+                    @if (!IsShareVisitor)
+                    {
+                        <PlayOnDevicePicker CastDeviceSelected="OnCastDeviceSelected" RemoteDeviceSelected="OnRemoteDeviceSelected" />
+                    }
                     <K7IconButton Icon="@Phosphor.MicrophoneStage" OnClick="ToggleLyrics" AriaLabel="Lyrics" Color="@(_view == FullScreenView.Lyrics ? "active" : "")" />
                     <K7IconButton Icon="@Phosphor.Queue" OnClick="ToggleQueue" AriaLabel="Queue" Color="@(_view == FullScreenView.Queue ? "active" : "")" />
                     @if (IsSyncPlayMode)
                     {
                         <K7IconButton Icon="@Phosphor.UsersThree" OnClick="ToggleSyncPlayView" AriaLabel="SyncPlay" Color="@(_view == FullScreenView.SyncPlay ? "active" : "")" />
                     }
-                    <K7Menu Open="_menuOpen" OpenChanged="v => { _menuOpen = v; _sleepTimerSubmenuOpen = false; StateHasChanged(); }">
-                        <ActivatorContent>
-                            <K7IconButton Icon="@Phosphor.DotsThreeVertical" AriaLabel="More" Focusable="true" />
-                        </ActivatorContent>
-                        <ChildContent>
-                            @if (_sleepTimerSubmenuOpen)
-                            {
-                                <K7MenuItem Icon="@Phosphor.CaretLeft" PreventClose="true" OnClick="() => _sleepTimerSubmenuOpen = false">@S["Back"]</K7MenuItem>
-                                <K7MenuItem Icon="@Phosphor.Timer" OnClick="() => StartSleepTimer(15)">15 min</K7MenuItem>
-                                <K7MenuItem Icon="@Phosphor.Timer" OnClick="() => StartSleepTimer(30)">30 min</K7MenuItem>
-                                <K7MenuItem Icon="@Phosphor.Timer" OnClick="() => StartSleepTimer(45)">45 min</K7MenuItem>
-                                <K7MenuItem Icon="@Phosphor.Timer" OnClick="() => StartSleepTimer(60)">1h</K7MenuItem>
-                                <K7MenuItem Icon="@Phosphor.Timer" OnClick="() => StartSleepTimer(90)">1h30</K7MenuItem>
-                                <K7MenuItem Icon="@Phosphor.Timer" OnClick="StartSleepTimerEndOfTrack">@S["EndOfTrack"]</K7MenuItem>
-                            }
-                            else
-                            {
-                                @* Sections in the fixed menu order: organize, go to, player options, admin. *@
-                                <K7MenuSection>
-                                    <K7MenuItem Icon="@Phosphor.Playlist" OnClick="AddToPlaylist">@S["AddToPlaylist"]</K7MenuItem>
-                                    <K7MenuItem Icon="@Phosphor.FloppyDisk" OnClick="SaveQueueAsPlaylist">@S["SaveQueueAsPlaylist"]</K7MenuItem>
-                                    <K7MenuItem Icon="@Phosphor.ShareNetwork" OnClick="ShareTrack">@S["Share"]</K7MenuItem>
-                                </K7MenuSection>
-                                <K7MenuSection>
-                                    <K7MenuItem Icon="@Phosphor.VinylRecord" OnClick="GoToAlbum">@S["GoToAlbum"]</K7MenuItem>
-                                    <K7MenuItem Icon="@Phosphor.User" OnClick="GoToArtist">@S["GoToArtist"]</K7MenuItem>
-                                </K7MenuSection>
-                                <K7MenuSection>
-                                    @if (SleepTimer.IsActive)
-                                    {
-                                        <K7MenuItem Icon="@Phosphor.Timer" OnClick="CancelSleepTimer">@S["CancelSleepTimer"] (@FormatRemaining(SleepTimer.Remaining))</K7MenuItem>
-                                    }
-                                    else
-                                    {
-                                        <K7MenuItem Icon="@Phosphor.Timer" PreventClose="true" OnClick="() => _sleepTimerSubmenuOpen = true">@S["SleepTimer"]</K7MenuItem>
-                                    }
-                                    @if (_visualizerAvailable)
-                                    {
-                                        <K7MenuItem Icon="@Phosphor.Waveform" OnClick="ToggleVisualizer">@(_visualizerEnabled ? S["DisableVisualizer"] : S["Visualizer"])</K7MenuItem>
-                                    }
-                                </K7MenuSection>
-                                <AuthorizeView Roles="Administrator">
+                    @* Playlists, sharing and catalog links need an account. *@
+                    @if (!IsShareVisitor)
+                    {
+                        <K7Menu Open="_menuOpen" OpenChanged="v => { _menuOpen = v; _sleepTimerSubmenuOpen = false; StateHasChanged(); }">
+                            <ActivatorContent>
+                                <K7IconButton Icon="@Phosphor.DotsThreeVertical" AriaLabel="More" Focusable="true" />
+                            </ActivatorContent>
+                            <ChildContent>
+                                @if (_sleepTimerSubmenuOpen)
+                                {
+                                    <K7MenuItem Icon="@Phosphor.CaretLeft" PreventClose="true" OnClick="() => _sleepTimerSubmenuOpen = false">@S["Back"]</K7MenuItem>
+                                    <K7MenuItem Icon="@Phosphor.Timer" OnClick="() => StartSleepTimer(15)">15 min</K7MenuItem>
+                                    <K7MenuItem Icon="@Phosphor.Timer" OnClick="() => StartSleepTimer(30)">30 min</K7MenuItem>
+                                    <K7MenuItem Icon="@Phosphor.Timer" OnClick="() => StartSleepTimer(45)">45 min</K7MenuItem>
+                                    <K7MenuItem Icon="@Phosphor.Timer" OnClick="() => StartSleepTimer(60)">1h</K7MenuItem>
+                                    <K7MenuItem Icon="@Phosphor.Timer" OnClick="() => StartSleepTimer(90)">1h30</K7MenuItem>
+                                    <K7MenuItem Icon="@Phosphor.Timer" OnClick="StartSleepTimerEndOfTrack">@S["EndOfTrack"]</K7MenuItem>
+                                }
+                                else
+                                {
+                                    @* Sections in the fixed menu order: organize, go to, player options, admin. *@
                                     <K7MenuSection>
-                                        <K7MenuItem Icon="@Phosphor.Info" OnClick="ShowTrackInfo">@S["TrackInfo"]</K7MenuItem>
+                                        <K7MenuItem Icon="@Phosphor.Playlist" OnClick="AddToPlaylist">@S["AddToPlaylist"]</K7MenuItem>
+                                        <K7MenuItem Icon="@Phosphor.FloppyDisk" OnClick="SaveQueueAsPlaylist">@S["SaveQueueAsPlaylist"]</K7MenuItem>
+                                        <K7MenuItem Icon="@Phosphor.ShareNetwork" OnClick="ShareTrack">@S["Share"]</K7MenuItem>
                                     </K7MenuSection>
-                                </AuthorizeView>
-                            }
-                        </ChildContent>
-                    </K7Menu>
+                                    <K7MenuSection>
+                                        <K7MenuItem Icon="@Phosphor.VinylRecord" OnClick="GoToAlbum">@S["GoToAlbum"]</K7MenuItem>
+                                        <K7MenuItem Icon="@Phosphor.User" OnClick="GoToArtist">@S["GoToArtist"]</K7MenuItem>
+                                    </K7MenuSection>
+                                    <K7MenuSection>
+                                        @if (SleepTimer.IsActive)
+                                        {
+                                            <K7MenuItem Icon="@Phosphor.Timer" OnClick="CancelSleepTimer">@S["CancelSleepTimer"] (@FormatRemaining(SleepTimer.Remaining))</K7MenuItem>
+                                        }
+                                        else
+                                        {
+                                            <K7MenuItem Icon="@Phosphor.Timer" PreventClose="true" OnClick="() => _sleepTimerSubmenuOpen = true">@S["SleepTimer"]</K7MenuItem>
+                                        }
+                                        @if (_visualizerAvailable)
+                                        {
+                                            <K7MenuItem Icon="@Phosphor.Waveform" OnClick="ToggleVisualizer">@(_visualizerEnabled ? S["DisableVisualizer"] : S["Visualizer"])</K7MenuItem>
+                                        }
+                                    </K7MenuSection>
+                                    <AuthorizeView Roles="Administrator">
+                                        <K7MenuSection>
+                                            <K7MenuItem Icon="@Phosphor.Info" OnClick="ShowTrackInfo">@S["TrackInfo"]</K7MenuItem>
+                                        </K7MenuSection>
+                                    </AuthorizeView>
+                                }
+                            </ChildContent>
+                        </K7Menu>
+                    }
                 }
             </div>
 

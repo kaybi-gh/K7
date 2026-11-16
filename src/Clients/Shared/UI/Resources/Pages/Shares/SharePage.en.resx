@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="PasswordTitle" xml:space="preserve"><value>Protected share</value></data>
+  <data name="PasswordText" xml:space="preserve"><value>Enter the password you were given.</value></data>
+  <data name="PasswordLabel" xml:space="preserve"><value>Password</value></data>
+  <data name="PasswordInvalid" xml:space="preserve"><value>Wrong password.</value></data>
+  <data name="Open" xml:space="preserve"><value>Open</value></data>
+  <data name="BackToShare" xml:space="preserve"><value>Back to the share</value></data>
+  <data name="NotFoundTitle" xml:space="preserve"><value>Link not found</value></data>
+  <data name="NotFoundText" xml:space="preserve"><value>This share link does not exist or is no longer valid.</value></data>
+  <data name="ExpiredTitle" xml:space="preserve"><value>Share expired</value></data>
+  <data name="ExpiredText" xml:space="preserve"><value>This share has expired.</value></data>
+  <data name="ExhaustedTitle" xml:space="preserve"><value>Access limit reached</value></data>
+  <data name="ExhaustedText" xml:space="preserve"><value>This share was already opened the allowed number of times.</value></data>
+  <data name="ConsumedTitle" xml:space="preserve"><value>Share closed</value></data>
+  <data name="ConsumedText" xml:space="preserve"><value>This share was closed after it was viewed.</value></data>
+  <data name="ClosedTitle" xml:space="preserve"><value>Share closed</value></data>
+  <data name="ClosedText" xml:space="preserve"><value>This share is no longer available.</value></data>
+  <data name="SessionEndedTitle" xml:space="preserve"><value>Session ended</value></data>
+  <data name="SessionEndedText" xml:space="preserve"><value>Open the share link again to continue.</value></data>
+  <data name="MediaNotInShareTitle" xml:space="preserve"><value>Content unavailable</value></data>
+  <data name="MediaNotInShareText" xml:space="preserve"><value>This content is not part of the share.</value></data>
+  <data name="TooManyAttemptsTitle" xml:space="preserve"><value>Too many attempts</value></data>
+  <data name="TooManyAttemptsText" xml:space="preserve"><value>Wait a few minutes before trying again.</value></data>
+  <data name="ErrorTitle" xml:space="preserve"><value>Something went wrong</value></data>
+  <data name="ErrorText" xml:space="preserve"><value>The share could not be loaded. Try again in a moment.</value></data>
+  <data name="PlaybackError" xml:space="preserve"><value>Playback could not start.</value></data>
+</root>

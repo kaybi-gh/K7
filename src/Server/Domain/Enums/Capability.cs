@@ -16,5 +16,6 @@ public enum Capability
     CanTranscode,
     CanDeleteHistory,
     CanReassignHistory,
-    CanScrobble
+    CanScrobble,
+    CanShareMedia
 }

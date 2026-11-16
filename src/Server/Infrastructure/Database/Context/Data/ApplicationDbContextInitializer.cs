@@ -53,6 +53,7 @@ public class ApplicationDbContextInitializer(
         {
             await SeedRolesAsync();
             await SeedGuestUserAsync();
+            await SeedShareVisitorUserAsync();
             await MigrateExistingAdminAsync();
             await AutoSetupFromEnvAsync();
             await EnsureSetupTokenAsync();
@@ -67,7 +68,7 @@ public class ApplicationDbContextInitializer(
 
     private async Task SeedRolesAsync()
     {
-        string[] roles = [Roles.Administrator, Roles.User, Roles.Guest];
+        string[] roles = [Roles.Administrator, Roles.User, Roles.Guest, Roles.ShareVisitor];
 
         foreach (var role in roles)
         {
@@ -99,6 +100,32 @@ public class ApplicationDbContextInitializer(
         });
         await context.SaveChangesAsync();
         logger.LogInformation("Guest user seeded.");
+    }
+
+    // Technical account public share visitors act as. No password: it can never sign in.
+    private async Task SeedShareVisitorUserAsync()
+    {
+        var existing = await userManager.FindByNameAsync(SystemUsers.ShareVisitorUserName);
+        if (existing is not null)
+            return;
+
+        var identity = new ApplicationUser { UserName = SystemUsers.ShareVisitorUserName, Email = null };
+        var result = await userManager.CreateAsync(identity);
+
+        if (!result.Succeeded)
+        {
+            logger.LogError("Failed to seed share visitor user: {Errors}", string.Join(", ", result.Errors.Select(e => e.Description)));
+            return;
+        }
+
+        await userManager.AddToRoleAsync(identity, Roles.ShareVisitor);
+        context.Users.Add(new K7.Server.Domain.Entities.Users.User
+        {
+            IdentityUserId = identity.Id,
+            IsActive = false
+        });
+        await context.SaveChangesAsync();
+        logger.LogInformation("Share visitor user seeded.");
     }
 
     private async Task MigrateExistingAdminAsync()

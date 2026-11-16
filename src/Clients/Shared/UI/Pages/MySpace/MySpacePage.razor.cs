@@ -11,11 +11,13 @@ public partial class MySpacePage
     [Inject] private ICollectionService CollectionService { get; set; } = default!;
     [Inject] private IFeatureAccessService FeatureAccess { get; set; } = default!;
     [Inject] private ILibraryService LibraryService { get; set; } = default!;
+    [Inject] private IMediaSharingAccess SharingAccess { get; set; } = default!;
 
     private int _playlistCount;
     private int _collectionCount;
     private bool _canRate;
     private bool _hasMusicLibrary;
+    private bool _canShare;
 
     private string PlaylistDescription =>
         _playlistCount > 0 ? string.Format(L["PlaylistsCount"], _playlistCount) : L["PlaylistsDesc"];
@@ -31,8 +33,14 @@ public partial class MySpacePage
         await Task.WhenAll(
             LoadPlaylistsCountAsync(),
             LoadCollectionsCountAsync(),
-            LoadHasMusicLibraryAsync());
+            LoadHasMusicLibraryAsync(),
+            LoadCanShareAsync());
     }
+
+    // Users allowed to share keep the entry even while the server switch is off,
+    // so they can still revoke or delete their links.
+    private async Task LoadCanShareAsync() =>
+        _canShare = (await SharingAccess.GetAsync()).CanShare;
 
     private async Task LoadHasMusicLibraryAsync()
     {

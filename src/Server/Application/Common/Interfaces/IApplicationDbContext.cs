@@ -14,6 +14,7 @@ using K7.Server.Domain.Entities.Restrictions;
 using K7.Server.Domain.Entities.Reviews;
 using K7.Server.Domain.Entities.Settings;
 using K7.Server.Domain.Entities.SharedProfiles;
+using K7.Server.Domain.Entities.Shares;
 using K7.Server.Domain.Entities.Users;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -83,6 +84,8 @@ public interface IApplicationDbContext // How to put this into domain?
     DbSet<ClientAppPassword> ClientAppPasswords { get; }
     DbSet<MediaLibraryAvailability> MediaLibraryAvailabilities { get; }
     DbSet<SyncPlayInvite> SyncPlayInvites { get; }
+    DbSet<MediaShare> MediaShares { get; }
+    DbSet<MediaShareSession> MediaShareSessions { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
     Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default);

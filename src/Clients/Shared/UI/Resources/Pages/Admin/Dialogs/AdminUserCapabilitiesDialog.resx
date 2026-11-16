@@ -28,4 +28,5 @@
   <data name="GroupAccount" xml:space="preserve"><value>Compte et appareils</value></data>
   <data name="GroupAdmin" xml:space="preserve"><value>Administration</value></data>
   <data name="GroupOther" xml:space="preserve"><value>Autres</value></data>
+  <data name="CapCanShareMedia" xml:space="preserve"><value>Partager des médias par lien public</value></data>
 </root>

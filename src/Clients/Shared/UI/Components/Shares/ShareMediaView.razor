@@ -1,0 +1,276 @@
+@namespace K7.Clients.Shared.UI.Components.Shares
+@using K7.Server.Domain.Enums
+@using K7.Shared.Dtos.Entities.Medias
+@inject IStringLocalizer<ShareMediaView> L
+
+@* A media as a public share visitor sees it. Same hero as the regular media pages, without
+   anything personal (rating, progress, menus) and with no way up to its parents. *@
+<div class="movie-page share-view"
+     style="@DominantColorCss.ToVariableStyle("--media-dominant-color", DominantColor)">
+    <MediaPageBackdrop ImageUrl="@BackdropUrl"
+                       HighResImageUrl="@BackdropHighResUrl"
+                       DominantColor="@DominantColor"
+                       ScrollTarget="@_scrollRoot" />
+    <div @ref="_scrollRoot" class="share-view__scroll media-page-scroll">
+        <div class="share-view__main media-hero-main">
+            @if (BackHref is not null)
+            {
+                <K7IconButton Icon="@Phosphor.ArrowLeft" Size="sm" Class="k7-back-btn" AriaLabel="@L["BackToShare"]" Href="@BackHref" />
+            }
+            <div class="media-hero share-view__hero">
+                <div class="media-hero-backdrop-zone">
+                    @if (CoverUrl is { } coverUrl)
+                    {
+                        <img class="share-view__cover" src="@coverUrl" alt="" />
+                    }
+                    else
+                    {
+                        <K7Image Class="share-view__logo media-hero-logo"
+                                 @key="LogoUrl"
+                                 ObjectFit="scale-down"
+                                 Src="@(LogoUrl ?? "")"
+                                 Alt=""
+                                 ShowLoadingState="false">
+                            <FallbackContent>
+                                <h2 class="media-logo-title media-hero-title">@DisplayTitle.ToUpper()</h2>
+                            </FallbackContent>
+                        </K7Image>
+                    }
+                </div>
+                <div class="media-hero-body">
+                    <div class="share-view__copy">
+                        @if (CoverUrl is not null || ShowTitleUnderLogo)
+                        {
+                            <h1 class="share-view__title">@DisplayTitle</h1>
+                        }
+                        @if (Context is { } context)
+                        {
+                            <p class="share-view__context">@context</p>
+                        }
+                        <div class="share-view__meta">
+                            <div class="share-view__chips">
+                                @if (ExternalRating is { } externalRating)
+                                {
+                                    <K7Chip Size="sm" Icon="star" Color="primary" Variant="filled" Class="share-view__rating">@externalRating.ToString("N1")</K7Chip>
+                                }
+                                @if (ContentRating is { } contentRating)
+                                {
+                                    <K7Chip Variant="outlined" Size="sm">@contentRating</K7Chip>
+                                }
+                                @foreach (var genre in (Media.Genres ?? []).Take(2))
+                                {
+                                    <K7Chip Variant="text" Size="sm" Class="share-view__genre">@genre</K7Chip>
+                                }
+                            </div>
+                            @if (Facts.Count > 0)
+                            {
+                                <div class="share-view__details">
+                                    @for (var i = 0; i < Facts.Count; i++)
+                                    {
+                                        if (i > 0)
+                                        {
+                                            <span class="share-view__dot">&bull;</span>
+                                        }
+                                        <span class="share-view__fact">@Facts[i]</span>
+                                    }
+                                </div>
+                            }
+                        </div>
+
+                        @if (Media is MovieDto { TagLine: { Length: > 0 } tagLine })
+                        {
+                            <p class="share-view__tagline">"@tagLine"</p>
+                        }
+
+                        @if (!string.IsNullOrWhiteSpace(Overview))
+                        {
+                            <p class="share-view__overview">@Overview</p>
+                        }
+
+                        <div class="share-view__actions">
+                            @if (CanPlayHero)
+                            {
+                                <K7Button Variant="filled"
+                                          StartIcon="@Phosphor.Play"
+                                          Color="primary"
+                                          Size="lg"
+                                          Class="share-view__play"
+                                          OnClick="PlayHeroAsync"
+                                          data-initial-focus>
+                                    @(IsContainer ? L["PlayAll"] : L["Play"])
+                                </K7Button>
+                            }
+                            @if (Session.AllowDownload && PrimaryFile is { } downloadFile)
+                            {
+                                <K7Button Variant="outlined" Size="lg" StartIcon="@Phosphor.DownloadSimple" Href="@GetDownloadUrl(downloadFile.Id)" download="">
+                                    @string.Format(L["DownloadWithSize"], FormatSize(downloadFile.Size))
+                                </K7Button>
+                            }
+                            @if (IsSingleItem && PrimaryFile is null)
+                            {
+                                <p class="share-view__muted">@L["NoFile"]</p>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @if (HasBelowContent)
+        {
+            <MediaPageContent Class="share-view__content"
+                              DominantColor="@DominantColor"
+                              Tinted="@(DominantColor is not null)">
+                <div class="share-view__sections">
+                    @if (OtherFiles.Count > 0)
+                    {
+                        <section class="share-view__section">
+                            <h2 class="share-view__heading">@L["OtherVersions"]</h2>
+                            <div class="share-view__list">
+                                @foreach (var other in OtherFiles)
+                                {
+                                    <div class="share-view__row" @key="other.Id">
+                                        <div class="share-view__row-text">
+                                            <span class="share-view__row-title">@other.Name@other.Extension</span>
+                                            <span class="share-view__muted">@FormatSize(other.Size)</span>
+                                        </div>
+                                        <div class="share-view__row-actions">
+                                            @if (Session.AllowPlayback && !IsAudio)
+                                            {
+                                                <K7IconButton Icon="@Phosphor.Play" AriaLabel="@L["Play"]" OnClick="@(() => PlayVideoAsync(Media.Id, other.Id))" />
+                                            }
+                                            @if (Session.AllowDownload)
+                                            {
+                                                <K7IconButton Icon="@Phosphor.DownloadSimple" AriaLabel="@L["Download"]" Href="@GetDownloadUrl(other.Id)" download="" />
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </section>
+                    }
+
+                    @switch (Media)
+                    {
+                        case SerieDto { Seasons: { Count: > 0 } seasons }:
+                            <section class="share-view__section">
+                                <h2 class="share-view__heading">@L["Seasons"]</h2>
+                                <div class="share-view__list">
+                                    @foreach (var season in seasons.OrderBy(s => s.SeasonNumber))
+                                    {
+                                        <K7EntityRow @key="season.Id"
+                                                     Title="@GetSeasonTitle(season.Title, season.SeasonNumber)"
+                                                     Subtitle="@string.Format(L["EpisodeCount"], season.EpisodeCount)"
+                                                     Href="@GetMediaHref(season.Id)">
+                                            <Leading>
+                                                <K7Icon Icon="@Phosphor.Television" IconSize="@K7IconSize.Md" />
+                                            </Leading>
+                                        </K7EntityRow>
+                                    }
+                                </div>
+                            </section>
+                            break;
+
+                        case SerieSeasonDto { Episodes: { Count: > 0 } episodes }:
+                            <section class="share-view__section">
+                                <h2 class="share-view__heading">@L["Episodes"]</h2>
+                                <div class="share-view__list">
+                                    @foreach (var episode in episodes.OrderBy(e => e.EpisodeNumber))
+                                    {
+                                        <div class="share-view__row" @key="episode.Id">
+                                            <a class="share-view__row-text share-view__row-link focusable" href="@GetMediaHref(episode.Id)">
+                                                <span class="share-view__row-title">@episode.EpisodeNumber. @GetEpisodeTitle(episode.Title, episode.EpisodeNumber)</span>
+                                                @if (!string.IsNullOrWhiteSpace(episode.Overview))
+                                                {
+                                                    <span class="share-view__muted share-view__clamp">@episode.Overview</span>
+                                                }
+                                            </a>
+                                            @if (episode.IndexedFileId is { } episodeFileId)
+                                            {
+                                                <div class="share-view__row-actions">
+                                                    @if (Session.AllowPlayback)
+                                                    {
+                                                        <K7IconButton Icon="@Phosphor.Play" AriaLabel="@L["Play"]" OnClick="@(() => PlayVideoAsync(episode.Id, null))" />
+                                                    }
+                                                    @if (Session.AllowDownload)
+                                                    {
+                                                        <K7IconButton Icon="@Phosphor.DownloadSimple" AriaLabel="@L["Download"]" Href="@GetDownloadUrl(episodeFileId)" download="" />
+                                                    }
+                                                </div>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                            </section>
+                            break;
+
+                        case MusicArtistDto { Albums: { Count: > 0 } albums }:
+                            <section class="share-view__section">
+                                <h2 class="share-view__heading">@L["Albums"]</h2>
+                                <div class="share-view__list">
+                                    @foreach (var album in albums.OrderByDescending(a => a.ReleaseDate))
+                                    {
+                                        <K7EntityRow @key="album.Id"
+                                                     Title="@(album.Title ?? "")"
+                                                     Subtitle="@GetAlbumSubtitle(album)"
+                                                     Href="@GetMediaHref(album.Id)">
+                                            <Leading>
+                                                <K7Icon Icon="@Phosphor.VinylRecord" IconSize="@K7IconSize.Md" />
+                                            </Leading>
+                                        </K7EntityRow>
+                                    }
+                                </div>
+                            </section>
+                            break;
+
+                        case MusicAlbumDto { Tracks: { Count: > 0 } tracks }:
+                            <section class="share-view__section">
+                                <h2 class="share-view__heading">@L["Tracks"]</h2>
+                                <div class="share-view__list">
+                                    @foreach (var track in tracks.OrderBy(t => t.DiscNumber ?? 1).ThenBy(t => t.TrackNumber ?? 0))
+                                    {
+                                        <div class="share-view__row" @key="track.Id">
+                                            <div class="share-view__row-text">
+                                                <span class="share-view__row-title">@(track.TrackNumber is { } number ? $"{number}. " : "")@(track.Title ?? "")</span>
+                                                @if (track.Duration is { } duration)
+                                                {
+                                                    <span class="share-view__muted">@FormatDuration(duration)</span>
+                                                }
+                                            </div>
+                                            @if (track.IndexedFileId is { } trackFileId)
+                                            {
+                                                <div class="share-view__row-actions">
+                                                    @if (Session.AllowPlayback)
+                                                    {
+                                                        <K7IconButton Icon="@Phosphor.Play" AriaLabel="@L["Play"]" OnClick="@(() => PlayTrackAsync(track.Id))" />
+                                                    }
+                                                    @if (Session.AllowDownload)
+                                                    {
+                                                        <K7IconButton Icon="@Phosphor.DownloadSimple" AriaLabel="@L["Download"]" Href="@GetDownloadUrl(trackFileId)" download="" />
+                                                    }
+                                                </div>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                            </section>
+                            break;
+                    }
+
+                    @if (Cast.Count > 0)
+                    {
+                        @* Same carousel as the media pages. Person pages are not part of a share: no links. *@
+                        <Carousel Title="@(IsAudio ? L["Members"] : L["Cast"])">
+                            @foreach (var cast in Cast)
+                            {
+                                <CarouselItem @key="cast.Key">
+                                    <PersonRole LitePersonRoleDto="@cast.PrimaryRole" SubtitleOverride="@cast.MergedSubtitle" Linked="false" />
+                                </CarouselItem>
+                            }
+                        </Carousel>
+                    }
+                </div>
+            </MediaPageContent>
+        }
+    </div>
+</div>

@@ -13,9 +13,9 @@
 }
 else
 {
-    <PersonCard Href="@($"/persons/{LitePersonRoleDto.Person!.Id}")"
-                Title="@LitePersonRoleDto.Person.Name"
+    <PersonCard Href="@(Linked ? $"/persons/{LitePersonRoleDto.Person!.Id}" : null)"
+                Title="@LitePersonRoleDto.Person!.Name"
                 Subtitle="@GetSubtitle()"
                 ImageUrl="@GetImageUrl()"
-                Alt="@LitePersonRoleDto.Person.Name" />
+                Alt="@LitePersonRoleDto.Person!.Name" />
 }

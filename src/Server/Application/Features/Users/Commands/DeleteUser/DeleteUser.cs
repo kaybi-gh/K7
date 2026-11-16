@@ -46,6 +46,12 @@ public class DeleteUserCommandHandler : IRequestHandler<DeleteUserCommand>
                     new ValidationFailure("Id", "Cannot delete the guest account. Disable guest mode instead.")
                 ]);
 
+            if (roles.Contains(Roles.ShareVisitor))
+                throw new ValidationException(
+                [
+                    new ValidationFailure("Id", "Cannot delete the share visitor account.")
+                ]);
+
         }
 
         var identityUserId = domainUser.IdentityUserId;

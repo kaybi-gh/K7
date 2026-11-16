@@ -15,7 +15,7 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "10.0.13");
+            modelBuilder.HasAnnotation("ProductVersion", "10.0.14");
 
             modelBuilder.Entity("DeviceUser", b =>
                 {
@@ -2173,6 +2173,143 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                         .IsUnique();
 
                     b.ToTable("SharedProfilePlaylists", (string)null);
+                });
+
+            modelBuilder.Entity("K7.Server.Domain.Entities.Shares.MediaShare", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("AccessCount")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("AllowDownload")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("AllowPlayback")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("CloseWhenConsumed")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ConsumedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Created")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("CreatedByUserId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ExpiresAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("FailedPasswordAttempts")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Label")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LastAccessedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LastModified")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("MaxAccessCount")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("PasswordHash")
+                        .HasMaxLength(256)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PasswordLockedUntil")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("RevokedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("RootMediaId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedByUserId");
+
+                    b.HasIndex("ExpiresAt");
+
+                    b.HasIndex("RootMediaId");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique();
+
+                    b.ToTable("MediaShares");
+                });
+
+            modelBuilder.Entity("K7.Server.Domain.Entities.Shares.MediaShareSession", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CreatedAt")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("DeviceId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ExpiresAt")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("IpAddress")
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LastSeenAt")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("ShareId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("UserAgent")
+                        .HasMaxLength(512)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DeviceId");
+
+                    b.HasIndex("ExpiresAt");
+
+                    b.HasIndex("ShareId");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique();
+
+                    b.ToTable("MediaShareSessions");
                 });
 
             modelBuilder.Entity("K7.Server.Domain.Entities.StreamSession", b =>
@@ -4744,6 +4881,43 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Navigation("SharedProfile");
                 });
 
+            modelBuilder.Entity("K7.Server.Domain.Entities.Shares.MediaShare", b =>
+                {
+                    b.HasOne("K7.Server.Domain.Entities.Users.User", "CreatedByUser")
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("K7.Server.Domain.Entities.Medias.BaseMedia", "RootMedia")
+                        .WithMany()
+                        .HasForeignKey("RootMediaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CreatedByUser");
+
+                    b.Navigation("RootMedia");
+                });
+
+            modelBuilder.Entity("K7.Server.Domain.Entities.Shares.MediaShareSession", b =>
+                {
+                    b.HasOne("K7.Server.Domain.Entities.Devices.Device", "Device")
+                        .WithMany()
+                        .HasForeignKey("DeviceId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("K7.Server.Domain.Entities.Shares.MediaShare", "Share")
+                        .WithMany("Sessions")
+                        .HasForeignKey("ShareId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Device");
+
+                    b.Navigation("Share");
+                });
+
             modelBuilder.Entity("K7.Server.Domain.Entities.StreamSession", b =>
                 {
                     b.HasOne("K7.Server.Domain.Entities.Devices.Device", "Device")
@@ -5346,6 +5520,11 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
             modelBuilder.Entity("K7.Server.Domain.Entities.Restrictions.ContentRestrictionProfile", b =>
                 {
                     b.Navigation("Users");
+                });
+
+            modelBuilder.Entity("K7.Server.Domain.Entities.Shares.MediaShare", b =>
+                {
+                    b.Navigation("Sessions");
                 });
 
             modelBuilder.Entity("K7.Server.Domain.Entities.Users.MediaPlaybackSession", b =>

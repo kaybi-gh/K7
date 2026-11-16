@@ -133,6 +133,15 @@
         </div>
     </section>
 
+    <section id="share-media" class="ds-section">
+        <h2>ShareMediaDialog</h2>
+        <p class="ds-description">Creates a public share link for a media (password, expiration, access limit, playback and download). The link is shown once, then <code>ShareLinkDialog</code> shows a regenerated one.</p>
+        <div class="ds-preview ds-preview--bare">
+            <K7Button OnClick="ShowShareMediaDialog">Share a movie</K7Button>
+            <K7Button OnClick="ShowShareLinkDialog">New share link</K7Button>
+        </div>
+    </section>
+
     <section id="trailer" class="ds-section">
         <h2>TrailerDialog</h2>
         <p class="ds-description">Fullscreen YouTube overlay used on movie and series pages. Opaque black backdrop with no blur or transform so the iframe can use hardware video decode.</p>
@@ -222,6 +231,23 @@
         {
             Snackbar.Add(confirmed ? "Confirmed: Yes" : "Confirmed: No", K7Severity.Info);
         }
+    }
+
+    private async Task ShowShareMediaDialog()
+    {
+        var p = new K7DialogParameters<ShareMediaDialog>();
+        p.Add(x => x.MediaId, _demoMovie.Id);
+        p.Add(x => x.MediaType, MediaType.Movie);
+        var options = new K7DialogOptions { MaxWidth = K7DialogMaxWidth.Medium, FullWidth = true };
+        await DialogService.ShowAsync<ShareMediaDialog>("Share \"Dune\"", p, options);
+    }
+
+    private async Task ShowShareLinkDialog()
+    {
+        var p = new K7DialogParameters<ShareLinkDialog>();
+        p.Add(x => x.Link, "https://k7.example.org/share#demo-share-token");
+        var options = new K7DialogOptions { MaxWidth = K7DialogMaxWidth.Medium, FullWidth = true };
+        await DialogService.ShowAsync<ShareLinkDialog>("Dune", p, options);
     }
 
     private async Task ShowOverviewDialog()

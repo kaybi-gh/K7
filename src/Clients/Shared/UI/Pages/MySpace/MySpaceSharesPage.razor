@@ -1,0 +1,14 @@
+@page "/my-space/shares"
+@page "/my-space/shares/{ShareId:guid}"
+@layout MySpaceLayout
+@inject IStringLocalizer<MySpaceSharesPage> L
+
+<PageTitle>@L["Title"]</PageTitle>
+
+@* The public share links created by the current user. *@
+<div class="my-space-shares page-scrollable">
+    <MediaSharesManager Title="@L["Title"]"
+                        Subtitle="@L["Subtitle"]"
+                        BasePath="/my-space/shares"
+                        ShareId="ShareId" />
+</div>

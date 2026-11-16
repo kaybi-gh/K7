@@ -72,6 +72,8 @@ public class GetUsersQueryHandler : IRequestHandler<GetUsersQuery, GetUsersResul
                     IsGuest = role == Roles.Guest
                 };
             })
+            // The share visitor account is technical: it never shows up in user management.
+            .Where(user => user.Role != Roles.ShareVisitor)
             .Where(user => request.Role is null || user.Role == request.Role)
             .ToList();
 

@@ -155,6 +155,13 @@ public partial class TrackContextMenu : IDisposable
             });
         }
 
+        // Renders nothing unless the user may share.
+        builder.OpenComponent<ShareMenuSection>(40);
+        builder.AddAttribute(41, nameof(ShareMenuSection.MediaId), Track.MediaId);
+        builder.AddAttribute(42, nameof(ShareMenuSection.MediaType), (MediaType?)MediaType.MusicTrack);
+        builder.AddAttribute(43, nameof(ShareMenuSection.MediaTitle), Track.Title);
+        builder.CloseComponent();
+
         if (_canEditMetadata)
         {
             AddSection(builder, 50, b =>

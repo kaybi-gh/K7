@@ -1,5 +1,6 @@
-﻿using System.Security.Claims;
+using System.Security.Claims;
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Web.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using OpenIddict.Abstractions;
 
@@ -22,9 +23,33 @@ public class CurrentUser : IUser
         _serviceProvider = serviceProvider;
     }
 
-    public string? IdentityId =>
-        _httpContextAccessor.HttpContext?.User?.FindFirstValue(ClaimTypes.NameIdentifier)
-        ?? _httpContextAccessor.HttpContext?.User?.FindFirstValue(OpenIddictConstants.Claims.Subject);
+    public string? IdentityId
+    {
+        get
+        {
+            var principal = _httpContextAccessor.HttpContext?.User;
+            if (principal is null)
+                return null;
+
+            // Stream endpoints accept a real account and a share visitor session together.
+            // The real account must always be the acting user: the visitor account has no
+            // restriction of its own, so letting it win would lift those of the real one.
+            var realIdentities = principal.Identities
+                .Where(identity => identity.AuthenticationType != ShareSessionDefaults.AuthenticationScheme)
+                .ToList();
+
+            return FindIdentityId(realIdentities) ?? FindIdentityId(principal.Identities);
+        }
+    }
+
+    private static string? FindIdentityId(IEnumerable<ClaimsIdentity> identities)
+    {
+        var list = identities as IList<ClaimsIdentity> ?? identities.ToList();
+        return list.Select(identity => identity.FindFirst(ClaimTypes.NameIdentifier)?.Value)
+                .FirstOrDefault(value => !string.IsNullOrEmpty(value))
+            ?? list.Select(identity => identity.FindFirst(OpenIddictConstants.Claims.Subject)?.Value)
+                .FirstOrDefault(value => !string.IsNullOrEmpty(value));
+    }
 
     public Guid? Id
     {

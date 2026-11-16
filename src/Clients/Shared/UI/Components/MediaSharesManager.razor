@@ -1,0 +1,192 @@
+@namespace K7.Clients.Shared.UI.Components
+@using K7.Clients.Shared.UI.Pages.Admin.Components
+@using K7.Server.Domain.Enums
+@using K7.Shared.Dtos.Shares
+@inject IStringLocalizer<MediaSharesManager> L
+@inject IStringLocalizer<SharedResource> S
+
+@* List of shares on the left, the selected share's sheet on the right. Narrow screens and TV
+   show the list, then the sheet as its own screen (same shell as the admin libraries page). *@
+<div class="media-shares" aria-live="polite">
+    @if (_isLoading)
+    {
+        <div class="admin-page-intro">
+            <AdminPageHeader Title="@Title" Subtitle="@Subtitle" />
+        </div>
+        <K7ProgressBar Indeterminate="true" />
+    }
+    else if (Shares.Count == 0)
+    {
+        <div class="admin-page-intro">
+            <AdminPageHeader Title="@Title" Subtitle="@Subtitle" />
+        </div>
+@if (ShowAllUsers)
+        {
+            <K7SettingRow Label="@L["EnabledField"]" Hint="@L["EnabledHint"]">
+                <K7Switch AriaLabel="@L["EnabledField"]"
+                          Value="@(_availability?.Enabled ?? false)"
+                          ValueChanged="OnEnabledChangedAsync"
+                          Disabled="_isSavingEnabled" />
+            </K7SettingRow>
+        }
+        else if (_availability is { Enabled: false })
+        {
+            <K7Alert Severity="K7Severity.Warning" Icon="@Phosphor.WarningCircle" Class="mb-3">@L["DisabledNotice"]</K7Alert>
+        }
+        <K7EmptyState Icon="@Phosphor.ShareNetwork" Title="@L["Empty"]" Subtitle="@L["EmptyDescription"]" />
+    }
+    else
+    {
+        var selected = SelectedShare;
+
+        <K7SettingsSplit IndexLabel="@Title"
+                         WideIndex="true"
+                         DetailTitle="@(selected?.MediaTitle ?? "")"
+                         BackHref="@BasePath"
+                         DetailOpen="IsShareOpen">
+            <Header>
+                <div class="admin-page-intro">
+                    <AdminPageHeader Title="@Title" Subtitle="@Subtitle">
+                        <Actions>
+                            <K7ResultCount Count="Shares.Count" />
+                        </Actions>
+                    </AdminPageHeader>
+@if (ShowAllUsers)
+                    {
+                        <K7SettingRow Label="@L["EnabledField"]" Hint="@L["EnabledHint"]">
+                            <K7Switch AriaLabel="@L["EnabledField"]"
+                                      Value="@(_availability?.Enabled ?? false)"
+                                      ValueChanged="OnEnabledChangedAsync"
+                                      Disabled="_isSavingEnabled" />
+                        </K7SettingRow>
+                    }
+                    else if (_availability is { Enabled: false })
+                    {
+                        <K7Alert Severity="K7Severity.Warning" Icon="@Phosphor.WarningCircle">@L["DisabledNotice"]</K7Alert>
+                    }
+                </div>
+            </Header>
+            <Index>
+                @foreach (var share in Shares)
+                {
+                    <K7EntityRow @key="share.Id"
+                                 Title="@GetRowTitle(share)"
+                                 Subtitle="@GetRowSubtitle(share)"
+                                 Href="@($"{BasePath}/{share.Id}")"
+                                 Active="@(share.Id == selected?.Id)"
+                                 Dimmed="@(share.Status != MediaShareStatus.Active)">
+                        <Leading>
+                            <K7Icon Icon="@GetMediaTypeIcon(share.MediaType)" IconSize="@K7IconSize.Md" />
+                        </Leading>
+                        <Trailing>
+                            <K7Chip Size="sm" Color="@GetStatusColor(share.Status)">@GetStatusLabel(share.Status)</K7Chip>
+                        </Trailing>
+                    </K7EntityRow>
+                }
+            </Index>
+            <Detail>
+                @if (selected is not null)
+                {
+                    var share = selected;
+
+                    <div class="share-sheet__media">
+                        @if (GetPictureUrl(share) is { } pictureUrl)
+                        {
+                            <img class="share-sheet__picture" src="@pictureUrl" alt="" loading="lazy" />
+                        }
+                        <div class="share-sheet__media-text">
+                            <span class="share-sheet__media-title">@share.MediaTitle</span>
+                            @if (!string.IsNullOrWhiteSpace(share.MediaSubtitle))
+                            {
+                                <span class="share-sheet__value">@share.MediaSubtitle</span>
+                            }
+                            <span class="share-sheet__value">@GetMediaTypeLabel(share.MediaType)</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <K7SettingRow Label="@L["FieldStatus"]" Hint="@GetStatusHint(share.Status)">
+                            <K7Chip Size="sm" Color="@GetStatusColor(share.Status)">@GetStatusLabel(share.Status)</K7Chip>
+                        </K7SettingRow>
+                        @if (!string.IsNullOrWhiteSpace(share.Label))
+                        {
+                            <K7SettingRow Label="@L["FieldLabel"]">
+                                <span class="share-sheet__value">@share.Label</span>
+                            </K7SettingRow>
+                        }
+                        @if (ShowAllUsers)
+                        {
+                            <K7SettingRow Label="@L["FieldCreatedBy"]">
+                                <span class="share-sheet__value">@(share.CreatedByName ?? "-")</span>
+                            </K7SettingRow>
+                        }
+                        <K7SettingRow Label="@L["FieldCreated"]">
+                            <span class="share-sheet__value">@FormatDate(share.CreatedAt)</span>
+                        </K7SettingRow>
+                        <K7SettingRow Label="@L["FieldExpiration"]">
+                            <span class="share-sheet__value">@(share.ExpiresAt is { } expiresAt ? FormatDate(expiresAt) : L["Never"])</span>
+                        </K7SettingRow>
+                        <K7SettingRow Label="@L["FieldAccesses"]" Hint="@L["FieldAccessesHint"]">
+                            <span class="share-sheet__value">@GetAccessSummary(share)</span>
+                        </K7SettingRow>
+                        <K7SettingRow Label="@L["FieldLastAccess"]">
+                            <span class="share-sheet__value">@(share.LastAccessedAt is { } lastAccess ? FormatDate(lastAccess) : L["NeverOpened"])</span>
+                        </K7SettingRow>
+                        <K7SettingRow Label="@L["FieldPassword"]">
+                            <span class="share-sheet__value">@(share.HasPassword ? S["Yes"] : S["No"])</span>
+                        </K7SettingRow>
+                        <K7SettingRow Label="@L["FieldPlayback"]">
+                            <span class="share-sheet__value">@(share.AllowPlayback ? S["Yes"] : S["No"])</span>
+                        </K7SettingRow>
+                        <K7SettingRow Label="@L["FieldDownload"]">
+                            <span class="share-sheet__value">@(share.AllowDownload ? S["Yes"] : S["No"])</span>
+                        </K7SettingRow>
+                        @if (share.CloseWhenConsumed)
+                        {
+                            <K7SettingRow Label="@L["FieldCloseWhenConsumed"]">
+                                <span class="share-sheet__value">@(share.ConsumedAt is { } consumedAt ? string.Format(L["ConsumedOn"], FormatDate(consumedAt)) : S["Yes"])</span>
+                            </K7SettingRow>
+                        }
+                    </div>
+
+                    <h6 class="share-sheet__heading">@L["SectionActions"]</h6>
+                    <div class="share-sheet__actions">
+                        <K7SheetAction Icon="@Phosphor.PencilSimple" Label="@L["ActionEdit"]" Disabled="@(!CanEdit)" OnClick="@(() => OpenEditDialog(share))" />
+                        <K7SheetAction Icon="@Phosphor.Link" Label="@L["ActionNewLink"]" Disabled="@(!CanEdit || share.RevokedAt is not null)" OnClick="@(() => ConfirmRegenerate(share))" />
+                        @if (share.RevokedAt is null)
+                        {
+                            <K7SheetAction Icon="@Phosphor.Prohibit" Label="@L["ActionRevoke"]" Danger="true" OnClick="@(() => ConfirmRevoke(share))" />
+                        }
+                        <K7SheetAction Icon="@Phosphor.Trash" Label="@L["ActionDelete"]" Danger="true" OnClick="@(() => ConfirmDelete(share))" />
+                    </div>
+
+                    <h6 class="share-sheet__heading">@L["SectionVisitors"]</h6>
+                    @if (_selectedDetail is null || _selectedDetail.Id != share.Id)
+                    {
+                        <K7ProgressBar Indeterminate="true" />
+                    }
+                    else if (_selectedDetail.Sessions.Count == 0)
+                    {
+                        <p class="share-sheet__value">@L["NoVisitors"]</p>
+                    }
+                    else
+                    {
+                        <div class="share-sheet__actions">
+                            @foreach (var session in _selectedDetail.Sessions)
+                            {
+                                @* Plain rows: a visit opens nothing. *@
+                                <div class="share-sheet__visitor" @key="session.Id">
+                                    <K7Icon Icon="@Phosphor.User" IconSize="@K7IconSize.Md" />
+                                    <div class="share-sheet__visitor-text">
+                                        <span>@FormatDate(session.CreatedAt)</span>
+                                        <span class="share-sheet__value">@GetSessionSubtitle(session)</span>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                }
+            </Detail>
+        </K7SettingsSplit>
+    }
+</div>

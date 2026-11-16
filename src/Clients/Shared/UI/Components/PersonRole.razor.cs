@@ -12,6 +12,9 @@ public partial class PersonRole
     [Parameter] public required LitePersonRoleDto LitePersonRoleDto { get; set; }
     [Parameter] public string? SubtitleOverride { get; set; }
 
+    /// <summary>False shows the person without a link to their page (public share).</summary>
+    [Parameter] public bool Linked { get; set; } = true;
+
     private string? GetImageUrl()
     {
         var picture = LitePersonRoleDto.PortraitPicture ?? LitePersonRoleDto.Person?.PortraitPicture;

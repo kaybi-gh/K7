@@ -1,0 +1,17 @@
+@inject IStringLocalizer<ShareMediaDialog> L
+
+@* A freshly issued share link. It is shown once: the server only keeps a hash of it. *@
+<div class="k7-dialog-content">
+    <div class="share-link-dialog">
+        <K7Alert Severity="K7Severity.Warning" Icon="@Phosphor.WarningCircle">@L["LinkWarning"]</K7Alert>
+        <div class="share-link-dialog__row">
+            <code class="share-link-dialog__link">@Link</code>
+            <K7Button OnClick="CopyLink" Variant="outlined" StartIcon="@Phosphor.Clipboard">
+                @L["CopyLink"]
+            </K7Button>
+        </div>
+    </div>
+</div>
+<div class="k7-dialog-actions">
+    <K7Button Color="primary" Variant="filled" OnClick="Close">@L["Done"]</K7Button>
+</div>

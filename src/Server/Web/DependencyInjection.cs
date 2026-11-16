@@ -10,6 +10,7 @@ using K7.Server.Web.OpenSubsonic;
 using K7.Server.Web.Services;
 using K7.Shared.Json;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -73,6 +74,8 @@ public static class DependencyInjection
             EphemeralStreamTokenDefaults.AuthenticationScheme, _ => { });
         authenticationBuilder.AddScheme<ApiKeyAuthenticationOptions, ApiKeyAuthenticationHandler>(
             ApiKeyAuthenticationDefaults.AuthenticationScheme, null);
+        authenticationBuilder.AddScheme<AuthenticationSchemeOptions, ShareSessionAuthenticationHandler>(
+            ShareSessionDefaults.AuthenticationScheme, _ => { });
 
         services.ConfigureApplicationCookie(options =>
             ApplicationCookieOptions.Configure(options, cookieSecurePolicy));
@@ -110,7 +113,18 @@ public static class DependencyInjection
                 policy.AuthenticationSchemes.Add(OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme);
                 policy.AuthenticationSchemes.Add(EphemeralStreamTokenDefaults.AuthenticationScheme);
                 policy.AuthenticationSchemes.Add(ApiKeyAuthenticationDefaults.AuthenticationScheme);
-                policy.RequireRole(Roles.Guest, Roles.User, Roles.Administrator);
+                // Share visitors play through the same stream endpoints, limited to the
+                // files of their shares by the scope requirement.
+                policy.AuthenticationSchemes.Add(ShareSessionDefaults.AuthenticationScheme);
+                policy.RequireRole(Roles.Guest, Roles.User, Roles.Administrator, Roles.ShareVisitor);
+                policy.AddRequirements(new ShareStreamScopeRequirement());
+            });
+
+            // Public share endpoints: only the visitor session cookie is accepted.
+            options.AddPolicy(Policies.ShareAccess, policy =>
+            {
+                policy.AuthenticationSchemes.Add(ShareSessionDefaults.AuthenticationScheme);
+                policy.RequireRole(Roles.ShareVisitor);
             });
 
             options.AddPolicy(Policies.PeerAccess, policy =>
@@ -122,6 +136,8 @@ public static class DependencyInjection
 
         services.AddDatabaseDeveloperPageExceptionFilter();
         services.AddScoped<IUser, CurrentUser>();
+        services.AddScoped<IShareVisitorContext, ShareVisitorContext>();
+        services.AddScoped<IAuthorizationHandler, ShareStreamScopeHandler>();
         services.AddSingleton<INotificationServerInfo, NotificationServerInfo>();
         services.AddScoped<OpenSubsonicAuthenticator>();
         services.AddSingleton<IPlaybackProgressNotifier, PlaybackProgressNotifier>();
@@ -142,6 +158,7 @@ public static class DependencyInjection
         services.AddHostedService<EphemeralStreamTokenCleanupService>();
         services.AddHostedService<ScrobbleQueueHostedService>();
         services.AddHostedService<StreamSessionCleanupService>();
+        services.AddHostedService<MediaShareCleanupService>();
 
         services.AddScoped<K7DialogService>();
         services.AddScoped<IK7DialogService>(sp => sp.GetRequiredService<K7DialogService>());

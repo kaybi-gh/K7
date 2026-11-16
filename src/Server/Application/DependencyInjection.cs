@@ -6,6 +6,7 @@ using K7.Server.Application.Features.Diagnostics.Services;
 using K7.Server.Application.Features.Federation.Services;
 using K7.Server.Application.Features.Home.Services;
 using K7.Server.Application.Features.Medias.Services;
+using K7.Server.Application.Features.MediaShares.Services;
 using K7.Server.Application.Features.MetadataPictures.Services;
 using K7.Server.Application.Features.Notifications.EventHandlers;
 using K7.Server.Application.Features.Notifications.Services;
@@ -20,6 +21,7 @@ using K7.Server.Domain.Entities.Metadatas.External;
 using K7.Server.Domain.Events;
 using K7.Server.Domain.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace K7.Server.Application;
 
@@ -48,6 +50,13 @@ public static class DependencyInjection
         services.AddScoped<LiteMediaProjectionService>();
         services.AddScoped<LiteMediaCardDetailsService>();
         services.AddScoped<MediaAccessFilter>();
+        // The web host replaces this with the request-bound implementation.
+        services.TryAddScoped<IShareVisitorContext, NoShareVisitorContext>();
+        services.TryAddSingleton<IShareAccessInvalidator, ShareAccessInvalidator>();
+        services.AddScoped<IShareScopeResolver, ShareScopeResolver>();
+        services.AddScoped<IShareVisitorAccess, ShareVisitorAccess>();
+        services.AddScoped<IMediaShareManager, MediaShareManager>();
+        services.AddScoped<IShareSessionValidator, ShareSessionValidator>();
         services.AddScoped<IMediaLibraryAvailabilityService, MediaLibraryAvailabilityService>();
 
         services.AddMediatR(cfg =>

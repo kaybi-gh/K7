@@ -264,6 +264,27 @@ Configure this under **Settings -> Social**. K7 separates **what you share** fro
 
 Per-item visibility on playlists or collections can tighten or target sharing further when the UI offers it.
 
+## Public share links
+
+A share link gives someone **without an account** access to one media: they can browse it, play it and, if you allow it, download it. Sharing a series, a season, an album or an artist shares everything below it. Sharing a single episode or track shares only that item.
+
+Sharing is available when the administrator turned public shares on and gave you the right to share (administrators have it by default). Open the menu of a media (card menu, track menu, or the page menu) and choose **Share**.
+
+| Option | Effect |
+|---|---|
+| Label | A name for your own list of shares |
+| Password | Asked before the link opens. At least 6 characters. After 5 wrong passwords in a row the link accepts none for 15 minutes |
+| Expiration | The link stops working at that time |
+| Maximum number of accesses | One access is counted for each visitor who opens the link. Visitors already in keep their access when the limit is reached |
+| Allow playback / Allow download | What visitors can do. Download gives the original file. Turning download off removes the button: it is not copy protection |
+| Close once consumed | Movie, episode or track only: the share closes once it was played to the end or downloaded |
+
+The link is shown **once**. If you lose it, generate a new one: the previous link stops working.
+
+Manage your links under **My Space -> My shares**: edit the options, see who opened a link and when, generate a new link, revoke, or delete. **Revoke** closes the share for everyone at once, including people currently watching.
+
+Visitors get the regular player (audio tracks, subtitles, quality, speed) and, for music, a queue limited to the shared tracks. They only see the shared media. They cannot browse the rest of the library, and they never see your ratings, history or playlists. Anyone who has the link (and the password, if you set one) can open it, so share it like you would share a file.
+
 ## Offline downloads
 
 **Native apps only** (not the web app). Download from movies, episodes, albums, artists, or playlists; manage under **My Space -> Downloads**.

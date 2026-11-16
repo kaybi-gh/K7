@@ -131,3 +131,8 @@
         outline-color: var(--color-accent-text);
     }
 }
+
+/* Card without a link: no hover ring, nothing to open. */
+.personrole-item--static:hover ::deep .k7-avatar {
+    outline: none;
+}

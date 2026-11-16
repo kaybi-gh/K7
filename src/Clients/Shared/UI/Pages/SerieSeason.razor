@@ -193,6 +193,10 @@ else if (_season is not null)
                                             <K7MenuItem Icon="waveform" OnClick="DetectIntrosOutrosAsync">@L["DetectIntrosOutros"]</K7MenuItem>
                                         }
                                     </K7MenuSection>
+                                    @if (_season is not null)
+                                    {
+                                        <ShareMenuSection MediaId="_season.Id" MediaType="K7.Server.Domain.Enums.MediaType.SerieSeason" MediaTitle="@_season.Title" />
+                                    }
                                 </ChildContent>
                             </K7Menu>
                         </AuthorizeView>

@@ -52,4 +52,5 @@
   <data name="Stats" xml:space="preserve"><value>Statistiques</value></data>
   <data name="ApiKeys" xml:space="preserve"><value>Clés API</value></data>
   <data name="MusicIntelligence" xml:space="preserve"><value>AudioMuse AI</value></data>
+  <data name="Shares" xml:space="preserve"><value>Partages publics</value></data>
 </root>

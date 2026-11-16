@@ -1,0 +1,72 @@
+/* EmptyLayout centers its content: the share shell takes the whole viewport instead. */
+.share-layout {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    background: var(--color-bg);
+}
+
+/* Same bar as AppNav, with the symbol only. */
+.share-layout__nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: var(--z-drawer);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    height: calc(var(--nav-height) + var(--k7-safe-top));
+    padding-top: var(--k7-safe-top);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.share-layout__nav-bar {
+    display: flex;
+    align-items: center;
+    height: 100%;
+    padding: 0 var(--space-5);
+    border-bottom: 1px solid var(--color-border-subtle);
+    background: var(--color-surface);
+    backdrop-filter: blur(8px);
+}
+
+@supports (background: color-mix(in srgb, white 50%, black)) {
+    .share-layout__nav-bar {
+        background: color-mix(in srgb, var(--color-surface) 70%, transparent);
+    }
+}
+
+.share-layout__logo {
+    display: flex;
+    align-items: center;
+    padding: var(--space-1) var(--space-2);
+    color: var(--color-accent);
+    pointer-events: none;
+    user-select: none;
+}
+
+.share-layout__main {
+    position: relative;
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    padding-top: calc(var(--nav-height) + var(--k7-safe-top));
+}
+
+/* Music playback bar, flush with the bottom of the screen. */
+.share-layout__dock {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: var(--z-above);
+    container-type: inline-size;
+}
+
+.share-layout__main:has(.share-layout__dock > *) {
+    padding-bottom: 72px;
+}

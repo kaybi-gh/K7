@@ -33,11 +33,11 @@ public class MergeUsersCommandHandler(IApplicationDbContext context, IIdentitySe
         if (source.IdentityUserId is not null)
         {
             var roles = await identityService.GetRolesAsync(source.IdentityUserId);
-            if (roles.Contains(Roles.Guest))
+            if (roles.Contains(Roles.Guest) || roles.Contains(Roles.ShareVisitor))
             {
                 throw new ValidationException(
                 [
-                    new ValidationFailure("SourceUserId", "Cannot merge the guest account.")
+                    new ValidationFailure("SourceUserId", "Cannot merge the guest or share visitor account.")
                 ]);
             }
         }

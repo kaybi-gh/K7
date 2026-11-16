@@ -367,12 +367,30 @@ Admin Dashboard still shows a short health overview and active streams (encoder 
 ### Users and authentication
 
 - Activate Guest, roles, profile restrictions, and per-user capability overrides under Admin -> Users.
+- `CanShareMedia` (create [public share links](#public-share-links)) is on by default for Administrator only.
 - Restriction profiles hide matching library titles from browse, search, Home, and person filmography. Person **Known for** (external posters not in the library) is hidden entirely while a restriction profile is active, including on a shared profile.
 - Age restriction is opt-in per user (or shared profile): enable it and set a date of birth. K7 then hides movies and series whose content rating exceeds the computed age. Official labels (TMDB/TVDB, MPAA, CNC, etc.) and bare numeric age labels (`13`, `13+`, zero-padded `05`) are mapped the same way. Unknown labels and `NR` stay blocked. A date of birth without the flag does nothing. Music is not filtered. Titles with no content rating are hidden by default and can be shown with the unrated toggle.
 - Guest playback is recorded in Admin -> Playback history (and active streams) without giving Guest continue watching or personal history.
 - Admin -> Playback history can reassign a play (personal or any shared profile) and delete rows. A personal delete updates that user's play/skip counts. A shared-profile delete removes the row for the whole group without un-watching members. Bulk select works like Admin -> Users. Delete requires `CanDeleteHistory`. Reassign requires `CanReassignHistory`.
 - `CanDeleteHistory` and `CanReassignHistory` are on by default for Administrator only (off for User and Guest). Enable them per User account when needed. Turning them off on an admin keeps history visible while blocking those actions.
 - Authentication panel: **read-only** view of local / OIDC flags from config, plus editable password complexity (length, unique characters, digit / case / special-character requirements). Password rules apply after save. They do not require a restart.
+
+### Public share links
+
+A share link gives anyone holding it access to one media and everything below it, **without an account**: browse, play and, when allowed, download. See the [user guide](../user/guide.md#public-share-links) for the options of a share.
+
+- **Off by default.** Turn it on with **Allow public shares** under **Admin -> Content -> Public shares**. Turning it off closes every link at once without deleting any share.
+- **Who can share:** capability `CanShareMedia`, on by default for Administrator only. Grant it to a user under Admin -> Users (capabilities). A user can only share what they can access, and a visitor never gets more than the creator has: library exclusions, restriction profiles and age restriction of the creator apply to the link. Shares of a deactivated user, or of a user who lost the capability, are suspended.
+- **Admin -> Content -> Public shares** lists the shares of every user with their status, access count and recent visitors (date, IP address, browser). You can edit, generate a new link, revoke or delete any of them. Users manage their own under My Space -> My shares.
+- **What a visitor can reach:** only the shared media. The rest of the API answers 401, and nothing personal is exposed (no ratings, history or disk paths). Media hosted on a peer server cannot be shared.
+- **Load:** visitors play through the regular stream endpoints, so a shared video can trigger a transcode like any other playback. Count visitors in your [concurrent streams](#concurrent-streams-rough-guide) budget.
+- **Technical traces:** each visitor creates a device named `Share visitor`, removed 30 days after the visitor session expires. A technical account carries visitor requests. It has no password, cannot sign in and is not listed in Admin -> Users.
+- Revoking, editing or deleting a share, and turning the switch off, take effect at once. An expiration is enforced within about 15 seconds.
+- A share password needs at least 6 characters. After 5 wrong passwords in a row the share accepts none for 15 minutes. Setting a new password asks it again from everyone, visitors already in included.
+- **Download off is not copy protection:** a visitor who can play a media can still save what the player receives. The option removes the download button and the original-file download.
+- Behind a reverse proxy, the visitor IP shown on a share is the proxy address unless the proxy address is forwarded to K7.
+
+The link token is in the URL fragment (`/share#...`), which browsers do not send to servers, so it does not appear in access logs or reverse proxy logs. Treat a link like a password: anyone who has it can open the share until it expires, is exhausted or is revoked.
 
 ### Server defaults vs user overrides
 

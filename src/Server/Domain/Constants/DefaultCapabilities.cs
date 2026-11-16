@@ -25,8 +25,12 @@ public static class DefaultCapabilities
         Capability.CanManageLibraries,
         Capability.CanManageUsers,
         Capability.CanDeleteHistory,
-        Capability.CanReassignHistory
+        Capability.CanReassignHistory,
+        Capability.CanShareMedia
     ];
+
+    // Share visitors only reach the share and stream endpoints. They hold no capability.
+    private static readonly HashSet<Capability> ShareVisitorCapabilities = [];
 
     // Guest sessions are recorded for admin playback history / active streams only.
     // Personal features (resume, history, stats) stay off.
@@ -40,6 +44,7 @@ public static class DefaultCapabilities
         Roles.Administrator => AdminCapabilities,
         Roles.User => UserCapabilities,
         Roles.Guest => GuestCapabilities,
+        Roles.ShareVisitor => ShareVisitorCapabilities,
         _ => GuestCapabilities
     };
 }

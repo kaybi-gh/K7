@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Domain.Constants;
+namespace K7.Server.Domain.Constants;
 
 public abstract class Policies
 {
@@ -7,4 +7,5 @@ public abstract class Policies
     public const string AdminOnly = nameof(AdminOnly);
     public const string StreamAccess = nameof(StreamAccess);
     public const string PeerAccess = nameof(PeerAccess);
+    public const string ShareAccess = nameof(ShareAccess);
 }
