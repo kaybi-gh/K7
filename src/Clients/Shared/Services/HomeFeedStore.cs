@@ -193,7 +193,9 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
             }
             else
             {
-                if (_loadTask is { IsFaulted: true } or { IsCanceled: true })
+                // A load that ended without loading the home (faulted, cancelled, or failed
+                // before its task was even stored) is not kept: this call loads again.
+                if (_loadTask is { IsCompleted: true })
                     _loadTask = null;
 
                 _loadTask ??= LoadAsync(cancellationToken);
@@ -374,6 +376,13 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
         }
         catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
+            if (!IsLoadSuperseded(loadGeneration, profileAtStart, identityAtStart))
+                FailTransientLoad();
+            return;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // A cancelled load is not a home without rows: it stays to be loaded.
             if (!IsLoadSuperseded(loadGeneration, profileAtStart, identityAtStart))
                 FailTransientLoad();
             return;
@@ -866,7 +875,10 @@ public sealed class HomeFeedStore : IHomeFeedStore, IDisposable
             try
             {
                 await Task.Delay(500, token);
-                await ResetAndReloadAsync(token);
+
+                // The token only covers the wait: the reload cancels the pending refreshes,
+                // this one included, and would cancel its own request for the layout with it.
+                await ResetAndReloadAsync(CancellationToken.None);
             }
             catch (OperationCanceledException)
             {

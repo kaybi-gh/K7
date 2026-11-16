@@ -397,6 +397,63 @@ public class HomeFeedStoreTests
         sut.Rows.Single().Items[1].Progress.Should().Be(11);
     }
 
+    [Test]
+    public async Task LibraryScanCompleted_ShouldReloadTheLayoutAndKeepTheRows_WhenTheLibraryIsNew()
+    {
+        var media = Substitute.For<IMediaService>();
+        media.GetHomeFeedAsync(Arg.Any<GetHomeFeedQuery>(), Arg.Any<CancellationToken>())
+            .Returns(_ => FeedPage(CreateItem("Movie A")));
+        var hub = new K7HubClient(NullLogger<K7HubClient>.Instance);
+        var prefs = Substitute.For<IUserPreferencesService>();
+        using var sut = CreateStore(media, prefs, hubClient: hub);
+
+        // Like the HTTP client: a request made with a cancelled token does not go out.
+        prefs.GetHomeLayoutAsync(Arg.Any<CancellationToken>()).Returns(call =>
+        {
+            call.Arg<CancellationToken>().ThrowIfCancellationRequested();
+            return CreateLayout();
+        });
+        await sut.EnsureLoadedAsync(canTrackProgress: true, identityUserId: "user-a");
+        prefs.ClearReceivedCalls();
+
+        // No row lists this library: the layout is loaded again.
+        var handler = (Action<Guid, int, int, int>?)typeof(K7HubClient)
+            .GetField(nameof(K7HubClient.LibraryScanCompleted), System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!
+            .GetValue(hub);
+        handler.Should().NotBeNull();
+        handler!(Guid.NewGuid(), 3, 0, 0);
+        await Task.Delay(TimeSpan.FromSeconds(1.5));
+
+        await prefs.Received(1).GetHomeLayoutAsync(Arg.Any<CancellationToken>());
+        sut.IsLoaded.Should().BeTrue();
+        sut.Rows.Should().ContainSingle()
+            .Which.Items.Should().ContainSingle();
+    }
+
+    [Test]
+    public async Task EnsureLoadedAsync_ShouldNotEndOnAnEmptyHome_WhenTheLoadIsCancelled()
+    {
+        var media = Substitute.For<IMediaService>();
+        media.GetHomeFeedAsync(Arg.Any<GetHomeFeedQuery>(), Arg.Any<CancellationToken>())
+            .Returns(_ => FeedPage(CreateItem("Movie A")));
+        var prefs = Substitute.For<IUserPreferencesService>();
+        using var sut = CreateStore(media, prefs);
+        prefs.GetHomeLayoutAsync(Arg.Any<CancellationToken>()).Returns(call =>
+        {
+            call.Arg<CancellationToken>().ThrowIfCancellationRequested();
+            return CreateLayout();
+        });
+
+        using var cancelled = new CancellationTokenSource();
+        await cancelled.CancelAsync();
+        await sut.EnsureLoadedAsync(canTrackProgress: true, identityUserId: "user-a", cancelled.Token);
+
+        // Not loaded rather than loaded with no row: the next call loads the home.
+        sut.IsLoaded.Should().BeFalse();
+        await sut.EnsureLoadedAsync(canTrackProgress: true, identityUserId: "user-a");
+        sut.Rows.Should().ContainSingle();
+    }
+
     private static void RaiseProgress(K7HubClient hub, Guid mediaId, double progress, bool isCompleted)
     {
         // Field-like event: the compiler-generated backing field carries the event name.
