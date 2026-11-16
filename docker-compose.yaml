@@ -11,7 +11,7 @@ volumes:
 services:
   postgres:
     <<: *default-restart-security
-    image: postgres:18-alpine@sha256:10a5c69a83035ab5239f5620d708520e8b28f5aa1f2b20143e6024532edadfb5
+    image: postgres:18-alpine@sha256:b6972e1115a4ff8eba5d7f7d19184926d1e16d7d1136ae1e1a7ebf286da0f015
     container_name: k7-postgres
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
