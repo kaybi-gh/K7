@@ -204,6 +204,16 @@
         </div>
     </section>
 
+    <section id="custom-nav-preview" class="ds-section">
+        <h2>CustomNavPreview</h2>
+        <p class="ds-description">Sketch of the app with the custom navigation applied, shown with its settings (Settings - Interface - Navigation, and the server default in Admin): the shortcuts as a bar under the top bar, or as a row of tiles among the rows of the page. Blocks only, like SkinPreview.</p>
+        <div class="ds-preview ds-preview--column">
+            <CustomNavPreview Enabled="true" Placement="K7.Shared.Enums.CustomNavPlacement.Bar" ShowIcons="true" Items="@(new[] { "Movies", "Series", "Music", "My space" })" AriaLabel="Shortcuts in a bar, with icons" />
+            <CustomNavPreview Enabled="true" Placement="K7.Shared.Enums.CustomNavPlacement.FeedRow" RowTitle="Shortcuts" Items="@(new[] { "Movies", "Series", "Music" })" AriaLabel="Shortcuts in a row" />
+            <CustomNavPreview Enabled="false" Placement="K7.Shared.Enums.CustomNavPlacement.Bar" AriaLabel="Custom navigation off" />
+        </div>
+    </section>
+
     <section id="media-hero-skeleton" class="ds-section">
         <h2>MediaHeroSkeleton</h2>
         <p class="ds-description">Page-shell placeholder for movie, serie, season, episode, and person detail. Matches the hero plus cast layout so TV does not flash a spinner. DetailLayout sizes the logo like Movie/Serie (up to 500 x 180). SeasonLayout matches the desktop season page (compact logo, icon actions, episode rows). PortraitLayout uses a 2:3 portrait beside the bio. The person page itself reuses the person hero shell so phone, desktop, and TV breakpoints apply while loading.</p>

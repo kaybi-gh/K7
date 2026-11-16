@@ -1,0 +1,52 @@
+@namespace K7.Clients.Shared.UI.Components
+
+<div class="nav-preview" role="img" aria-label="@AriaLabel">
+    <div class="np-top">
+        <span class="np-logo"></span>
+        <span class="np-link"></span>
+        <span class="np-link"></span>
+        <span class="np-link"></span>
+        <span class="np-avatar"></span>
+    </div>
+    @if (ShowsBar)
+    {
+        <div class="np-bar">
+            @foreach (var title in Shortcuts)
+            {
+                <span class="np-chip">
+                    @if (ShowIcons)
+                    {
+                        <span class="np-chip-icon"></span>
+                    }
+                    <span class="np-chip-text">@title</span>
+                </span>
+            }
+        </div>
+    }
+    <div class="np-body">
+        @if (ShowsRow)
+        {
+            @* No title set: the row shows without one, like in the app. *@
+            @if (!string.IsNullOrWhiteSpace(RowTitle))
+            {
+                <span class="np-row-name">@RowTitle</span>
+            }
+            <div class="np-row">
+                @foreach (var title in Shortcuts)
+                {
+                    <span class="np-tile">@title</span>
+                }
+            </div>
+        }
+        @for (var row = 0; row < 2; row++)
+        {
+            <span class="np-row-title"></span>
+            <div class="np-row">
+                @for (var i = 0; i < CardCount; i++)
+                {
+                    <span class="np-card"></span>
+                }
+            </div>
+        }
+    </div>
+</div>

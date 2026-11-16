@@ -2,6 +2,7 @@
 <root>
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
+  <data name="Preview" xml:space="preserve"><value>Aperçu de la navigation</value></data>
   <data name="Display" xml:space="preserve"><value>Affichage</value></data>
   <data name="Placement" xml:space="preserve"><value>Emplacement</value></data>
   <data name="PlacementFeedRow" xml:space="preserve"><value>Rangée Accueil</value></data>

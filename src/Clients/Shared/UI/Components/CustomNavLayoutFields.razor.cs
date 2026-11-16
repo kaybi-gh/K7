@@ -227,6 +227,10 @@ public partial class CustomNavLayoutFields
         return result.Canceled ? null : result.Data as CustomNavItemEditModel;
     }
 
+    // The first shortcuts, by name, for the sketch.
+    private IReadOnlyList<string> PreviewItems =>
+        [.. Model.Items.Take(CustomNavPreview.MaxShortcuts).Select(GetItemTitle)];
+
     private string GetItemTitle(CustomNavItemEditModel item) =>
         CustomNavHrefHelper.GetTitle(item.ToDto(), Groups, key => NavL[key], Collections, Playlists);
 

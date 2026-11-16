@@ -1,0 +1,148 @@
+/* A sketch of the app with the custom navigation: top bar, the shortcuts, the rows of a page. */
+.nav-preview {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 520px;
+    aspect-ratio: 16 / 9;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-size: var(--text-xs);
+    line-height: 1.2;
+    user-select: none;
+}
+
+.np-top {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-2) var(--space-4);
+    background: var(--color-surface);
+    border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.np-logo {
+    width: 14px;
+    height: 14px;
+    border-radius: var(--radius-sm);
+    background: var(--color-accent);
+}
+
+.np-link {
+    width: 38px;
+    height: 4px;
+    border-radius: var(--radius-sm);
+    background: currentColor;
+    opacity: 0.45;
+}
+
+.np-avatar {
+    width: 14px;
+    height: 14px;
+    margin-inline-start: auto;
+    border-radius: 50%;
+    background: currentColor;
+    opacity: 0.4;
+}
+
+/* The shortcuts as a bar under the top bar. */
+.np-bar {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-1) var(--space-4);
+    background: var(--color-surface);
+    border-bottom: 1px solid var(--color-border-subtle);
+    overflow: hidden;
+}
+
+.np-chip {
+    flex: 0 1 auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-width: 28px;
+    min-height: 16px;
+    max-width: 110px;
+    padding: 2px var(--space-2);
+    border-radius: var(--radius-full, 999px);
+    background: var(--color-surface-2);
+    border: 1px solid var(--color-border-subtle);
+}
+
+.np-chip-icon {
+    flex: 0 0 auto;
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+    background: var(--color-accent-text);
+}
+
+.np-chip-text,
+.np-tile,
+.np-row-name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.np-body {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-height: 0;
+    padding: var(--space-3) var(--space-4) 0;
+}
+
+.np-row-title {
+    flex: 0 0 auto;
+    width: 64px;
+    height: 4px;
+    border-radius: var(--radius-sm);
+    background: currentColor;
+    opacity: 0.55;
+}
+
+.np-row-name {
+    flex: 0 0 auto;
+    max-width: 60%;
+    font-weight: 700;
+}
+
+.np-row {
+    flex: 0 0 auto;
+    display: flex;
+    gap: 6px;
+}
+
+/* The shortcuts as a row of tiles among the rows of the page. */
+.np-tile {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: flex-end;
+    width: 84px;
+    height: 44px;
+    padding: 4px 6px;
+    box-sizing: border-box;
+    border-radius: var(--radius-sm);
+    background: linear-gradient(140deg, color-mix(in srgb, var(--color-accent) 55%, var(--color-surface-2)), var(--color-surface-2));
+    border: 1px solid var(--color-border);
+    color: var(--color-text);
+    font-weight: 600;
+}
+
+.np-card {
+    flex: 0 0 auto;
+    width: 40px;
+    height: 58px;
+    border-radius: var(--radius-sm);
+    background: var(--color-surface-2);
+    border: 1px solid var(--color-border);
+}

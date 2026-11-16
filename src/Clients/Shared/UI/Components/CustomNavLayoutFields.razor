@@ -17,6 +17,13 @@
         }
     </div>
 
+    <CustomNavPreview Enabled="Model.Enabled"
+                      Placement="Model.Placement"
+                      ShowIcons="Model.BarShowIcons"
+                      RowTitle="@Model.FeedRowTitle"
+                      Items="PreviewItems"
+                      AriaLabel="@L["Preview"]" />
+
     @if (Model.Enabled)
     {
         <section class="custom-nav-layout-fields__section">
