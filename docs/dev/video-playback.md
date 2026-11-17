@@ -588,6 +588,14 @@ not past mid-GOP. Do not micro-rebase **audio copy** onto `#EXTINF`.
 - remux continue after a ready `N-1.m4s` must not rewrite `N-1` as a seek pad (that forced
   1-2 segment windows and video micro-freezes). It must still past-IDR seek: accurate remux
   `-ss` replays the previous GOP (rewind). Seek windows still pad
+- a video window that starts at segment 0 takes the **container start time** (ffprobe format
+  `start_time`) as the `-segment_times` origin (`ResolveVideoCutOrigin`). Playlist segment 0
+  starts at 0 and the next ones at raw source keyframe times, while `-copyts -start_at_zero`
+  subtracts the container start from every packet. With origin 0 and a start above
+  `-segment_time_delta` (62ms against 50ms), ffmpeg missed the first cut: `0.m4s` packed two
+  GOPs and every later file held the GOP after its playlist index. Serve rebase then stamped
+  playlist starts on them (picture jumps and rollbacks, video one GOP ahead of the audio).
+  Mid-file windows keep the landed keyframe as origin
 - federated master burn-in follows `SubtitleBurnInStreamIndex` on the manifest query.
   PGS is not a sidecar VTT. A playback URL that omits the index turns burn-in off.
   The video playlist then carries the index so the encode overlays that stream

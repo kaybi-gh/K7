@@ -338,6 +338,52 @@ public class FfmpegStreamingArgsTests
     }
 
     [Test]
+    public void ResolveVideoCutOrigin_ShouldUseContainerStart_WhenWindowStartsAtFileHead()
+    {
+        // Playlist segment 0 starts at 0, the next ones at raw source keyframe times, and
+        // ffmpeg subtracts the 62ms container start: the first cut must be 10.021, not 10.083.
+        var segments = BuildSegments((0, 10083), (10083, 10000), (20083, 9958));
+        var origin = FfmpegStreamingArgs.ResolveVideoCutOrigin(
+            segments,
+            startSegmentIndex: 0,
+            seekTime: TimeSpan.Zero,
+            isEncode: false,
+            containerStartTime: TimeSpan.FromMilliseconds(62));
+
+        origin.Should().Be(TimeSpan.FromMilliseconds(62));
+        var splits = FfmpegStreamingArgs.BuildRelativeSplitTimes(segments, 0, 3, origin);
+        splits.Should().HaveCount(2);
+        splits[0].Should().BeApproximately(10.021, 0.0001);
+        splits[1].Should().BeApproximately(20.021, 0.0001);
+    }
+
+    [Test]
+    public void ResolveVideoCutOrigin_ShouldIgnoreContainerStart_WhenWindowStartsMidFile()
+    {
+        var segments = BuildSegments((0, 10083), (10083, 10000), (20083, 9958));
+        var origin = FfmpegStreamingArgs.ResolveVideoCutOrigin(
+            segments,
+            startSegmentIndex: 1,
+            seekTime: TimeSpan.FromSeconds(11),
+            isEncode: false,
+            containerStartTime: TimeSpan.FromMilliseconds(62));
+
+        origin.Should().Be(TimeSpan.FromMilliseconds(10083));
+    }
+
+    [Test]
+    public void ResolveVideoCutOrigin_ShouldKeepZero_WhenContainerStartIsUnknownOrAbsurd()
+    {
+        var segments = BuildSegments((0, 10083), (10083, 10000));
+
+        FfmpegStreamingArgs.ResolveVideoCutOrigin(segments, 0, TimeSpan.Zero, isEncode: false)
+            .Should().Be(TimeSpan.Zero);
+        FfmpegStreamingArgs.ResolveVideoCutOrigin(
+                segments, 0, TimeSpan.Zero, isEncode: false, containerStartTime: TimeSpan.FromSeconds(30))
+            .Should().Be(TimeSpan.Zero);
+    }
+
+    [Test]
     public void ResolveVideoCutOrigin_ShouldUseKeyframe_WhenRemux()
     {
         var segments = BuildSegments((0, 2000), (2000, 2000), (4000, 2000));

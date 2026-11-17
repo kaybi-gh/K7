@@ -123,15 +123,31 @@ internal static class FfmpegStreamingArgs
     /// Origin for -segment_times and relative force_key_frames. Always the segment
     /// keyframe: remux lands there via past-IDR -ss + -noaccurate_seek, encode seeks
     /// there accurately. -start_at_zero zeroes PTS from that frame.
+    /// A window that starts at the head of the file has no landed keyframe: -copyts
+    /// -start_at_zero then subtracts the container start time from every timestamp, while
+    /// playlist segment 0 starts at 0 and the next ones at raw source keyframe times. With
+    /// origin 0 on a file whose container starts later than -segment_time_delta (a 62ms
+    /// start against the 50ms delta), the first cut is missed, file 0 packs two GOPs and
+    /// every later file holds the GOP after its playlist index (rollbacks once serve-side
+    /// rebase stamps playlist starts on them). The container start is the origin there.
     /// </summary>
     public static TimeSpan ResolveVideoCutOrigin(
         IReadOnlyList<HlsSegment> allSegments,
         int startSegmentIndex,
         TimeSpan seekTime,
-        bool isEncode)
+        bool isEncode,
+        TimeSpan containerStartTime = default)
     {
         _ = seekTime;
         _ = isEncode;
+        if (startSegmentIndex == 0
+            && containerStartTime > TimeSpan.Zero
+            && allSegments.Count > 1
+            && containerStartTime.TotalMilliseconds < allSegments[1].StartTimestamp)
+        {
+            return containerStartTime;
+        }
+
         return ResolveTimelineOrigin(allSegments, startSegmentIndex);
     }
 

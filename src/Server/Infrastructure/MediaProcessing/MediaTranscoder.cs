@@ -192,11 +192,15 @@ public class MediaTranscoder : IMediaTranscoder
         // Remux (seek and sequential continue): past-IDR + -noaccurate_seek.
         // Accurate remux -ss snaps to the previous IDR (rewind + same GOP twice).
         // Encode: exact keyframe (re-encode, no prior-GOP snap).
+        var containerStartTime = ffmpegStartIndex == 0
+            ? await ProbeContainerStartTimeAsync(inputFilePath, cancellationToken)
+            : TimeSpan.Zero;
         var cutOrigin = FfmpegStreamingArgs.ResolveVideoCutOrigin(
             allSegments,
             ffmpegStartIndex,
             seekTime,
-            accurateSeek);
+            accurateSeek,
+            containerStartTime);
 
         _logger.LogDebug(
             "Starting video streaming transcode: input={Input}, output={Output}, deliverStart={DeliverStart}, deliverEnd={DeliverEnd}, ffmpegStart={FfmpegStart}, ffmpegEnd={FfmpegEnd}, videoCodec={VideoCodec}, burnInStreamIndex={BurnInStreamIndex}",
@@ -845,6 +849,32 @@ public class MediaTranscoder : IMediaTranscoder
             // bitstream has no prior refs; demoting that CRA makes ExoPlayer freeze.
             if (demoteOpenGopSync && i != deliverStartIndex)
                 Fmp4OpenGopSync.TryPersistDemotedCra(path);
+        }
+    }
+
+    /// <summary>
+    /// Container start time (ffprobe format start_time): what -copyts -start_at_zero
+    /// subtracts from a window that begins at the head of the file. Zero when unknown.
+    /// </summary>
+    private async Task<TimeSpan> ProbeContainerStartTimeAsync(
+        string inputFilePath,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var analysis = await FFProbe.AnalyseAsync(inputFilePath, cancellationToken: cancellationToken)
+                .ConfigureAwait(false);
+            var start = analysis.Format.StartTime;
+            return start > TimeSpan.Zero ? start : TimeSpan.Zero;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Container start time probe failed for {Input}", inputFilePath);
+            return TimeSpan.Zero;
         }
     }
 
