@@ -76,7 +76,7 @@ Change server later: **Settings -> My device** -> disconnect (trash), then enter
 ### In the player
 
 - **Quality** for this session (**Original** = remux / bitstream copy when the codec is playable, or a display-capped encode when it is not) or a ladder encode at the same or lower resolution - not saved as a lasting preference
-- **Audio** and **subtitle** tracks. Same-language tracks stay distinct: the menu shows the normalized language, then the original track name in parentheses (VFF, VFQ, France, Canadien, ...)
+- **Audio** and **subtitle** tracks. Blu-ray image subtitles (PGS) are drawn by the web player and the Android app, without lowering the video quality; their look cannot be customized. Same-language tracks stay distinct: the menu shows the normalized language, then the original track name in parentheses (VFF, VFQ, France, Canadien, ...)
 - **Release** when a movie has several files: the picker shows resolution, audio languages, codec, size, and Local vs Federated instead of repeating the title. Play uses your track-selection settings. The sliders dialog preselects those same preferences; confirming it uses the tracks you picked for that launch only
 - **Intro / outro skip** when markers exist and your settings allow it
 - **Play on device** for remote control or Chromecast - see [Watching together and casting](#watching-together-and-casting)

@@ -92,7 +92,15 @@ public class GetStreamUriQueryHandler(
             ? videoFileMetadata.SubtitleTracks.FirstOrDefault(t => t.Index == subtitleTrackIndex.Value)
             : null;
 
-        var subtitleBurnInStreamIndex = selectedSubtitle is { IsTextBased: false } ? selectedSubtitle.Index : (int?)null;
+        // A client that draws PGS itself gets the .sup sidecar: no burn-in, so the video
+        // can still be copied when only the audio needs an encode.
+        var clientRendersSubtitle = selectedSubtitle is { IsTextBased: false }
+            && BitmapSubtitleCodecs.CanRenderOnClient(
+                device.PlaybackCapabilities.SupportedSubtitlesCodecs,
+                selectedSubtitle.Codec);
+        var subtitleBurnInStreamIndex = selectedSubtitle is { IsTextBased: false } && !clientRendersSubtitle
+            ? selectedSubtitle.Index
+            : (int?)null;
         var defaultTextSubtitleTrackIndex = selectedSubtitle is { IsTextBased: true } ? selectedSubtitle.Index : (int?)null;
 
         // Video.js cannot switch in-container audio/subs. Native LibVLC / AVPlayer can.

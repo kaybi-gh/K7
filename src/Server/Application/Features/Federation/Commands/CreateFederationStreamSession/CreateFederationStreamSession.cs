@@ -245,7 +245,8 @@ public class CreateFederationStreamSessionCommandHandler(
         return new DevicePlaybackCapabilities
         {
             SupportedMediaFormatIds = formatIds,
-            SupportedSubtitlesCodecs = [.. dto.SupportedSubtitlesCodecs],
+            // The .sup sidecar is not proxied across peers: a federated viewer still gets burn-in.
+            SupportedSubtitlesCodecs = [.. dto.SupportedSubtitlesCodecs.Where(c => !BitmapSubtitleCodecs.IsPgs(c))],
             SupportsHDR = dto.SupportsHDR
         };
     }

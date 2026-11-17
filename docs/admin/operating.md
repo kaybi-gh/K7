@@ -233,6 +233,8 @@ The entrypoint adds `appuser` to the GIDs that own `/dev/dri/renderD*` / `card*`
 
 K7 initializes VAAPI with `-init_hw_device vaapi=va:/dev/dri/renderD*` before the input, then `format=nv12,hwupload` + `h264_vaapi` / `hevc_vaapi`. If Admin still shows no hardware encoders after mounting `/dev/dri`, check container logs for `Hardware encoder probe complete` / Debug verification lines and run `vainfo` inside the container.
 
+The web player (public share links included) and the Android app draw embedded PGS (Blu-ray image) subtitles themselves: the server sends the track as-is and does not transcode the video for it, so a file that only needed an audio conversion keeps its original video. Burn-in still applies to the Windows, Linux and Apple apps, federated libraries, and DVD / DVB image subtitles. A device registered before this version keeps burn-in until its app or browser tab has been reopened once.
+
 PGS subtitle burn-in still does the overlay on the CPU (`scale2ref` / `overlay`). When VAAPI (or another encoder that sets a post-overlay `-vf`) is selected, K7 appends that filter inside the same `-filter_complex` (for VAAPI: `format=nv12,hwupload`) so encode can stay on the GPU. Decode stays software for burn-in so the overlay filters keep system-memory frames.
 
 **NVIDIA (NVENC)** - NVIDIA Container Toolkit on the host, then:

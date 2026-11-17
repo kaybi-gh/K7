@@ -122,6 +122,7 @@ public partial class VideoPlayer : IAsyncDisposable
             }
             else if (!PlayerService.IsVisible && _isInitialized)
             {
+                await StopPgsOverlayAsync();
                 if (!string.IsNullOrEmpty(_lastPlayerId))
                 {
                     try
@@ -437,6 +438,7 @@ public partial class VideoPlayer : IAsyncDisposable
     private async Task DisposeWebPlayerAsync()
     {
         _durationWaitCts?.Cancel();
+        await StopPgsOverlayAsync();
 
         if (_isInitialized && !string.IsNullOrEmpty(_lastPlayerId))
         {
@@ -803,6 +805,9 @@ public partial class VideoPlayer : IAsyncDisposable
     {
         if (!_isInitialized || string.IsNullOrEmpty(_player.Id))
             return;
+
+        // Same moments as the text sidecar: source applied or subtitle track changed.
+        await SyncPgsOverlayAsync();
 
         var track = PlayerService.SelectedSubtitleTrack;
         if (string.IsNullOrEmpty(slug)
@@ -1179,6 +1184,7 @@ public partial class VideoPlayer : IAsyncDisposable
 
         _webPlaybackClock = value;
         PlayerService.CurrentTime = value;
+        _pgsLoader?.Update(value);
     }
 
     private bool WebClockRecentlyAdvanced() =>

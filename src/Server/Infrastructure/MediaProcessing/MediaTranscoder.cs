@@ -4,6 +4,7 @@ using System.Text.Json;
 using FFMpegCore;
 using FFMpegCore.Arguments;
 using FFMpegCore.Enums;
+using FFMpegCore.Pipes;
 using K7.Server.Application.Common;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Helpers;
@@ -988,6 +989,52 @@ public class MediaTranscoder : IMediaTranscoder
         }
 
         _logger.LogInformation("Subtitle extraction completed: {Output}", outputVttPath);
+    }
+
+    public async Task ExtractPgsSubtitleWindowAsync(
+        string inputFilePath,
+        int subtitleStreamIndex,
+        TimeSpan position,
+        TimeSpan duration,
+        Stream output,
+        CancellationToken cancellationToken = default)
+    {
+        _logger.LogDebug(
+            "Extracting PGS stream {StreamIndex} from {Input} at {Position} for {Duration}",
+            subtitleStreamIndex, inputFilePath, position, duration);
+
+        var stderrLines = new List<string>();
+        var seconds = position.TotalSeconds.ToString("0.###", CultureInfo.InvariantCulture);
+        var length = duration.TotalSeconds.ToString("0.###", CultureInfo.InvariantCulture);
+
+        // Input seek: ffmpeg jumps through the container index instead of reading from 0.
+        // copyts + start_at_zero keep display sets on the media timeline whatever the
+        // container start time is, so the client compares them with the player clock.
+        var result = await FFMpegArguments
+            .FromFileInput(inputFilePath, verifyExists: true, options =>
+            {
+                options.WithCustomArgument($"-ss {seconds}");
+                options.WithCustomArgument($"-t {length}");
+            })
+            .OutputToPipe(new StreamPipeSink(output), options =>
+            {
+                options.WithCustomArgument($"-map 0:{subtitleStreamIndex}");
+                options.WithCustomArgument("-c:s copy");
+                options.WithCustomArgument("-copyts -start_at_zero");
+                // One display set per write: the client draws while ffmpeg is still reading.
+                options.WithCustomArgument("-flush_packets 1");
+                options.ForceFormat("sup");
+            })
+            .NotifyOnError((error) => stderrLines.Add(error))
+            .CancellableThrough(cancellationToken)
+            .ProcessAsynchronously(throwOnError: false);
+
+        if (!result && !cancellationToken.IsCancellationRequested)
+        {
+            _logger.LogWarning(
+                "Failed to extract PGS stream {StreamIndex} from {Input}. FFmpeg stderr: {Stderr}",
+                subtitleStreamIndex, inputFilePath, string.Join(Environment.NewLine, stderrLines));
+        }
     }
 
     public async Task RemuxWithAudioTranscodeAsync(

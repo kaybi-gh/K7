@@ -53,4 +53,13 @@ public class EnsureShareVisitorDeviceCommandHandlerTests
 
         ids.Should().ContainSingle().Which.Should().Be("achannels:2");
     }
+
+    [Test]
+    public void VisitorSubtitleCodecs_ShouldDeclarePgs_SoSharesSkipBurnIn()
+    {
+        K7.Server.Domain.Common.BitmapSubtitleCodecs
+            .CanRenderOnClient(EnsureShareVisitorDeviceCommandHandler.VisitorSubtitleCodecs, "hdmv_pgs_subtitle")
+            .Should().BeTrue();
+        EnsureShareVisitorDeviceCommandHandler.VisitorSubtitleCodecs.Should().Contain("webvtt");
+    }
 }

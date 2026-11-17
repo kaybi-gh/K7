@@ -612,6 +612,7 @@ window.disposeVideoJs = function (id) {
     if (player) {
         // An in-flight sidecar VTT fetch must not land on a disposed player.
         k7InvalidateSidecar(player);
+        window.k7PgsStop(id);
         try {
             // Clear the default "media could not be loaded" poster before dispose.
             // A late error after close otherwise stays painted on the WebView.
@@ -1680,4 +1681,266 @@ window.canPlayMediaSource = async function (source) {
         isMediaCapable,
         details: results
     };
+};
+
+// ---- Client-drawn PGS (Blu-ray bitmap) subtitles ------------------------------------
+// The .sup sidecar is fetched and decoded in C# (PgsSubtitleLoader / PgsParser), which
+// pushes each screen here. This side keeps them ordered and paints, on a canvas over the
+// video, the screen active at the player clock. Mirror of PgsTimeline.cs.
+const k7PgsStates = {};
+const K7_PGS_KEEP_BEHIND_SECONDS = 120;
+
+function k7PgsEnsureCanvas(player) {
+    const root = player.el();
+    if (!root)
+        return null;
+
+    let canvas = root.querySelector('canvas.k7-pgs-layer');
+    if (canvas)
+        return canvas;
+
+    canvas = document.createElement('canvas');
+    canvas.className = 'k7-pgs-layer';
+    canvas.style.position = 'absolute';
+    canvas.style.left = '0';
+    canvas.style.top = '0';
+    canvas.style.width = '100%';
+    canvas.style.height = '100%';
+    canvas.style.pointerEvents = 'none';
+
+    // Above the picture and the text cues, below spinner / controls.
+    const textDisplay = root.querySelector('.vjs-text-track-display');
+    if (textDisplay && textDisplay.parentNode === root)
+        root.insertBefore(canvas, textDisplay.nextSibling);
+    else
+        root.appendChild(canvas);
+    return canvas;
+}
+
+function k7PgsFrameAt(state, seconds) {
+    // A screen stays up until the next one, but never past what has loaded: the clear
+    // that ends it may not have arrived yet.
+    if (seconds > state.loadedUntil)
+        return null;
+
+    const frames = state.frames;
+    let low = 0;
+    let high = frames.length - 1;
+    let found = null;
+    while (low <= high) {
+        const middle = (low + high) >> 1;
+        if (frames[middle].time <= seconds) {
+            found = frames[middle];
+            low = middle + 1;
+        } else {
+            high = middle - 1;
+        }
+    }
+
+    return found && found.objects.length > 0 ? found : null;
+}
+
+function k7PgsPrune(state, seconds) {
+    const threshold = seconds - K7_PGS_KEEP_BEHIND_SECONDS;
+    let remove = 0;
+    while (remove + 1 < state.frames.length && state.frames[remove + 1].time <= threshold)
+        remove++;
+    if (remove > 0)
+        state.frames.splice(0, remove);
+}
+
+function k7PgsObjectBitmap(object) {
+    if (!object.bitmap) {
+        const bitmap = document.createElement('canvas');
+        bitmap.width = object.width;
+        bitmap.height = object.height;
+        bitmap.getContext('2d').putImageData(
+            new ImageData(object.rgba, object.width, object.height), 0, 0);
+        object.bitmap = bitmap;
+    }
+
+    return object.bitmap;
+}
+
+function k7PgsPaint(state, player, frame) {
+    const root = player.el();
+    const canvas = state.canvas;
+    if (!root || !canvas)
+        return;
+
+    const boxWidth = root.clientWidth;
+    const boxHeight = root.clientHeight;
+    const ratio = window.devicePixelRatio || 1;
+    const pixelWidth = Math.max(1, Math.round(boxWidth * ratio));
+    const pixelHeight = Math.max(1, Math.round(boxHeight * ratio));
+    if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) {
+        canvas.width = pixelWidth;
+        canvas.height = pixelHeight;
+    }
+
+    const context = canvas.getContext('2d');
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    if (!frame || boxWidth <= 0 || boxHeight <= 0)
+        return;
+
+    // Picture rectangle inside the player, for the current object-fit.
+    const video = root.querySelector('video');
+    const videoWidth = (video && video.videoWidth) || frame.planeWidth;
+    const videoHeight = (video && video.videoHeight) || frame.planeHeight;
+    const fit = (video && getComputedStyle(video).objectFit) || 'contain';
+    let pictureWidth = boxWidth;
+    let pictureHeight = boxHeight;
+    if (fit !== 'fill') {
+        const scale = fit === 'cover'
+            ? Math.max(boxWidth / videoWidth, boxHeight / videoHeight)
+            : Math.min(boxWidth / videoWidth, boxHeight / videoHeight);
+        pictureWidth = videoWidth * scale;
+        pictureHeight = videoHeight * scale;
+    }
+
+    // The subtitle plane (often 16:9) matches the picture along its uncropped side, so
+    // lines authored in a letterbox stay under a cinema-scope picture.
+    let scaleX = pictureWidth / frame.planeWidth;
+    let scaleY = pictureHeight / frame.planeHeight;
+    if (fit !== 'fill')
+        scaleX = scaleY = Math.max(scaleX, scaleY);
+    const planeLeft = (boxWidth - frame.planeWidth * scaleX) / 2;
+    const planeTop = (boxHeight - frame.planeHeight * scaleY) / 2;
+
+    context.imageSmoothingEnabled = true;
+    context.imageSmoothingQuality = 'high';
+    for (let i = 0; i < frame.objects.length; i++) {
+        const object = frame.objects[i];
+        let width = object.width * scaleX;
+        let height = object.height * scaleY;
+        // Keep the object inside the player (Fill crop, or a short player).
+        const shrink = Math.min(1, boxWidth / width, boxHeight / height);
+        width *= shrink;
+        height *= shrink;
+        let left = planeLeft + object.x * scaleX;
+        let top = planeTop + object.y * scaleY;
+        left = Math.min(Math.max(left, 0), boxWidth - width);
+        top = Math.min(Math.max(top, 0), boxHeight - height);
+        context.drawImage(
+            k7PgsObjectBitmap(object),
+            left * ratio, top * ratio, width * ratio, height * ratio);
+    }
+}
+
+function k7PgsTick(id) {
+    const state = k7PgsStates[id];
+    if (!state)
+        return;
+
+    state.raf = requestAnimationFrame(function () { k7PgsTick(id); });
+
+    const player = players[id];
+    if (!player || (typeof player.isDisposed === 'function' && player.isDisposed()))
+        return;
+
+    let seconds = 0;
+    try {
+        seconds = player.currentTime() || 0;
+    } catch (e) {
+        return;
+    }
+
+    const frame = k7PgsFrameAt(state, seconds);
+    const root = player.el();
+    const video = root && root.querySelector('video');
+    const layout = root
+        ? root.clientWidth + 'x' + root.clientHeight
+            + ':' + (video ? video.videoWidth + 'x' + video.videoHeight + ':' + video.style.objectFit : '')
+        : '';
+    if (frame === state.shown && layout === state.layout)
+        return;
+
+    if (state.shown && state.shown !== frame) {
+        for (let i = 0; i < state.shown.objects.length; i++)
+            state.shown.objects[i].bitmap = null;
+    }
+
+    state.shown = frame;
+    state.layout = layout;
+    k7PgsPaint(state, player, frame);
+    k7PgsPrune(state, seconds);
+}
+
+window.k7PgsStart = function (id) {
+    window.k7PgsStop(id);
+    const player = players[id];
+    if (!player)
+        return false;
+
+    const canvas = k7PgsEnsureCanvas(player);
+    if (!canvas)
+        return false;
+
+    k7PgsStates[id] = { canvas: canvas, frames: [], loadedUntil: 0, shown: null, layout: '', raf: 0 };
+    k7PgsTick(id);
+    return true;
+};
+
+window.k7PgsStop = function (id) {
+    const state = k7PgsStates[id];
+    if (!state)
+        return;
+
+    cancelAnimationFrame(state.raf);
+    delete k7PgsStates[id];
+    try {
+        if (state.canvas && state.canvas.parentNode)
+            state.canvas.parentNode.removeChild(state.canvas);
+    } catch (e) {
+    }
+};
+
+window.k7PgsReset = function (id) {
+    const state = k7PgsStates[id];
+    if (!state)
+        return;
+
+    state.frames = [];
+    state.loadedUntil = 0;
+};
+
+window.k7PgsSetLoadedUntil = function (id, seconds) {
+    const state = k7PgsStates[id];
+    if (state && seconds > state.loadedUntil)
+        state.loadedUntil = seconds;
+};
+
+// layout: x, y, width, height per object (a PGS composition holds at most two).
+window.k7PgsAddFrame = function (id, time, planeWidth, planeHeight, layout, rgba0, rgba1) {
+    const state = k7PgsStates[id];
+    if (!state || !planeWidth || !planeHeight)
+        return;
+
+    const pixels = [rgba0, rgba1];
+    const objects = [];
+    for (let i = 0; i * 4 + 3 < (layout ? layout.length : 0); i++) {
+        const width = layout[i * 4 + 2];
+        const height = layout[i * 4 + 3];
+        const rgba = pixels[i];
+        if (!rgba || width <= 0 || height <= 0 || rgba.length < width * height * 4)
+            continue;
+
+        objects.push({
+            x: layout[i * 4],
+            y: layout[i * 4 + 1],
+            width: width,
+            height: height,
+            // Copy: the interop buffer is not ours to keep.
+            rgba: new Uint8ClampedArray(rgba.subarray(0, width * height * 4)),
+            bitmap: null
+        });
+    }
+
+    const frame = { time: time, planeWidth: planeWidth, planeHeight: planeHeight, objects: objects };
+    let index = state.frames.length;
+    while (index > 0 && state.frames[index - 1].time > time)
+        index--;
+    state.frames.splice(index, 0, frame);
+    if (time > state.loadedUntil)
+        state.loadedUntil = time;
 };

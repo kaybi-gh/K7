@@ -42,6 +42,7 @@ public partial class BlazorPage
     private Dictionary<string, string>? _exoHttpRequestHeaders;
     private ExoPlaybackBridge? _exoPlaybackBridge;
     private CancellationTokenSource? _androidSubtitleWarmCts;
+    private AndroidPgsSubtitleLayer? _androidPgsLayer;
     private static DateTime _lastTvBridgeRestartUtc;
     private bool _tvBridgeCheckPosted;
     private int _tvBridgeProbeGeneration;
@@ -50,6 +51,44 @@ public partial class BlazorPage
     {
         _playerService.SwitchAudioTrackRequested += OnSwitchAudioTrack;
         _playerService.SwitchSubtitleTrackRequested += OnSwitchSubtitleTrack;
+        _playerService.SubtitleTrackChanged += _ => SyncAndroidPgsSubtitles();
+        _playerService.SourceChanged += _ => SyncAndroidPgsSubtitles();
+    }
+
+    /// <summary>
+    /// Embedded PGS on an HLS stream is not in the playlist: the overlay draws it from the
+    /// .sup sidecar. Direct Play keeps the track in the file, where ExoPlayer renders it.
+    /// </summary>
+    private void SyncAndroidPgsSubtitles()
+    {
+        if (!MainThread.IsMainThread)
+        {
+            MainThread.BeginInvokeOnMainThread(SyncAndroidPgsSubtitles);
+            return;
+        }
+
+        var source = _playerService.Source;
+        var track = _playerService.SelectedSubtitleTrack;
+        if (!_playerService.IsVisible
+            || track is null
+            || source?.IndexedFileId is not Guid fileId
+            || !ClientBitmapSubtitles.ShouldDraw(track, source.MimeType, source.Url))
+        {
+            _androidPgsLayer?.Stop();
+            return;
+        }
+
+        _androidPgsLayer ??= new AndroidPgsSubtitleLayer(
+            () => NativePlayer.Handler?.PlatformView is Android.Views.View view ? FindPlayerView(view) : null,
+            GetExoPlaybackPositionSeconds);
+        _androidPgsLayer.Show(
+            fileId,
+            track.Index,
+            PgsSubtitleLoader.ForServer(
+                _k7ServerService.HttpClient,
+                relative => _k7ServerService.GetAbsoluteUri(relative),
+                fileId,
+                track.Index));
     }
 
     /// <summary>
@@ -582,6 +621,7 @@ public partial class BlazorPage
             ApplyPendingAndroidSubtitleStyle();
         }
         SetVideoFocusOwnership(active: true);
+        SyncAndroidPgsSubtitles();
     }
 
     internal void ApplyPendingAndroidSubtitleStyle()
@@ -597,6 +637,7 @@ public partial class BlazorPage
         _appliedTrackGroupSignature = null;
         _androidSubtitleWarmCts?.Cancel();
         _androidSubtitleWarmCts = null;
+        _androidPgsLayer?.Stop();
         if (_exoPlaybackBridge is not null)
         {
             _exoPlaybackBridge.FirstFrameRendered = null;

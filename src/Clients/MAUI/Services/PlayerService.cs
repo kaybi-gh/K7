@@ -296,6 +296,10 @@ internal class PlayerService(
 
     private string? _originalLanguage;
 
+    // Android draws embedded PGS over ExoPlayer from the .sup sidecar. Federated files
+    // have no sidecar route, and the desktop HLS players keep the server burn-in.
+    private bool _clientRendersPgs;
+
     public async Task PlayIndexedFileAsync(Guid indexedFileId, IEnumerable<AudioFileTrackDto> audioTracks, IEnumerable<SubtitleFileTrackDto>? subtitleTracks = null, int? audioTrackIndex = null, int? subtitleTrackIndex = null, VideoResolutionIdentifier? videoResolution = null, string? thumbnailsUrl = null, Guid? mediaId = null, string? title = null, string? coverUrl = null, double? startPosition = null, IReadOnlyList<ChapterMarkerDto>? chapters = null, double? durationSeconds = null, Guid? libraryId = null, string? filePath = null, string? originalLanguage = null, CancellationToken cancellationToken = default)
     {
         if (mpcPlaybackHost is not null)
@@ -303,6 +307,9 @@ internal class PlayerService(
 
         _originalLanguage = originalLanguage;
         _currentIndexedFileId = indexedFileId;
+#if ANDROID
+        _clientRendersPgs = true;
+#endif
         _lastKnownPlaybackTime = startPosition is > 1 ? startPosition.Value : 0;
         _audioTracks = audioTracks.ToList();
         SetSubtitleTracks(subtitleTracks);
@@ -404,6 +411,7 @@ internal class PlayerService(
     {
         _originalLanguage = originalLanguage;
         _currentIndexedFileId = null;
+        _clientRendersPgs = false;
         _lastKnownPlaybackTime = startPosition is > 1 ? startPosition.Value : 0;
         _audioTracks = audioTracks.ToList();
         SetSubtitleTracks(subtitleTracks);
@@ -555,7 +563,8 @@ internal class PlayerService(
 
         if (!RequiresManifestReloadForSubtitleChange(track))
         {
-            var slug = track is not null ? BuildSubtitleTrackSlug(track) : null;
+            // A PGS track drawn by the overlay is not an in-player track: clear the text one.
+            var slug = track is not null && !DrawsOnClient(track) ? BuildSubtitleTrackSlug(track) : null;
             SwitchSubtitleTrackRequested?.Invoke(slug);
             return Task.CompletedTask;
         }
@@ -1159,18 +1168,29 @@ internal class PlayerService(
 
         // Image subs (PGS) in the muxed file: Android LibVLC can SetSpu / :sub-track.
         // Promoting Direct Play to HLS burn-in restarts at 0 and drops the audio ES.
-        // HLS has no PGS rendition, so burn-in is still required there.
+        // HLS has no PGS rendition: the overlay draws it from the .sup sidecar when it
+        // can, otherwise burn-in is still required there.
         if (track is not { IsTextBased: false })
+            return false;
+
+        if (DrawsOnClient(track))
             return false;
 
         return StreamingSourceKind.IsHls(Source?.MimeType, Source?.Url ?? _baseManifestUrl);
     }
 
+    private bool RendersOnClient(SubtitleFileTrackDto? track) =>
+        _clientRendersPgs && ClientBitmapSubtitles.IsPgs(track);
+
+    private bool DrawsOnClient(SubtitleFileTrackDto? track) =>
+        RendersOnClient(track)
+        && StreamingSourceKind.IsHls(Source?.MimeType, Source?.Url ?? _baseManifestUrl);
+
     private bool IsSubtitleBurnInActive() =>
         Source?.Url?.Contains("SubtitleBurnInStreamIndex=", StringComparison.OrdinalIgnoreCase) == true
         || _baseManifestUrl?.Contains("SubtitleBurnInStreamIndex=", StringComparison.OrdinalIgnoreCase) == true;
 
-    private static string BuildManifestUrlWithSubtitleSettings(string baseUrl, SubtitleFileTrackDto? track)
+    private string BuildManifestUrlWithSubtitleSettings(string baseUrl, SubtitleFileTrackDto? track)
     {
         if (LocalPlaybackUrl.TryGetLocalFilesystemPath(baseUrl, out var localPath))
             return localPath;
@@ -1179,7 +1199,7 @@ internal class PlayerService(
         url = System.Text.RegularExpressions.Regex.Replace(url, @"[&?]DefaultSubtitleTrackIndex=[^&]*", "");
         url = System.Text.RegularExpressions.Regex.Replace(url, @"[&?]SubtitleBurnInStreamIndex=[^&]*", "");
 
-        if (track is null)
+        if (track is null || RendersOnClient(track))
             return url;
 
         var separator = url.Contains('?') ? "&" : "?";

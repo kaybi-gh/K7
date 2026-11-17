@@ -228,6 +228,10 @@ public class PlayerService(
 
     private string? _originalLanguage;
 
+    // Embedded PGS is drawn in the browser from the .sup sidecar, share pages included.
+    // Federated files have no sidecar route: the server still burns those in.
+    private bool _clientRendersPgs;
+
     public async Task PlayIndexedFileAsync(Guid indexedFileId, IEnumerable<AudioFileTrackDto> audioTracks, IEnumerable<SubtitleFileTrackDto>? subtitleTracks = null, int? audioTrackIndex = null, int? subtitleTrackIndex = null, VideoResolutionIdentifier? videoResolution = null, string? thumbnailsUrl = null, Guid? mediaId = null, string? title = null, string? coverUrl = null, double? startPosition = null, IReadOnlyList<ChapterMarkerDto>? chapters = null, double? durationSeconds = null, Guid? libraryId = null, string? filePath = null, string? originalLanguage = null, CancellationToken cancellationToken = default)
     {
         var generation = Interlocked.Increment(ref _playGeneration);
@@ -238,6 +242,7 @@ public class PlayerService(
 
         _originalLanguage = originalLanguage;
         _currentIndexedFileId = indexedFileId;
+        _clientRendersPgs = true;
         _playbackStartRecoveryAttempts = 0;
         _remuxReloadsDone = 0;
         _lastRemuxRetryUtc = DateTime.MinValue;
@@ -344,6 +349,7 @@ public class PlayerService(
 
         _originalLanguage = originalLanguage;
         _currentIndexedFileId = null;
+        _clientRendersPgs = false;
         _playbackStartRecoveryAttempts = 0;
         _remuxReloadsDone = 0;
         _lastRemuxRetryUtc = DateTime.MinValue;
@@ -706,8 +712,14 @@ public class PlayerService(
         if (IsSubtitleBurnInActive())
             return true;
 
+        if (RendersOnClient(track))
+            return false;
+
         return track is { IsTextBased: false };
     }
+
+    private bool RendersOnClient(SubtitleFileTrackDto? track) =>
+        _clientRendersPgs && ClientBitmapSubtitles.IsPgs(track);
 
     private bool IsSubtitleBurnInActive() =>
         Source?.Url?.Contains("SubtitleBurnInStreamIndex=", StringComparison.OrdinalIgnoreCase) == true
@@ -715,15 +727,16 @@ public class PlayerService(
 
     /// <summary>
     /// Appends or replaces subtitle query parameters on the manifest URL.
-    /// Text tracks use HLS sidecar subtitles; bitmap tracks (PGS) use server-side burn-in.
+    /// Text tracks use HLS sidecar subtitles; PGS is drawn by the player from the .sup
+    /// sidecar; other bitmap tracks use server-side burn-in.
     /// </summary>
-    private static string BuildManifestUrlWithSubtitleSettings(string baseUrl, SubtitleFileTrackDto? track)
+    private string BuildManifestUrlWithSubtitleSettings(string baseUrl, SubtitleFileTrackDto? track)
     {
         var url = baseUrl;
         url = System.Text.RegularExpressions.Regex.Replace(url, @"[&?]DefaultSubtitleTrackIndex=[^&]*", "");
         url = System.Text.RegularExpressions.Regex.Replace(url, @"[&?]SubtitleBurnInStreamIndex=[^&]*", "");
 
-        if (track is null)
+        if (track is null || RendersOnClient(track))
             return url;
 
         var separator = url.Contains('?') ? "&" : "?";

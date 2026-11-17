@@ -712,6 +712,60 @@ public class GetStreamUriDecisionTests
     }
 
     [Test]
+    public void GetVideoFileStreamUri_ShouldKeepVideoCopy_WhenDeviceRendersPgsItself()
+    {
+        var device = CreateDevice(["audio-mp4-aac", "video-mp4-aac-h264"]);
+        device.PlaybackCapabilities.SupportedSubtitlesCodecs = ["webvtt", BitmapSubtitleCodecs.Pgs];
+        var (indexedFile, metadata) = CreateVideoFile("matroska", "h264", "aac");
+        metadata.SubtitleTracks.Add(new SubtitleFileTrack
+        {
+            Index = 1,
+            Codec = "hdmv_pgs_subtitle",
+            IsTextBased = false
+        });
+        var request = new GetStreamUriQuery
+        {
+            Id = indexedFile.Id,
+            StreamSessionId = Guid.NewGuid(),
+            AudioTrackIndex = 0
+        };
+
+        var (uri, decision) = GetStreamUriQueryHandler.GetVideoFileStreamUri(
+            device, indexedFile, metadata, request, hlsSegmentsAvailable: true, subtitleTrackIndex: 1);
+
+        decision.Mode.Should().Be(PlaybackMode.Transmux);
+        decision.IsSubtitleBurnIn.Should().BeFalse();
+        decision.Reason.Should().NotHaveFlag(TranscodeReason.SubtitlesBurnIn);
+        decision.SelectedSubtitleTrackIndex.Should().Be(1);
+        uri.Uri.ToString().Should().NotContain("SubtitleBurnInStreamIndex");
+    }
+
+    [Test]
+    public void GetVideoFileStreamUri_ShouldStillBurnIn_WhenBitmapSubtitleIsNotPgs()
+    {
+        var device = CreateDevice(["audio-mp4-aac", "video-mp4-aac-h264"]);
+        device.PlaybackCapabilities.SupportedSubtitlesCodecs = ["webvtt", BitmapSubtitleCodecs.Pgs];
+        var (indexedFile, metadata) = CreateVideoFile("matroska", "h264", "aac");
+        metadata.SubtitleTracks.Add(new SubtitleFileTrack
+        {
+            Index = 1,
+            Codec = "dvd_subtitle",
+            IsTextBased = false
+        });
+        var request = new GetStreamUriQuery
+        {
+            Id = indexedFile.Id,
+            StreamSessionId = Guid.NewGuid(),
+            AudioTrackIndex = 0
+        };
+
+        var (_, decision) = GetStreamUriQueryHandler.GetVideoFileStreamUri(
+            device, indexedFile, metadata, request, hlsSegmentsAvailable: true, subtitleTrackIndex: 1);
+
+        decision.IsSubtitleBurnIn.Should().BeTrue();
+    }
+
+    [Test]
     public void GetDeviceBestSupportedAudioMediaFormat_ShouldPreferAacOverOpus()
     {
         var device = CreateDevice(["audio-webm-opus", "audio-mp4-aac"]);

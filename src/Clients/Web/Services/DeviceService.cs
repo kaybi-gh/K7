@@ -57,7 +57,8 @@ public class DeviceService(IJSRuntime jsRuntime, IMediaService mediaService, IDe
                     .Concat(videoProfileTokens)
                     .Concat(audioOutputTokens)
                     .ToList(),
-                SupportedSubtitlesCodecs = ["webvtt"],
+                // "pgs": the player draws embedded PGS itself, no burn-in transcode.
+                SupportedSubtitlesCodecs = ["webvtt", K7.Server.Domain.Common.BitmapSubtitleCodecs.Pgs],
                 SupportsHDR = await GetHdrSupportAsync()
             }
         };
@@ -120,7 +121,7 @@ public class DeviceService(IJSRuntime jsRuntime, IMediaService mediaService, IDe
             AudioCodecs = audioCodecs ?? [],
             VideoCodecs = videoCodecs ?? [],
             VideoProfiles = [.. videoProfiles],
-            SubtitleCodecs = ["webvtt"]
+            SubtitleCodecs = ["webvtt", K7.Server.Domain.Common.BitmapSubtitleCodecs.Pgs]
         };
     }
 

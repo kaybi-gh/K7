@@ -1,6 +1,7 @@
 using K7.Server.Application.Common.Exceptions;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Services;
+using K7.Server.Domain.Common;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities.Devices;
 using K7.Server.Domain.Entities.MediaFormats;
@@ -75,7 +76,7 @@ public class EnsureShareVisitorDeviceCommandHandler(
         device.PlaybackCapabilities = new DevicePlaybackCapabilities
         {
             SupportedMediaFormatIds = formatIds,
-            SupportedSubtitlesCodecs = ["webvtt"],
+            SupportedSubtitlesCodecs = [.. VisitorSubtitleCodecs],
             SupportsHDR = request.SupportsHdr
         };
         device.DisplayResolutionWidth = Math.Max(0, request.DisplayResolutionWidth);
@@ -92,6 +93,12 @@ public class EnsureShareVisitorDeviceCommandHandler(
     /// Same matching a web client does before registering its device: a catalog format is
     /// supported when the browser plays its container and its codecs.
     /// </summary>
+    /// <summary>
+    /// The share page plays in the regular web player, which draws embedded PGS itself
+    /// from the .sup sidecar (a stream route, scoped to the files of the share).
+    /// </summary>
+    internal static IReadOnlyList<string> VisitorSubtitleCodecs { get; } = ["webvtt", BitmapSubtitleCodecs.Pgs];
+
     internal static List<string> ResolveFormatIds(EnsureShareVisitorDeviceCommand request)
     {
         var containers = ToSet(request.SupportedContainers);

@@ -62,7 +62,7 @@ public class DeviceService(ICodecService codecHelper, IDeviceIdService deviceIdS
             PlaybackCapabilities = new CreateDeviceRequestPlaybackCapibilities()
             {
                 SupportedMediaFormatIds = await BuildSupportedMediaFormatIdsAsync(supportedMediaFormats),
-                SupportedSubtitlesCodecs = ["webvtt"],
+                SupportedSubtitlesCodecs = SupportedSubtitleCodecs,
                 SupportsHDR = await GetHdrSupportAsync()
             }
         };
@@ -72,6 +72,14 @@ public class DeviceService(ICodecService codecHelper, IDeviceIdService deviceIdS
     {
         return deviceStorageService.Get(PreferenceKeys.DEVICE_ID);
     }
+
+#if ANDROID
+    // "pgs": the native overlay draws embedded PGS over ExoPlayer, no burn-in transcode.
+    private static string[] SupportedSubtitleCodecs =>
+        ["webvtt", K7.Server.Domain.Common.BitmapSubtitleCodecs.Pgs];
+#else
+    private static string[] SupportedSubtitleCodecs => ["webvtt"];
+#endif
 
     public string? GetDeviceUniqueId()
     {
@@ -111,7 +119,7 @@ public class DeviceService(ICodecService codecHelper, IDeviceIdService deviceIdS
             AudioCodecs = audioCodecs ?? [],
             VideoCodecs = videoCodecs ?? [],
             VideoProfiles = videoProfiles,
-            SubtitleCodecs = ["webvtt"]
+            SubtitleCodecs = SupportedSubtitleCodecs
         };
     }
 

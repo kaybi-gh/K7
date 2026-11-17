@@ -64,6 +64,19 @@ public interface IMediaTranscoder
         CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Copies a window of an embedded PGS subtitle track to <paramref name="output"/> as a
+    /// lossless .sup stream. Timestamps stay on the media timeline, so a window that starts
+    /// at 50s carries display sets stamped from 50s. Written as ffmpeg reads the file.
+    /// </summary>
+    Task ExtractPgsSubtitleWindowAsync(
+        string inputFilePath,
+        int subtitleStreamIndex,
+        TimeSpan position,
+        TimeSpan duration,
+        Stream output,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Remuxes a video file, copying the video stream and transcoding the audio to AAC.
     /// Used for offline downloads when the source audio codec is not natively supported.
     /// </summary>

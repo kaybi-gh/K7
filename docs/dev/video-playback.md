@@ -718,6 +718,61 @@ native `XMLHttpRequest` layer (so VHS cannot bypass module wrappers) and also wr
 `videojs.xhr` while keeping `Vhs.xhr.original = true`. Windows Direct uses the
 XAML sidecar loader. Windows HLS uses Video.js remote text tracks via the stream-fetch bridge.
 
+## Client-drawn PGS subtitles
+
+The Web player and the Android app draw embedded PGS (Blu-ray bitmap) subtitles themselves
+instead of asking the server to burn them into a video transcode. A 4K remux whose only
+obstacle is a PGS track (plus, say, a DTS audio encode) stays an HLS **transmux**: video
+copied, audio encoded.
+
+Contract:
+
+- A client declares `pgs` in `PlaybackCapabilities.SupportedSubtitlesCodecs`
+  (`BitmapSubtitleCodecs.Pgs`). Web always does, MAUI only on Android.
+- `GetStreamUri` then leaves `SubtitleBurnInStreamIndex` off the manifest for a PGS track
+  (`BitmapSubtitleCodecs.CanRenderOnClient`), so the decision keeps its mode and
+  `IsSubtitleBurnIn` stays false. The selected track still shows on the decision.
+- The track is served as a lossless, windowed `.sup` sidecar:
+  `GET /api/indexed-files/{id}/subtitles/{index}.sup?position=&duration=`
+  (`GetSubtitleSup`, `StreamAccess` policy). ffmpeg input-seeks to `position`, copies the
+  stream for `duration` (capped at 600 s) with `-copyts -start_at_zero`, and the response
+  forwards display sets as they are read, so a seek far into a file never reads it from
+  the start and timestamps stay on the media timeline.
+- Only embedded PGS qualifies. VobSub and DVB bitmaps are still burned in. So are
+  federated files (the origin strips `pgs` from the forwarded capabilities, the sidecar is
+  not proxied) and the Windows / Linux / Apple apps.
+- Public shares draw PGS too: the visitor device declares `pgs`
+  (`EnsureShareVisitorDevice`), and the `.sup` route is a stream route, so
+  `ShareStreamScopeRequirement` limits a visitor to the files of its shares. The visitor
+  HTTP handler lets `/api/indexed-files/` through.
+- Direct Play is unchanged: the track stays in the file and the native player renders it.
+
+Client side (`Clients/Shared/Helpers`):
+
+- `PgsParser` parses the `.sup` stream incrementally: palettes (YCbCr to RGBA, BT.709 for
+  HD planes and BT.601 for SD), run-length objects, fragments, cropping, composition
+  states. Palettes and objects persist through an epoch. A display set whose object or
+  palette was never seen is dropped, never treated as a clear.
+- `PgsSubtitleLoader` asks for 120 s windows starting 10 s behind the playhead and extends
+  45 s before the end. An extending window keeps the parser (epoch state); a seek outside
+  the loaded range starts a new parser, so a screen whose epoch began before the window
+  shows from the next epoch start. A 4xx stops the loader; other failures retry three times.
+- `PgsTimeline` keeps the screens ordered. A screen stays up until the next display set,
+  but never past what has loaded.
+- `ClientBitmapSubtitles.ShouldDraw` is the single switch: PGS track, HLS source, no
+  `SubtitleBurnInStreamIndex` on the URL. Both player services build that URL, so a mid-play
+  track change does not reload the manifest unless a burn-in was active.
+
+Rendering:
+
+- Web: `VideoPlayer.Pgs.cs` pushes each decoded screen to a canvas over the Video.js player
+  (`k7Pgs*` in `videoplayer.js`), painted on `requestAnimationFrame` against the player clock.
+- Android: `AndroidPgsSubtitleLayer` adds a bitmap view to the Media3 `PlayerView` overlay
+  frame and ticks every 100 ms on the ExoPlayer position. The view is `GONE` while the plane
+  is empty so it does not blend over the video surface.
+- Both scale the PGS plane onto the picture along its uncropped side, so lines authored in
+  a letterbox stay under a cinema-scope picture, and keep objects inside the player.
+
 ## Subtitle appearance
 
 `VideoPlayerSettingsDto` font / size / color / background opacity / shadow settings are mapped
@@ -730,8 +785,8 @@ physical pixels. Web and Windows HLS Video.js apply them via
 and `textTrackSettings: false` so cues stay on those sizes instead of Video.js
 `1.4em` / `fontPercent` (or native `::cue` height-relative sizing). Android text subs use ExoPlayer
 `SubtitleView` + `CaptionStyleCompat` (`AndroidExoSubtitleStyle`, `SetFixedTextSize` in SP).
-Windows Direct text subs use the XAML sidecar label (same helper). Image-based burn-in (PGS)
-cannot be restyled client-side.
+Windows Direct text subs use the XAML sidecar label (same helper). Image subtitles (PGS),
+burned in or drawn by the client, are bitmaps and cannot be restyled.
 
 After save or reset, the server pushes `ReceiveVideoPlayerSettingsUpdated` on the K7 hub
 (user identity group). `VideoPlayerUxSettingsSync` applies the payload to `IPlayerService`
