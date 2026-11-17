@@ -2,7 +2,6 @@
 @page "/admin/general"
 @page "/admin/interface"
 @page "/admin/interface/appearance"
-@page "/admin/interface/theme-songs"
 @layout AdminLayout
 @inject IStringLocalizer<AdminGeneralPanel> L
 @inject IStringLocalizer<SharedResource> S
@@ -10,8 +9,8 @@
 @inject IStringLocalizer<AdvancedSettingsSplit> La
 @inject NavigationManager NavigationManager
 
-@* Server defaults shown as the Appearance and Theme songs sub-pages of Interface (one form,
-   one Save) and as the Link previews sub-page of Advanced (one switch, saved on change). *@
+@* Server defaults shown as the Appearance sub-page of Interface (one form, one Save) and as
+   the Link previews sub-page of Advanced (one switch, saved on change). *@
 <PageTitle>@(IsLinkPreviewsPage ? La["Title"] : Li["Title"])</PageTitle>
 
 <div class="settings-form-page settings-form-page--section-actions">
@@ -36,18 +35,10 @@
         }
         else
         {
-            <InterfaceSettingsSplit Section="@ActiveSection" Admin="true">
+            <InterfaceSettingsSplit Section="@InterfaceSettingsSections.Appearance" Admin="true">
                 @if (_isLoading)
                 {
                     <K7ProgressBar Indeterminate="true" />
-                }
-                else if (IsThemeSongs)
-                {
-                    <K7SettingRow Label="@L["PlayThemeSongs"]" Hint="@L["PlayThemeSongsHint"]">
-                        <K7Switch AriaLabel="@L["PlayThemeSongs"]"
-                                  Value="_playThemeSongs"
-                                  ValueChanged="OnPlayThemeSongsChanged" />
-                    </K7SettingRow>
                 }
                 else
                 {

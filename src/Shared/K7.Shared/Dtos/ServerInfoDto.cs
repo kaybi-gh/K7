@@ -13,5 +13,11 @@ public class ServerInfoDto
 
     /// <summary>Card style for accounts that chose none. Null means the built-in card.</summary>
     public MediaCardPreferencesDto? DefaultCards { get; set; }
+
+    /// <summary>
+    /// Media pages and players for accounts that did not set them up (only the skin members
+    /// are read). Null means the built-in ones.
+    /// </summary>
+    public AppearanceSettingsDto? DefaultSkins { get; set; }
     public PasswordPolicyDto PasswordPolicy { get; set; } = PasswordPolicyDto.Defaults;
 }

@@ -19,6 +19,15 @@ public partial class K7SettingsSplit
     /// <summary>Content of the current sub-page.</summary>
     [Parameter, EditorRequired] public RenderFragment? Detail { get; set; }
 
+    /// <summary>
+    /// Second group of settings of the current sub-page, in its own panel under
+    /// <see cref="Detail"/>, titled <see cref="ExtraTitle"/>: for settings that sit on the same
+    /// sub-page but are about something else.
+    /// </summary>
+    [Parameter] public RenderFragment? Extra { get; set; }
+
+    [Parameter] public string ExtraTitle { get; set; } = "";
+
     /// <summary>Actions under the index that apply to the whole page, e.g. reset to defaults.</summary>
     [Parameter] public RenderFragment? Footer { get; set; }
 

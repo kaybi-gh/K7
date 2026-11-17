@@ -196,4 +196,8 @@
   <data name="AutoSaveSaving" xml:space="preserve"><value>Enregistrement...</value></data>
   <data name="AutoSaveSaved" xml:space="preserve"><value>Enregistré</value></data>
   <data name="AutoSaveFailed" xml:space="preserve"><value>Non enregistré</value></data>
+  <data name="SkipBack" xml:space="preserve"><value>Reculer</value></data>
+  <data name="SkipForward" xml:space="preserve"><value>Avancer</value></data>
+  <data name="ShowMore" xml:space="preserve"><value>Voir plus</value></data>
+  <data name="ShowLess" xml:space="preserve"><value>Voir moins</value></data>
 </root>

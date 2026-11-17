@@ -1,5 +1,6 @@
 @using K7.Clients.Shared.Models
 @using K7.Clients.Shared.Services
+@using K7.Clients.Shared.UI.Helpers
 @using K7.Clients.Shared.UI.Components.Dialogs
 @using K7.Server.Domain.Enums
 @using K7.Shared
@@ -18,12 +19,14 @@
 @inject IRemoteControlService RemoteControl
 @inject RemotePlaybackLauncher RemotePlayback
 @inject ISyncPlayService SyncPlay
+@inject ThemeService ThemeService
+@inject IK7ServerService ApiClient
 @inject IUserPreferencesService UserPreferencesService
 @inject IMediaService MediaService
 @inject InactivityPromptTracker InactivityTracker
 @inject IStringLocalizer<SharedResource> S
 
-<div class="video-controls-overlay @(IsOverlayVisible ? "controls-visible" : "controls-hidden")" tabindex="0" @ref="_overlayRef"
+<div class="video-controls-overlay @(IsOverlayVisible ? "controls-visible" : "controls-hidden") @SkinClasses.VideoControls(Skin)" tabindex="0" @ref="_overlayRef"
      data-sn-layer="@(SyncPlaySidebarOpen ? null : "overlay")"
      data-sn-layer-close=".video-player-close-btn"
      @onmousemove="OnOverlayMouseMove" @onclick="OnOverlayTap"
@@ -44,14 +47,32 @@
     <div class="controls-bar top" @onclick:stopPropagation @ontouchstart:stopPropagation @ontouchmove:stopPropagation @ontouchend:stopPropagation @onmouseover="OnControlsBarMouseEnter" @onmouseout="OnControlsBarMouseOut">
         <div class="controls-bar-title-row">
             <K7IconButton Icon="@Phosphor.ArrowLeft" OnClick="OnCloseButtonClick" AriaLabel="Close" Class="video-player-close-btn" />
-            @if (!string.IsNullOrWhiteSpace(PlayerService.Source?.Title))
+            @if (Skin.VideoLogo && !string.IsNullOrEmpty(_logoUrl))
+            {
+                <img class="video-player-media-logo" src="@_logoUrl" alt="@PlayerService.Source?.Title" />
+            }
+            else if (!string.IsNullOrWhiteSpace(PlayerService.Source?.Title))
             {
                 <span class="video-player-media-title truncate">@PlayerService.Source.Title</span>
             }
         </div>
     </div>
 
+    @if (ShowCenterControls)
+    {
+        @* Skin: play and skips in the middle of the picture. They come and go with the bars. *@
+        <div class="controls-center" @onclick:stopPropagation @ontouchstart:stopPropagation @ontouchmove:stopPropagation @ontouchend:stopPropagation @onmouseover="OnControlsBarMouseEnter" @onmouseout="OnControlsBarMouseOut">
+            <K7IconButton Icon="@Phosphor.ClockCounterClockwise" OnClick="@(() => SkipFromCenter(-1))" AriaLabel="@S["SkipBack"]" Class="controls-center-btn" />
+            <K7IconButton Icon="@(PlayerService.PlaybackState != Server.Domain.Enums.PlaybackState.Playing ? Phosphor.Play : Phosphor.Pause)" OnClick="TogglePlayPause" AriaLabel="Play pause" Class="controls-center-btn controls-center-btn--play" />
+            <K7IconButton Icon="@Phosphor.ClockClockwise" OnClick="@(() => SkipFromCenter(1))" AriaLabel="@S["SkipForward"]" Class="controls-center-btn" />
+        </div>
+    }
+
     <div class="controls-bar bottom" @onclick:stopPropagation @ontouchstart:stopPropagation @ontouchmove:stopPropagation @ontouchend:stopPropagation @onmouseover="OnControlsBarMouseEnter" @onmouseout="OnControlsBarMouseOut">
+        @if (Skin.VideoPoster && !string.IsNullOrEmpty(PlayerService.Source?.CoverUrl))
+        {
+            <img class="controls-poster" src="@PlayerService.Source.CoverUrl" alt="" />
+        }
         <div class="controls-bar-row">
             <div class="controls-bar-left">
                 <K7IconButton Icon="@(PlayerService.PlaybackState != Server.Domain.Enums.PlaybackState.Playing ? Phosphor.Play : Phosphor.Pause)" OnClick="TogglePlayPause" AriaLabel="Play pause" Class="play-pause-btn" />

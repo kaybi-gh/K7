@@ -177,9 +177,10 @@ else if (_person is not null)
             <MediaPageContent Class="person-page-content"
                               Tinted="@(ActiveDominantColor is not null)">
             <div class="person-content" data-tv-scroll-zone="below">
+<MediaSections>
                 @if (_discography.Count > 0)
                 {
-                    <Carousel Title="@L["Discography"]">
+<Carousel Title="@L["Discography"]">
                         @foreach (var album in _discography)
                         {
                             <CarouselItem @key="album.Id">
@@ -195,7 +196,7 @@ else if (_person is not null)
 
                 @if (_medias.Count > 0)
                 {
-                    <Carousel Title="@L["Filmography"]">
+<Carousel Title="@L["Filmography"]">
                         @foreach (var media in _medias)
                         {
                             <CarouselItem @key="media.Id">
@@ -218,7 +219,7 @@ else if (_person is not null)
 
                 @if (_knownForCards.Count > 0)
                 {
-                    <Carousel Title="@L["KnownFor"]">
+<Carousel Title="@L["KnownFor"]">
                         @foreach (var item in _knownForCards)
                         {
                             <CarouselItem @key="item.Id">
@@ -230,6 +231,7 @@ else if (_person is not null)
                         }
                     </Carousel>
                 }
+</MediaSections>
             </div>
             </MediaPageContent>
         }

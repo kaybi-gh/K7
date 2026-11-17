@@ -25,7 +25,7 @@
 
 @if (_loading)
 {
-    @if (_isTv)
+    @if (Immersive)
     {
         <div class="season-tv" aria-busy="true">
             <MediaHeroSkeleton ShowCast="false" />
@@ -46,7 +46,7 @@
         </div>
     }
 }
-else if (_season is not null && _isTv)
+else if (_season is not null && Immersive)
 {
     <div class="season-tv"
          style="@DominantColorCss.ToVariableStyle("--media-dominant-color", _dominantColor)">
@@ -78,6 +78,7 @@ else if (_season is not null && _isTv)
                         var ep = episode;
                         <div class="carousel-item"
                              data-carousel-item
+                             @onmouseenter="@CreateSilentEpisodeHoverCallback(ep)"
                              @key="ep.Id"
                              @attributes="GetEpisodeInitialFocusAttributes(ep)"
                              id="ep-@ep.EpisodeNumber">
@@ -215,19 +216,46 @@ else if (_season is not null)
                 </div>
             </div>
 
-            <div class="season-episodes">
-                @foreach (var episode in _episodes)
-                {
-                    <div id="ep-@episode.EpisodeNumber">
-                        <EpisodeListItem @key="episode.Id"
-                                         Episode="episode"
-                                         StillUrl="@GetEpisodeStillUrl(episode)"
-                                         Href="@($"/series/{SerieId}/seasons/{SeasonNumber}/episodes/{episode.EpisodeNumber}")"
-                                         OnPlay="e => PlayEpisodeAsync(e)"
-                                         OnWatchStateChanged="OnEpisodeWatchStateChangedAsync" />
-                    </div>
-                }
-            </div>
+            @if (EpisodesGrid)
+            {
+                <div class="season-episodes-grid">
+                    <Carousel Title="@L["EpisodeList"]" Grid="true">
+                        @foreach (var episode in _episodes)
+                        {
+                            var ep = episode;
+                            <CarouselItem @key="ep.Id" ItemId="@($"ep-{ep.EpisodeNumber}")">
+                                <MediaCard Model="@GetEpisodeCardModel(ep)"
+                                           Variant="MediaCardVariant.Backdrop"
+                                           Href="@(_isTv ? null : EpisodeHref(ep))"
+                                           FooterVisible="true"
+                                           ProgressEnabled="true"
+                                           OverlayEnabled="true"
+                                           WatchedStatusEnabled="true"
+                                           WatchStateMenuEnabled="_canSetWatchState"
+                                           OnActivated="@EpisodeActivated(ep)"
+                                           OnWatchStateChanged="() => OnEpisodeWatchStateChangedAsync(ep)" />
+                            </CarouselItem>
+                        }
+                    </Carousel>
+                </div>
+            }
+            else
+            {
+                <div class="season-episodes">
+                    @foreach (var episode in _episodes)
+                    {
+                        <div id="ep-@episode.EpisodeNumber">
+                            <EpisodeListItem @key="episode.Id"
+                                             Episode="episode"
+                                             StillUrl="@GetEpisodeStillUrl(episode)"
+                                             Href="@EpisodeHref(episode)"
+                                             PlayOnActivate="_isTv"
+                                             OnPlay="e => PlayEpisodeAsync(e)"
+                                             OnWatchStateChanged="OnEpisodeWatchStateChangedAsync" />
+                        </div>
+                    }
+                </div>
+            }
         </div>
     </MediaPageContent>
 }

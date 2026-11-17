@@ -20,6 +20,7 @@ public static class ThemeBootstrap
     {
         var serverInfo = await serverInfoService.GetServerInfoAsync(cancellationToken);
         themeService.SetServerDefaultCards(serverInfo?.DefaultCards);
+        themeService.SetServerDefaultSkins(serverInfo?.DefaultSkins);
         themeService.SetServerDefault(serverInfo?.DefaultTheme, serverInfo?.ServerThemes);
 
         if (themeService.IsResolved)
@@ -41,6 +42,7 @@ public static class ThemeBootstrap
     {
         var serverInfo = await serverInfoService.GetServerInfoAsync(cancellationToken);
         themeService.SetServerDefaultCards(serverInfo?.DefaultCards);
+        themeService.SetServerDefaultSkins(serverInfo?.DefaultSkins);
         themeService.SetServerDefault(serverInfo?.DefaultTheme, serverInfo?.ServerThemes);
 
         var deviceType = await deviceService.GetDeviceTypeAsync();

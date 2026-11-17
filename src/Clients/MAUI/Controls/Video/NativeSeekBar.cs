@@ -10,6 +10,15 @@ namespace K7.Clients.MAUI.Controls.Video;
 /// </summary>
 public sealed class NativeSeekBar : GraphicsView
 {
+    /// <summary>Color of the played part when no skin changes it.</summary>
+    public static readonly Color DefaultProgressColor = Color.FromArgb("#CCE50914");
+
+    /// <summary>
+    /// Color of the played part. One player at a time: the overlay sets it from the appearance
+    /// settings (red by default, or the accent of the theme).
+    /// </summary>
+    public static Color ProgressColor { get; set; } = DefaultProgressColor;
+
     public static readonly BindableProperty PlayerProperty =
         BindableProperty.Create(nameof(Player), typeof(IPlayerService), typeof(NativeSeekBar));
 
@@ -268,7 +277,7 @@ public sealed class NativeSeekBar : GraphicsView
                 4);
 
             var current = Math.Clamp(currentTime / duration, 0, 1);
-            canvas.FillColor = Color.FromArgb("#CCE50914");
+            canvas.FillColor = ProgressColor;
             canvas.FillRoundedRectangle(
                 new RectF(0, trackY - trackHeight / 2f, dirtyRect.Width * (float)current, trackHeight),
                 4);
@@ -328,7 +337,7 @@ public sealed class NativeSeekBar : GraphicsView
                 var progressInSeg = Math.Clamp((currentTime - start) / (end - start), 0, 1);
                 if (progressInSeg > 0)
                 {
-                    canvas.FillColor = Color.FromArgb("#CCE50914");
+                    canvas.FillColor = ProgressColor;
                     canvas.FillRoundedRectangle(
                         new RectF(left, tube.Y, width * (float)progressInSeg, trackHeight),
                         4);

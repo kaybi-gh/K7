@@ -380,3 +380,100 @@
     width: 0 !important;
     box-shadow: calc(-1 * min(15rem, 50vh)) 0 0 min(15rem, 50vh) rgba(255, 255, 255, 0.2) !important;
 }
+
+/* ============================================================
+   Skins (appearance settings, classes from SkinClasses.VideoControls).
+   The default look adds none of these classes.
+   ============================================================ */
+
+/* Progress in the accent of the theme. SeekBar reads the variable. */
+.video-controls--accent-theme {
+    --video-accent: var(--color-accent);
+}
+
+/* Two lines: the buttons on one line, the progress bar on its own line under them. */
+.video-controls--stacked .controls-bar-row {
+    flex-wrap: wrap;
+    row-gap: 0.25rem;
+}
+
+.video-controls--stacked .controls-bar-seek {
+    order: 1;
+    flex: 1 1 100%;
+}
+
+.video-controls--stacked .controls-bar-right {
+    margin-left: auto;
+}
+
+/* Logo instead of the title. */
+.video-player-media-logo {
+    max-height: 56px;
+    max-width: min(40vw, 320px);
+    object-fit: contain;
+    object-position: left center;
+    filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.6));
+}
+
+/* Poster next to the bottom controls. */
+.controls-bar.bottom {
+    align-items: flex-end;
+}
+
+.controls-poster {
+    flex: 0 0 auto;
+    height: 96px;
+    aspect-ratio: 2 / 3;
+    object-fit: cover;
+    border-radius: var(--radius-sm);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+    margin: 0 0.5rem 0.25rem;
+}
+
+.video-controls--stacked .controls-poster {
+    height: 128px;
+}
+
+@media (max-width: 599.98px) {
+    .controls-poster {
+        display: none;
+    }
+}
+
+/* Play and skips in the middle of the picture. */
+.controls-center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    align-items: center;
+    gap: clamp(1.5rem, 6vw, 4rem);
+    z-index: 100005;
+    transition: opacity 0.3s ease-in-out;
+}
+
+.video-controls-overlay.controls-hidden .controls-center {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.controls-center ::deep .controls-center-btn {
+    width: 56px;
+    height: 56px;
+    font-size: var(--text-3xl);
+    color: white;
+    background: rgba(0, 0, 0, 0.35);
+    border-radius: 50%;
+}
+
+.controls-center ::deep .controls-center-btn--play {
+    width: 76px;
+    height: 76px;
+    font-size: var(--text-4xl);
+}
+
+.controls-center ::deep .controls-center-btn:hover {
+    background: rgba(0, 0, 0, 0.55);
+}
+

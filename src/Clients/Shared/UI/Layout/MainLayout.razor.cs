@@ -333,6 +333,11 @@ public partial class MainLayout : IDisposable
             AppExitService.Exit();
     }
 
+    // Only on a media page: these classes restyle its hero and backdrop, nothing else must match them.
+    private string? MediaPageClasses => MediaPageRoutes.KindOf(NavigationManager) is { } kind
+        ? SkinClasses.Shell(ThemeService.Settings, ThemeService.DeviceType, kind)
+        : null;
+
     private void OnThemeChanged() => OnThemeChangedAsync().FireAndForget(Logger);
 
     // Another device of the user changed the appearance: this one follows at once. Not before

@@ -1,4 +1,5 @@
 @using Microsoft.AspNetCore.Components.Authorization
+@using K7.Clients.Shared.UI.Helpers
 @inject IAudioPlayerService Audio
 @inject IMediaService Server
 @inject IDeviceService DeviceService
@@ -13,7 +14,7 @@
 
 @if (Audio.IsFullScreenVisible && DisplayedTrack is not null)
 {
-    <div class="fullscreen-player" @ref="_playerRef"
+    <div class="fullscreen-player @SkinClasses.AudioPlayer(ThemeService.Settings)" @ref="_playerRef"
          id="fullscreen-music-player"
          style="@DominantColorStyle"
          data-sn-layer="overlay"
@@ -137,6 +138,22 @@
                             {
                                 <canvas @ref="_visualizerCanvas" class="visualizer-canvas"></canvas>
                             }
+                            @if (UseRing)
+                            {
+                                @* The waveform as a ring around the cover: the seek bar of this skin. *@
+                                <div class="artwork-ring focusable @(_isScrubbing ? "scrubbing" : "")"
+                                     style="@RingStyle"
+                                     tabindex="0" role="slider"
+                                     data-sn-activatable
+                                     aria-label="@S["SeekBar"]"
+                                     aria-valuemin="0" aria-valuemax="100"
+                                     aria-valuenow="@((int)DisplayPercent)"
+                                     @ref="_seekBarRef"
+                                     @onkeydown="OnSeekKeyDown"
+                                     @onpointerdown="OnSeekPointerDown"
+                                     @onpointermove="OnSeekPointerMove"
+                                     @onpointerup="OnSeekPointerUp"></div>
+                            }
                         </div>
                     </div>
 
@@ -159,7 +176,10 @@
                         </div>
 
                         <div class="fullscreen-player-seek">
-                            @if (_waveformMaskStyle is not null && !IsRemoteMode)
+                            @if (UseRing)
+                            {
+                            }
+                            else if (UseWaveform)
                             {
                                 <div class="waveform-container focusable @(_isScrubbing ? "scrubbing" : "")" style="@_waveformMaskStyle"
                                      tabindex="0" role="slider"

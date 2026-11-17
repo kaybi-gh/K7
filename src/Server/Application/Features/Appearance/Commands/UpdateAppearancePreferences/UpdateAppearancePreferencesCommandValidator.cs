@@ -45,7 +45,8 @@ public class UpdateAppearancePreferencesCommandValidator : AbstractValidator<Upd
         && (settings.AccentColor is null || ThemeColorMath.IsHex(settings.AccentColor))
         && Enum.IsDefined(settings.TextSize)
         && Enum.IsDefined(settings.CornerStyle)
-        && Enum.IsDefined(settings.MiniPlayer);
+        && Enum.IsDefined(settings.MiniPlayer)
+        && AppearanceSkins.IsValid(settings);
 
     private static bool IsValidCustomTheme(CustomThemeDto? theme) =>
         theme is not null

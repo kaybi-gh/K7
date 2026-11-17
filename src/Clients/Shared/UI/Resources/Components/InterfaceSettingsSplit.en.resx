@@ -17,4 +17,10 @@
   <data name="ThemeSongsDescription" xml:space="preserve"><value>Background music on movie and series pages</value></data>
   <data name="Cards" xml:space="preserve"><value>Media cards</value></data>
   <data name="CardsDescription" xml:space="preserve"><value>Details shown on cards and hover effect</value></data>
+  <data name="MediaPages" xml:space="preserve"><value>Media pages</value></data>
+  <data name="MediaPagesDescription" xml:space="preserve"><value>Layout of movie and series pages, theme songs</value></data>
+  <data name="AudioPlayer" xml:space="preserve"><value>Music player</value></data>
+  <data name="AudioPlayerDescription" xml:space="preserve"><value>Background, cover and progress of the full screen player</value></data>
+  <data name="VideoPlayer" xml:space="preserve"><value>Video player</value></data>
+  <data name="VideoPlayerDescription" xml:space="preserve"><value>Controls, poster, logo and color of the progress</value></data>
 </root>

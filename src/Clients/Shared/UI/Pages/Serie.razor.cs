@@ -29,6 +29,7 @@ public partial class Serie : IAsyncDisposable
 
     private SerieDto? _serie;
     private string? _backdropUrl;
+    private string? _posterUrl;
     private string? _backdropHighResUrl;
     private string? _dominantColor;
     private string? _logoUrl;
@@ -209,6 +210,11 @@ public partial class Serie : IAsyncDisposable
                 serie.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Logo)?
                     .GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri;
             _logoUrl = MediaPictureUrlHelper.WithCacheBuster(logoUri, cacheVersion);
+
+            var posterUri = apiClient.GetAbsoluteUri(
+                serie.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)?
+                    .GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri;
+            _posterUrl = MediaPictureUrlHelper.WithCacheBuster(posterUri, cacheVersion);
 
             _seasons = (serie.Seasons ?? [])
                 .Where(s => s.EpisodeCount > 0)

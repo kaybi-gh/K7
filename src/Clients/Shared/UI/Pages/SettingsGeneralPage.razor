@@ -1,6 +1,9 @@
 @page "/settings/interface"
 @page "/settings/interface/appearance"
 @page "/settings/interface/theme-songs"
+@page "/settings/interface/media-pages"
+@page "/settings/interface/music-player"
+@page "/settings/interface/video-player"
 @page "/settings/general"
 @layout SettingsLayout
 @inject IDeviceStorageService DeviceStorageService
@@ -19,31 +22,16 @@
 
 <div class="settings-form-page settings-form-page--section-actions">
     <div class="settings-form-page__body">
-        <InterfaceSettingsSplit Section="@ActiveSection">
-            @if (IsThemeSongs)
-            {
-                <K7SettingRow Label="@L["PlayThemeSongs"]" Hint="@L["PlayThemeSongsHint"]">
-                    <K7Switch AriaLabel="@L["PlayThemeSongs"]"
-                              Value="_playThemeSongs"
-                              ValueChanged="OnPlayThemeSongsChangedAsync"
-                              Disabled="_themeSongsSaving" />
-                </K7SettingRow>
-                <K7SettingRow Label="@L["DisableThemeSongsOnDevice"]" Hint="@L["DisableThemeSongsOnDeviceHint"]">
-                    <K7Switch AriaLabel="@L["DisableThemeSongsOnDevice"]"
-                              Value="_disableThemeSongsOnDevice"
-                              ValueChanged="OnDisableThemeSongsOnDeviceChanged"
-                              Disabled="!_playThemeSongs || _themeSongsSaving" />
-                </K7SettingRow>
-            }
-            else
+        <InterfaceSettingsSplit Section="@ActiveSection" Extra="ThemeSongsPanel" ExtraTitle="@Li["ThemeSongs"]">
+            @if (PanelSection == AppearancePanelSection.Look)
             {
                 <K7SettingRow Label="@L["Language"]">
                     <K7LanguageSelect Value="@_currentCulture"
                                       ValueChanged="OnCultureChanged"
                                       Languages="SupportedLanguages.Interface" />
                 </K7SettingRow>
-                <AppearanceSettingsPanel @ref="_appearancePanel" OnStateChanged="OnAppearanceStateChanged" />
             }
+            <AppearanceSettingsPanel @ref="_appearancePanel" Section="PanelSection" OnStateChanged="OnAppearanceStateChanged" />
         </InterfaceSettingsSplit>
     </div>
 
@@ -53,3 +41,26 @@
                          ResetDisabled="ResetDisabled"
                          OnResetToDefaults="ResetToDefaultsAsync" />
 </div>
+
+@code {
+    // Theme songs play on movie and series pages: they are set up with them, in a panel of
+    // their own under the layout settings.
+    private RenderFragment? ThemeSongsPanel => IsMediaPages ? ThemeSongsSettings : null;
+
+    private RenderFragment ThemeSongsSettings => __builder =>
+    {
+        <p class="settings-field-hint">@Li["ThemeSongsDescription"]</p>
+        <K7SettingRow Label="@L["PlayThemeSongs"]" Hint="@L["PlayThemeSongsHint"]">
+            <K7Switch AriaLabel="@L["PlayThemeSongs"]"
+                      Value="_playThemeSongs"
+                      ValueChanged="OnPlayThemeSongsChangedAsync"
+                      Disabled="_themeSongsSaving" />
+        </K7SettingRow>
+        <K7SettingRow Label="@L["DisableThemeSongsOnDevice"]" Hint="@L["DisableThemeSongsOnDeviceHint"]">
+            <K7Switch AriaLabel="@L["DisableThemeSongsOnDevice"]"
+                      Value="_disableThemeSongsOnDevice"
+                      ValueChanged="OnDisableThemeSongsOnDeviceChanged"
+                      Disabled="!_playThemeSongs || _themeSongsSaving" />
+        </K7SettingRow>
+    };
+}

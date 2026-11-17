@@ -1,0 +1,161 @@
+@namespace K7.Clients.Shared.UI.Components
+@using K7.Clients.Shared.UI.Helpers
+
+<div class="skin-preview @RootClass" role="img" aria-label="@AriaLabel">
+    @switch (Kind)
+    {
+        case SkinPreviewKind.MediaPage:
+            @if (SeasonUnderTitle)
+            {
+                <div class="sp-season">
+                    <span class="sp-title">@SampleTitle</span>
+                    <span class="sp-line sp-line--short"></span>
+                    <span class="sp-actions">
+                        <span class="sp-btn sp-btn--primary"></span>
+                        <span class="sp-btn"></span>
+                    </span>
+                    @if (SeasonGrid)
+                    {
+                        <div class="sp-row sp-row--grid">
+                            @for (var i = 0; i < (IsPhone ? 6 : 12); i++)
+                            {
+                                <span class="sp-card sp-card--wide"></span>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        @for (var i = 0; i < 4; i++)
+                        {
+                            <div class="sp-episode">
+                                <span class="sp-card sp-card--wide"></span>
+                                <span class="sp-episode-copy">
+                                    <span class="sp-line"></span>
+                                    <span class="sp-line sp-line--short"></span>
+                                </span>
+                            </div>
+                        }
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="sp-backdrop"></div>
+                <div class="sp-hero">
+                    @if (PagePoster)
+                    {
+                        <div class="sp-poster"></div>
+                    }
+                    @if (PageKind == MediaPageKind.Person)
+                    {
+                        <div class="sp-avatar"></div>
+                    }
+                    <div class="sp-copy">
+                        <span class="sp-title">@SampleTitle</span>
+                        <span class="sp-line"></span>
+                        <span class="sp-line sp-line--short"></span>
+                        <span class="sp-actions">
+                            <span class="sp-btn sp-btn--primary"></span>
+                            <span class="sp-btn"></span>
+                            <span class="sp-btn"></span>
+                        </span>
+                    </div>
+                </div>
+                <div class="sp-sections">
+                    @foreach (var card in PageRows)
+                    {
+                        <span class="sp-row-title"></span>
+                        <div class="sp-row @(PageGrid ? "sp-row--grid" : null)">
+                            @for (var i = 0; i < PageCardCount; i++)
+                            {
+                                <span class="sp-card @card"></span>
+                            }
+                        </div>
+                        @if (PageGridMore)
+                        {
+                            <span class="sp-more"></span>
+                        }
+                    }
+                </div>
+            }
+            break;
+
+        case SkinPreviewKind.AudioPlayer:
+            <div class="sp-audio-bg"></div>
+            <div class="sp-audio-view">
+                <div class="sp-cover-wrap">
+                    @if (SkinClasses.IsRing(Settings))
+                    {
+                        <span class="sp-ring"></span>
+                    }
+                    <span class="sp-cover"></span>
+                </div>
+                <div class="sp-audio-details">
+                    <span class="sp-title">@SampleTitle</span>
+                    <span class="sp-line sp-line--short"></span>
+                    @if (Settings.AudioSeek == AudioSeekStyle.Waveform)
+                    {
+                        <span class="sp-wave">
+                            @for (var i = 0; i < WaveBars.Length; i++)
+                            {
+                                <span class="sp-wave-bar @(i < WaveBars.Length * 2 / 5 ? "sp-wave-bar--played" : null)"
+                                      style="--sp-level: @WaveBars[i]"></span>
+                            }
+                        </span>
+                    }
+                    else if (Settings.AudioSeek == AudioSeekStyle.Bar)
+                    {
+                        <span class="sp-seek"><span class="sp-seek-fill"></span></span>
+                    }
+                    <span class="sp-transport">
+                        <span class="sp-dot"></span>
+                        <span class="sp-dot"></span>
+                        <span class="sp-dot sp-dot--main"></span>
+                        <span class="sp-dot"></span>
+                        <span class="sp-dot"></span>
+                    </span>
+                </div>
+            </div>
+            break;
+
+        default:
+            <div class="sp-video-picture"></div>
+            <div class="sp-video-top">
+                <span class="sp-dot"></span>
+                @if (Settings.VideoLogo)
+                {
+                    <span class="sp-logo">@SampleTitle</span>
+                }
+                else
+                {
+                    <span class="sp-title">@SampleTitle</span>
+                }
+            </div>
+            @if (Settings.VideoCenterControls)
+            {
+                <div class="sp-video-center">
+                    <span class="sp-dot"></span>
+                    <span class="sp-dot sp-dot--main"></span>
+                    <span class="sp-dot"></span>
+                </div>
+            }
+            <div class="sp-video-bottom">
+                @if (Settings.VideoPoster)
+                {
+                    <span class="sp-poster"></span>
+                }
+                <div class="sp-video-row">
+                    <span class="sp-video-group">
+                        <span class="sp-dot"></span>
+                        <span class="sp-dot"></span>
+                    </span>
+                    <span class="sp-seek"><span class="sp-seek-fill"></span></span>
+                    <span class="sp-video-group sp-video-group--end">
+                        <span class="sp-dot"></span>
+                        <span class="sp-dot"></span>
+                    </span>
+                </div>
+            </div>
+            break;
+    }
+</div>

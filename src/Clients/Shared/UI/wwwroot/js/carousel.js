@@ -315,7 +315,52 @@ export function reInit(rootElement) {
     }
 }
 
+/*
+ * Grid mode (lists of media pages): shows the first `rows` lines of the grid and hides the cards
+ * after them; 0 shows everything. Marks the root with data-grid-overflow when cards are hidden,
+ * which is what shows the "show more" button. Follows the width: fewer columns, fewer cards.
+ */
+export function limitGrid(rootElement, rows) {
+    if (!rootElement) return;
+
+    var container = rootElement.querySelector('.carousel-container');
+    if (!container) return;
+
+    rootElement.__k7GridRows = rows > 0 ? rows : 0;
+
+    function apply() {
+        var limit = rootElement.__k7GridRows || 0;
+        var items = container.querySelectorAll(':scope > [data-carousel-item]:not([data-carousel-loop-back])');
+        var template = getComputedStyle(container).gridTemplateColumns;
+        var columns = template && template !== 'none' ? template.split(' ').filter(Boolean).length : 0;
+        // Not laid out yet (hidden tab): hide nothing, the observer comes back when it shows.
+        var visible = limit > 0 && columns > 0 ? limit * columns : items.length;
+
+        for (var i = 0; i < items.length; i++)
+            items[i].toggleAttribute('data-grid-hidden', i >= visible);
+
+        rootElement.toggleAttribute('data-grid-overflow', items.length > visible);
+    }
+
+    if (!rootElement.__k7GridObserver && typeof ResizeObserver === 'function') {
+        rootElement.__k7GridObserver = new ResizeObserver(apply);
+        rootElement.__k7GridObserver.observe(container);
+    }
+
+    apply();
+
+    if (rootElement.__k7GridRows === 0 && rootElement.__k7GridObserver) {
+        rootElement.__k7GridObserver.disconnect();
+        delete rootElement.__k7GridObserver;
+    }
+}
+
 export function destroy(rootElement) {
+    if (rootElement && rootElement.__k7GridObserver) {
+        rootElement.__k7GridObserver.disconnect();
+        delete rootElement.__k7GridObserver;
+    }
+
     if (rootElement && rootElement.__embla) {
         rootElement.__embla.destroy();
         delete rootElement.__embla;

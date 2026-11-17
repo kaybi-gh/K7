@@ -15,6 +15,9 @@ using K7.Shared.Dtos.Entities.Metadatas.Files;
 using K7.Shared.Dtos.Entities.Metadatas.Files.Tracks;
 using K7.Shared.Dtos.Requests;
 using K7.Shared.Interfaces;
+using K7.Clients.Shared.UI.Helpers;
+using K7.Shared.Enums;
+using K7.Shared.Theming;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.Localization;
@@ -33,6 +36,7 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
     /// <summary>On a public share page: no account features in the player.</summary>
     private bool IsShareVisitor => SharePlaybackScope.IsVisitorPage;
     [Inject] private IJSRuntime JS { get; set; } = default!;
+    [Inject] private ThemeService ThemeService { get; set; } = default!;
     [Inject] private ICastOrchestrationService CastOrchestration { get; set; } = default!;
     [Inject] private RemotePlaybackLauncher RemotePlayback { get; set; } = default!;
     [Inject] private IRemoteControlService RemoteControl { get; set; } = default!;
@@ -51,6 +55,10 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
     private string? _lyricsLrc;
     private string? _lyrics;
     private float[]? _waveformPeaks;
+    private float[]? _ringPeaks;
+    private string? _ringMask;
+    private bool _ringMaskBuilt;
+    private readonly string _plainRingMask = WaveformRing.PlainMaskStyle();
     private string? _waveformMaskStyle;
     private string? _prevWaveformState;
     private double _waveformScale = 1;
@@ -120,6 +128,34 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
     private double DisplayPosition => IsRemoteMode ? RemoteControl.Position : Audio.CurrentTime;
     private double DisplayDuration => IsRemoteMode ? RemoteControl.Duration : Audio.Duration;
     private double DisplayVolume => IsRemoteMode ? RemoteControl.Volume : Audio.Volume;
+
+    private AppearanceSettingsDto Skin => ThemeService.Settings;
+
+    /// <summary>The waveform ring around the cover replaces the seek bar. A remote session keeps the bar.</summary>
+    private bool UseRing => SkinClasses.IsRing(Skin) && !IsRemoteMode;
+
+    private bool UseWaveform => Skin.AudioSeek == AudioSeekStyle.Waveform && _waveformMaskStyle is not null && !IsRemoteMode;
+
+    private string RingStyle =>
+        $"{RingMask} --ring-progress: {DisplayPercent.ToString(CultureInfo.InvariantCulture)}%;";
+
+    private string RingMask
+    {
+        get
+        {
+            if (Skin.AudioSeek == AudioSeekStyle.PlainRing)
+                return _plainRingMask;
+
+            if (!_ringMaskBuilt || !ReferenceEquals(_ringPeaks, _waveformPeaks))
+            {
+                _ringPeaks = _waveformPeaks;
+                _ringMask = WaveformRing.MaskStyle(_waveformPeaks is { Length: > 0 } peaks ? SmoothPeaks(peaks) : null);
+                _ringMaskBuilt = true;
+            }
+
+            return _ringMask!;
+        }
+    }
 
     private string? DominantColorStyle
     {
@@ -216,6 +252,7 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
 
     protected override async Task OnInitializedAsync()
     {
+        ThemeService.ThemeOnChange += OnSkinChanged;
         Audio.PlaybackStateChanged += OnStateChanged;
         Audio.CurrentTimeChanged += OnTimeChanged;
         Audio.DurationChanged += OnDurationChanged;
@@ -336,8 +373,11 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
         await RemoteControl.SendStopAsync();
     }
 
+    private void OnSkinChanged() => InvokeAsync(StateHasChanged).FireAndForget();
+
     public async ValueTask DisposeAsync()
     {
+        ThemeService.ThemeOnChange -= OnSkinChanged;
         Audio.PlaybackStateChanged -= OnStateChanged;
         Audio.CurrentTimeChanged -= OnTimeChanged;
         Audio.DurationChanged -= OnDurationChanged;
@@ -737,7 +777,9 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
     private void UpdateScrubFromPointer(MouseEventArgs e)
     {
         if (_seekBarBounds is not { Width: > 0 } bounds || DisplayDuration <= 0) return;
-        var percent = Math.Clamp((e.ClientX - bounds.Left) / bounds.Width, 0, 1);
+        var percent = UseRing
+            ? WaveformRing.FractionAt(e.ClientX, e.ClientY, bounds.Left, bounds.Top, bounds.Width, bounds.Height)
+            : Math.Clamp((e.ClientX - bounds.Left) / bounds.Width, 0, 1);
         _scrubTime = percent * DisplayDuration;
     }
 

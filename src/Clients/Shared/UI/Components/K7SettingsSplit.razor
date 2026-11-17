@@ -11,18 +11,31 @@
         <nav class="k7-settings-split__index" aria-label="@IndexLabel">
             @Index
         </nav>
-        <section class="k7-settings-split__detail">
-            <header class="k7-settings-split__header">
-                <a class="k7-settings-split__back focusable" href="@BackHref">
-                    <K7Icon Icon="@Phosphor.ArrowLeft" IconSize="@K7IconSize.Sm" />
-                    <span>@IndexLabel</span>
-                </a>
-                <h5 class="k7-settings-split__title">@DetailTitle</h5>
-            </header>
-            <div class="k7-settings-split__body">
-                @Detail
-            </div>
-        </section>
+        <div class="k7-settings-split__detail">
+            <section class="k7-settings-split__panel">
+                <header class="k7-settings-split__header">
+                    <a class="k7-settings-split__back focusable" href="@BackHref">
+                        <K7Icon Icon="@Phosphor.ArrowLeft" IconSize="@K7IconSize.Sm" />
+                        <span>@IndexLabel</span>
+                    </a>
+                    <h5 class="k7-settings-split__title">@DetailTitle</h5>
+                </header>
+                <div class="k7-settings-split__body">
+                    @Detail
+                </div>
+            </section>
+            @if (Extra is not null)
+            {
+                <section class="k7-settings-split__panel k7-settings-split__panel--extra">
+                    <header class="k7-settings-split__header">
+                        <h5 class="k7-settings-split__title">@ExtraTitle</h5>
+                    </header>
+                    <div class="k7-settings-split__body">
+                        @Extra
+                    </div>
+                </section>
+            }
+        </div>
         @if (Footer is not null || SaveState != SettingsSaveState.Idle)
         {
             <div class="k7-settings-split__footer">

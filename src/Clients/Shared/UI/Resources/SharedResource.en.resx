@@ -196,4 +196,8 @@
   <data name="AutoSaveSaving" xml:space="preserve"><value>Saving...</value></data>
   <data name="AutoSaveSaved" xml:space="preserve"><value>Saved</value></data>
   <data name="AutoSaveFailed" xml:space="preserve"><value>Not saved</value></data>
+  <data name="SkipBack" xml:space="preserve"><value>Skip back</value></data>
+  <data name="SkipForward" xml:space="preserve"><value>Skip forward</value></data>
+  <data name="ShowMore" xml:space="preserve"><value>Show more</value></data>
+  <data name="ShowLess" xml:space="preserve"><value>Show less</value></data>
 </root>

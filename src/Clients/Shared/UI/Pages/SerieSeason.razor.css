@@ -105,6 +105,14 @@
     text-shadow: none;
 }
 
+/* The episodes as a grid of cards: same side margins as the list. */
+.season-episodes-grid {
+    position: relative;
+    flex-shrink: 0;
+    --carousel-margin-start: var(--space-6);
+    padding-bottom: var(--space-4);
+}
+
 .season-episodes ::deep .episode-card,
 .season-episodes ::deep .episode-card-info,
 .season-episodes ::deep .episode-card-title,

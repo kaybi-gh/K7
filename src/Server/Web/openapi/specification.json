@@ -11911,6 +11911,29 @@
         }
       }
     },
+    "/api/admin/settings/skins": {
+      "put": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "UpdateDefaultSkins",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateDefaultSkinsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/admin/settings/default-theme": {
       "put": {
         "tags": [
@@ -12486,7 +12509,94 @@
           "miniPlayer": {
             "$ref": "#/components/schemas/MiniPlayerPlacement"
           },
+          "mediaPageHero": {
+            "$ref": "#/components/schemas/MediaHeroStyle"
+          },
+          "mediaPageHeroSize": {
+            "$ref": "#/components/schemas/MediaHeroSize"
+          },
+          "mediaPagePoster": {
+            "type": "boolean"
+          },
+          "mediaPageLists": {
+            "$ref": "#/components/schemas/MediaListStyle"
+          },
+          "mediaPageGridMore": {
+            "type": "boolean"
+          },
+          "mediaPageOverrides": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/MediaPageSkinDto"
+            }
+          },
+          "seasonPage": {
+            "$ref": "#/components/schemas/SeasonPageLayout"
+          },
+          "audioBackground": {
+            "$ref": "#/components/schemas/AudioPlayerBackground"
+          },
+          "audioLayout": {
+            "$ref": "#/components/schemas/AudioPlayerLayout"
+          },
+          "audioArtwork": {
+            "$ref": "#/components/schemas/AudioArtworkShape"
+          },
+          "audioSeek": {
+            "$ref": "#/components/schemas/AudioSeekStyle"
+          },
+          "audioAccent": {
+            "$ref": "#/components/schemas/PlayerAccent"
+          },
+          "videoControls": {
+            "$ref": "#/components/schemas/VideoControlsLayout"
+          },
+          "videoCenterControls": {
+            "type": "boolean"
+          },
+          "videoPoster": {
+            "type": "boolean"
+          },
+          "videoLogo": {
+            "type": "boolean"
+          },
+          "videoAccent": {
+            "$ref": "#/components/schemas/PlayerAccent"
+          },
+          "mediaPagesOwn": {
+            "type": "boolean"
+          },
+          "audioPlayerOwn": {
+            "type": "boolean"
+          },
+          "videoPlayerOwn": {
+            "type": "boolean"
+          },
           "isDefault": {
+            "type": "boolean"
+          },
+          "isLookDefault": {
+            "type": "boolean"
+          },
+          "isMediaPagesDefault": {
+            "type": "boolean"
+          },
+          "isAudioPlayerDefault": {
+            "type": "boolean"
+          },
+          "isVideoPlayerDefault": {
+            "type": "boolean"
+          },
+          "ownsMediaPages": {
+            "type": "boolean"
+          },
+          "ownsAudioPlayer": {
+            "type": "boolean"
+          },
+          "ownsVideoPlayer": {
+            "type": "boolean"
+          },
+          "isPlayersDefault": {
             "type": "boolean"
           }
         }
@@ -12536,6 +12646,9 @@
             "format": "uuid"
           }
         }
+      },
+      "AudioArtworkShape": {
+        "type": "integer"
       },
       "AudioFileTrackDto": {
         "required": [
@@ -12623,6 +12736,12 @@
             "format": "int32"
           }
         }
+      },
+      "AudioPlayerBackground": {
+        "type": "integer"
+      },
+      "AudioPlayerLayout": {
+        "type": "integer"
       },
       "AudioPlayerSettingsDto": {
         "type": "object",
@@ -12725,6 +12844,9 @@
             ]
           }
         }
+      },
+      "AudioSeekStyle": {
+        "type": "integer"
       },
       "AuthTraceReport": {
         "required": [
@@ -19858,6 +19980,12 @@
           }
         }
       },
+      "MediaHeroSize": {
+        "type": "integer"
+      },
+      "MediaHeroStyle": {
+        "type": "integer"
+      },
       "MediaIdentificationDto": {
         "required": [
           "title"
@@ -19930,8 +20058,31 @@
           }
         }
       },
+      "MediaListStyle": {
+        "type": "integer"
+      },
       "MediaOrderingOption": {
         "type": "integer"
+      },
+      "MediaPageSkinDto": {
+        "type": "object",
+        "properties": {
+          "hero": {
+            "$ref": "#/components/schemas/MediaHeroStyle"
+          },
+          "heroSize": {
+            "$ref": "#/components/schemas/MediaHeroSize"
+          },
+          "poster": {
+            "type": "boolean"
+          },
+          "lists": {
+            "$ref": "#/components/schemas/MediaListStyle"
+          },
+          "gridMore": {
+            "type": "boolean"
+          }
+        }
       },
       "MediaProvenance": {
         "type": "integer"
@@ -21796,6 +21947,9 @@
       "PlayCountMergeMode": {
         "type": "integer"
       },
+      "PlayerAccent": {
+        "type": "integer"
+      },
       "PlaylistDto": {
         "required": [
           "title"
@@ -22548,6 +22702,9 @@
             "type": "string"
           }
         }
+      },
+      "SeasonPageLayout": {
+        "type": "integer"
       },
       "ServerDiskVolumeDto": {
         "required": [
@@ -23692,6 +23849,17 @@
         "properties": {
           "language": {
             "type": "string"
+          }
+        }
+      },
+      "UpdateDefaultSkinsRequest": {
+        "required": [
+          "skins"
+        ],
+        "type": "object",
+        "properties": {
+          "skins": {
+            "$ref": "#/components/schemas/AppearanceSettingsDto"
           }
         }
       },
@@ -24984,6 +25152,9 @@
             "type": "string"
           }
         }
+      },
+      "VideoControlsLayout": {
+        "type": "integer"
       },
       "VideoFileTrackDto": {
         "required": [

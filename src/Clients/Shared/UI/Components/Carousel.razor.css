@@ -366,3 +366,61 @@
         transform: none;
     }
 }
+
+/* Grid: every card at once, on as many lines as it takes (lists of media pages, appearance
+   setting). Nothing slides, so nothing is clipped. */
+.carousel-wrapper--grid .carousel-viewport {
+    overflow: visible;
+}
+
+.carousel-wrapper--grid .carousel-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(var(--carousel-slide-width), 1fr));
+    gap: var(--space-6) var(--space-5);
+    transform: none !important;
+}
+
+.carousel-wrapper--grid ::deep .carousel-item {
+    width: 100%;
+}
+
+@media (min-width: 601px) {
+    .carousel-wrapper--grid ::deep .carousel-item > .media-card.media-card--poster,
+    .carousel-wrapper--grid ::deep .carousel-item > .media-card.media-card--cover,
+    .carousel-wrapper--grid ::deep .carousel-item > .media-card.media-card--backdrop {
+        width: 100% !important;
+    }
+}
+
+/* A phone always gets two columns at least: a wide card (an episode, a backdrop) is nearly as
+   wide as the screen, and one card per line is a list, not a grid. Reviews keep their width:
+   their text does not fit half a screen. */
+@media (max-width: 599.98px) {
+    .carousel-wrapper--grid .carousel-container:not(:has(.media-review-card)) {
+        grid-template-columns: repeat(auto-fill, minmax(min(var(--carousel-slide-width), calc(50% - var(--space-3) / 2)), 1fr));
+        gap: var(--space-4) var(--space-3);
+    }
+
+    .carousel-wrapper--grid ::deep .carousel-item > .media-card.media-card--poster,
+    .carousel-wrapper--grid ::deep .carousel-item > .media-card.media-card--cover,
+    .carousel-wrapper--grid ::deep .carousel-item > .media-card.media-card--backdrop {
+        width: 100% !important;
+    }
+}
+
+/* Limited grid: carousel.js marks the cards past the last line shown, and the grid itself when
+   it has such cards. The button only shows then, or to fold an unfolded grid back. */
+.carousel-wrapper--grid ::deep .carousel-item[data-grid-hidden] {
+    display: none;
+}
+
+.carousel-grid-more {
+    display: none;
+    justify-content: center;
+    padding-inline: var(--carousel-margin-start, 16px);
+}
+
+[data-grid-overflow] > .carousel-grid-more,
+.carousel-grid-more--open {
+    display: flex;
+}

@@ -1,0 +1,9 @@
+@namespace K7.Clients.Shared.UI.Components
+@implements IDisposable
+
+@if (Shown)
+{
+    <div class="media-hero-poster">
+        <K7Image Src="@Src" Alt="" ObjectFit="cover" Fluid="true" ShowLoadingState="false" />
+    </div>
+}

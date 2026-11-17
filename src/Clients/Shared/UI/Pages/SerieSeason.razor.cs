@@ -18,6 +18,27 @@ namespace K7.Clients.Shared.UI.Pages;
 public partial class SerieSeason : IAsyncDisposable
 {
     [Inject] private K7HubClient K7HubClient { get; set; } = default!;
+    [Inject] private ThemeService ThemeService { get; set; } = default!;
+
+    /// <summary>
+    /// The immersive page (the episode in focus on the whole screen, the episodes in a
+    /// carousel) instead of the list: always on TV, elsewhere when the appearance asks for it.
+    /// </summary>
+    private bool Immersive => SeasonLayout == SeasonPageLayout.Carousel;
+
+    /// <summary>Under the title of the season: the episodes as a grid of cards instead of a list.</summary>
+    private bool EpisodesGrid => SeasonLayout == SeasonPageLayout.Grid;
+
+    private SeasonPageLayout SeasonLayout => SkinClasses.SeasonLayout(
+        ThemeService.Settings,
+        _isTv ? DeviceType.TV : _isPhone ? DeviceType.Phone : DeviceType.Desktop);
+
+    private string EpisodeHref(LiteSerieEpisodeDto episode) =>
+        $"/series/{SerieId}/seasons/{SeasonNumber}/episodes/{episode.EpisodeNumber}";
+
+    // A TV has no page for one episode: there, picking an episode plays it.
+    private EventCallback EpisodeActivated(LiteSerieEpisodeDto episode) =>
+        _isTv ? EventCallback.Factory.Create(this, () => PlayEpisodeAsync(episode)) : default;
 
     [Parameter]
     public required string SerieId { get; set; }
@@ -43,6 +64,7 @@ public partial class SerieSeason : IAsyncDisposable
     private int? _seasonUserRating;
     private string? _focusEpisodeFragment;
     private bool _isTv;
+    private bool _isPhone;
     private LiteSerieEpisodeDto? _focusedEpisode;
     private MediaPageBackdrop? _tvBackdrop;
     private SerieSeasonTvHero? _tvHero;
@@ -80,7 +102,12 @@ public partial class SerieSeason : IAsyncDisposable
         PlayerService.IsVisibleChanged += OnPlayerVisibilityChanged;
 
         if (DeviceService.CachedDeviceType is { } cached)
+        {
             _isTv = cached == DeviceType.TV;
+            _isPhone = cached == DeviceType.Phone;
+        }
+
+        ThemeService.ThemeOnChange += OnAppearanceChanged;
     }
 
     private void OnMediaIndexedFilesUpdated(Guid mediaId, Guid libraryId)
@@ -136,7 +163,9 @@ public partial class SerieSeason : IAsyncDisposable
         _tvInitialFocusEpisodeId = null;
         _episodeCardModels.Clear();
         _episodeCarouselKey = null;
-        _isTv = await DeviceService.GetDeviceTypeAsync() == DeviceType.TV;
+        var seasonDeviceType = await DeviceService.GetDeviceTypeAsync();
+        _isTv = seasonDeviceType == DeviceType.TV;
+        _isPhone = seasonDeviceType == DeviceType.Phone;
         _canRate = await FeatureAccess.HasCapabilityAsync(Capability.CanRate);
         _canResumePlayback = await FeatureAccess.HasCapabilityAsync(Capability.CanResumePlayback);
         _canSetWatchState = await WatchStateActions.CanSetWatchStateAsync(FeatureAccess);
@@ -226,8 +255,8 @@ public partial class SerieSeason : IAsyncDisposable
             _episodeCarouselKey = string.Join(',', _episodes.Select(e => e.Id));
         }
 
-        // Set initial focused episode for TV
-        if (_isTv && _episodes.Count > 0)
+        // Set the episode the immersive page opens on
+        if (Immersive && _episodes.Count > 0)
         {
             var targetEpNumber = ParseEpisodeFragment(_focusEpisodeFragment);
             _focusedEpisode = (targetEpNumber is not null
@@ -248,11 +277,12 @@ public partial class SerieSeason : IAsyncDisposable
         if (!_loading && _season is not null)
             PerfTrace.Mark("Season", "ready");
 
-        if (_isTv && _season is not null && !_loading)
+        if (Immersive && _season is not null && !_loading)
         {
             try
             {
-                if (!_seasonTvScrollInitialized)
+                // Only a remote scrolls by zones: a mouse or a finger scrolls the page as usual.
+                if (_isTv && !_seasonTvScrollInitialized)
                     _seasonTvScrollInitialized = await TvDetailScrollJs.TryInitAsync(JSRuntime, _seasonTvRoot);
 
                 ApplyTvHeroVisuals(_focusedEpisode);
@@ -280,7 +310,7 @@ public partial class SerieSeason : IAsyncDisposable
         {
             // TV: wait until the episode carousel is in the tree. Clearing the fragment
             // earlier would leave focus on the target episode while Embla stays at snap 0.
-            if (_isTv && _tvCarousel is null)
+            if (Immersive && _tvCarousel is null)
                 return;
 
             var elementId = _focusEpisodeFragment.TrimStart('#');
@@ -288,7 +318,7 @@ public partial class SerieSeason : IAsyncDisposable
 
             try
             {
-                if (_isTv && _tvCarousel is not null)
+                if (Immersive && _tvCarousel is not null)
                 {
                     var targetEpNumber = ParseEpisodeFragment("#" + elementId);
                     if (targetEpNumber is not null)
@@ -366,6 +396,23 @@ public partial class SerieSeason : IAsyncDisposable
     // D-pad step re-diffed every episode card for nothing.
     private EventCallback CreateSilentEpisodeFocusCallback(LiteSerieEpisodeDto episode) =>
         EventCallback.Factory.Create(_silentFocus, () => OnTvEpisodeFocus(episode));
+
+    // With a mouse, the episode under the pointer is the one in focus.
+    private EventCallback<Microsoft.AspNetCore.Components.Web.MouseEventArgs> CreateSilentEpisodeHoverCallback(LiteSerieEpisodeDto episode) =>
+        EventCallback.Factory.Create<Microsoft.AspNetCore.Components.Web.MouseEventArgs>(_silentFocus, _ => OnTvEpisodeFocus(episode));
+
+    // The layout setting changed while the page is open (here or on another device).
+    private void OnAppearanceChanged() => InvokeAsync(() =>
+    {
+        if (Immersive && _focusedEpisode is null && _episodes.Count > 0)
+        {
+            _focusedEpisode = _episodes[0];
+            _tvInitialFocusEpisodeId = _focusedEpisode.Id;
+            ScheduleFocusedEpisodeCastUpdate(_focusedEpisode);
+        }
+
+        StateHasChanged();
+    }).FireAndForget();
 
     private void OnTvEpisodeFocus(LiteSerieEpisodeDto episode)
     {
@@ -781,7 +828,7 @@ public partial class SerieSeason : IAsyncDisposable
                 if (index >= 0)
                 {
                     _focusedEpisode = _episodes[index];
-                    if (_isTv)
+                    if (Immersive)
                     {
                         _pendingCarouselScrollIndex = index;
                         _tvHero?.ApplyFocusedEpisode(_focusedEpisode);
@@ -790,7 +837,7 @@ public partial class SerieSeason : IAsyncDisposable
                 }
             }
 
-            if (!_isTv && _restoreEpisodeNumberAfterPlayerHide is int restoreNum)
+            if (!Immersive && _restoreEpisodeNumberAfterPlayerHide is int restoreNum)
             {
                 _restoreEpisodeNumberAfterPlayerHide = null;
                 _focusEpisodeFragment = $"#ep-{restoreNum}";
@@ -810,6 +857,7 @@ public partial class SerieSeason : IAsyncDisposable
         K7HubClient.MediaIndexedFilesUpdated -= OnMediaIndexedFilesUpdated;
         K7HubClient.ProgressUpdated -= OnProgressUpdated;
         PlayerService.IsVisibleChanged -= OnPlayerVisibilityChanged;
+        ThemeService.ThemeOnChange -= OnAppearanceChanged;
         _progressRefreshRunner?.Dispose();
         _castLoadCts?.Cancel();
         _castLoadCts?.Dispose();

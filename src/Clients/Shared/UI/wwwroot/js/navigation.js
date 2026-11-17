@@ -575,24 +575,31 @@ var SpatialNav = (function () {
         var rootRect = root.getBoundingClientRect();
         var cardRect = measureEl.getBoundingClientRect();
 
-        var overflowBottom = cardRect.bottom - rootRect.bottom;
-        var overflowTop = rootRect.top - cardRect.top;
+        // A hero <-> below scroll may still be animating: measure the card where it will be
+        // once that scroll lands, and aim from there. Measuring mid-flight would replace the
+        // running animation with a jump to a wrong position.
+        var pendingTop = window.K7.TvDetailScroll.pendingTop(root);
+        var baseTop = pendingTop === null ? root.scrollTop : pendingTop;
+        var shift = baseTop - root.scrollTop;
+
+        var overflowBottom = cardRect.bottom - shift - rootRect.bottom;
+        var overflowTop = rootRect.top - (cardRect.top - shift);
 
         // While focused in the below zone, never scroll back into the hero.
         var minScroll = 0;
         if (el.closest('[data-tv-scroll-zone="below"]')) {
             var mainZone = root.querySelector('[data-tv-scroll-zone="main"]');
-            if (mainZone) minScroll = mainZone.offsetHeight;
+            if (mainZone) minScroll = window.K7.TvDetailScroll.belowOffset(root, mainZone);
         }
 
         if (overflowBottom > -margin) {
-            root.scrollBy({ top: overflowBottom + margin, behavior: 'smooth' });
+            root.scrollTo({ top: baseTop + overflowBottom + margin, behavior: 'smooth' });
         } else if (overflowTop > -margin) {
             var delta = -(overflowTop + margin);
-            var nextTop = root.scrollTop + delta;
-            if (nextTop < minScroll) delta = minScroll - root.scrollTop;
+            var nextTop = baseTop + delta;
+            if (nextTop < minScroll) delta = minScroll - baseTop;
             if (delta !== 0) {
-                root.scrollBy({ top: delta, behavior: 'smooth' });
+                root.scrollTo({ top: baseTop + delta, behavior: 'smooth' });
             }
         }
     }
@@ -616,6 +623,9 @@ var SpatialNav = (function () {
 
         var allItems = Array.from(carousel.querySelectorAll('[data-carousel-item]')).filter(function (item) {
             if (item.hasAttribute('data-carousel-loop-back') && !item.classList.contains('visible'))
+                return false;
+            // A grid limited to its first lines hides the cards after them.
+            if (item.hasAttribute('data-grid-hidden'))
                 return false;
             return true;
         });
@@ -4838,6 +4848,15 @@ K7.positionSelectDropdown = function (button, dropdown) {
 K7.TvDetailScroll = (function () {
     var _instances = new WeakMap();
 
+    // Scroll position that puts what follows the hero at the top of the view. The hero can
+    // have margins (banner style of media pages): its height alone would leave its edge in view.
+    function belowOffset(root, main) {
+        if (!root || !main) return 0;
+        var marginBottom = parseFloat(getComputedStyle(main).marginBottom) || 0;
+        return Math.max(0, Math.round(
+            main.getBoundingClientRect().bottom - root.getBoundingClientRect().top + root.scrollTop + marginBottom));
+    }
+
     function getZone(root, name) {
         return root.querySelector('[data-tv-scroll-zone="' + name + '"]');
     }
@@ -4848,9 +4867,39 @@ K7.TvDetailScroll = (function () {
     }
 
     function createHandlers(inst) {
+        // The smooth scroll between hero and below content is still running while focus moves
+        // (the focus handlers run a few milliseconds after the key). pendingTop is where it is
+        // heading: the handlers that pin the view (snap to below, clamp to the hero) leave it
+        // alone until it lands, otherwise the animation starts and is cut by a jump.
+        function clearPending() {
+            inst.pendingTop = null;
+            clearTimeout(inst.pendingTimer);
+        }
+
+        function smoothTo(top) {
+            var max = Math.max(0, inst.root.scrollHeight - inst.root.clientHeight);
+            top = Math.max(0, Math.min(top, max));
+            clearPending();
+            if (Math.abs(inst.root.scrollTop - top) > 1) {
+                inst.pendingTop = top;
+                // Safety net for a scroll that never lands (interrupted, no scrollend event).
+                inst.pendingTimer = setTimeout(clearPending, 1000);
+            }
+            inst.root.scrollTo({ top: top, behavior: 'smooth' });
+        }
+
+        function onScroll() {
+            if (inst.pendingTop !== null && Math.abs(inst.root.scrollTop - inst.pendingTop) <= 1) clearPending();
+        }
+
         function scrollToMain(instant) {
             inst.showingBelow = false;
-            inst.root.scrollTo({ top: 0, behavior: instant ? 'instant' : 'smooth' });
+            if (instant) {
+                clearPending();
+                inst.root.scrollTo({ top: 0, behavior: 'instant' });
+            } else {
+                smoothTo(0);
+            }
         }
 
         function scrollToBelow() {
@@ -4858,10 +4907,12 @@ K7.TvDetailScroll = (function () {
             var below = getZone(inst.root, 'below');
             if (!main || !below) return;
             inst.showingBelow = true;
-            inst.root.scrollTo({ top: main.offsetHeight, behavior: 'smooth' });
+            smoothTo(belowOffset(inst.root, main));
         }
 
         function clampMainView() {
+            // Already on its way back to the hero: let the animation finish.
+            if (inst.pendingTop === 0) return;
             if (!inst.showingBelow && inst.root.scrollTop !== 0) {
                 inst.root.scrollTop = 0;
             }
@@ -4886,11 +4937,13 @@ K7.TvDetailScroll = (function () {
             } else if (isInZone(e.target, 'below')) {
                 if (!inst.showingBelow) {
                     scrollToBelow();
-                } else {
-                    // Keep the below snap if a prior scroll nudge revealed the hero.
+                } else if (inst.pendingTop === null) {
+                    // Keep the below snap if a prior scroll nudge revealed the hero. Not while
+                    // the scroll to below is still animating: it is on its way there.
                     var main = getZone(inst.root, 'main');
-                    if (main && inst.root.scrollTop < main.offsetHeight - 8) {
-                        inst.root.scrollTop = main.offsetHeight;
+                    var belowTop = belowOffset(inst.root, main);
+                    if (main && inst.root.scrollTop < belowTop - 8) {
+                        inst.root.scrollTop = belowTop;
                     }
                 }
             } else if (isInZoneCarousel(e.target, 'episodes') || isInZoneCarousel(e.target, 'seasons')) {
@@ -4905,6 +4958,8 @@ K7.TvDetailScroll = (function () {
             }
         }
 
+        inst.onScroll = onScroll;
+        inst.clearPending = clearPending;
         inst.scrollToMain = scrollToMain;
         inst.scrollToBelow = scrollToBelow;
         inst.clampMainView = clampMainView;
@@ -5003,13 +5058,16 @@ K7.TvDetailScroll = (function () {
     }
 
     return {
+        belowOffset: belowOffset,
         init: function (root) {
             if (!isElement(root)) return false;
             K7.TvDetailScroll.dispose(root);
-            var inst = { root: root, showingBelow: false, lastHeroFocus: null, onFocusIn: null };
+            var inst = { root: root, showingBelow: false, lastHeroFocus: null, onFocusIn: null, pendingTop: null, pendingTimer: 0 };
             createHandlers(inst);
             root.scrollTop = 0;
             root.addEventListener('focusin', inst.onFocusIn, true);
+            root.addEventListener('scroll', inst.onScroll, { passive: true });
+            root.addEventListener('scrollend', inst.clearPending);
             _instances.set(root, inst);
             return true;
         },
@@ -5020,6 +5078,9 @@ K7.TvDetailScroll = (function () {
             if (inst.onFocusIn) {
                 inst.root.removeEventListener('focusin', inst.onFocusIn, true);
             }
+            inst.root.removeEventListener('scroll', inst.onScroll);
+            inst.root.removeEventListener('scrollend', inst.clearPending);
+            inst.clearPending();
             _instances.delete(root);
         },
         sync: function (root) {
@@ -5028,7 +5089,14 @@ K7.TvDetailScroll = (function () {
             if (!inst || inst.showingBelow) return;
             // Do not yank scroll back to the hero while the user is on mouse/touch.
             if (window.K7 && window.K7.isKeyboardNavMode && !window.K7.isKeyboardNavMode()) return;
+            // A render landing while the view animates back to the hero must not cut it.
+            if (inst.pendingTop === 0) return;
             inst.root.scrollTop = 0;
+        },
+        // Where a running hero <-> below scroll is heading, null when the view is at rest.
+        pendingTop: function (root) {
+            var inst = isElement(root) ? _instances.get(root) : null;
+            return inst ? inst.pendingTop : null;
         },
         hasInstance: function (root) {
             return isElement(root) && _instances.has(root);

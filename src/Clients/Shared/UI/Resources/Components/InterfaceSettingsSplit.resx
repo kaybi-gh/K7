@@ -17,4 +17,10 @@
   <data name="ThemeSongsDescription" xml:space="preserve"><value>Musique de fond sur les pages des films et des séries</value></data>
   <data name="Cards" xml:space="preserve"><value>Cartes média</value></data>
   <data name="CardsDescription" xml:space="preserve"><value>Infos affichées sur les cartes et effet au survol</value></data>
+  <data name="MediaPages" xml:space="preserve"><value>Pages média</value></data>
+  <data name="MediaPagesDescription" xml:space="preserve"><value>Disposition des pages de films et séries, thème musical</value></data>
+  <data name="AudioPlayer" xml:space="preserve"><value>Lecteur de musique</value></data>
+  <data name="AudioPlayerDescription" xml:space="preserve"><value>Fond, pochette et progression du lecteur plein écran</value></data>
+  <data name="VideoPlayer" xml:space="preserve"><value>Lecteur vidéo</value></data>
+  <data name="VideoPlayerDescription" xml:space="preserve"><value>Contrôles, affiche, logo et couleur de la progression</value></data>
 </root>

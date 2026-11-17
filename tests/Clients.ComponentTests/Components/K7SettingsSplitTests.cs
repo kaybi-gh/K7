@@ -51,6 +51,39 @@ public class K7SettingsSplitTests
     }
 
     [Test]
+    public void Render_ShouldAddASecondPanel_WhenExtraIsSet()
+    {
+        // Arrange
+        using var ctx = new BunitContext();
+
+        // Act
+        var alone = ctx.Render<K7SettingsSplit>(p => p
+            .Add(c => c.IndexLabel, "Interface")
+            .Add(c => c.DetailTitle, "Media pages")
+            .Add(c => c.BackHref, "/settings/interface")
+            .Add(c => c.Index, "<span>index</span>")
+            .Add(c => c.Detail, "<span>detail</span>"));
+        var both = ctx.Render<K7SettingsSplit>(p => p
+            .Add(c => c.IndexLabel, "Interface")
+            .Add(c => c.DetailTitle, "Media pages")
+            .Add(c => c.BackHref, "/settings/interface")
+            .Add(c => c.Index, "<span>index</span>")
+            .Add(c => c.Detail, "<span>detail</span>")
+            .Add(c => c.ExtraTitle, "Theme songs")
+            .Add(c => c.Extra, "<span>extra</span>"));
+
+        // Assert
+        alone.FindAll(".k7-settings-split__panel").Should().ContainSingle();
+
+        both.FindAll(".k7-settings-split__panel").Should().HaveCount(2);
+        var extra = both.Find(".k7-settings-split__panel--extra");
+        extra.QuerySelector(".k7-settings-split__title")!.TextContent.Should().Be("Theme songs");
+        extra.TextContent.Should().Contain("extra");
+        // The back link belongs to the sub-page, not to each panel.
+        both.FindAll(".k7-settings-split__back").Should().ContainSingle();
+    }
+
+    [Test]
     public void Render_ShouldShowTheSaveIndicatorInTheFooter_WhenSaveStateIsSet()
     {
         // Arrange

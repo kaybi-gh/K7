@@ -39,6 +39,14 @@
     grid-area: detail;
     display: flex;
     flex-direction: column;
+    gap: var(--space-6);
+    min-width: 0;
+}
+
+/* One group of settings of the sub-page: the detail itself, then the optional extra one. */
+.k7-settings-split__panel {
+    display: flex;
+    flex-direction: column;
     gap: var(--space-3);
     min-width: 0;
     border-radius: var(--radius-lg);
@@ -120,6 +128,10 @@
     }
 
     html:not(.platform-tv) .k7-settings-split__detail {
+        gap: var(--space-4);
+    }
+
+    html:not(.platform-tv) .k7-settings-split__panel {
         padding: var(--space-4) var(--space-5);
         border: 1px solid var(--color-border-subtle);
     }
@@ -162,6 +174,10 @@
     }
 
     html:not(.platform-tv) .page-with-sidebar--rail .k7-settings-split__detail {
+        gap: var(--space-4);
+    }
+
+    html:not(.platform-tv) .page-with-sidebar--rail .k7-settings-split__panel {
         padding: var(--space-4) var(--space-5);
         border: 1px solid var(--color-border-subtle);
     }

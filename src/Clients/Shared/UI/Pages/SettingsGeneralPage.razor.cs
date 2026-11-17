@@ -23,18 +23,37 @@ public partial class SettingsGeneralPage : IDisposable
     private bool _themeSongsSaving;
     private AppearanceSettingsPanel? _appearancePanel;
 
-    private bool IsThemeSongs => InterfaceSettingsSections.IsThemeSongs(NavigationManager);
+    /// <summary>Media pages, with the theme songs that play on them. The former theme songs address lands here.</summary>
+    private bool IsMediaPages => ActiveSection == InterfaceSettingsSections.MediaPages;
 
-    private string ActiveSection =>
-        IsThemeSongs ? InterfaceSettingsSections.ThemeSongs : InterfaceSettingsSections.Appearance;
+    private string ActiveSection => InterfaceSettingsSections.Current(NavigationManager) switch
+    {
+        InterfaceSettingsSections.ThemeSongs or InterfaceSettingsSections.MediaPages => InterfaceSettingsSections.MediaPages,
+        InterfaceSettingsSections.AudioPlayer => InterfaceSettingsSections.AudioPlayer,
+        InterfaceSettingsSections.VideoPlayer => InterfaceSettingsSections.VideoPlayer,
+        _ => InterfaceSettingsSections.Appearance
+    };
+
+    /// <summary>Media pages and the two players are parts of the appearance settings, shown by the same panel.</summary>
+    private AppearancePanelSection PanelSection => ActiveSection switch
+    {
+        InterfaceSettingsSections.MediaPages => AppearancePanelSection.MediaPages,
+        InterfaceSettingsSections.AudioPlayer => AppearancePanelSection.AudioPlayer,
+        InterfaceSettingsSections.VideoPlayer => AppearancePanelSection.VideoPlayer,
+        _ => AppearancePanelSection.Look
+    };
 
     private bool AppearanceOnDefaults =>
-        !_hasLanguageOverride
+        (PanelSection != AppearancePanelSection.Look || !_hasLanguageOverride)
         && (_appearancePanel?.IsOnDefaults ?? true);
 
     /// <summary>The appearance panel saves on its own and reports its state.</summary>
-    private SettingsSaveState ActiveSaveState { get =>
-        IsThemeSongs ? field : _appearancePanel?.SaveState ?? SettingsSaveState.Idle; set;
+    private SettingsSaveState ActiveSaveState
+    {
+        get => IsMediaPages && field != SettingsSaveState.Idle
+            ? field
+            : _appearancePanel?.SaveState ?? SettingsSaveState.Idle;
+        set;
     }
 
     private bool ThemeSongsOnDefaults =>
@@ -42,7 +61,7 @@ public partial class SettingsGeneralPage : IDisposable
         && !_disableThemeSongsOnDevice;
 
     /// <summary>Reset only covers the sub-page on screen.</summary>
-    private bool ResetDisabled => IsThemeSongs ? ThemeSongsOnDefaults : AppearanceOnDefaults;
+    private bool ResetDisabled => AppearanceOnDefaults && (!IsMediaPages || ThemeSongsOnDefaults);
 
     protected override void OnInitialized()
     {
@@ -92,7 +111,12 @@ public partial class SettingsGeneralPage : IDisposable
     // Appearance and Theme songs are the same page: render again when only the address changes.
     private void OnLocationChanged(object? sender, LocationChangedEventArgs e) => InvokeAsync(StateHasChanged);
 
-    private void OnAppearanceStateChanged() => StateHasChanged();
+    private void OnAppearanceStateChanged()
+    {
+        // The panel has news: its state replaces the one a theme song switch left.
+        ActiveSaveState = SettingsSaveState.Idle;
+        StateHasChanged();
+    }
 
     private async Task OnCultureChanged(string culture)
     {
@@ -153,10 +177,10 @@ public partial class SettingsGeneralPage : IDisposable
         ActiveSaveState = SettingsSaveState.Idle;
         try
         {
-            if (IsThemeSongs)
+            if (IsMediaPages && !ThemeSongsOnDefaults)
                 await ResetThemeSongsAsync();
-            else
-                await ResetAppearanceAsync();
+
+            await ResetAppearanceAsync();
         }
         catch (Exception ex)
         {
@@ -213,7 +237,5 @@ public partial class SettingsGeneralPage : IDisposable
             _videoPlayerSettings.PlayThemeSongs = _serverDefaultPlayThemeSongs;
             await UserPreferencesService.UpdateUserVideoPlayerSettingsAsync(_videoPlayerSettings);
         }
-
-        Snackbar.Add(L["GeneralResetSuccess"], K7Severity.Success);
     }
 }

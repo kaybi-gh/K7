@@ -14,8 +14,7 @@ public partial class AdminGeneralPanel : IDisposable
 {
     private sealed record GeneralFormState(
         string Language,
-        string ThemeCssDataAttribute,
-        bool PlayThemeSongs);
+        string ThemeCssDataAttribute);
 
     [Inject] private IServerInfoService ServerInfoService { get; set; } = default!;
     [Inject] private IServerPreferencesService ServerPreferencesService { get; set; } = default!;
@@ -27,9 +26,6 @@ public partial class AdminGeneralPanel : IDisposable
     private string _savedDefaultThemeId = BuiltInThemes.DefaultDarkId;
     private List<CustomThemeDto> _serverThemes = [];
     private bool _savingThemes;
-    private VideoPlayerSettingsDto _videoPlayerSettings = new();
-    private bool _playThemeSongs = true;
-    private bool _savedPlayThemeSongs = true;
     private bool _mediaLinkPreviewsEnabled = true;
     private bool _linkPreviewsSaving;
     private SettingsSaveState _linkPreviewsSaveState;
@@ -48,11 +44,6 @@ public partial class AdminGeneralPanel : IDisposable
         }
     }
 
-    private bool IsThemeSongs => InterfaceSettingsSections.IsThemeSongs(NavigationManager);
-
-    private string ActiveSection =>
-        IsThemeSongs ? InterfaceSettingsSections.ThemeSongs : InterfaceSettingsSections.Appearance;
-
     /// <summary>What the default theme can be: a built-in theme or a theme of this server.</summary>
     private IReadOnlyList<ThemeDefinition> SelectableThemes =>
         [.. BuiltInThemes.All, .. _serverThemes.Select(ThemeService.ToDefinition)];
@@ -60,8 +51,7 @@ public partial class AdminGeneralPanel : IDisposable
     private bool IsDirty =>
         _formTracker.IsDirty(new GeneralFormState(
             _defaultLanguage,
-            _defaultTheme.Id,
-            _playThemeSongs));
+            _defaultTheme.Id));
 
     public void Dispose() => NavigationManager.LocationChanged -= OnLocationChanged;
 
@@ -80,10 +70,6 @@ public partial class AdminGeneralPanel : IDisposable
                 _savedDefaultThemeId = _defaultTheme.Id;
             }
 
-            _videoPlayerSettings = await ServerPreferencesService.GetServerVideoPlayerSettingsAsync()
-                                   ?? new VideoPlayerSettingsDto();
-            _playThemeSongs = _videoPlayerSettings.PlayThemeSongs;
-
             var flags = await ServerPreferencesService.GetServerFeatureFlagsAsync();
             _mediaLinkPreviewsEnabled = flags.MediaLinkPreviewsEnabled;
 
@@ -99,9 +85,7 @@ public partial class AdminGeneralPanel : IDisposable
     {
         _formTracker.Capture(new GeneralFormState(
             _defaultLanguage,
-            _defaultTheme.Id,
-            _playThemeSongs));
-        _savedPlayThemeSongs = _playThemeSongs;
+            _defaultTheme.Id));
     }
 
     private void CancelChanges()
@@ -109,8 +93,6 @@ public partial class AdminGeneralPanel : IDisposable
         var state = _formTracker.Restore();
         _defaultLanguage = state.Language;
         _defaultTheme = FindTheme(state.ThemeCssDataAttribute);
-        _playThemeSongs = state.PlayThemeSongs;
-        _videoPlayerSettings.PlayThemeSongs = state.PlayThemeSongs;
     }
 
     private void OnDefaultLanguageChanged(string language)
@@ -174,14 +156,7 @@ public partial class AdminGeneralPanel : IDisposable
         }
     }
 
-    private void OnPlayThemeSongsChanged(bool enabled)
-    {
-        _playThemeSongs = enabled;
-        _videoPlayerSettings.PlayThemeSongs = enabled;
-        StateHasChanged();
-    }
-
-    // Link previews, Appearance and Theme songs are the same page: render again when only the
+    // Link previews and Appearance are the same page: render again when only the
     // address changes.
     private void OnLocationChanged(object? sender, LocationChangedEventArgs e) => InvokeAsync(StateHasChanged);
 
@@ -223,9 +198,6 @@ public partial class AdminGeneralPanel : IDisposable
         {
             await ServerInfoService.UpdateDefaultLanguageAsync(_defaultLanguage);
             await ServerInfoService.UpdateDefaultThemeAsync(_defaultTheme.Id);
-            if (_playThemeSongs != _savedPlayThemeSongs)
-                await ServerPreferencesService.UpdateServerVideoPlayerSettingsAsync(_videoPlayerSettings);
-
             _savedDefaultThemeId = _defaultTheme.Id;
             ThemeService.SetServerDefault(_savedDefaultThemeId, _serverThemes);
             CaptureFormState();

@@ -1,4 +1,5 @@
 @namespace K7.Clients.Shared.UI.Components
+@using K7.Clients.Shared.UI.Helpers
 @inject IStringLocalizer<AppearanceSettingsPanel> L
 @inject IStringLocalizer<SharedResource> S
 
@@ -8,68 +9,241 @@
 }
 else
 {
-    <K7SettingRow Label="@L["Scope"]" Stacked="true">
-        <HintContent>
-            @ScopeHint
-            @if (IsPreviewOnly)
-            {
-                <span class="appearance-panel__scope-note">@L["ScopePreviewNote"]</span>
-            }
-        </HintContent>
-        <ChildContent>
-            <div class="appearance-panel__scope">
-                <K7ButtonGroup TValue="DeviceType"
-                               Options="ScopeOptions"
-                               Value="_scope"
-                               ValueChanged="OnScopeChanged"
-                               AriaLabel="@L["Scope"]" />
-                @if (ScopeHasOverride)
+    @if (ServerDefaults)
+    {
+        <p class="settings-field-hint">@L["ServerDefaultsHint"]</p>
+    }
+    else
+    {
+        <K7SettingRow Label="@L["Scope"]" Stacked="true">
+            <HintContent>
+                @ScopeHint
+                @if (IsPreviewOnly)
                 {
-                    <K7Button Variant="text" OnClick="RemoveScopeOverride">@L["ScopeUseShared"]</K7Button>
+                    <span class="appearance-panel__scope-note">@L["ScopePreviewNote"]</span>
+                }
+            </HintContent>
+            <ChildContent>
+                <div class="appearance-panel__scope">
+                    <K7ButtonGroup TValue="DeviceType"
+                                   Options="ScopeOptions"
+                                   Value="_scope"
+                                   ValueChanged="OnScopeChanged"
+                                   AriaLabel="@L["Scope"]" />
+                    @if (ScopeHasOverride)
+                    {
+                        <K7Button Variant="text" OnClick="RemoveScopeOverride">@L["ScopeUseShared"]</K7Button>
+                    }
+                </div>
+            </ChildContent>
+        </K7SettingRow>
+    }
+    @if (Section == AppearancePanelSection.MediaPages)
+    {
+        <K7SettingRow Label="@L["MediaPageKind"]" Hint="@PageKindHint" Stacked="true">
+            <div class="appearance-panel__scope">
+                <K7ButtonGroup TValue="MediaPageKind?"
+                               Options="PageKindOptions"
+                               Value="_pageKind"
+                               ValueChanged="@(kind => _pageKind = kind)"
+                               AriaLabel="@L["MediaPageKind"]" />
+                @if (SeasonKindOptions.Count > 0)
+                {
+                    <K7ButtonGroup TValue="MediaPageKind?"
+                                   Options="SeasonKindOptions"
+                                   Value="_pageKind"
+                                   ValueChanged="@(kind => _pageKind = kind)"
+                                   AriaLabel="@L["MediaPageKind_Season"]" />
+                }
+                @if (PageKindHasOverride)
+                {
+                    <K7Button Variant="text" OnClick="RemovePageKindOverride">@L["ScopeUseShared"]</K7Button>
                 }
             </div>
-        </ChildContent>
-    </K7SettingRow>
-    <K7SettingRow Label="@L["Theme"]" Stacked="true">
-        <K7ThemePicker Themes="AllThemes"
-                       Value="@ActiveThemeId"
-                       ValueChanged="OnThemeChanged"
-                       AriaLabel="@L["Theme"]" />
-    </K7SettingRow>
-    <K7SettingRow Label="@L["AccentColor"]" Hint="@L["AccentColorHint"]">
-        <div class="appearance-panel__accent">
-            @if (Current.AccentColor is not null)
-            {
-                <K7Button Variant="text" OnClick="ClearAccent">@L["UseThemeAccent"]</K7Button>
-            }
-            <K7ColorPicker Value="@AccentValue" ValueChanged="OnAccentChanged" />
+        </K7SettingRow>
+        <div class="appearance-panel__preview">
+            <SkinPreview Kind="SkinPreviewKind.MediaPage" Settings="Current" Device="PreviewDevice" PageKind="_pageKind" SampleTitle="@PagePreviewTitle" AriaLabel="@L["Preview"]" />
         </div>
-    </K7SettingRow>
-    <K7SettingRow Label="@L["TextSize"]" Hint="@L["TextSizeHint"]">
-        <K7ButtonGroup TValue="AppearanceTextSize"
-                       Options="TextSizeOptions"
-                       Value="Current.TextSize"
-                       ValueChanged="OnTextSizeChanged"
-                       AriaLabel="@L["TextSize"]" />
-    </K7SettingRow>
-    <K7SettingRow Label="@L["Corners"]">
-        <K7ButtonGroup TValue="AppearanceCornerStyle"
-                       Options="CornerOptions"
-                       Value="Current.CornerStyle"
-                       ValueChanged="OnCornerStyleChanged"
-                       AriaLabel="@L["Corners"]" />
-    </K7SettingRow>
-    <K7SettingRow Label="@L["MiniPlayer"]" Hint="@L["MiniPlayerHint"]">
-        <K7ButtonGroup TValue="MiniPlayerPlacement"
-                       Options="MiniPlayerOptions"
-                       Value="Current.MiniPlayer"
-                       ValueChanged="OnMiniPlayerChanged"
-                       AriaLabel="@L["MiniPlayer"]" />
-    </K7SettingRow>
-    <K7SettingRow Label="@L["MyThemes"]" Hint="@L["MyThemesHint"]" Stacked="true">
-        <CustomThemeList Themes="_preferences.CustomThemes"
-                         OnAdded="AddTheme"
-                         OnEdited="ReplaceTheme"
-                         OnDeleted="RemoveTheme" />
-    </K7SettingRow>
+        @if (_pageKind == MediaPageKind.Season)
+        {
+            <K7SettingRow Label="@L["SeasonPage"]" Hint="@L["SeasonPageHint"]" Stacked="true">
+                <K7ButtonGroup TValue="SeasonPageLayout"
+                               Options="SeasonPageOptions"
+                               Value="SeasonPageShown"
+                               ValueChanged="@(v => Change(s => s.SeasonPage = v))"
+                               AriaLabel="@L["SeasonPage"]" />
+                <p class="settings-field-hint">@L[$"SeasonPage_{SeasonPageShown}_Hint"]</p>
+            </K7SettingRow>
+        }
+        else
+        {
+            <K7SettingRow Label="@L["MediaPageHero"]" Hint="@L["MediaPageHeroHint"]" Stacked="true">
+                <K7ButtonGroup TValue="MediaHeroStyle"
+                               Options="MediaHeroOptions"
+                               Value="CurrentPage.Hero"
+                               ValueChanged="@(v => ChangePage(p => p.Hero = v))"
+                               AriaLabel="@L["MediaPageHero"]" />
+                <p class="settings-field-hint">@L[$"MediaPageHero_{CurrentPage.Hero}_Hint"]</p>
+            </K7SettingRow>
+            <K7SettingRow Label="@L["MediaPageHeroSize"]" Hint="@L["MediaPageHeroSizeHint"]" Stacked="true">
+                <K7ButtonGroup TValue="MediaHeroSize"
+                               Options="MediaHeroSizeOptions"
+                               Value="CurrentPage.HeroSize"
+                               ValueChanged="@(v => ChangePage(p => p.HeroSize = v))"
+                               AriaLabel="@L["MediaPageHeroSize"]" />
+                <p class="settings-field-hint">@L[$"MediaPageHeroSize_{CurrentPage.HeroSize}_Hint"]</p>
+            </K7SettingRow>
+            @if (!PhoneScope)
+            {
+                <K7SettingRow Label="@L["MediaPagePoster"]" Hint="@L["MediaPagePosterHint"]">
+                    <K7Switch AriaLabel="@L["MediaPagePoster"]"
+                              Value="CurrentPage.Poster"
+                              ValueChanged="@(v => ChangePage(p => p.Poster = v))" />
+                </K7SettingRow>
+            }
+            <K7SettingRow Label="@L["MediaPageLists"]" Hint="@L["MediaPageListsHint"]" Stacked="true">
+                <K7ButtonGroup TValue="MediaListStyle"
+                               Options="MediaListOptions"
+                               Value="CurrentPage.Lists"
+                               ValueChanged="@(v => ChangePage(p => p.Lists = v))"
+                               AriaLabel="@L["MediaPageLists"]" />
+            </K7SettingRow>
+            @if (CurrentPage.Lists == MediaListStyle.Grid)
+            {
+                <K7SettingRow Label="@L["MediaPageGridMore"]" Hint="@L["MediaPageGridMoreHint"]">
+                    <K7Switch AriaLabel="@L["MediaPageGridMore"]"
+                              Value="CurrentPage.GridMore"
+                              ValueChanged="@(v => ChangePage(p => p.GridMore = v))" />
+                </K7SettingRow>
+            }
+            }
+    }
+    else if (Section == AppearancePanelSection.AudioPlayer)
+    {
+        <div class="appearance-panel__preview">
+            <SkinPreview Kind="SkinPreviewKind.AudioPlayer" Settings="Current" Device="PreviewDevice" SampleTitle="@L["Preview_Track"]" AriaLabel="@L["Preview"]" />
+        </div>
+        <K7SettingRow Label="@L["AudioBackground"]">
+            <K7ButtonGroup TValue="AudioPlayerBackground"
+                           Options="AudioBackgroundOptions"
+                           Value="Current.AudioBackground"
+                           ValueChanged="@(v => Change(s => s.AudioBackground = v))"
+                           AriaLabel="@L["AudioBackground"]" />
+        </K7SettingRow>
+        @if (!PhoneScope)
+        {
+            <K7SettingRow Label="@L["AudioLayout"]" Hint="@L["AudioLayoutHint"]">
+                <K7ButtonGroup TValue="AudioPlayerLayout"
+                               Options="AudioLayoutOptions"
+                               Value="Current.AudioLayout"
+                               ValueChanged="@(v => Change(s => s.AudioLayout = v))"
+                               AriaLabel="@L["AudioLayout"]" />
+            </K7SettingRow>
+        }
+        <K7SettingRow Label="@L["AudioSeek"]" Hint="@L["AudioSeekHint"]" Stacked="true">
+            <K7ButtonGroup TValue="AudioSeekStyle"
+                           Options="AudioSeekOptions"
+                           Value="Current.AudioSeek"
+                           ValueChanged="@(v => Change(s => s.AudioSeek = v))"
+                           AriaLabel="@L["AudioSeek"]" />
+        </K7SettingRow>
+        <K7SettingRow Label="@L["AudioArtwork"]" Hint="@(SkinClasses.IsRing(Current) ? L["AudioArtworkRingHint"].Value : null)">
+            <K7ButtonGroup TValue="AudioArtworkShape"
+                           Options="AudioArtworkOptions"
+                           Value="@(SkinClasses.RoundArtwork(Current) ? AudioArtworkShape.Round : AudioArtworkShape.Square)"
+                           ValueChanged="@(v => Change(s => s.AudioArtwork = v))"
+                           AriaLabel="@L["AudioArtwork"]" />
+        </K7SettingRow>
+        <K7SettingRow Label="@L["AudioAccent"]">
+            <K7ButtonGroup TValue="PlayerAccent"
+                           Options="AudioAccentOptions"
+                           Value="Current.AudioAccent"
+                           ValueChanged="@(v => Change(s => s.AudioAccent = v))"
+                           AriaLabel="@L["AudioAccent"]" />
+        </K7SettingRow>
+        @if (!PhoneScope)
+        {
+            <K7SettingRow Label="@L["MiniPlayer"]" Hint="@L["MiniPlayerHint"]">
+                <K7ButtonGroup TValue="MiniPlayerPlacement"
+                               Options="MiniPlayerOptions"
+                               Value="Current.MiniPlayer"
+                               ValueChanged="@(v => Change(s => s.MiniPlayer = v))"
+                               AriaLabel="@L["MiniPlayer"]" />
+            </K7SettingRow>
+        }
+    }
+    else if (Section == AppearancePanelSection.VideoPlayer)
+    {
+        <p class="settings-field-hint">@L["VideoPlayerHint"]</p>
+        <div class="appearance-panel__preview">
+            <SkinPreview Kind="SkinPreviewKind.VideoPlayer" Settings="Current" Device="PreviewDevice" SampleTitle="@L["Preview_Movie"]" AriaLabel="@L["Preview"]" />
+        </div>
+        <K7SettingRow Label="@L["VideoControls"]" Hint="@L["VideoControlsHint"]">
+            <K7ButtonGroup TValue="VideoControlsLayout"
+                           Options="VideoControlsOptions"
+                           Value="Current.VideoControls"
+                           ValueChanged="@(v => Change(s => s.VideoControls = v))"
+                           AriaLabel="@L["VideoControls"]" />
+        </K7SettingRow>
+        <K7SettingRow Label="@L["VideoCenterControls"]" Hint="@L["VideoCenterControlsHint"]">
+            <K7Switch AriaLabel="@L["VideoCenterControls"]"
+                      Value="Current.VideoCenterControls"
+                      ValueChanged="@(v => Change(s => s.VideoCenterControls = v))" />
+        </K7SettingRow>
+        <K7SettingRow Label="@L["VideoPoster"]" Hint="@L["VideoPosterHint"]">
+            <K7Switch AriaLabel="@L["VideoPoster"]"
+                      Value="Current.VideoPoster"
+                      ValueChanged="@(v => Change(s => s.VideoPoster = v))" />
+        </K7SettingRow>
+        <K7SettingRow Label="@L["VideoLogo"]" Hint="@L["VideoLogoHint"]">
+            <K7Switch AriaLabel="@L["VideoLogo"]"
+                      Value="Current.VideoLogo"
+                      ValueChanged="@(v => Change(s => s.VideoLogo = v))" />
+        </K7SettingRow>
+        <K7SettingRow Label="@L["VideoAccent"]">
+            <K7ButtonGroup TValue="PlayerAccent"
+                           Options="VideoAccentOptions"
+                           Value="Current.VideoAccent"
+                           ValueChanged="@(v => Change(s => s.VideoAccent = v))"
+                           AriaLabel="@L["VideoAccent"]" />
+        </K7SettingRow>
+    }
+    else
+    {
+        <K7SettingRow Label="@L["Theme"]" Stacked="true">
+            <K7ThemePicker Themes="AllThemes"
+                           Value="@ActiveThemeId"
+                           ValueChanged="OnThemeChanged"
+                           AriaLabel="@L["Theme"]" />
+        </K7SettingRow>
+        <K7SettingRow Label="@L["AccentColor"]" Hint="@L["AccentColorHint"]">
+            <div class="appearance-panel__accent">
+                @if (Current.AccentColor is not null)
+                {
+                    <K7Button Variant="text" OnClick="ClearAccent">@L["UseThemeAccent"]</K7Button>
+                }
+                <K7ColorPicker Value="@AccentValue" ValueChanged="OnAccentChanged" />
+            </div>
+        </K7SettingRow>
+        <K7SettingRow Label="@L["TextSize"]" Hint="@L["TextSizeHint"]">
+            <K7ButtonGroup TValue="AppearanceTextSize"
+                           Options="TextSizeOptions"
+                           Value="Current.TextSize"
+                           ValueChanged="OnTextSizeChanged"
+                           AriaLabel="@L["TextSize"]" />
+        </K7SettingRow>
+        <K7SettingRow Label="@L["Corners"]">
+            <K7ButtonGroup TValue="AppearanceCornerStyle"
+                           Options="CornerOptions"
+                           Value="Current.CornerStyle"
+                           ValueChanged="OnCornerStyleChanged"
+                           AriaLabel="@L["Corners"]" />
+        </K7SettingRow>
+        <K7SettingRow Label="@L["MyThemes"]" Hint="@L["MyThemesHint"]" Stacked="true">
+            <CustomThemeList Themes="_preferences.CustomThemes"
+                             OnAdded="AddTheme"
+                             OnEdited="ReplaceTheme"
+                             OnDeleted="RemoveTheme" />
+        </K7SettingRow>
+    }
 }

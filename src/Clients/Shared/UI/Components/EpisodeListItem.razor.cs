@@ -45,6 +45,13 @@ public partial class EpisodeListItem : IDisposable
     [Parameter]
     public EventCallback<LiteSerieEpisodeDto> OnPlay { get; set; }
 
+    /// <summary>
+    /// Picking the line plays the episode instead of opening its page: for a TV, which has no
+    /// page for one episode.
+    /// </summary>
+    [Parameter]
+    public bool PlayOnActivate { get; set; }
+
     [Parameter]
     public EventCallback<LiteSerieEpisodeDto> OnWatchStateChanged { get; set; }
 
@@ -362,7 +369,13 @@ public partial class EpisodeListItem : IDisposable
     private void OnLinkClick(MouseEventArgs e)
     {
         if (ShouldPreventLinkActivation)
+        {
             _preventNextClick = true;
+            return;
+        }
+
+        if (PlayOnActivate)
+            OnPlay.InvokeAsync(Episode).FireAndForget();
     }
 
     public void Dispose()

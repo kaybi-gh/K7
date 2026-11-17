@@ -50,7 +50,17 @@ public class ThemeService
     /// </summary>
     public bool IsResolved { get; private set; }
 
-    public AppearanceSettingsDto Settings => Preferences.Resolve(DeviceType);
+    /// <summary>
+    /// Media pages and players of the server, for the parts the user did not set up. Null means
+    /// the built-in ones.
+    /// </summary>
+    public AppearanceSettingsDto? ServerDefaultSkins { get; private set; }
+
+    /// <summary>
+    /// What this device shows: the settings of the user for it, with the media pages and
+    /// players of the server where the user set nothing up.
+    /// </summary>
+    public AppearanceSettingsDto Settings => Preferences.Resolve(DeviceType).WithServerSkins(ServerDefaultSkins);
 
     public ThemeDefinition Theme => _preview ?? ResolveTheme(Settings.ThemeId);
 
@@ -88,6 +98,14 @@ public class ThemeService
 
         ServerDefaultThemeId = resolved;
         ServerThemes = themes;
+        if (IsResolved)
+            ThemeOnChange?.Invoke();
+    }
+
+    /// <summary>Sets the media pages and players of the server, for the parts the user did not set up.</summary>
+    public void SetServerDefaultSkins(AppearanceSettingsDto? skins)
+    {
+        ServerDefaultSkins = skins;
         if (IsResolved)
             ThemeOnChange?.Invoke();
     }

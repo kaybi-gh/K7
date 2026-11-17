@@ -92,6 +92,45 @@ public class ThemeServiceTests
     }
 
     [Test]
+    public void Settings_ShouldTakeTheSkinsOfTheServer_ForThePartsTheUserDidNotSetUp()
+    {
+        var service = new ThemeService();
+        service.SetServerDefaultSkins(new AppearanceSettingsDto
+        {
+            MediaPageHero = MediaHeroStyle.Banner,
+            AudioLayout = AudioPlayerLayout.Centered,
+            VideoLogo = true
+        });
+
+        // Nothing set up: everything comes from the server.
+        service.Apply(new AppearancePreferencesDto { Default = { ThemeId = "oled" } }, DeviceType.Desktop);
+        service.Settings.MediaPageHero.Should().Be(MediaHeroStyle.Banner);
+        service.Settings.AudioLayout.Should().Be(AudioPlayerLayout.Centered);
+        service.Settings.VideoLogo.Should().BeTrue();
+        // The look stays the one of the user.
+        service.Settings.ThemeId.Should().Be("oled");
+
+        // The user set up their media pages: that part is theirs as a whole, the players still follow.
+        service.Apply(new AppearancePreferencesDto { Default = { MediaPagePoster = true } }, DeviceType.Desktop);
+        service.Settings.MediaPageHero.Should().Be(MediaHeroStyle.Fade);
+        service.Settings.MediaPagePoster.Should().BeTrue();
+        service.Settings.AudioLayout.Should().Be(AudioPlayerLayout.Centered);
+
+        // Choosing the built-in values is a choice too.
+        service.Apply(new AppearancePreferencesDto { Default = { MediaPagesOwn = true } }, DeviceType.Desktop);
+        service.Settings.MediaPageHero.Should().Be(MediaHeroStyle.Fade);
+
+        // No defaults on the server: the settings of the user as they are.
+        var changes = 0;
+        service.ThemeOnChange += () => changes++;
+        service.SetServerDefaultSkins(null);
+        changes.Should().Be(1);
+        service.Apply(new AppearancePreferencesDto(), DeviceType.Desktop);
+        service.Settings.MediaPageHero.Should().Be(MediaHeroStyle.Fade);
+        service.Settings.AudioLayout.Should().Be(AudioPlayerLayout.Side);
+    }
+
+    [Test]
     public void Theme_ShouldFollowServerDefault_WhenUserPickedNothing()
     {
         var service = new ThemeService();

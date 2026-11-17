@@ -1,0 +1,42 @@
+@page "/admin/interface/media-pages"
+@page "/admin/interface/theme-songs"
+@page "/admin/interface/music-player"
+@page "/admin/interface/video-player"
+@layout AdminLayout
+@inject IStringLocalizer<InterfaceSettingsSplit> Li
+@inject IStringLocalizer<AdminGeneralPanel> Lg
+@inject IStringLocalizer<SharedResource> S
+@inject NavigationManager NavigationManager
+
+<PageTitle>@Li["Title"]</PageTitle>
+
+<div class="settings-form-page settings-form-page--section-actions">
+    <div class="settings-form-page__body">
+        <InterfaceSettingsSplit Section="@ActiveSection" Admin="true" Extra="ThemeSongsPanel" ExtraTitle="@Li["ThemeSongs"]">
+            <AppearanceSettingsPanel @ref="_panel" Section="PanelSection" ServerDefaults="true" OnStateChanged="OnPanelStateChanged" />
+        </InterfaceSettingsSplit>
+    </div>
+
+    <K7SettingsActionBar AutoSave="true"
+                         SaveState="ActiveSaveState"
+                         IsSaving="_resetting"
+                         ResetDisabled="ResetDisabled"
+                         OnResetToDefaults="ResetAsync" />
+</div>
+
+@code {
+    // Theme songs play on movie and series pages: their server default is set up with them, in
+    // a panel of its own under the layout settings, like on the personal page.
+    private RenderFragment? ThemeSongsPanel => IsMediaPages && _themeSongsLoaded ? ThemeSongsSettings : null;
+
+    private RenderFragment ThemeSongsSettings => __builder =>
+    {
+        <p class="settings-field-hint">@Li["ThemeSongsDescription"]</p>
+        <K7SettingRow Label="@Lg["PlayThemeSongs"]" Hint="@Lg["PlayThemeSongsHint"]">
+            <K7Switch AriaLabel="@Lg["PlayThemeSongs"]"
+                      Value="_playThemeSongs"
+                      ValueChanged="OnPlayThemeSongsChangedAsync"
+                      Disabled="_themeSongsSaving" />
+        </K7SettingRow>
+    };
+}

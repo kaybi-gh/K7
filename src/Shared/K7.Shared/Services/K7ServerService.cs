@@ -1022,6 +1022,12 @@ public partial class K7ServerService : IK7ServerService, IMediaService, ILibrary
         response.EnsureSuccessStatusCode();
     }
 
+    public async Task UpdateDefaultSkinsAsync(Theming.AppearanceSettingsDto skins, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PutAsJsonAsync("api/admin/settings/skins", new { Skins = skins }, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
     public async Task<List<ActiveStreamDto>?> GetActiveStreamsAsync(CancellationToken cancellationToken = default)
     {
         return await HttpClient.GetFromJsonAsync<List<ActiveStreamDto>>("api/admin/streams", _serializerOptions, cancellationToken);

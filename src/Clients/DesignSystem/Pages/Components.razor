@@ -204,6 +204,26 @@
         </div>
     </section>
 
+    <section id="media-sections" class="ds-section">
+        <h2>MediaSections</h2>
+        <p class="ds-description">Wraps the sections under the hero of a media page (cast, seasons, reviews, similar titles) and tells the carousels inside how to show. It adds no element of its own.</p>
+        <p class="ds-description">A Carousel inside the sections shows as a grid when the lists setting of media pages says so (parameter <code>Grid</code> of Carousel, <code>Lists</code> to force it here): every card at once, nothing slides. With the "limit grids" setting (<code>GridRows</code>, <code>Rows</code> here) the grid stops after two lines and a "show more" button unfolds the rest.</p>
+        <div class="ds-preview ds-preview--column">
+            <MediaSections Lists="true" Rows="2">
+                    <Carousel Title="Grid of cards">
+                        @for (var i = 1; i <= 14; i++)
+                        {
+                            var n = i;
+                            <CarouselItem @key="n">
+                                <MediaCard Model="@(new K7.Clients.Shared.Models.MediaCardViewModel { Id = n.ToString(), Title = "Title " + n })" FooterVisible="true" />
+                            </CarouselItem>
+                        }
+                    </Carousel>
+            </MediaSections>
+        </div>
+        <p class="ds-description">MediaHeroPoster is the optional poster of media pages: first child of <code>.media-hero</code>, rendered only when the "show the poster" setting is on (class <code>media-pages--poster</code> on the app shell, wide screens).</p>
+    </section>
+
     <section id="custom-nav-preview" class="ds-section">
         <h2>CustomNavPreview</h2>
         <p class="ds-description">Sketch of the app with the custom navigation applied, shown with its settings (Settings - Interface - Navigation, and the server default in Admin): the shortcuts as a bar under the top bar, or as a row of tiles among the rows of the page. Blocks only, like SkinPreview.</p>
@@ -211,6 +231,27 @@
             <CustomNavPreview Enabled="true" Placement="K7.Shared.Enums.CustomNavPlacement.Bar" ShowIcons="true" Items="@(new[] { "Movies", "Series", "Music", "My space" })" AriaLabel="Shortcuts in a bar, with icons" />
             <CustomNavPreview Enabled="true" Placement="K7.Shared.Enums.CustomNavPlacement.FeedRow" RowTitle="Shortcuts" Items="@(new[] { "Movies", "Series", "Music" })" AriaLabel="Shortcuts in a row" />
             <CustomNavPreview Enabled="false" Placement="K7.Shared.Enums.CustomNavPlacement.Bar" AriaLabel="Custom navigation off" />
+        </div>
+    </section>
+
+    <section id="skin-preview" class="ds-section">
+        <h2>SkinPreview</h2>
+        <p class="ds-description">Sketch of a media page or of a player with the skin settings applied, shown next to those settings (Settings - Interface - Media pages / Music player / Video player). Blocks only: nothing is loaded and nothing plays. <code>Device</code> gives the sketch the shape of the device the settings are for: a phone is drawn upright. <code>PageKind</code> draws one kind of media page (its lists, a portrait for a person, the list or the immersive page of a season).</p>
+        <div class="ds-preview ds-preview--column">
+            <SkinPreview Kind="SkinPreviewKind.MediaPage" Settings="@(new K7.Shared.Theming.AppearanceSettingsDto())" SampleTitle="Movie title" AriaLabel="Default media page" />
+            <SkinPreview Kind="SkinPreviewKind.MediaPage" Settings="@(new K7.Shared.Theming.AppearanceSettingsDto { MediaPageHeroSize = K7.Shared.Enums.MediaHeroSize.Half, MediaPagePoster = true })" SampleTitle="Movie title" AriaLabel="Faded backdrop on half of the page, with the poster" />
+            <SkinPreview Kind="SkinPreviewKind.MediaPage" Settings="@(new K7.Shared.Theming.AppearanceSettingsDto { MediaPageHero = K7.Shared.Enums.MediaHeroStyle.Cut, MediaPageHeroSize = K7.Shared.Enums.MediaHeroSize.Third, MediaPageLists = K7.Shared.Enums.MediaListStyle.Grid })" SampleTitle="Movie title" AriaLabel="Clean cut on a third of the page, grids" />
+            <SkinPreview Kind="SkinPreviewKind.MediaPage" Settings="@(new K7.Shared.Theming.AppearanceSettingsDto { MediaPageHero = K7.Shared.Enums.MediaHeroStyle.Banner, MediaPageHeroSize = K7.Shared.Enums.MediaHeroSize.Half })" SampleTitle="Movie title" AriaLabel="Banner on half of the page" />
+            <SkinPreview Kind="SkinPreviewKind.MediaPage" PageKind="K7.Shared.Enums.MediaPageKind.Series" Settings="@(new K7.Shared.Theming.AppearanceSettingsDto { MediaPageHeroSize = K7.Shared.Enums.MediaHeroSize.Half })" SampleTitle="Series title" AriaLabel="Series page: seasons first" />
+            <SkinPreview Kind="SkinPreviewKind.MediaPage" PageKind="K7.Shared.Enums.MediaPageKind.Person" Settings="@(new K7.Shared.Theming.AppearanceSettingsDto { MediaPageHeroSize = K7.Shared.Enums.MediaHeroSize.Half })" SampleTitle="Person name" AriaLabel="Person page: a portrait" />
+            <SkinPreview Kind="SkinPreviewKind.MediaPage" PageKind="K7.Shared.Enums.MediaPageKind.Season" Settings="@(new K7.Shared.Theming.AppearanceSettingsDto())" SampleTitle="Season 1" AriaLabel="Season page as a list" />
+            <SkinPreview Kind="SkinPreviewKind.MediaPage" PageKind="K7.Shared.Enums.MediaPageKind.Season" Device="K7.Server.Domain.Enums.DeviceType.TV" Settings="@(new K7.Shared.Theming.AppearanceSettingsDto())" SampleTitle="Season 1" AriaLabel="Season page on a TV: the immersive page" />
+            <SkinPreview Kind="SkinPreviewKind.MediaPage" Device="K7.Server.Domain.Enums.DeviceType.Phone" Settings="@(new K7.Shared.Theming.AppearanceSettingsDto { MediaPageLists = K7.Shared.Enums.MediaListStyle.Grid })" SampleTitle="Movie title" AriaLabel="Media page on a phone, with grids" />
+            <SkinPreview Kind="SkinPreviewKind.AudioPlayer" Settings="@(new K7.Shared.Theming.AppearanceSettingsDto())" SampleTitle="Track title" AriaLabel="Default music player" />
+            <SkinPreview Kind="SkinPreviewKind.AudioPlayer" Device="K7.Server.Domain.Enums.DeviceType.Phone" Settings="@(new K7.Shared.Theming.AppearanceSettingsDto())" SampleTitle="Track title" AriaLabel="Music player on a phone" />
+            <SkinPreview Kind="SkinPreviewKind.AudioPlayer" Settings="@(new K7.Shared.Theming.AppearanceSettingsDto { AudioSeek = K7.Shared.Enums.AudioSeekStyle.Ring, AudioLayout = K7.Shared.Enums.AudioPlayerLayout.Centered, AudioBackground = K7.Shared.Enums.AudioPlayerBackground.Gradient })" SampleTitle="Track title" AriaLabel="Centered music player with the ring" />
+            <SkinPreview Kind="SkinPreviewKind.VideoPlayer" Settings="@(new K7.Shared.Theming.AppearanceSettingsDto())" SampleTitle="Movie title" AriaLabel="Default video player" />
+            <SkinPreview Kind="SkinPreviewKind.VideoPlayer" Settings="@(new K7.Shared.Theming.AppearanceSettingsDto { VideoControls = K7.Shared.Enums.VideoControlsLayout.Stacked, VideoCenterControls = true, VideoPoster = true, VideoLogo = true, VideoAccent = K7.Shared.Enums.PlayerAccent.Theme })" SampleTitle="Movie title" AriaLabel="Video player with every option" />
         </div>
     </section>
 
@@ -468,13 +509,19 @@
 
     <section id="k7-settings-split" class="ds-section">
         <h2>K7SettingsSplit</h2>
-        <p class="ds-description">Long settings page split into an index (<code>K7SettingsNavItem</code>: icon, title, short description) and one sub-page at a time. Wide screens show both side by side. When the content area is narrower than about 52rem (window under 1100px with the page sidebar open, 900px with it folded) and on TV it behaves like a menu: the index alone, then the sub-page as its own screen (<code>Header</code> hidden, back link on top) once <code>DetailOpen</code> is set. <code>Footer</code> holds page-wide actions such as reset, and <code>SaveState</code> shows a <code>K7SaveIndicator</code> beside them on pages that save on change.</p>
+        <p class="ds-description">Long settings page split into an index (<code>K7SettingsNavItem</code>: icon, title, short description) and one sub-page at a time. Wide screens show both side by side. When the content area is narrower than about 52rem (window under 1100px with the page sidebar open, 900px with it folded) and on TV it behaves like a menu: the index alone, then the sub-page as its own screen (<code>Header</code> hidden, back link on top) once <code>DetailOpen</code> is set. <code>Footer</code> holds page-wide actions such as reset, and <code>SaveState</code> shows a <code>K7SaveIndicator</code> beside them on pages that save on change. <code>Extra</code> adds a second panel under the sub-page, titled <code>ExtraTitle</code>, for settings that sit there but are about something else.</p>
         <div class="ds-preview ds-preview--column">
             <K7SettingsSplit IndexLabel="Video playback"
                              DetailTitle="Next episode"
                              BackHref="/components#k7-settings-split"
                              DetailOpen="true"
+                             ExtraTitle="Credits"
                              SaveState="SettingsSaveState.Saved">
+                <Extra>
+                    <K7SettingRow Label="Skip credits" Hint="Jump to the next episode when the credits start.">
+                        <K7Switch AriaLabel="Skip credits" @bind-Value="_splitExtraSwitch" />
+                    </K7SettingRow>
+                </Extra>
                 <Footer>
                     <K7Button Variant="outlined" Color="secondary">Reset to defaults</K7Button>
                 </Footer>
@@ -995,6 +1042,7 @@
     // Settings rows, option list, settings split
     private bool _settingRowSwitch = true;
     private string? _settingRowFont = "Default";
+    private bool _splitExtraSwitch = true;
     private string? _settingRowPrompt = "Never";
     private string? _optionListValue = "countdown";
     private string? _themePickerValue = BuiltInThemes.DefaultDarkId;

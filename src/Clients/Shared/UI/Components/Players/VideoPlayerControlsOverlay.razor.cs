@@ -29,6 +29,8 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
     private bool _showChapterTicks = true;
     private IReadOnlyList<MediaSegmentDto>? _mediaSegments;
     private Guid? _segmentsMediaId;
+    private Guid? _logoMediaId;
+    private string? _logoUrl;
     private DeviceType _deviceType;
     private bool _showOverlay = true;
     private bool _isMenuOpen = false;
@@ -176,7 +178,9 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
         PlayerService.BackPressed += OnBackPressed;
         PlayerService.SourceChanged += OnSourceChanged;
         PlayerService.PlayerUxSettingsChanged += OnVideoPlayerUxSettingsChanged;
+        ThemeService.ThemeOnChange += OnSkinChanged;
         await EnsureMediaSegmentsLoadedAsync(PlayerService.Source?.MediaId);
+        _ = EnsureLogoLoadedAsync(PlayerService.Source?.MediaId);
         if (DeviceService.GetClientType() == ClientType.Web)
         {
             await JSRuntime.InvokeVoidAsync("hideBodyScroll", true);
@@ -1114,6 +1118,7 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
         RequestRender();
         _ = SoftCancelSeekBarEditingAsync();
         _ = EnsureMediaSegmentsLoadedAsync(source.MediaId);
+        _ = EnsureLogoLoadedAsync(source.MediaId);
         _ = FocusOverlayRootAsync();
     }
 
@@ -1124,6 +1129,65 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
             await _overlayRef.FocusAsync();
         }
         catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException or ObjectDisposedException) { }
+    }
+
+    private K7.Shared.Theming.AppearanceSettingsDto Skin => ThemeService.Settings;
+
+    // A TV drives the player with its remote: buttons in the picture would only be in the way.
+    private bool ShowCenterControls => Skin.VideoCenterControls && _deviceType != Server.Domain.Enums.DeviceType.TV;
+
+    private void OnSkinChanged()
+    {
+        _ = EnsureLogoLoadedAsync(PlayerService.Source?.MediaId);
+        RequestRender();
+    }
+
+    private void SkipFromCenter(int direction)
+    {
+        InactivityTracker.RegisterUserActivity();
+        SkipByConfiguredDirection(direction);
+    }
+
+    /// <summary>
+    /// Logo of what is playing, for the "logo instead of the title" skin: the logo of the movie,
+    /// or of the series of an episode. Only looked up when the skin asks for it.
+    /// </summary>
+    private async Task EnsureLogoLoadedAsync(Guid? mediaId)
+    {
+        if (!Skin.VideoLogo)
+            return;
+
+        if (mediaId == _logoMediaId)
+            return;
+
+        _logoMediaId = mediaId;
+        _logoUrl = null;
+        if (mediaId is null)
+        {
+            RequestRender();
+            return;
+        }
+
+        try
+        {
+            var media = await MediaService.GetMediaAsync(mediaId.Value);
+            if (media is K7.Shared.Dtos.Entities.Medias.SerieEpisodeDto episode)
+                media = await MediaService.GetMediaAsync(episode.SerieId);
+
+            // Another title started while this one was loading.
+            if (_logoMediaId != mediaId)
+                return;
+
+            _logoUrl = ApiClient.GetAbsoluteUri(
+                media?.Pictures?.FirstOrDefault(p => p.Type == Server.Domain.Enums.MetadataPictureType.Logo)?
+                    .GetUri(Server.Domain.Enums.MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri;
+        }
+        catch
+        {
+            _logoUrl = null;
+        }
+
+        RequestRender();
     }
 
     private async Task EnsureMediaSegmentsLoadedAsync(Guid? mediaId)
@@ -1350,6 +1414,7 @@ public partial class VideoPlayerControlsOverlay : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
+        ThemeService.ThemeOnChange -= OnSkinChanged;
         _disposed = true;
         _volumePopoverHideDelayCts?.Cancel();
         _volumePopoverHideDelayCts?.Dispose();

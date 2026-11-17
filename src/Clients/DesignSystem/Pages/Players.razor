@@ -4,6 +4,9 @@
 @inject K7.Clients.DesignSystem.Services.DemoPlayerService DemoPlayer
 @inject K7.Clients.DesignSystem.Mocks.MockAudioPlayerService MockAudio
 @inject IJSRuntime JS
+@inject K7.Clients.Shared.Services.ThemeService ThemeService
+@using K7.Shared.Enums
+@using K7.Shared.Theming
 
 <PageTitle>Players - K7 Design System</PageTitle>
 
@@ -63,6 +66,37 @@
             <div class="ds-mobile-preview-frame">
                 <MiniMusicPlayer />
             </div>
+        </div>
+    </section>
+
+    <section id="player-skins" class="ds-section">
+        <h2>Player skins</h2>
+        <p class="ds-description">Appearance settings of the players (Settings - Interface - Music player / Video player). They apply to the FullScreenMusicPlayer and to the controls of the VideoPlayer below: start a track or the video, then change a value.</p>
+        <div class="ds-preview ds-preview--column">
+            <K7SettingRow Label="Audio background">
+                <K7ButtonGroup TValue="AudioPlayerBackground" Options="_audioBackgrounds" Value="Skin.AudioBackground" ValueChanged="@(v => ChangeSkin(s => s.AudioBackground = v))" AriaLabel="Audio background" />
+            </K7SettingRow>
+            <K7SettingRow Label="Audio layout">
+                <K7ButtonGroup TValue="AudioPlayerLayout" Options="_audioLayouts" Value="Skin.AudioLayout" ValueChanged="@(v => ChangeSkin(s => s.AudioLayout = v))" AriaLabel="Audio layout" />
+            </K7SettingRow>
+            <K7SettingRow Label="Audio progress">
+                <K7ButtonGroup TValue="AudioSeekStyle" Options="_audioSeeks" Value="Skin.AudioSeek" ValueChanged="@(v => ChangeSkin(s => s.AudioSeek = v))" AriaLabel="Audio progress" />
+            </K7SettingRow>
+            <K7SettingRow Label="Audio cover">
+                <K7ButtonGroup TValue="AudioArtworkShape" Options="_audioArtworks" Value="Skin.AudioArtwork" ValueChanged="@(v => ChangeSkin(s => s.AudioArtwork = v))" AriaLabel="Audio cover" />
+            </K7SettingRow>
+            <K7SettingRow Label="Audio accent">
+                <K7ButtonGroup TValue="PlayerAccent" Options="_accents" Value="Skin.AudioAccent" ValueChanged="@(v => ChangeSkin(s => s.AudioAccent = v))" AriaLabel="Audio accent" />
+            </K7SettingRow>
+            <K7SettingRow Label="Video controls">
+                <K7ButtonGroup TValue="VideoControlsLayout" Options="_videoLayouts" Value="Skin.VideoControls" ValueChanged="@(v => ChangeSkin(s => s.VideoControls = v))" AriaLabel="Video controls" />
+            </K7SettingRow>
+            <K7SettingRow Label="Video center controls">
+                <K7Switch AriaLabel="Video center controls" Value="Skin.VideoCenterControls" ValueChanged="@(v => ChangeSkin(s => s.VideoCenterControls = v))" />
+            </K7SettingRow>
+            <K7SettingRow Label="Video accent">
+                <K7ButtonGroup TValue="PlayerAccent" Options="_accents" Value="Skin.VideoAccent" ValueChanged="@(v => ChangeSkin(s => s.VideoAccent = v))" AriaLabel="Video accent" />
+            </K7SettingRow>
         </div>
     </section>
 
@@ -131,6 +165,27 @@
 </div>
 
 @code {
+    private static readonly IReadOnlyList<ButtonGroupOption<AudioPlayerBackground>> _audioBackgrounds =
+        [new(AudioPlayerBackground.Blur, "Blur"), new(AudioPlayerBackground.Gradient, "Gradient"), new(AudioPlayerBackground.Plain, "Plain")];
+    private static readonly IReadOnlyList<ButtonGroupOption<AudioPlayerLayout>> _audioLayouts =
+        [new(AudioPlayerLayout.Side, "Side"), new(AudioPlayerLayout.Centered, "Centered")];
+    private static readonly IReadOnlyList<ButtonGroupOption<AudioSeekStyle>> _audioSeeks =
+        [new(AudioSeekStyle.Waveform, "Waveform"), new(AudioSeekStyle.Bar, "Bar"), new(AudioSeekStyle.Ring, "Waveform ring"), new(AudioSeekStyle.PlainRing, "Ring")];
+    private static readonly IReadOnlyList<ButtonGroupOption<AudioArtworkShape>> _audioArtworks =
+        [new(AudioArtworkShape.Square, "Square"), new(AudioArtworkShape.Round, "Round")];
+    private static readonly IReadOnlyList<ButtonGroupOption<PlayerAccent>> _accents =
+        [new(PlayerAccent.Auto, "Auto"), new(PlayerAccent.Theme, "Theme")];
+    private static readonly IReadOnlyList<ButtonGroupOption<VideoControlsLayout>> _videoLayouts =
+        [new(VideoControlsLayout.Inline, "Inline"), new(VideoControlsLayout.Stacked, "Stacked")];
+
+    private AppearanceSettingsDto Skin => ThemeService.Settings;
+
+    private void ChangeSkin(Action<AppearanceSettingsDto> change)
+    {
+        change(ThemeService.Preferences.Default);
+        ThemeService.Update(ThemeService.Preferences);
+    }
+
     private readonly LiteSerieEpisodeDto _demoNextEpisode = new()
     {
         Id = Guid.NewGuid(),

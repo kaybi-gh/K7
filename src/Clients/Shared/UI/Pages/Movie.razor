@@ -20,6 +20,7 @@
 @inject IUserPreferencesService UserPreferencesService
 @inject IAmbientThemeService AmbientThemeService
 @inject IAudioPlayerService AudioPlayerService
+@inject IStringLocalizer<MediaReviewsSection> ReviewsL
 <PageTitle>@_movie?.Title</PageTitle>
 @if (isLoading)
 {
@@ -43,6 +44,7 @@ else
         <div class="movie-main media-hero-main" data-tv-scroll-zone="main">
         <K7BackButton />
         <div class="media-hero movie-hero">
+            <MediaHeroPoster Src="@_posterSmallUrl" />
             <div class="media-hero-backdrop-zone">
                 <K7Image Class="movie-page-logo media-hero-logo"
                          @key="_logoUrl"
@@ -215,9 +217,10 @@ else
                           DominantColor="@_dominantColor"
                           Tinted="@(_dominantColor is not null)">
         <div class="movie-page-sections" data-tv-scroll-zone="below">
+<MediaSections>
         @if ((_movie.PersonRoles?.Count ?? 0) > 0)
         {
-            <Carousel Title="@L["CastingAndCrew"]">
+<Carousel Title="@L["CastingAndCrew"]">
                 @foreach (var cast in PersonRoleDisplayHelper.GroupForCarousel(_movie.PersonRoles))
                 {
                     <CarouselItem @key="cast.Key">
@@ -229,12 +232,12 @@ else
 
         @if (_movie is not null)
         {
-            <MediaReviewsSection @ref="_reviewsSection" MediaId="_movie.Id" Watched="@MediaReviewsSection.IsWatched(_movie.UserState)" />
+<MediaReviewsSection @ref="_reviewsSection" MediaId="_movie.Id" Watched="@MediaReviewsSection.IsWatched(_movie.UserState)" />
         }
 
         @if (_similarMedia.Count > 0)
         {
-            <Carousel Title="@L["SimilarMedia"]">
+<Carousel Title="@L["SimilarMedia"]">
                 @foreach (var media in _similarMedia)
                 {
                     <CarouselItem @key="media.Id">
@@ -253,6 +256,7 @@ else
                 }
             </Carousel>
         }
+</MediaSections>
         </div>
         </MediaPageContent>
         }

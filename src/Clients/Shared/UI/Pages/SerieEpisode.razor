@@ -25,6 +25,7 @@
 @inject IAmbientThemeService AmbientThemeService
 @inject IAudioPlayerService AudioPlayerService
 @inject IDeviceStorageService DeviceStorageService
+@inject IStringLocalizer<MediaReviewsSection> ReviewsL
 @implements IAsyncDisposable
 
 <PageTitle>@_pageTitle</PageTitle>
@@ -213,9 +214,10 @@ else if (_episode is not null)
                           Tinted="@(_dominantColor is not null)"
                           DominantColor="@_dominantColor">
         <div class="episode-page-sections" data-tv-scroll-zone="@(HasBelowContent ? "below" : null)">
+<MediaSections>
         @if (_moreEpisodes.Count > 0)
         {
-            <Carousel Title="@L["MoreEpisodes"]">
+<Carousel Title="@L["MoreEpisodes"]">
                 @foreach (var episode in _moreEpisodes)
                 {
                     <CarouselItem @key="episode.Id" ItemId="@($"more-episode-{episode.Id}")">
@@ -248,7 +250,7 @@ else if (_episode is not null)
 
         @if ((_episode.PersonRoles?.Count ?? 0) > 0)
         {
-            <Carousel Title="@L["CastingAndCrew"]">
+<Carousel Title="@L["CastingAndCrew"]">
                 @foreach (var cast in PersonRoleDisplayHelper.GroupForCarousel(_episode.PersonRoles))
                 {
                     <CarouselItem @key="cast.Key">
@@ -258,7 +260,8 @@ else if (_episode is not null)
             </Carousel>
         }
 
-        <MediaReviewsSection @ref="_reviewsSection" MediaId="_episode.Id" Watched="@MediaReviewsSection.IsWatched(_episode.UserState)" />
+<MediaReviewsSection @ref="_reviewsSection" MediaId="_episode.Id" Watched="@MediaReviewsSection.IsWatched(_episode.UserState)" />
+</MediaSections>
         </div>
         </MediaPageContent>
         </div>

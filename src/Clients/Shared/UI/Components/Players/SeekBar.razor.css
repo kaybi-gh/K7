@@ -77,7 +77,7 @@
 ::deep .seekbar-track .progress {
     position: absolute;
     height: 100%;
-    background-color: rgba(255,0,0,0.8);
+    background-color: var(--video-accent, rgba(255,0,0,0.8));
     border-radius: 4px;
     z-index: 3;
 }
@@ -208,7 +208,7 @@
 }
 
 ::deep .chapter-progress {
-    background-color: rgba(255,0,0,0.8);
+    background-color: var(--video-accent, rgba(255,0,0,0.8));
     z-index: 3;
 }
 

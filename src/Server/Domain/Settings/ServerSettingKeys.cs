@@ -18,6 +18,9 @@ public static class ServerSettingKeys
     /// <summary>JSON list of the themes made by an administrator and offered to every account.</summary>
     public static readonly SettingKey<string> ServerThemes = new("ServerThemes");
     public static readonly SettingKey<string> DefaultCardStyle = new("DefaultCardStyle");
+
+    /// <summary>JSON of the default media pages and players, for accounts that did not set them up.</summary>
+    public static readonly SettingKey<string> DefaultSkins = new("DefaultSkins");
     public static readonly SettingKey<int> BackgroundTaskWorkerCount = new("BackgroundTaskWorkerCount", BackgroundTaskScheduling.DefaultWorkerCount);
 
     /// <summary>

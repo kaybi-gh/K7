@@ -21,6 +21,7 @@
 @inject IAudioPlayerService AudioPlayerService
 @inject IDeviceStorageService DeviceStorageService
 @inject ISpatialNavService SpatialNav
+@inject IStringLocalizer<MediaReviewsSection> ReviewsL
 
 <PageTitle>@_serie?.Title</PageTitle>
 
@@ -45,6 +46,7 @@ else if (_serie is not null)
         <div class="serie-main media-hero-main" data-tv-scroll-zone="main">
             <K7BackButton />
             <div class="serie-hero media-hero">
+                <MediaHeroPoster Src="@_posterUrl" />
                 <div class="media-hero-backdrop-zone">
                 <K7Image Class="serie-logo media-hero-logo"
                          ObjectFit="scale-down"
@@ -232,9 +234,10 @@ else if (_serie is not null)
         {
             <MediaPageContent Tinted="@(_dominantColor is not null)" DominantColor="@_dominantColor">
             <div class="serie-page-sections" data-tv-scroll-zone="below">
+<MediaSections>
                 @if (_seasons.Count > 0)
                 {
-                    <Carousel Title="@L["Seasons"]">
+<Carousel Title="@L["Seasons"]">
                         @foreach (var season in _seasons)
                         {
                             <CarouselItem @key="season.Id" ItemId="@($"serie-season-{season.Id}")">
@@ -264,7 +267,7 @@ else if (_serie is not null)
 
                 @if ((_serie.PersonRoles?.Count ?? 0) > 0)
                 {
-                    <Carousel Title="@L["CastingAndCrew"]">
+<Carousel Title="@L["CastingAndCrew"]">
                         @foreach (var cast in PersonRoleDisplayHelper.GroupForCarousel(_serie.PersonRoles))
                         {
                             <CarouselItem @key="cast.Key">
@@ -276,12 +279,12 @@ else if (_serie is not null)
 
                 @if (_serie is not null)
                 {
-                    <MediaReviewsSection @ref="_reviewsSection" MediaId="_serie.Id" Watched="@MediaReviewsSection.IsWatched(_serie.UserState)" />
+<MediaReviewsSection @ref="_reviewsSection" MediaId="_serie.Id" Watched="@MediaReviewsSection.IsWatched(_serie.UserState)" />
                 }
 
                 @if (_similarMedia.Count > 0)
                 {
-                    <Carousel Title="@L["SimilarMedia"]">
+<Carousel Title="@L["SimilarMedia"]">
                         @foreach (var media in _similarMedia)
                         {
                             <CarouselItem @key="media.Id">
@@ -300,6 +303,7 @@ else if (_serie is not null)
                         }
                     </Carousel>
                 }
+</MediaSections>
             </div>
             </MediaPageContent>
         }
@@ -308,6 +312,7 @@ else if (_serie is not null)
         {
             <MediaPageContent Class="serie-page-below" Tinted="@(_dominantColor is not null)" DominantColor="@_dominantColor">
                 <div class="serie-page-sections" data-tv-scroll-zone="below">
+<MediaSections>
                 @if ((_serie.PersonRoles?.Count ?? 0) > 0)
                 {
                     <Carousel Title="@L["CastingAndCrew"]">
@@ -346,6 +351,7 @@ else if (_serie is not null)
                         }
                     </Carousel>
                 }
+</MediaSections>
                 </div>
             </MediaPageContent>
         }

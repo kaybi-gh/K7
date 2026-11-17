@@ -378,3 +378,382 @@ html[data-theme="default-light"] .media-page-backdrop__scroll-fade {
 html[data-theme="default-light"] .artist-name {
     text-shadow: var(--media-copy-shadow);
 }
+
+/* ============================================================
+   Variants of media pages (appearance settings, classes on the app shell): how the backdrop
+   ends (fade, clean cut, banner), how much of the screen it takes, poster.
+   Wide screens and TV here; phones have their own block further down, on their stacked hero.
+   Every page sets the full-screen height of its own hero in its scoped styles, with selectors
+   of their own: the priority below is what beats them all.
+   ============================================================ */
+
+@media (min-width: 600px) {
+    /* ---------- Size of the backdrop: half or a third of the screen ---------- */
+
+    /* The hero stops taking the whole screen, so what follows shows without scrolling. It never
+       gets smaller than its own content. */
+    .media-pages--size-half .media-hero-main {
+        height: auto !important;
+        min-height: clamp(340px, 54%, 620px) !important;
+    }
+
+    .media-pages--size-third .media-hero-main {
+        height: auto !important;
+        min-height: clamp(260px, 36%, 440px) !important;
+    }
+
+    /* The hero now ends right under a poster or a portrait: their shadow goes on over the
+       first section instead of being cut on the edge of the hero. */
+    .media-pages--size-half .media-hero-main,
+    .media-pages--size-third .media-hero-main {
+        overflow: visible !important;
+    }
+
+    /* The portrait of a person follows the size too: at its full size it alone made the hero
+       taller than a third of the screen, and close to half of it. */
+    .media-pages--size-half .person-portrait {
+        width: clamp(180px, 36vh - 48px, 300px) !important;
+    }
+
+    .media-pages--size-third .person-portrait {
+        width: clamp(130px, 24vh - 40px, 220px) !important;
+    }
+
+    /* The title block is what sets the real height: a tall logo, four lines of overview and wide
+       paddings are taller than half a screen on their own, and both sizes looked the same. Each
+       size tightens it so the hero does reach its height. */
+    .media-pages--size-half .media-hero {
+        padding-block: var(--space-12) var(--space-6) !important;
+        row-gap: var(--space-4) !important;
+    }
+
+    .media-pages--size-third .media-hero {
+        padding-block: var(--space-12) var(--space-4) !important;
+        row-gap: var(--space-2) !important;
+    }
+
+    /* With a poster the hero is exactly as tall as the poster: nothing is left under it before
+       the first list, where the title block alone leaves some. A little more room there. */
+    .media-pages--size-third .media-hero.person-hero,
+    .media-pages--poster.media-pages--size-third .media-hero:has(> .media-hero-poster) {
+        padding-bottom: var(--space-10) !important;
+    }
+
+    .media-pages--size-half .media-hero-logo,
+    .media-pages--size-half .media-hero-logo .k7-img {
+        max-height: 110px !important;
+    }
+
+    .media-pages--size-third .media-hero-logo,
+    .media-pages--size-third .media-hero-logo .k7-img {
+        max-height: 72px !important;
+    }
+
+    .media-pages--size-half .media-hero-body p[class$="-overview"] {
+        -webkit-line-clamp: 3;
+    }
+
+    .media-pages--size-third .media-hero-body p[class$="-overview"] {
+        -webkit-line-clamp: 2;
+    }
+
+    .media-pages--size-third .media-hero-body [class$="-tagline"] {
+        display: none;
+    }
+
+    .media-pages--size-third .media-hero-body [class$="-hero-copy"] {
+        gap: var(--space-2) !important;
+    }
+
+    .media-pages--size-third .media-hero-body .overview-clickable {
+        padding-block: var(--space-1) !important;
+        margin-top: 0 !important;
+    }
+
+    .media-pages--size-third .media-hero-body [data-tv-scroll-zone="actions"] {
+        margin-top: var(--space-1) !important;
+    }
+
+    .media-pages--size-half .media-hero-scroll-hint,
+    .media-pages--size-third .media-hero-scroll-hint {
+        display: none;
+    }
+
+    /* Down to the bottom of the screen: a short page must not let the artwork show again
+       under its last section. */
+    .media-pages--size-half .media-page-content,
+    .media-pages--size-third .media-page-content {
+        flex: 1 0 auto;
+    }
+
+    /* ---------- Faded backdrop (the default style) at a smaller size ---------- */
+
+    /* The backdrop stays put behind the page while it scrolls: masking it is enough, the page
+       color shows where it stops. Only the backdrop of a media page, not the other heroes. */
+    .media-pages--size-half:not(.media-pages--hero-cut, .media-pages--hero-banner) :has(> .media-page-backdrop):has(.media-hero-main) > .media-page-backdrop {
+        -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 26%, rgba(0, 0, 0, 0.5) 46%, transparent 64%) !important;
+        mask-image: linear-gradient(to bottom, #000 0%, #000 26%, rgba(0, 0, 0, 0.5) 46%, transparent 64%) !important;
+    }
+
+    .media-pages--size-third:not(.media-pages--hero-cut, .media-pages--hero-banner) :has(> .media-page-backdrop):has(.media-hero-main) > .media-page-backdrop {
+        -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 14%, rgba(0, 0, 0, 0.5) 30%, transparent 46%) !important;
+        mask-image: linear-gradient(to bottom, #000 0%, #000 14%, rgba(0, 0, 0, 0.5) 30%, transparent 46%) !important;
+    }
+
+    /* ---------- Backdrop cut on a clean edge ---------- */
+
+    /* The sections are on the page color from their first pixel instead of fading in: the
+       artwork stops where the hero does. The backdrop does not move while the page scrolls, so
+       the sections slide over it. */
+    .media-pages--hero-cut .media-page-content,
+    .media-pages--hero-banner .media-page-content {
+        --media-content-fade-height: 0px !important;
+        background: var(--media-content-top-color) !important;
+        flex: 1 0 auto;
+    }
+
+    /* The edge of the cut is a line of its own, and the first section keeps its distance. */
+    .media-pages--hero-cut .media-page-content {
+        border-top: 1px solid var(--color-border);
+        padding-top: var(--space-6);
+    }
+
+    /* Cut and banner hide the artwork behind the page color as the page scrolls: it does not
+       need to wash out on top of that, and stays sharp while the sections slide over it. */
+    .media-pages--hero-cut :has(> .media-page-backdrop):has(.media-hero-main) > .media-page-backdrop .media-page-backdrop__scroll-fade,
+    .media-pages--hero-banner :has(> .media-page-backdrop):has(.media-hero-main) > .media-page-backdrop .media-page-backdrop__scroll-fade {
+        display: none;
+    }
+
+    /* ---------- Backdrop in a banner, like the banner of the home page ---------- */
+
+    /* The hero becomes a rounded card with margins, the title and details inside it, and the
+       page color all around: no fade. The backdrop itself does not move (it sits behind the
+       page, outside what scrolls), so the card is a window onto it: a frame of the page color,
+       drawn as the shadow of the card and cut to its margins, hides the rest. */
+    .media-pages--hero-banner .media-hero-main {
+        position: relative;
+        isolation: isolate;
+        box-sizing: border-box;
+        overflow: visible !important;
+        margin: var(--space-4) var(--space-10) !important;
+        height: calc(100% - 2 * var(--space-4)) !important;
+        min-height: calc(100% - 2 * var(--space-4)) !important;
+        border-radius: var(--radius-xl);
+    }
+
+    /* Half: the height of the home banner. */
+    .media-pages--hero-banner.media-pages--size-half .media-hero-main {
+        height: auto !important;
+        min-height: clamp(18rem, 52vh, 34rem) !important;
+    }
+
+    .media-pages--hero-banner.media-pages--size-third .media-hero-main {
+        height: auto !important;
+        min-height: clamp(14rem, 34vh, 24rem) !important;
+    }
+
+    .media-pages--hero-banner .media-hero-main::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        z-index: -1;
+        border-radius: inherit;
+        pointer-events: none;
+        box-shadow: 0 0 0 100vmax var(--media-wash-color, var(--color-bg));
+        /* As wide as the page, whatever is left on the sides of the card. One pixel more at
+           the bottom: no seam before the sections. */
+        clip-path: inset(calc(-1 * var(--space-4)) -100vmax calc(-1 * var(--space-4) - 1px));
+    }
+
+    /* The frame stops where the scrolling area does: next to it, the gutter of a classic
+       scrollbar is see-through and showed a strip of the artwork down the page. The artwork
+       itself ends with the margins of the card, the page color takes over. */
+    .media-pages--hero-banner :has(> .media-page-backdrop):has(.media-hero-main) > .media-page-backdrop {
+        clip-path: inset(0 var(--space-10));
+    }
+
+    .media-pages--hero-banner .media-hero-scroll-hint {
+        display: none;
+    }
+
+    /* ---------- Poster next to the title (pages that have one) ---------- */
+
+    .media-pages--poster .media-hero:has(> .media-hero-poster) {
+        display: grid !important;
+        grid-template-columns: auto minmax(0, 1fr);
+        grid-template-rows: 1fr auto auto;
+        column-gap: var(--space-8);
+        row-gap: var(--space-4);
+        width: auto !important;
+    }
+
+    .media-pages--poster .media-hero-poster {
+        grid-column: 1;
+        grid-row: 2 / span 2;
+        align-self: end;
+        width: clamp(160px, 17vw, 280px);
+        aspect-ratio: 2 / 3;
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+        box-shadow: var(--shadow-lg);
+        background: var(--color-surface-2);
+    }
+
+    /* The poster pushes the title and details to the right, further than the side scrim of
+       the backdrop reaches: it goes further on the pages that show one. */
+    .media-pages--poster :has(> .media-page-backdrop):has(.media-hero-poster) > .media-page-backdrop .media-page-backdrop__scrim-side {
+        background:
+            linear-gradient(
+                to right,
+                color-mix(in srgb, var(--media-scrim, #000) 74%, transparent) 0%,
+                color-mix(in srgb, var(--media-scrim, #000) 60%, transparent) 30%,
+                color-mix(in srgb, var(--media-scrim, #000) 38%, transparent) 52%,
+                color-mix(in srgb, var(--media-scrim, #000) 14%, transparent) 70%,
+                transparent 86%
+            ),
+            linear-gradient(
+                to left,
+                color-mix(in srgb, var(--media-scrim, #000) 42%, transparent) 0%,
+                color-mix(in srgb, var(--media-scrim, #000) 18%, transparent) 40%,
+                transparent 100%
+            ) !important;
+    }
+
+    .media-pages--poster .media-hero-poster .k7-img-wrap {
+        display: block;
+        width: 100%;
+        height: 100%;
+    }
+
+    .media-pages--poster .media-hero-poster .k7-img,
+    .media-pages--poster .media-hero-poster img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .media-pages--poster .media-hero:has(> .media-hero-poster) > .media-hero-backdrop-zone {
+        grid-column: 2;
+        grid-row: 2;
+        align-self: end;
+    }
+
+    .media-pages--poster .media-hero:has(> .media-hero-poster) > .media-hero-body {
+        grid-column: 2;
+        grid-row: 3;
+    }
+}
+
+/* ---------- Phones: the same settings on the stacked page ---------- */
+
+/* A phone shows the artwork on top and the title block under it, on the page color. The size
+   is the height of the artwork; "full page" is the default, where the hero fills the screen. */
+@media (max-width: 599.98px) {
+    .media-pages--size-half :is(.movie-page, .serie-page, .person-page, .episode-page) {
+        --media-phone-artwork: 34dvh;
+        --media-backdrop-height: 42dvh;
+    }
+
+    .media-pages--size-third :is(.movie-page, .serie-page, .person-page, .episode-page) {
+        --media-phone-artwork: 22dvh;
+        --media-backdrop-height: 30dvh;
+    }
+
+    .media-pages--size-half .media-hero-main,
+    .media-pages--size-third .media-hero-main {
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
+    }
+
+    .media-pages--size-half .media-hero-backdrop-zone,
+    .media-pages--size-third .media-hero-backdrop-zone {
+        flex: 0 0 auto;
+        min-height: var(--media-phone-artwork);
+    }
+
+    .media-pages--size-half .media-hero-scroll-hint,
+    .media-pages--size-third .media-hero-scroll-hint {
+        display: none;
+    }
+
+    .media-pages--size-half .media-page-content,
+    .media-pages--size-third .media-page-content {
+        flex: 1 0 auto;
+    }
+
+    /* Clean cut and banner: the artwork is not faded any more. It stops where the title block
+       starts, on an edge, and stays sharp while the page scrolls over it. */
+    .media-pages--hero-cut .media-page-backdrop,
+    .media-pages--hero-banner .media-page-backdrop {
+        height: 100% !important;
+        -webkit-mask-image: none !important;
+        mask-image: none !important;
+    }
+
+    .media-pages--hero-cut.media-pages--size-half .media-page-backdrop,
+    .media-pages--hero-cut.media-pages--size-third .media-page-backdrop,
+    .media-pages--hero-banner.media-pages--size-half .media-page-backdrop,
+    .media-pages--hero-banner.media-pages--size-third .media-page-backdrop {
+        height: calc(var(--media-phone-artwork) + var(--space-6)) !important;
+    }
+
+    .media-pages--hero-cut .media-page-backdrop .media-page-backdrop__scrim-bottom,
+    .media-pages--hero-banner .media-page-backdrop .media-page-backdrop__scrim-bottom {
+        background: linear-gradient(
+            to top,
+            color-mix(in srgb, var(--media-scrim, #000) 62%, transparent) 0%,
+            transparent 55%
+        ) !important;
+    }
+
+    .media-pages--hero-cut .media-page-backdrop .media-page-backdrop__scroll-fade,
+    .media-pages--hero-banner .media-page-backdrop .media-page-backdrop__scroll-fade {
+        display: none;
+    }
+
+    .media-pages--hero-cut .media-hero-backdrop-zone::after,
+    .media-pages--hero-banner .media-hero-backdrop-zone::after {
+        margin-top: 0;
+        background: var(--media-wash-color);
+    }
+
+    /* The edge of the cut is a line, like on wide screens. On the title block, which is what
+       sits right under the artwork (it covers the wash behind it, and a line drawn there), and
+       which keeps its distance from the line. */
+    .media-pages--hero-cut .media-hero-body {
+        border-top: 1px solid var(--color-border);
+        padding-top: var(--space-4) !important;
+    }
+
+    /* Banner: the artwork shows through a rounded card with margins. Same window as on wide
+       screens: a frame of the page color, drawn as the shadow of the card, hides the rest. */
+    .media-pages--hero-banner .media-hero-backdrop-zone {
+        margin: var(--space-2) var(--space-3) 0;
+        border-radius: var(--radius-xl);
+    }
+
+    .media-pages--hero-banner .media-hero-backdrop-zone::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+        border-radius: inherit;
+        pointer-events: none;
+        box-shadow: 0 0 0 100vmax var(--media-wash-color);
+        clip-path: inset(calc(-1 * var(--space-2)) calc(-1 * var(--space-3)) -1px);
+    }
+
+    .media-pages--hero-banner .media-hero-backdrop-zone::after {
+        left: calc(-1 * var(--space-3));
+        right: calc(-1 * var(--space-3));
+    }
+}
+
+/* The poster is for wide screens only. */
+@media (max-width: 599.98px) {
+    .media-hero-poster {
+        display: none;
+    }
+}

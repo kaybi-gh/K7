@@ -6,9 +6,10 @@ using Microsoft.AspNetCore.Components.Routing;
 namespace K7.Clients.Shared.UI.Components;
 
 /// <summary>
-/// Shell of the Interface settings: one index (appearance, home layout, navigation, theme songs)
-/// shared by the pages that edit them, for the personal settings and for the server defaults.
-/// Each page renders its own form as <see cref="ChildContent"/>.
+/// Shell of the Interface settings: one index (appearance, navigation, home layout, media pages,
+/// media cards, music player, video player) shared by the pages that edit them, the same for
+/// the personal settings and for the server defaults. Theme songs have no entry: they are a
+/// second panel of the media pages. Each page renders its own form as <see cref="ChildContent"/>.
 /// </summary>
 public partial class InterfaceSettingsSplit
 {
@@ -22,6 +23,11 @@ public partial class InterfaceSettingsSplit
 
     [Parameter] public RenderFragment? ChildContent { get; set; }
 
+    /// <summary>Second group of settings of the sub-page, in its own panel under the form.</summary>
+    [Parameter] public RenderFragment? Extra { get; set; }
+
+    [Parameter] public string ExtraTitle { get; set; } = "";
+
     [Inject] private IUserAdminService UserService { get; set; } = default!;
 
     private string BasePath => Admin ? InterfaceSettingsSections.AdminBasePath : InterfaceSettingsSections.SettingsBasePath;
@@ -30,8 +36,10 @@ public partial class InterfaceSettingsSplit
     {
         InterfaceSettingsSections.Home => L["Home"],
         InterfaceSettingsSections.Cards => L["Cards"],
+        InterfaceSettingsSections.MediaPages => L["MediaPages"],
+        InterfaceSettingsSections.AudioPlayer => L["AudioPlayer"],
+        InterfaceSettingsSections.VideoPlayer => L["VideoPlayer"],
         InterfaceSettingsSections.Navigation => L["Navigation"],
-        InterfaceSettingsSections.ThemeSongs => L["ThemeSongs"],
         _ => L["Appearance"]
     };
 

@@ -23,3 +23,9 @@
     margin-top: var(--space-1);
     color: var(--color-text-secondary);
 }
+
+
+/* Sketch of what the settings under it change. */
+.appearance-panel__preview {
+    margin-block: var(--space-3) var(--space-4);
+}

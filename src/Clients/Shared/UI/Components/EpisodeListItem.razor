@@ -17,7 +17,7 @@
        href="@Href"
        data-episode-anchor="ep-@Episode.EpisodeNumber"
        @onclick="OnLinkClick"
-       @onclick:preventDefault="@ShouldPreventLinkActivation"
+       @onclick:preventDefault="@(PlayOnActivate || ShouldPreventLinkActivation)"
        @onfocusin="OnLinkFocusIn"
        @onkeydown="OnKeyDown"
        @onkeyup="OnKeyUp">

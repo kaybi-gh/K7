@@ -7,7 +7,9 @@
 <K7SettingsSplit IndexLabel="@L["Title"]"
                  DetailTitle="@ActiveTitle"
                  BackHref="@BasePath"
-                 DetailOpen="DetailOpen">
+                 DetailOpen="DetailOpen"
+                 Extra="Extra"
+                 ExtraTitle="@ExtraTitle">
     <Header>
         <div class="admin-page-intro">
             <AdminPageHeader Title="@L["Title"]" Subtitle="@(Admin ? L["AdminSubtitle"] : L["Subtitle"])">
@@ -23,29 +25,39 @@
                            Title="@L["Appearance"]"
                            Description="@L["AppearanceDescription"]"
                            Active="@(Section == InterfaceSettingsSections.Appearance)" />
-        <K7SettingsNavItem Href="@($"{BasePath}/{InterfaceSettingsSections.Cards}")"
-                           Icon="@Phosphor.Cards"
-                           Title="@L["Cards"]"
-                           Description="@L["CardsDescription"]"
-                           Active="@(Section == InterfaceSettingsSections.Cards)" />
         @if (!_isGuest)
         {
-            <K7SettingsNavItem Href="@($"{BasePath}/{InterfaceSettingsSections.Home}")"
-                               Icon="@Phosphor.House"
-                               Title="@L["Home"]"
-                               Description="@L["HomeDescription"]"
-                               Active="@(Section == InterfaceSettingsSections.Home)" />
             <K7SettingsNavItem Href="@($"{BasePath}/{InterfaceSettingsSections.Navigation}")"
                                Icon="@Phosphor.NavigationArrow"
                                Title="@L["Navigation"]"
                                Description="@L["NavigationDescription"]"
                                Active="@(Section == InterfaceSettingsSections.Navigation)" />
+            <K7SettingsNavItem Href="@($"{BasePath}/{InterfaceSettingsSections.Home}")"
+                               Icon="@Phosphor.House"
+                               Title="@L["Home"]"
+                               Description="@L["HomeDescription"]"
+                               Active="@(Section == InterfaceSettingsSections.Home)" />
         }
-        <K7SettingsNavItem Href="@($"{BasePath}/{InterfaceSettingsSections.ThemeSongs}")"
+        <K7SettingsNavItem Href="@($"{BasePath}/{InterfaceSettingsSections.MediaPages}")"
+                           Icon="@Phosphor.Layout"
+                           Title="@L["MediaPages"]"
+                           Description="@L["MediaPagesDescription"]"
+                           Active="@(Section == InterfaceSettingsSections.MediaPages)" />
+        <K7SettingsNavItem Href="@($"{BasePath}/{InterfaceSettingsSections.Cards}")"
+                           Icon="@Phosphor.Cards"
+                           Title="@L["Cards"]"
+                           Description="@L["CardsDescription"]"
+                           Active="@(Section == InterfaceSettingsSections.Cards)" />
+        <K7SettingsNavItem Href="@($"{BasePath}/{InterfaceSettingsSections.AudioPlayer}")"
                            Icon="@Phosphor.MusicNotes"
-                           Title="@L["ThemeSongs"]"
-                           Description="@L["ThemeSongsDescription"]"
-                           Active="@(Section == InterfaceSettingsSections.ThemeSongs)" />
+                           Title="@L["AudioPlayer"]"
+                           Description="@L["AudioPlayerDescription"]"
+                           Active="@(Section == InterfaceSettingsSections.AudioPlayer)" />
+        <K7SettingsNavItem Href="@($"{BasePath}/{InterfaceSettingsSections.VideoPlayer}")"
+                           Icon="@Phosphor.PlayCircle"
+                           Title="@L["VideoPlayer"]"
+                           Description="@L["VideoPlayerDescription"]"
+                           Active="@(Section == InterfaceSettingsSections.VideoPlayer)" />
     </Index>
     <Detail>
         @ChildContent

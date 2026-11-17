@@ -68,6 +68,15 @@
 
 .k7-setting-row--stacked .k7-setting-row__control {
     justify-content: stretch;
+    /* A note beside the control (what the picked option does) keeps its distance, centers on
+       it, and drops under it when it does not fit on the line. */
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2) var(--space-4);
+}
+
+.k7-setting-row--stacked .k7-setting-row__control ::deep .settings-field-hint {
+    margin: 0;
 }
 
 .k7-setting-row--stacked .k7-setting-row__control ::deep .k7-field {

@@ -70,6 +70,13 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
     private readonly Label _startFailureLabel = new();
     private readonly Grid _topBar = new();
     private readonly Grid _bottomBar = new();
+    private readonly ThemeService? _theme;
+
+    // Skin "controls in the middle": play and skips in the picture, between the two bars.
+    private readonly HorizontalStackLayout _centerBar = new();
+    private readonly Button _centerPlayButton = new();
+    private HorizontalStackLayout? _bottomLeft;
+    private HorizontalStackLayout? _bottomRight;
     private readonly Label _titleLabel = new();
     private readonly Label _timeLabel = new();
     private int _tvChromeFocusIndex;
@@ -196,9 +203,11 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
         K7HubClient? hubClient = null,
         IRemoteControlService? remoteControl = null,
         RemotePlaybackLauncher? remotePlayback = null,
-        InactivityPromptTracker? inactivityTracker = null)
+        InactivityPromptTracker? inactivityTracker = null,
+        ThemeService? theme = null)
     {
         _player = player;
+        _theme = theme;
         _inactivityTracker = inactivityTracker ?? new InactivityPromptTracker();
         _deviceService = deviceService;
         _mediaService = mediaService;
@@ -1087,12 +1096,19 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
 
         BuildTopBar();
         BuildBottomBar();
+        BuildCenterBar();
         Grid.SetRow(_topBar, 0);
+        Grid.SetRow(_centerBar, 1);
         Grid.SetRow(_bottomBar, 2);
         _chrome.Children.Add(_topBar);
+        _chrome.Children.Add(_centerBar);
         _chrome.Children.Add(_bottomBar);
         _topBar.InputTransparent = false;
+        _centerBar.InputTransparent = false;
         _bottomBar.InputTransparent = false;
+        ApplySkin();
+        if (_theme is not null)
+            _theme.ThemeOnChange += OnSkinChanged;
         Children.Add(_chrome);
 
         _hudIconLabel.TextColor = Colors.White;
@@ -1326,7 +1342,70 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
         _bottomBar.Children.Add(left);
         _bottomBar.Children.Add(_seekBarFocusRing);
         _bottomBar.Children.Add(right);
+        _bottomLeft = left;
+        _bottomRight = right;
+        _bottomBar.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        _bottomBar.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
     }
+
+    private void BuildCenterBar()
+    {
+        _centerBar.Spacing = 40;
+        _centerBar.HorizontalOptions = LayoutOptions.Center;
+        _centerBar.VerticalOptions = LayoutOptions.Center;
+        _centerBar.IsVisible = false;
+
+        var back = new Button { Text = NativePlayerGlyphs.Rewind };
+        var forward = new Button { Text = NativePlayerGlyphs.Forward };
+        _centerPlayButton.Text = NativePlayerGlyphs.Play;
+        foreach (var button in (Button[])[back, _centerPlayButton, forward])
+        {
+            StyleTransportButton(button);
+            button.FontSize = button == _centerPlayButton ? 44 : 32;
+            button.Padding = new Thickness(18, 12);
+            _centerBar.Children.Add(button);
+        }
+
+        back.Clicked += (_, _) =>
+        {
+            SkipByPreference(backward: true);
+            ResetHideTimer();
+        };
+        forward.Clicked += (_, _) =>
+        {
+            SkipByPreference(backward: false);
+            ResetHideTimer();
+        };
+        _centerPlayButton.Clicked += (_, _) => TogglePlayPause();
+    }
+
+    /// <summary>
+    /// Applies the player skin of the appearance settings: color of the progress, bottom
+    /// controls on one or two lines, play and skips in the middle. Runs when the player
+    /// opens and when the settings change. Poster and logo are web player only.
+    /// </summary>
+    private void ApplySkin()
+    {
+        var skin = _theme?.Settings;
+
+        Color? accent = null;
+        if (skin?.VideoAccent == K7.Shared.Enums.PlayerAccent.Theme && _theme is not null)
+            Color.TryParse(skin.AccentColor ?? _theme.Theme.Palette.Accent, out accent);
+        NativeSeekBar.ProgressColor = accent ?? NativeSeekBar.DefaultProgressColor;
+        _seekBar.Invalidate();
+
+        // Two lines: the buttons on the first one, the progress bar across the second.
+        var stacked = skin?.VideoControls == K7.Shared.Enums.VideoControlsLayout.Stacked;
+        Grid.SetRow(_seekBarFocusRing, stacked ? 1 : 0);
+        Grid.SetColumn(_seekBarFocusRing, stacked ? 0 : 1);
+        Grid.SetColumnSpan(_seekBarFocusRing, stacked ? 3 : 1);
+        _bottomBar.RowSpacing = stacked ? 4 : 0;
+
+        // A TV drives the player with its remote: no buttons in the picture there.
+        _centerBar.IsVisible = skin?.VideoCenterControls == true && _deviceType != DeviceType.TV;
+    }
+
+    private void OnSkinChanged() => MainThread.BeginInvokeOnMainThread(ApplySkin);
 
     private void StyleTransportButton(Button button)
     {
@@ -1813,6 +1892,7 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
             _userPaused,
             _player.PlaybackState);
         _playPauseButton.Text = playing ? NativePlayerGlyphs.Pause : NativePlayerGlyphs.Play;
+        _centerPlayButton.Text = _playPauseButton.Text;
         var volume = DisplayedVolume;
         _volumeButton.Text = _player.IsMuted || volume <= 0.001
             ? NativePlayerGlyphs.SpeakerMuted
@@ -1855,6 +1935,7 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
         _chrome.IsVisible = visible;
         _chromeGradient.IsVisible = visible;
         _topBar.Opacity = visible ? 1 : 0;
+        _centerBar.Opacity = visible ? 1 : 0;
         _bottomBar.Opacity = visible ? 1 : 0;
         if (!visible)
             ClearTvChromeFocus();

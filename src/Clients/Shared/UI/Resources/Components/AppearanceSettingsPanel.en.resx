@@ -39,4 +39,87 @@
   <data name="MiniPlayerHint" xml:space="preserve"><value>On desktop, tablet and TV. On a phone it stays above the bottom bar.</value></data>
   <data name="MiniPlayer_Bar" xml:space="preserve"><value>In the bar</value></data>
   <data name="MiniPlayer_Bottom" xml:space="preserve"><value>At the bottom</value></data>
+  <data name="ServerDefaultsHint" xml:space="preserve"><value>Default presentation of the server, for every device: the one of the accounts that did not make their own settings here. They will see it the next time they start the app.</value></data>
+  <data name="MediaPageKind" xml:space="preserve"><value>Pages</value></data>
+  <data name="MediaPageKind_All" xml:space="preserve"><value>All</value></data>
+  <data name="MediaPageKind_Movie" xml:space="preserve"><value>Movies</value></data>
+  <data name="MediaPageKind_Series" xml:space="preserve"><value>Series</value></data>
+  <data name="MediaPageKind_Season" xml:space="preserve"><value>Seasons</value></data>
+  <data name="MediaPageKind_Episode" xml:space="preserve"><value>Episodes</value></data>
+  <data name="MediaPageKind_Person" xml:space="preserve"><value>People</value></data>
+  <data name="MediaPageKindHint_All" xml:space="preserve"><value>Settings shared by the pages, seasons aside. Pick a kind of page to give it its own: series that show their seasons at once, movies on a full page.</value></data>
+  <data name="MediaPageKindHint_Shared" xml:space="preserve"><value>This kind of page follows the shared settings. Change a setting below to make it differ.</value></data>
+  <data name="MediaPageKindHint_Own" xml:space="preserve"><value>Settings of this kind of page only. The other pages keep theirs.</value></data>
+  <data name="MediaPageKindHint_Season" xml:space="preserve"><value>The page of a season has its own presentation: its episodes as a list or a grid. On TV, it always is a carousel.</value></data>
+  <data name="SeasonPage" xml:space="preserve"><value>Presentation</value></data>
+  <data name="SeasonPageHint" xml:space="preserve"><value>How the page of a season shows its episodes.</value></data>
+  <data name="SeasonPage_List" xml:space="preserve"><value>List</value></data>
+  <data name="SeasonPage_List_Hint" xml:space="preserve"><value>The episodes in a list under the title of the season.</value></data>
+  <data name="SeasonPage_Grid" xml:space="preserve"><value>Grid</value></data>
+  <data name="SeasonPage_Grid_Hint" xml:space="preserve"><value>The episodes as a grid of cards under the title of the season.</value></data>
+  <data name="MediaPageHero" xml:space="preserve"><value>Header style</value></data>
+  <data name="MediaPageHeroHint" xml:space="preserve"><value>How the artwork ends at the top of movie, series, episode and person pages.</value></data>
+  <data name="MediaPageHero_Fade" xml:space="preserve"><value>Faded</value></data>
+  <data name="MediaPageHero_Cut" xml:space="preserve"><value>Clean cut</value></data>
+  <data name="MediaPageHero_Banner" xml:space="preserve"><value>Banner</value></data>
+  <data name="MediaPageHero_Fade_Hint" xml:space="preserve"><value>The artwork fades into the color of the page.</value></data>
+  <data name="MediaPageHero_Cut_Hint" xml:space="preserve"><value>The artwork stops on a clean edge, the lists start right under it.</value></data>
+  <data name="MediaPageHero_Banner_Hint" xml:space="preserve"><value>The artwork stays in a rounded banner, like on the home page: the title and details are inside it, the rest of the page keeps its color.</value></data>
+  <data name="MediaPageHeroSize" xml:space="preserve"><value>Header height</value></data>
+  <data name="MediaPageHeroSizeHint" xml:space="preserve"><value>How much of the screen the artwork and the title take. On a phone, it is the height of the artwork.</value></data>
+  <data name="MediaPageHeroSize_Full" xml:space="preserve"><value>Full page</value></data>
+  <data name="MediaPageHeroSize_Half" xml:space="preserve"><value>Half page</value></data>
+  <data name="MediaPageHeroSize_Third" xml:space="preserve"><value>Third of the page</value></data>
+  <data name="MediaPageHeroSize_Full_Hint" xml:space="preserve"><value>Immersive: the artwork and the title take the whole screen, cast, seasons and suggestions come as you scroll.</value></data>
+  <data name="MediaPageHeroSize_Half_Hint" xml:space="preserve"><value>The artwork and the title take half of the screen, the first lists show without scrolling.</value></data>
+  <data name="MediaPageHeroSize_Third_Hint" xml:space="preserve"><value>The artwork takes a third of the screen: the title, the details and the lists come up as high as they can.</value></data>
+  <data name="MediaPagePoster" xml:space="preserve"><value>Show the poster</value></data>
+  <data name="MediaPagePosterHint" xml:space="preserve"><value>Next to the title, on movie and series pages.</value></data>
+  <data name="MediaPageLists" xml:space="preserve"><value>Lists</value></data>
+  <data name="MediaPageListsHint" xml:space="preserve"><value>Seasons, cast and similar titles: on one line that scrolls, or all visible in a grid.</value></data>
+  <data name="MediaPageLists_Carousel" xml:space="preserve"><value>Carousel</value></data>
+  <data name="MediaPageLists_Grid" xml:space="preserve"><value>Grid</value></data>
+  <data name="MediaPageGridMore" xml:space="preserve"><value>Limit grids to two lines</value></data>
+  <data name="MediaPageGridMoreHint" xml:space="preserve"><value>A "Show more" button shows the rest. Handy when the cast is long.</value></data>
+  <data name="AudioBackground" xml:space="preserve"><value>Background</value></data>
+  <data name="AudioBackground_Blur" xml:space="preserve"><value>Blurred cover</value></data>
+  <data name="AudioBackground_Gradient" xml:space="preserve"><value>Gradient</value></data>
+  <data name="AudioBackground_Plain" xml:space="preserve"><value>Plain dark</value></data>
+  <data name="AudioLayout" xml:space="preserve"><value>Layout</value></data>
+  <data name="AudioLayoutHint" xml:space="preserve"><value>On desktop, tablet and TV.</value></data>
+  <data name="AudioLayout_Side" xml:space="preserve"><value>Side by side</value></data>
+  <data name="AudioLayout_Centered" xml:space="preserve"><value>Centered</value></data>
+  <data name="AudioSeek" xml:space="preserve"><value>Progress</value></data>
+  <data name="AudioSeekHint" xml:space="preserve"><value>The rings go around a round cover.</value></data>
+  <data name="AudioSeek_Waveform" xml:space="preserve"><value>Waveform</value></data>
+  <data name="AudioSeek_Bar" xml:space="preserve"><value>Bar</value></data>
+  <data name="AudioSeek_Ring" xml:space="preserve"><value>Waveform ring</value></data>
+  <data name="AudioArtwork" xml:space="preserve"><value>Cover</value></data>
+  <data name="AudioArtworkRingHint" xml:space="preserve"><value>Round with a ring.</value></data>
+  <data name="AudioArtwork_Square" xml:space="preserve"><value>Square</value></data>
+  <data name="AudioArtwork_Round" xml:space="preserve"><value>Round</value></data>
+  <data name="AudioAccent" xml:space="preserve"><value>Color of the controls</value></data>
+  <data name="AudioAccent_Auto" xml:space="preserve"><value>Cover</value></data>
+  <data name="Accent_Theme" xml:space="preserve"><value>Theme</value></data>
+  <data name="VideoPlayerHint" xml:space="preserve"><value>Player of the browser. Installed apps have their own player, which follows the two lines, the middle controls and the color.</value></data>
+  <data name="VideoControls" xml:space="preserve"><value>Bottom controls</value></data>
+  <data name="VideoControls_Inline" xml:space="preserve"><value>One line</value></data>
+  <data name="VideoControls_Stacked" xml:space="preserve"><value>Two lines</value></data>
+  <data name="VideoCenterControls" xml:space="preserve"><value>Controls in the middle</value></data>
+  <data name="VideoCenterControlsHint" xml:space="preserve"><value>Play and skip back and forward in the middle of the picture.</value></data>
+  <data name="VideoPoster" xml:space="preserve"><value>Show the poster</value></data>
+  <data name="VideoPosterHint" xml:space="preserve"><value>At the bottom left, with the controls.</value></data>
+  <data name="VideoLogo" xml:space="preserve"><value>Logo instead of the title</value></data>
+  <data name="VideoLogoHint" xml:space="preserve"><value>When the movie or series has one.</value></data>
+  <data name="VideoAccent" xml:space="preserve"><value>Color of the progress</value></data>
+  <data name="VideoAccent_Auto" xml:space="preserve"><value>Red</value></data>
+  <data name="Preview" xml:space="preserve"><value>Preview</value></data>
+  <data name="Preview_Movie" xml:space="preserve"><value>Movie title</value></data>
+  <data name="Preview_Series" xml:space="preserve"><value>Series title</value></data>
+  <data name="Preview_Season" xml:space="preserve"><value>Season 1</value></data>
+  <data name="Preview_Episode" xml:space="preserve"><value>Episode title</value></data>
+  <data name="Preview_Person" xml:space="preserve"><value>Person name</value></data>
+  <data name="Preview_Track" xml:space="preserve"><value>Track title</value></data>
+  <data name="AudioSeek_PlainRing" xml:space="preserve"><value>Ring</value></data>
+  <data name="VideoControlsHint" xml:space="preserve"><value>On two lines, the progress bar goes under the buttons.</value></data>
 </root>

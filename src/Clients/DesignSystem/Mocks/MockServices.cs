@@ -903,6 +903,7 @@ public sealed class MockServerInfoService : IServerInfoService
     public Task UpdateDefaultThemeAsync(string theme, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task UpdateServerThemesAsync(IReadOnlyList<K7.Shared.Theming.CustomThemeDto> themes, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task UpdateDefaultCardStyleAsync(K7.Shared.Theming.MediaCardPreferencesDto cards, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task UpdateDefaultSkinsAsync(K7.Shared.Theming.AppearanceSettingsDto skins, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task<List<ActiveStreamDto>?> GetActiveStreamsAsync(CancellationToken cancellationToken = default) => Task.FromResult<List<ActiveStreamDto>?>(null);
     public Task<ServerMetricsHistoryDto?> GetServerMetricsAsync(CancellationToken cancellationToken = default)
     {

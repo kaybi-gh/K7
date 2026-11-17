@@ -40,6 +40,7 @@ public class GetServerInfo : IEndpoint
             var defaultTheme = await serverSettings.GetAsync(ServerSettingKeys.DefaultTheme, cancellationToken) ?? "default-dark";
             var serverThemes = ServerThemes.Parse(await serverSettings.GetAsync(ServerSettingKeys.ServerThemes, cancellationToken));
             var defaultCards = MediaCardStyles.Parse(await serverSettings.GetAsync(ServerSettingKeys.DefaultCardStyle, cancellationToken));
+            var defaultSkins = AppearanceSkins.Parse(await serverSettings.GetAsync(ServerSettingKeys.DefaultSkins, cancellationToken));
             var policy = await passwordPolicy.GetAsync(cancellationToken);
 
             return Results.Ok(new ServerInfoDto
@@ -49,6 +50,7 @@ public class GetServerInfo : IEndpoint
                 DefaultTheme = defaultTheme,
                 ServerThemes = serverThemes,
                 DefaultCards = defaultCards,
+                DefaultSkins = defaultSkins,
                 PasswordPolicy = policy
             });
         })

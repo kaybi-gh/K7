@@ -39,4 +39,87 @@
   <data name="MiniPlayerHint" xml:space="preserve"><value>Sur ordinateur, tablette et TV. Sur téléphone, il reste au-dessus de la barre du bas.</value></data>
   <data name="MiniPlayer_Bar" xml:space="preserve"><value>Dans la barre</value></data>
   <data name="MiniPlayer_Bottom" xml:space="preserve"><value>En bas</value></data>
+  <data name="ServerDefaultsHint" xml:space="preserve"><value>Présentation par défaut du serveur, pour tous les appareils : celle des comptes qui n'ont pas fait leurs propres réglages ici. Ils la verront au prochain lancement de l'application.</value></data>
+  <data name="MediaPageKind" xml:space="preserve"><value>Pages</value></data>
+  <data name="MediaPageKind_All" xml:space="preserve"><value>Toutes</value></data>
+  <data name="MediaPageKind_Movie" xml:space="preserve"><value>Films</value></data>
+  <data name="MediaPageKind_Series" xml:space="preserve"><value>Séries</value></data>
+  <data name="MediaPageKind_Season" xml:space="preserve"><value>Saisons</value></data>
+  <data name="MediaPageKind_Episode" xml:space="preserve"><value>Épisodes</value></data>
+  <data name="MediaPageKind_Person" xml:space="preserve"><value>Personnes</value></data>
+  <data name="MediaPageKindHint_All" xml:space="preserve"><value>Réglages communs aux pages, hors saisons. Choisissez un type de page pour lui donner les siens : des séries qui montrent tout de suite leurs saisons, des films en pleine page.</value></data>
+  <data name="MediaPageKindHint_Shared" xml:space="preserve"><value>Ce type de page reprend les réglages communs. Changez un réglage ci-dessous pour le différencier.</value></data>
+  <data name="MediaPageKindHint_Own" xml:space="preserve"><value>Réglages propres à ce type de page. Les autres pages gardent les leurs.</value></data>
+  <data name="MediaPageKindHint_Season" xml:space="preserve"><value>La page d'une saison a sa propre présentation : ses épisodes en liste ou en grille. Sur TV, c'est toujours un carrousel.</value></data>
+  <data name="SeasonPage" xml:space="preserve"><value>Présentation</value></data>
+  <data name="SeasonPageHint" xml:space="preserve"><value>Façon dont la page d'une saison montre ses épisodes.</value></data>
+  <data name="SeasonPage_List" xml:space="preserve"><value>Liste</value></data>
+  <data name="SeasonPage_List_Hint" xml:space="preserve"><value>Les épisodes en liste sous le titre de la saison.</value></data>
+  <data name="SeasonPage_Grid" xml:space="preserve"><value>Grille</value></data>
+  <data name="SeasonPage_Grid_Hint" xml:space="preserve"><value>Les épisodes en grille de cartes sous le titre de la saison.</value></data>
+  <data name="MediaPageHero" xml:space="preserve"><value>Style de l'en-tête</value></data>
+  <data name="MediaPageHeroHint" xml:space="preserve"><value>Façon dont l'image se termine en haut des pages de films, séries, épisodes et personnes.</value></data>
+  <data name="MediaPageHero_Fade" xml:space="preserve"><value>Image fondue</value></data>
+  <data name="MediaPageHero_Cut" xml:space="preserve"><value>Image coupée nette</value></data>
+  <data name="MediaPageHero_Banner" xml:space="preserve"><value>Bannière</value></data>
+  <data name="MediaPageHero_Fade_Hint" xml:space="preserve"><value>L'image se fond dans la couleur de la page.</value></data>
+  <data name="MediaPageHero_Cut_Hint" xml:space="preserve"><value>L'image s'arrête sur un bord net, les listes commencent juste dessous.</value></data>
+  <data name="MediaPageHero_Banner_Hint" xml:space="preserve"><value>L'image tient dans une bannière arrondie, comme sur l'accueil : le titre et les détails sont dedans, le reste de la page garde sa couleur.</value></data>
+  <data name="MediaPageHeroSize" xml:space="preserve"><value>Hauteur de l'en-tête</value></data>
+  <data name="MediaPageHeroSizeHint" xml:space="preserve"><value>Place que prennent l'image et le titre à l'écran. Sur téléphone, c'est la hauteur de l'image.</value></data>
+  <data name="MediaPageHeroSize_Full" xml:space="preserve"><value>Pleine page</value></data>
+  <data name="MediaPageHeroSize_Half" xml:space="preserve"><value>Demi-page</value></data>
+  <data name="MediaPageHeroSize_Third" xml:space="preserve"><value>Tiers de page</value></data>
+  <data name="MediaPageHeroSize_Full_Hint" xml:space="preserve"><value>Mode immersif : l'image et le titre occupent tout l'écran, la distribution, les saisons et les suggestions arrivent en défilant.</value></data>
+  <data name="MediaPageHeroSize_Half_Hint" xml:space="preserve"><value>L'image et le titre prennent la moitié de l'écran, les premières listes se voient sans défiler.</value></data>
+  <data name="MediaPageHeroSize_Third_Hint" xml:space="preserve"><value>L'image prend le tiers de l'écran : le titre, les détails et les listes remontent au plus haut.</value></data>
+  <data name="MediaPagePoster" xml:space="preserve"><value>Afficher l'affiche</value></data>
+  <data name="MediaPagePosterHint" xml:space="preserve"><value>À côté du titre, sur les pages de films et de séries.</value></data>
+  <data name="MediaPageLists" xml:space="preserve"><value>Listes</value></data>
+  <data name="MediaPageListsHint" xml:space="preserve"><value>Saisons, distribution et titres similaires : sur une ligne à faire défiler, ou tous visibles en grille.</value></data>
+  <data name="MediaPageLists_Carousel" xml:space="preserve"><value>Carrousel</value></data>
+  <data name="MediaPageLists_Grid" xml:space="preserve"><value>Grille</value></data>
+  <data name="MediaPageGridMore" xml:space="preserve"><value>Limiter les grilles à deux lignes</value></data>
+  <data name="MediaPageGridMoreHint" xml:space="preserve"><value>Un bouton « Voir plus » affiche la suite. Utile quand la distribution est longue.</value></data>
+  <data name="AudioBackground" xml:space="preserve"><value>Fond</value></data>
+  <data name="AudioBackground_Blur" xml:space="preserve"><value>Pochette floue</value></data>
+  <data name="AudioBackground_Gradient" xml:space="preserve"><value>Dégradé</value></data>
+  <data name="AudioBackground_Plain" xml:space="preserve"><value>Sombre uni</value></data>
+  <data name="AudioLayout" xml:space="preserve"><value>Disposition</value></data>
+  <data name="AudioLayoutHint" xml:space="preserve"><value>Sur ordinateur, tablette et TV.</value></data>
+  <data name="AudioLayout_Side" xml:space="preserve"><value>Côte à côte</value></data>
+  <data name="AudioLayout_Centered" xml:space="preserve"><value>Centrée</value></data>
+  <data name="AudioSeek" xml:space="preserve"><value>Progression</value></data>
+  <data name="AudioSeekHint" xml:space="preserve"><value>Les anneaux entourent une pochette ronde.</value></data>
+  <data name="AudioSeek_Waveform" xml:space="preserve"><value>Forme d'onde</value></data>
+  <data name="AudioSeek_Bar" xml:space="preserve"><value>Barre</value></data>
+  <data name="AudioSeek_Ring" xml:space="preserve"><value>Anneau forme d'onde</value></data>
+  <data name="AudioArtwork" xml:space="preserve"><value>Pochette</value></data>
+  <data name="AudioArtworkRingHint" xml:space="preserve"><value>Ronde avec un anneau.</value></data>
+  <data name="AudioArtwork_Square" xml:space="preserve"><value>Carrée</value></data>
+  <data name="AudioArtwork_Round" xml:space="preserve"><value>Ronde</value></data>
+  <data name="AudioAccent" xml:space="preserve"><value>Couleur des contrôles</value></data>
+  <data name="AudioAccent_Auto" xml:space="preserve"><value>Pochette</value></data>
+  <data name="Accent_Theme" xml:space="preserve"><value>Thème</value></data>
+  <data name="VideoPlayerHint" xml:space="preserve"><value>Lecteur du navigateur. Les applications installées ont leur propre lecteur, qui suit les deux lignes, les contrôles au centre et la couleur.</value></data>
+  <data name="VideoControls" xml:space="preserve"><value>Contrôles du bas</value></data>
+  <data name="VideoControls_Inline" xml:space="preserve"><value>Une ligne</value></data>
+  <data name="VideoControls_Stacked" xml:space="preserve"><value>Deux lignes</value></data>
+  <data name="VideoCenterControls" xml:space="preserve"><value>Contrôles au centre</value></data>
+  <data name="VideoCenterControlsHint" xml:space="preserve"><value>Lecture et sauts arrière et avant au milieu de l'image.</value></data>
+  <data name="VideoPoster" xml:space="preserve"><value>Afficher l'affiche</value></data>
+  <data name="VideoPosterHint" xml:space="preserve"><value>En bas à gauche, avec les contrôles.</value></data>
+  <data name="VideoLogo" xml:space="preserve"><value>Logo à la place du titre</value></data>
+  <data name="VideoLogoHint" xml:space="preserve"><value>Quand le film ou la série en a un.</value></data>
+  <data name="VideoAccent" xml:space="preserve"><value>Couleur de la progression</value></data>
+  <data name="VideoAccent_Auto" xml:space="preserve"><value>Rouge</value></data>
+  <data name="Preview" xml:space="preserve"><value>Aperçu</value></data>
+  <data name="Preview_Movie" xml:space="preserve"><value>Titre du film</value></data>
+  <data name="Preview_Series" xml:space="preserve"><value>Titre de la série</value></data>
+  <data name="Preview_Season" xml:space="preserve"><value>Saison 1</value></data>
+  <data name="Preview_Episode" xml:space="preserve"><value>Titre de l'épisode</value></data>
+  <data name="Preview_Person" xml:space="preserve"><value>Nom de la personne</value></data>
+  <data name="Preview_Track" xml:space="preserve"><value>Titre du morceau</value></data>
+  <data name="AudioSeek_PlainRing" xml:space="preserve"><value>Anneau</value></data>
+  <data name="VideoControlsHint" xml:space="preserve"><value>Sur deux lignes, la barre de progression passe sous les boutons.</value></data>
 </root>

@@ -1,5 +1,5 @@
 <CascadingValue Value="_slideWindow" IsFixed="true">
-<div class="d-flex flex-col carousel-wrapper" style="@Style">
+<div class="d-flex flex-col carousel-wrapper @(IsGrid ? "carousel-wrapper--grid" : null)" style="@Style">
     <div data-carousel @ref="_root">
         @if (Skeleton || !string.IsNullOrEmpty(Title))
         {
@@ -17,7 +17,7 @@
         <div class="carousel-viewport" data-carousel-viewport tabindex="-1">
             <div class="carousel-container">
                 @ChildContent
-                @if (ShowLoopBack)
+                @if (ShowLoopBack && !IsGrid)
                 {
                     <div class="carousel-item carousel-loop-back"
                          data-carousel-item
@@ -42,6 +42,19 @@
                 }
             </div>
         </div>
+        @if (GridRowLimit is not null)
+        {
+            @* Shown by carousel.js when the grid has more lines than the limit. *@
+            <div class="carousel-grid-more @(_gridExpanded ? "carousel-grid-more--open" : null)">
+                <K7Button Variant="text"
+                          Size="sm"
+                          EndIcon="@(_gridExpanded ? Phosphor.CaretUp : Phosphor.CaretDown)"
+                          aria-expanded="@(_gridExpanded ? "true" : "false")"
+                          OnClick="ToggleGridExpanded">
+                    @(_gridExpanded ? S["ShowLess"] : S["ShowMore"])
+                </K7Button>
+            </div>
+        }
     </div>
 </div>
 </CascadingValue>

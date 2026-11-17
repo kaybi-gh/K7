@@ -865,3 +865,129 @@
     align-self: flex-end;
     margin: 0.5rem;
 }
+
+/* ============================================================
+   Skins (appearance settings, classes from SkinClasses.AudioPlayer).
+   The default look adds none of these classes.
+   ============================================================ */
+
+/* Controls in the accent of the theme instead of the color of the cover. The cover color is
+   set inline on the player, hence the priority. */
+.fullscreen-player--accent-theme {
+    --player-accent: var(--color-accent) !important;
+}
+
+/* Backgrounds. The cover is set inline as a background image. */
+.fullscreen-player--bg-gradient .fullscreen-player-bg {
+    background-image: linear-gradient(
+        165deg,
+        color-mix(in srgb, rgb(var(--dominant-color)) 60%, #000) 0%,
+        color-mix(in srgb, rgb(var(--dominant-color)) 28%, #000) 50%,
+        #0a0a0a 100%
+    ) !important;
+    filter: none;
+    transform: none;
+}
+
+.fullscreen-player--bg-plain .fullscreen-player-bg {
+    background-image: none !important;
+    filter: none;
+    transform: none;
+}
+
+.fullscreen-player--bg-gradient .fullscreen-player-bg::after,
+.fullscreen-player--bg-plain .fullscreen-player-bg::after {
+    display: none;
+}
+
+/* Round cover. */
+.fullscreen-player--round .artwork-canvas-wrap {
+    border-radius: 50%;
+}
+
+/* Waveform ring: the cover shrinks to leave the ring around it. */
+.fullscreen-player--ring .artwork-canvas-wrap {
+    overflow: visible;
+    box-shadow: none;
+}
+
+.fullscreen-player--ring ::deep .artwork-image,
+.fullscreen-player--ring .artwork-placeholder,
+.fullscreen-player--ring .visualizer-canvas {
+    inset: 12%;
+    width: 76%;
+    height: 76%;
+    border-radius: 50%;
+    overflow: hidden;
+    z-index: 1;
+}
+
+.fullscreen-player--ring ::deep .artwork-image {
+    box-shadow: var(--media-artwork-shadow, 0 8px 32px rgba(0, 0, 0, 0.5));
+}
+
+.artwork-ring {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    cursor: pointer;
+    touch-action: none;
+    background: conic-gradient(
+        from 0deg,
+        var(--player-accent) var(--ring-progress, 0%),
+        rgba(255, 255, 255, 0.28) 0
+    );
+    -webkit-mask-size: 100% 100%;
+    mask-size: 100% 100%;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+}
+
+/* The ring is the seek bar: the times stand together instead of at the ends of a bar. */
+.fullscreen-player--ring .seek-times {
+    justify-content: center;
+    gap: var(--space-2);
+    position: static;
+}
+
+.fullscreen-player--ring .seek-times span + span::before {
+    content: '/';
+    margin-right: var(--space-2);
+}
+
+.artwork-ring:focus-visible {
+    outline: 2px solid var(--player-accent);
+    outline-offset: 4px;
+}
+
+/* Centered layout: a large cover above the controls, where the default puts them side by side. */
+@media (min-width: 769px) {
+    .fullscreen-player--centered .fullscreen-player-view {
+        flex-direction: column;
+        gap: var(--space-5);
+        max-width: 640px;
+    }
+
+    .fullscreen-player--centered .fullscreen-player-artwork {
+        flex: 0 0 auto;
+        width: auto;
+        max-width: none;
+    }
+
+    /* Sized by its height so the controls always fit under it. */
+    .fullscreen-player--centered .artwork-canvas-wrap {
+        width: auto;
+        height: min(48vh, 480px);
+    }
+
+    .fullscreen-player--centered .fullscreen-player-details {
+        flex: 0 0 auto;
+        width: 100%;
+    }
+
+    .fullscreen-player--centered .fullscreen-player-info {
+        align-items: center;
+        text-align: center;
+    }
+}
+
