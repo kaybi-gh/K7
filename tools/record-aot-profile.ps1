@@ -8,12 +8,13 @@
     port 9999, waits until the in-app tour has visited every page (K7-Startup marker
     "AotProfileTour-done"), saves the profile with aprofutil and clears the profiler property.
 
-    The tour covers pages and D-pad focus only. custom.aprof (manual session with playback and
-    menus) stays next to it: the Release build passes every *.aprof and the AOT compiler takes
-    the union.
+    The tour covers pages, D-pad focus, a card menu, a movie and an episode playback with the
+    playback settings menu, and an album playback with the full screen music player. The Release
+    build passes every *.aprof next to the csproj and the AOT compiler takes the union.
 
     The tour starts once a profile is signed in: if the profile picker shows, pick a profile
-    with the remote, then leave the device alone until the script ends.
+    with the remote, then leave the device alone until the script ends. Use a test profile: the
+    playbacks leave a resume position and a history entry.
 
     Without the four AndroidSigning* parameters, Install uses the debug keystore. Android then
     refuses the update over a release-signed com.k7.maui and the install wipes app data.

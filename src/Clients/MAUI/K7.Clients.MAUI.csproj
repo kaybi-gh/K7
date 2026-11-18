@@ -145,8 +145,8 @@
 
   <!--
     Custom AOT profiles recorded on a device with Mono.AotProfiler.Android (docs/dev/developing.md,
-    MAUI startup): custom.aprof (manual session: playback, menus) and tour.aprof (unattended
-    AotProfileTour). Every *.aprof next to the csproj is picked up and the AOT compiler takes the
+    MAUI startup): tour.aprof (unattended AotProfileTour: pages, menus, playbacks) and the older
+    manual custom.aprof. Every *.aprof next to the csproj is picked up and the AOT compiler takes the
     union; only used when AndroidEnableProfiledAot is true, next to the default maui / maui-blazor
     profiles.
   -->
