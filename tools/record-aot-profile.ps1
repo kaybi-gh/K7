@@ -30,7 +30,7 @@
 param(
     [switch]$SkipBuild,
     [string]$Device = '',
-    [int]$TimeoutMinutes = 20,
+    [int]$TimeoutMinutes = 45,
     [string]$Activity = 'com.k7.maui/crc648f5a7c81d1a4b3dd.MainActivity',
     [string]$Output = '',
     [string]$AndroidSigningKeyStore = '',
@@ -49,12 +49,14 @@ if ([string]::IsNullOrEmpty($Output)) {
 
 $aprofutil = Join-Path $env:USERPROFILE '.nuget\packages\mono.aotprofiler.android\10.0.0-preview1\tools\aprofutil.exe'
 
+# No param block on purpose: a [Parameter()] attribute makes this an advanced function, and
+# PowerShell then binds "-d" to the common -Debug switch, so "logcat -d" loses its -d and
+# streams forever instead of dumping.
 function Invoke-Adb {
-    param([Parameter(ValueFromRemainingArguments = $true)][string[]]$AdbArgs)
     if ([string]::IsNullOrEmpty($Device)) {
-        & adb @AdbArgs
+        & adb @args
     } else {
-        & adb -s $Device @AdbArgs
+        & adb -s $Device @args
     }
 }
 
@@ -107,18 +109,23 @@ try {
     Write-Host 'Waiting for the in-app tour (pick a profile with the remote if the picker shows)...'
     $deadline = (Get-Date).AddMinutes($TimeoutMinutes)
     $done = $false
+    $seen = @{}
     while ((Get-Date) -lt $deadline) {
         Start-Sleep -Seconds 5
-        $log = Invoke-Adb logcat -d -s K7-Startup:I AndroidRuntime:E
+        $log = (Invoke-Adb logcat -d -s K7-Startup:I AndroidRuntime:E) -join "`n"
         if ($log -match 'FATAL EXCEPTION') {
             throw "The app crashed before the tour finished. adb logcat -s AndroidRuntime:E shows the exception."
         }
-        if ($log -match 'AotProfileTour-done') {
+        # Each tour marker once: scenes report whether their playback started.
+        foreach ($m in [regex]::Matches($log, 'AotProfileTour-[A-Za-z-]+')) {
+            if (-not $seen.ContainsKey($m.Value)) {
+                $seen[$m.Value] = $true
+                Write-Host "  $($m.Value)"
+            }
+        }
+        if ($seen.ContainsKey('AotProfileTour-done')) {
             $done = $true
             break
-        }
-        if ($log -match 'AotProfileTour-start') {
-            Write-Host '  tour running...'
         }
     }
 

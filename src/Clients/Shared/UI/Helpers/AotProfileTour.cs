@@ -27,6 +27,7 @@ public static class AotProfileTour
     private static readonly TimeSpan PageSettle = TimeSpan.FromSeconds(4);
     private static readonly TimeSpan DpadPause = TimeSpan.FromMilliseconds(350);
     private static readonly TimeSpan MenuPause = TimeSpan.FromMilliseconds(1200);
+    private static readonly TimeSpan ButtonReadyTimeout = TimeSpan.FromSeconds(25);
     private static readonly TimeSpan PlaybackStartTimeout = TimeSpan.FromSeconds(45);
     private static readonly TimeSpan PlaybackHold = TimeSpan.FromSeconds(8);
     private static readonly TimeSpan PlayerCloseTimeout = TimeSpan.FromSeconds(6);
@@ -126,6 +127,7 @@ public static class AotProfileTour
         catch (Exception ex) when (ex is JSException or JSDisconnectedException or InvalidOperationException or OperationCanceledException or HttpRequestException)
         {
             // A step that fails here still left its code in the profile; keep touring.
+            ColdStartTrace.Write("AotProfileTour-step-failed-" + ex.GetType().Name);
         }
     }
 
@@ -145,14 +147,21 @@ public static class AotProfileTour
         var js = context.Js;
 
         await GoToAsync(context, route);
-        if (!await ClickAsync(js, playSelector))
+        if (!await ClickWhenReadyAsync(js, playSelector))
+        {
+            ColdStartTrace.Write("AotProfileTour-video-no-button");
             return;
+        }
 
         try
         {
             if (!await WaitUntilAsync(() => player.PlaybackState == PlaybackState.Playing, PlaybackStartTimeout))
+            {
+                ColdStartTrace.Write("AotProfileTour-video-not-playing");
                 return;
+            }
 
+            ColdStartTrace.Write("AotProfileTour-video-playing");
             await Task.Delay(PlaybackHold);
             await OnRendererAsync(context, player.Pause);
             await Task.Delay(MenuPause);
@@ -198,14 +207,21 @@ public static class AotProfileTour
         var js = context.Js;
 
         await GoToAsync(context, route);
-        if (!await ClickAsync(js, ".album-actions-primary button"))
+        if (!await ClickWhenReadyAsync(js, ".album-actions-primary button"))
+        {
+            ColdStartTrace.Write("AotProfileTour-audio-no-button");
             return;
+        }
 
         try
         {
             if (!await WaitUntilAsync(() => audio.PlaybackState == PlaybackState.Playing, PlaybackStartTimeout))
+            {
+                ColdStartTrace.Write("AotProfileTour-audio-not-playing");
                 return;
+            }
 
+            ColdStartTrace.Write("AotProfileTour-audio-playing");
             await Task.Delay(PlaybackHold);
             if (!audio.IsFullScreenVisible)
                 await OnRendererAsync(context, audio.ToggleFullScreen);
@@ -275,6 +291,25 @@ public static class AotProfileTour
         var script = "(function(){var e=document.querySelectorAll(" + JsonSerializer.Serialize(selector) + ")[" + index
             + "];if(!e||e.disabled)return false;e.click();return true;})()";
         return await js.InvokeAsync<bool>("eval", script);
+    }
+
+    /// <summary>
+    /// Clicks a play button once its page has loaded: on the TV box a detail page can take longer
+    /// than <see cref="PageSettle"/> to render its actions, and the button stays disabled until
+    /// the playable file is known.
+    /// </summary>
+    private static async Task<bool> ClickWhenReadyAsync(IJSRuntime js, string selector)
+    {
+        var deadline = DateTime.UtcNow + ButtonReadyTimeout;
+        while (DateTime.UtcNow < deadline)
+        {
+            if (await ClickAsync(js, selector))
+                return true;
+
+            await Task.Delay(MenuPause);
+        }
+
+        return false;
     }
 
     private static async Task<bool> WaitUntilAsync(Func<bool> condition, TimeSpan timeout)
