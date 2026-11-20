@@ -25,15 +25,26 @@ public class DetectMediaSegmentsCommandHandler : IRequestHandler<DetectMediaSegm
     private readonly ISender _sender;
     private readonly ILogger<DetectMediaSegmentsCommandHandler> _logger;
 
-    // Segment duration limits (seconds) - keep in sync with ChapterSegmentFallbackHelper / matcher calls
+    // Segment duration limits (seconds) for audio matches. Named chapters and picture-based
+    // credits have their own in ChapterSegmentFallbackHelper and CreditsFrameAnalyzer.
     private const double MinIntroDurationSeconds = 15;
-    private const double MaxIntroDurationSeconds = 120;
+
+    // A shorter intro (title card) is only kept when several episodes share the same region.
+    private const double ShortIntroMinDurationSeconds = 8;
+    // Above the two minutes of a long opening: some shows open every episode on the same
+    // logos and disclaimer before it, and the whole shared stretch is the intro.
+    private const double MaxIntroDurationSeconds = 180;
     private const double MinOutroDurationSeconds = 15;
     private const double MaxOutroDurationSeconds = 450;
 
     // Analysis window
     private const double AnalysisLengthLimitSeconds = 600;
     private const double AnalysisPercent = 0.25;
+
+    // Credits are searched in the last 450s even when that is more than AnalysisPercent, so an
+    // ending followed by a long preview or post-credits scene is still inside the window.
+    private const double OutroWindowSeconds = 450;
+    private const double OutroWindowMaxShare = 0.5;
 
     // Boundary adjustment
     private const double SnapToStartThresholdSeconds = 5.0;
@@ -101,33 +112,71 @@ public class DetectMediaSegmentsCommandHandler : IRequestHandler<DetectMediaSegm
             return;
         }
 
-        var hasExistingSegments = episodes.Any(e => e.Segments.Count > 0);
+        var presentTypes = episodes.ToDictionary(
+            e => e.Id,
+            e => e.Segments
+                .Where(s => IntroOutroSegmentCompleteness.CountsAsPresent(s.Type, s.StartMs, s.EndMs))
+                .Select(s => s.Type)
+                .ToHashSet());
 
-        List<MediaSegment> newSegments;
-        if (hasExistingSegments)
-            newSegments = await RunIncrementalDetectionAsync(episodes, cancellationToken);
-        else
-            newSegments = await RunFullDetectionAsync(episodes, cancellationToken);
+        // Episodes whose audio was fingerprinted, then those whose picture could not be read:
+        // only an episode analysed to the end is settled as "nothing more to find".
+        var fingerprinted = new HashSet<Guid>();
+        var pictureFailed = new HashSet<Guid>();
 
-        var chapterFallbacks = await BuildChapterFallbackSegmentsAsync(episodes, newSegments, cancellationToken);
-        if (chapterFallbacks.Count > 0)
-            newSegments.AddRange(chapterFallbacks);
+        var newSegments = await RunFingerprintDetectionAsync(episodes, presentTypes, fingerprinted, cancellationToken);
+        MarkPresent(presentTypes, newSegments);
+
+        var chapterFallbacks = await BuildChapterFallbackSegmentsAsync(episodes, presentTypes, cancellationToken);
+        MarkPresent(presentTypes, chapterFallbacks);
+        newSegments.AddRange(chapterFallbacks);
+
+        var pictureCredits = await BuildPictureCreditsSegmentsAsync(
+            episodes, presentTypes, pictureFailed, cancellationToken);
+        MarkPresent(presentTypes, pictureCredits);
+        newSegments.AddRange(pictureCredits);
 
         if (newSegments.Count > 0)
         {
-            // Remove existing detected segments for episodes that will get new ones
-            var episodeIds = newSegments.Select(s => s.MediaId).Distinct().ToList();
-            var segmentTypes = newSegments.Select(s => s.Type).Distinct().ToList();
-
-            await _context.MediaSegments
-                .Where(s => episodeIds.Contains(s.MediaId) && segmentTypes.Contains(s.Type))
-                .ExecuteDeleteAsync(cancellationToken);
+            // Only missing types are detected, but replace rather than add in case a concurrent
+            // run wrote the same segment first.
+            foreach (var group in newSegments.GroupBy(s => s.Type))
+            {
+                var type = group.Key;
+                var episodeIds = group.Select(s => s.MediaId).Distinct().ToList();
+                await _context.MediaSegments
+                    .Where(s => s.Type == type && episodeIds.Contains(s.MediaId))
+                    .ExecuteDeleteAsync(cancellationToken);
+            }
 
             _context.MediaSegments.AddRange(newSegments);
             await _context.SaveChangesAsync(cancellationToken);
         }
 
+        var settledIds = fingerprinted.Where(id => !pictureFailed.Contains(id)).ToList();
+        if (settledIds.Count > 0)
+        {
+            await _context.Medias
+                .OfType<SerieEpisode>()
+                .Where(e => settledIds.Contains(e.Id)
+                    && (e.SegmentDetectionVersion == null
+                        || e.SegmentDetectionVersion < IntroOutroSegmentCompleteness.CurrentDetectionVersion))
+                .ExecuteUpdateAsync(
+                    setters => setters.SetProperty(
+                        e => e.SegmentDetectionVersion,
+                        IntroOutroSegmentCompleteness.CurrentDetectionVersion),
+                    cancellationToken);
+        }
+
         await TryQueueThemeExtractAsync(season.SerieId, cancellationToken);
+    }
+
+    private static void MarkPresent(
+        Dictionary<Guid, HashSet<MediaSegmentType>> presentTypes,
+        IEnumerable<MediaSegment> segments)
+    {
+        foreach (var segment in segments)
+            presentTypes[segment.MediaId].Add(segment.Type);
     }
 
     private async Task TryQueueThemeExtractAsync(Guid serieId, CancellationToken cancellationToken)
@@ -167,9 +216,18 @@ public class DetectMediaSegmentsCommandHandler : IRequestHandler<DetectMediaSegm
         }, cancellationToken);
     }
 
-    private async Task<List<MediaSegment>> RunFullDetectionAsync(List<SerieEpisode> episodes, CancellationToken cancellationToken)
+    private async Task<List<MediaSegment>> RunFingerprintDetectionAsync(
+        List<SerieEpisode> episodes,
+        Dictionary<Guid, HashSet<MediaSegmentType>> presentTypes,
+        HashSet<Guid> fingerprinted,
+        CancellationToken cancellationToken)
     {
         var segments = new List<MediaSegment>();
+        if (!episodes.Any(e => IntroOutroSegmentCompleteness.IsIncomplete(presentTypes[e.Id])))
+            return segments;
+
+        // Fingerprints for the whole season: an episode missing a segment is matched against
+        // every other one, including those that are already complete.
         var episodeData = await ExtractAllFingerprintsAsync(episodes, cancellationToken);
 
         if (episodeData.Count < 2)
@@ -180,63 +238,99 @@ public class DetectMediaSegmentsCommandHandler : IRequestHandler<DetectMediaSegm
 
         LogFingerprintDiagnostics(episodeData);
 
+        foreach (var data in episodeData.Where(d => d.IntroFingerprint is not null && d.OutroFingerprint is not null))
+            fingerprinted.Add(data.Episode.Id);
+
+        var introTargets = TargetsMissing(episodeData, presentTypes, MediaSegmentType.Intro);
+        var outroTargets = TargetsMissing(episodeData, presentTypes, MediaSegmentType.Outro);
+
         var introMatches = ChromaprintFingerprintMatcher.FindBestMatches(
             episodeData.Select(e => e.IntroFingerprint).ToList(),
             MinIntroDurationSeconds,
-            MaxIntroDurationSeconds);
+            MaxIntroDurationSeconds,
+            ShortIntroMinDurationSeconds,
+            introTargets,
+            cancellationToken);
         var outroMatches = ChromaprintFingerprintMatcher.FindBestMatches(
             episodeData.Select(e => e.OutroFingerprint).ToList(),
             MinOutroDurationSeconds,
-            MaxOutroDurationSeconds);
+            MaxOutroDurationSeconds,
+            shortMinDurationSeconds: null,
+            outroTargets,
+            cancellationToken);
 
         _logger.LogInformation(
-            "Found intros for {IntroCount}/{Total} and outros for {OutroCount}/{Total} episodes (neighborRadius={Radius})",
-            introMatches.Count, episodeData.Count, outroMatches.Count, episodeData.Count,
-            ChromaprintFingerprintMatcher.NeighborRadius);
+            "Found intros for {IntroCount}/{IntroTargets} and outros for {OutroCount}/{OutroTargets} episodes missing them ({Total} fingerprinted)",
+            introMatches.Count, introTargets.Count, outroMatches.Count, outroTargets.Count, episodeData.Count);
 
         for (var i = 0; i < episodeData.Count; i++)
         {
             var data = episodeData[i];
-            if (introMatches.TryGetValue(i, out var introMatch))
+
+            // A match as long as the window means the two files are the same recording.
+            if (introMatches.TryGetValue(i, out var introMatch)
+                && introMatch.EndSeconds - introMatch.StartSeconds < data.IntroWindowSeconds - 1)
             {
                 var (start, end) = await AdjustSegmentBoundariesAsync(
                     data.File.Path, introMatch.StartSeconds, introMatch.EndSeconds,
                     data.DurationSeconds, cancellationToken);
 
-                segments.Add(new MediaSegment
-                {
-                    Id = Guid.NewGuid(),
-                    MediaId = data.Episode.Id,
-                    Type = MediaSegmentType.Intro,
-                    StartMs = (long)(start * 1000),
-                    EndMs = (long)(end * 1000),
-                    DetectedAt = DateTimeOffset.UtcNow
-                });
+                // Snapping the end to a silence can eat half of a title card of a few seconds.
+                if (end - start < ShortIntroMinDurationSeconds)
+                    end = introMatch.EndSeconds;
+
+                segments.Add(CreateSegment(data.Episode.Id, MediaSegmentType.Intro, start, end));
             }
 
-            if (outroMatches.TryGetValue(i, out var outroMatch))
+            if (outroMatches.TryGetValue(i, out var outroMatch)
+                && outroMatch.EndSeconds - outroMatch.StartSeconds < data.OutroWindowSeconds - 1)
             {
-                var outroOffset = data.DurationSeconds - GetAnalysisWindowSeconds(data.DurationSeconds);
+                var outroOffset = data.DurationSeconds - data.OutroWindowSeconds;
                 var absoluteStart = outroOffset + outroMatch.StartSeconds;
                 var absoluteEnd = outroOffset + outroMatch.EndSeconds;
+
+                // The wider credits window can reach the middle of a short episode: a jingle
+                // repeated there is not an ending unless it runs into the last quarter.
+                if (absoluteEnd < data.DurationSeconds - GetAnalysisWindowSeconds(data.DurationSeconds))
+                    continue;
 
                 var (start, end) = await AdjustSegmentBoundariesAsync(
                     data.File.Path, absoluteStart, absoluteEnd,
                     data.DurationSeconds, cancellationToken);
 
-                segments.Add(new MediaSegment
-                {
-                    Id = Guid.NewGuid(),
-                    MediaId = data.Episode.Id,
-                    Type = MediaSegmentType.Outro,
-                    StartMs = (long)(start * 1000),
-                    EndMs = (long)(end * 1000),
-                    DetectedAt = DateTimeOffset.UtcNow
-                });
+                segments.Add(CreateSegment(data.Episode.Id, MediaSegmentType.Outro, start, end));
             }
         }
 
         return segments;
+    }
+
+    private static HashSet<int> TargetsMissing(
+        List<EpisodeData> episodeData,
+        Dictionary<Guid, HashSet<MediaSegmentType>> presentTypes,
+        MediaSegmentType type)
+    {
+        var targets = new HashSet<int>();
+        for (var i = 0; i < episodeData.Count; i++)
+        {
+            if (IntroOutroSegmentCompleteness.NeedsType(presentTypes[episodeData[i].Episode.Id], type))
+                targets.Add(i);
+        }
+
+        return targets;
+    }
+
+    private static MediaSegment CreateSegment(Guid episodeId, MediaSegmentType type, double startSeconds, double endSeconds)
+    {
+        return new MediaSegment
+        {
+            Id = Guid.NewGuid(),
+            MediaId = episodeId,
+            Type = type,
+            StartMs = (long)(startSeconds * 1000),
+            EndMs = (long)(endSeconds * 1000),
+            DetectedAt = DateTimeOffset.UtcNow
+        };
     }
 
     private void LogFingerprintDiagnostics(List<EpisodeData> episodeData)
@@ -292,122 +386,6 @@ public class DetectMediaSegmentsCommandHandler : IRequestHandler<DetectMediaSegm
         }
     }
 
-    private async Task<List<MediaSegment>> RunIncrementalDetectionAsync(List<SerieEpisode> episodes, CancellationToken cancellationToken)
-    {
-        var segments = new List<MediaSegment>();
-        var incomplete = episodes
-            .Where(e => IntroOutroSegmentCompleteness.IsIncomplete(
-                e.Segments.Select(s => s.Type).ToHashSet()))
-            .ToList();
-
-        if (incomplete.Count == 0)
-            return segments;
-
-        // Fingerprints for the whole season: incomplete targets match against every other episode
-        // (including outro-only peers), so a missing Intro can still be retried after Outro exists.
-        var allData = await ExtractAllFingerprintsAsync(episodes, cancellationToken);
-        if (allData.Count < 2)
-            return segments;
-
-        var incompleteIds = incomplete.Select(e => e.Id).ToHashSet();
-        var presentTypesByEpisode = incomplete.ToDictionary(
-            e => e.Id,
-            e => (IReadOnlyCollection<MediaSegmentType>)e.Segments.Select(s => s.Type).ToHashSet());
-
-        foreach (var target in allData.Where(d => incompleteIds.Contains(d.Episode.Id)))
-        {
-            var present = presentTypesByEpisode[target.Episode.Id];
-            var references = allData.Where(d => d.Episode.Id != target.Episode.Id).ToList();
-            if (references.Count == 0)
-                continue;
-
-            if (IntroOutroSegmentCompleteness.NeedsType(present, MediaSegmentType.Intro))
-            {
-                var introSegment = await TryDetectSegmentFromReferencesAsync(
-                    target, references, MediaSegmentType.Intro, cancellationToken);
-                if (introSegment is not null)
-                    segments.Add(introSegment);
-            }
-
-            if (IntroOutroSegmentCompleteness.NeedsType(present, MediaSegmentType.Outro))
-            {
-                var outroSegment = await TryDetectSegmentFromReferencesAsync(
-                    target, references, MediaSegmentType.Outro, cancellationToken);
-                if (outroSegment is not null)
-                    segments.Add(outroSegment);
-            }
-        }
-
-        return segments;
-    }
-
-    private async Task<MediaSegment?> TryDetectSegmentFromReferencesAsync(
-        EpisodeData newEp,
-        List<EpisodeData> references,
-        MediaSegmentType segmentType,
-        CancellationToken cancellationToken)
-    {
-        var isOutro = segmentType == MediaSegmentType.Outro;
-        var newFp = isOutro ? newEp.OutroFingerprint : newEp.IntroFingerprint;
-        if (newFp is null)
-            return null;
-
-        var minDuration = isOutro ? MinOutroDurationSeconds : MinIntroDurationSeconds;
-        var maxDuration = isOutro ? MaxOutroDurationSeconds : MaxIntroDurationSeconds;
-
-        ChromaprintFingerprintMatcher.SegmentMatch? best = null;
-        var bestDuration = 0.0;
-
-        foreach (var refEp in references)
-        {
-            var refFp = isOutro ? refEp.OutroFingerprint : refEp.IntroFingerprint;
-            if (refFp is null)
-                continue;
-
-            var match = ChromaprintFingerprintMatcher.CompareFingerprints(refFp, newFp);
-            if (match is null)
-                continue;
-
-            var duration = match.Value.RhsEndSeconds - match.Value.RhsStartSeconds;
-            if (duration < minDuration || duration > maxDuration)
-                continue;
-
-            if (duration > bestDuration)
-            {
-                bestDuration = duration;
-                best = new ChromaprintFingerprintMatcher.SegmentMatch(
-                    match.Value.RhsStartSeconds, match.Value.RhsEndSeconds);
-            }
-        }
-
-        if (best is null)
-            return null;
-
-        var startSeconds = best.Value.StartSeconds;
-        var endSeconds = best.Value.EndSeconds;
-
-        if (isOutro)
-        {
-            var outroOffset = newEp.DurationSeconds - GetAnalysisWindowSeconds(newEp.DurationSeconds);
-            startSeconds += outroOffset;
-            endSeconds += outroOffset;
-        }
-
-        var (start, end) = await AdjustSegmentBoundariesAsync(
-            newEp.File.Path, startSeconds, endSeconds,
-            newEp.DurationSeconds, cancellationToken);
-
-        return new MediaSegment
-        {
-            Id = Guid.NewGuid(),
-            MediaId = newEp.Episode.Id,
-            Type = segmentType,
-            StartMs = (long)(start * 1000),
-            EndMs = (long)(end * 1000),
-            DetectedAt = DateTimeOffset.UtcNow
-        };
-    }
-
     // -- Fingerprint extraction --
 
     private async Task<List<EpisodeData>> ExtractAllFingerprintsAsync(
@@ -426,14 +404,15 @@ public class DetectMediaSegmentsCommandHandler : IRequestHandler<DetectMediaSegm
             if (durationSeconds <= 0)
                 continue;
 
-            var analysisWindow = GetAnalysisWindowSeconds(durationSeconds);
+            var introWindow = GetAnalysisWindowSeconds(durationSeconds);
+            var outroWindow = GetOutroWindowSeconds(durationSeconds);
 
             var introFpBytes = await _chromaprintService.ExtractFingerprintAsync(
-                file.Path, TimeSpan.Zero, TimeSpan.FromSeconds(analysisWindow), cancellationToken);
+                file.Path, TimeSpan.Zero, TimeSpan.FromSeconds(introWindow), cancellationToken);
 
-            var outroStart = durationSeconds - analysisWindow;
+            var outroStart = durationSeconds - outroWindow;
             var outroFpBytes = await _chromaprintService.ExtractFingerprintAsync(
-                file.Path, TimeSpan.FromSeconds(outroStart), TimeSpan.FromSeconds(analysisWindow), cancellationToken);
+                file.Path, TimeSpan.FromSeconds(outroStart), TimeSpan.FromSeconds(outroWindow), cancellationToken);
 
             var introFp = introFpBytes is not null ? ConvertToUints(introFpBytes) : null;
             var outroFp = outroFpBytes is not null ? ConvertToUints(outroFpBytes) : null;
@@ -441,7 +420,7 @@ public class DetectMediaSegmentsCommandHandler : IRequestHandler<DetectMediaSegm
             if (introFp is null && outroFp is null)
                 continue;
 
-            result.Add(new EpisodeData(episode, file, durationSeconds, introFp, outroFp));
+            result.Add(new EpisodeData(episode, file, durationSeconds, introWindow, outroWindow, introFp, outroFp));
         }
 
         return result;
@@ -451,13 +430,10 @@ public class DetectMediaSegmentsCommandHandler : IRequestHandler<DetectMediaSegm
 
     private async Task<List<MediaSegment>> BuildChapterFallbackSegmentsAsync(
         List<SerieEpisode> episodes,
-        List<MediaSegment> chromaprintSegments,
+        Dictionary<Guid, HashSet<MediaSegmentType>> presentTypes,
         CancellationToken cancellationToken)
     {
         var segments = new List<MediaSegment>();
-        var byEpisode = chromaprintSegments
-            .GroupBy(s => s.MediaId)
-            .ToDictionary(g => g.Key, g => g.Select(s => s.Type).ToHashSet());
 
         foreach (var episode in episodes)
         {
@@ -469,9 +445,7 @@ public class DetectMediaSegmentsCommandHandler : IRequestHandler<DetectMediaSegm
             if (durationSeconds <= 0)
                 continue;
 
-            var existing = byEpisode.GetValueOrDefault(episode.Id)
-                ?? episode.Segments.Select(s => s.Type).ToHashSet();
-
+            var existing = presentTypes[episode.Id];
             var needIntro = !existing.Contains(MediaSegmentType.Intro);
             var needOutro = !existing.Contains(MediaSegmentType.Outro);
             if (!needIntro && !needOutro)
@@ -528,6 +502,58 @@ public class DetectMediaSegmentsCommandHandler : IRequestHandler<DetectMediaSegm
                     break;
                 }
             }
+        }
+
+        return segments;
+    }
+
+    // -- Picture-based credits (when neither audio nor chapters found an Outro) --
+
+    private async Task<List<MediaSegment>> BuildPictureCreditsSegmentsAsync(
+        List<SerieEpisode> episodes,
+        Dictionary<Guid, HashSet<MediaSegmentType>> presentTypes,
+        HashSet<Guid> pictureFailed,
+        CancellationToken cancellationToken)
+    {
+        var segments = new List<MediaSegment>();
+
+        foreach (var episode in episodes)
+        {
+            if (presentTypes[episode.Id].Contains(MediaSegmentType.Outro))
+                continue;
+
+            // The picture of a file does not change: one scan per detection version is enough,
+            // unlike audio matching which gains partners as episodes are added.
+            if (IntroOutroSegmentCompleteness.IsSettled(episode.SegmentDetectionVersion))
+                continue;
+
+            var file = episode.IndexedFiles.FirstOrDefault(f => f.FileMetadata is VideoFileMetadata && File.Exists(f.Path));
+            if (file is null)
+                continue;
+
+            var durationSeconds = GetDurationSeconds(file);
+            if (durationSeconds <= 0)
+                continue;
+
+            var tailSeconds = CreditsFrameAnalyzer.GetTailSeconds(durationSeconds);
+            var tailStart = durationSeconds - tailSeconds;
+
+            var frames = await _segmentDetectionService.SampleCreditsFramesAsync(
+                file.Path, tailStart, tailSeconds, cancellationToken);
+            if (frames is null)
+            {
+                pictureFailed.Add(episode.Id);
+                continue;
+            }
+
+            var run = CreditsFrameAnalyzer.FindCreditsRun(frames, tailStart, durationSeconds);
+            if (run is null)
+                continue;
+
+            segments.Add(CreateSegment(episode.Id, MediaSegmentType.Outro, run.Value.StartSeconds, run.Value.EndSeconds));
+            _logger.LogInformation(
+                "Picture-based Outro for episode {EpisodeId}: {Start:F1}s-{End:F1}s",
+                episode.Id, run.Value.StartSeconds, run.Value.EndSeconds);
         }
 
         return segments;
@@ -688,12 +714,21 @@ public class DetectMediaSegmentsCommandHandler : IRequestHandler<DetectMediaSegm
         return Math.Min(totalDurationSeconds * AnalysisPercent, AnalysisLengthLimitSeconds);
     }
 
+    private static double GetOutroWindowSeconds(double totalDurationSeconds)
+    {
+        return Math.Max(
+            GetAnalysisWindowSeconds(totalDurationSeconds),
+            Math.Min(OutroWindowSeconds, totalDurationSeconds * OutroWindowMaxShare));
+    }
+
     // -- Inner types --
 
     private record EpisodeData(
         SerieEpisode Episode,
         IndexedFile File,
         double DurationSeconds,
+        double IntroWindowSeconds,
+        double OutroWindowSeconds,
         uint[]? IntroFingerprint,
         uint[]? OutroFingerprint);
 }

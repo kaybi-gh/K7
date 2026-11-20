@@ -3647,6 +3647,9 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.Property<Guid>("SeasonId")
                         .HasColumnType("uuid");
 
+                    b.Property<int?>("SegmentDetectionVersion")
+                        .HasColumnType("integer");
+
                     b.Property<Guid>("SerieId")
                         .HasColumnType("uuid");
 

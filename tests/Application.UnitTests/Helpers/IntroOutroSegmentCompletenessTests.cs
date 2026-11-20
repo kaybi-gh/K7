@@ -52,6 +52,31 @@ public class IntroOutroSegmentCompletenessTests
     }
 
     [Test]
+    public void CountsAsPresent_ShouldBeFalse_WhenIntroIsAFewSeconds()
+    {
+        // A 4s fragment kept when the real intro was rejected.
+        IntroOutroSegmentCompleteness
+            .CountsAsPresent(MediaSegmentType.Intro, 132_900, 137_400)
+            .Should().BeFalse();
+    }
+
+    [Test]
+    public void CountsAsPresent_ShouldBeTrue_WhenIntroIsLongEnough()
+    {
+        IntroOutroSegmentCompleteness
+            .CountsAsPresent(MediaSegmentType.Intro, 25_800, 140_500)
+            .Should().BeTrue();
+    }
+
+    [Test]
+    public void CountsAsPresent_ShouldBeTrue_WhenSegmentIsAShortOutro()
+    {
+        IntroOutroSegmentCompleteness
+            .CountsAsPresent(MediaSegmentType.Outro, 1_000_000, 1_005_000)
+            .Should().BeTrue();
+    }
+
+    [Test]
     public void NeedsType_ShouldMatchMissingTypes()
     {
         IReadOnlyCollection<MediaSegmentType> outroOnly = [MediaSegmentType.Outro];

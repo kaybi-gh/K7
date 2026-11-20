@@ -17,6 +17,13 @@ public static class SkipSegmentPresenter
     public static readonly TimeSpan DisplayDuration = TimeSpan.FromSeconds(5);
     public static readonly TimeSpan Cooldown = TimeSpan.FromSeconds(3);
 
+    /// <summary>
+    /// What may be left after an outro for skipping it to still end the episode. Detected credits
+    /// often stop a few seconds short of the file (studio logos, a black tail), and playing those
+    /// out after a skip delays the next-episode offer for nothing.
+    /// </summary>
+    public const double OutroEndToleranceSeconds = 5.0;
+
     public enum ActionKind
     {
         None,
@@ -54,14 +61,14 @@ public static class SkipSegmentPresenter
     }
 
     /// <summary>
-    /// Skipping an outro that runs to (or within tolerance of) duration must end the
-    /// episode so the next-episode offer runs. Seeking to EndMs parks on the last frame,
-    /// looks paused, and a second skip can then fire Ended on the successor episode.
+    /// Skipping an outro that runs to (or within <see cref="OutroEndToleranceSeconds"/> of)
+    /// duration must end the episode so the next-episode offer runs. Seeking to EndMs parks on
+    /// the last frame, looks paused, and a second skip can then fire Ended on the successor episode.
     /// </summary>
     public static bool CompletesPlayback(MediaSegmentDto segment, double durationSeconds)
     {
         return segment.Type == MediaSegmentType.Outro
-            && NativeVideoPlaybackEnd.IsSeekToMediaEnd(segment.EndMs / 1000.0, durationSeconds);
+            && NativeVideoPlaybackEnd.IsAtMediaEnd(segment.EndMs / 1000.0, durationSeconds, OutroEndToleranceSeconds);
     }
 
     public static Result Tick(

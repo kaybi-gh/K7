@@ -1,7 +1,9 @@
-using System.Text.RegularExpressions;
+using System.Diagnostics;
 using System.Globalization;
+using System.Text.RegularExpressions;
 using FFMpegCore;
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Helpers;
 using K7.Server.Domain.Entities.Metadatas.Files;
 using Microsoft.Extensions.Logging;
 
@@ -137,6 +139,154 @@ public partial class SegmentDetectionService(ILogger<SegmentDetectionService> lo
         }
 
         return results;
+    }
+
+    public async Task<IReadOnlyList<CreditsFrameAnalyzer.FrameStats>?> SampleCreditsFramesAsync(
+        string filePath,
+        double startSeconds,
+        double durationSeconds,
+        CancellationToken cancellationToken = default)
+    {
+        // Credits that count reach the end of the file, so the span is decoded backwards from
+        // there, one chunk at a time, and no further than the credits go. Chunks start on whole
+        // intervals so that they share one sampling grid.
+        var interval = CreditsFrameAnalyzer.SampleIntervalSeconds;
+        var totalFrames = (int)(durationSeconds / interval);
+        var chunkFrames = (int)(CreditsFrameAnalyzer.ChunkSeconds / interval);
+        var decoded = new List<CreditsFrameAnalyzer.FrameStats>();
+        var firstIndex = totalFrames;
+
+        while (firstIndex > 0)
+        {
+            var chunkIndex = Math.Max(0, firstIndex - chunkFrames);
+            var chunkSeconds = firstIndex == totalFrames
+                ? durationSeconds - chunkIndex * interval
+                : (firstIndex - chunkIndex) * interval;
+
+            var chunk = await SampleFramesAsync(
+                filePath, startSeconds + chunkIndex * interval, chunkSeconds, cancellationToken);
+            if (chunk is null)
+                return null;
+
+            decoded.InsertRange(0, CreditsFrameAnalyzer.FitToSpan(chunk, chunkSeconds));
+            firstIndex = chunkIndex;
+
+            if (!CreditsFrameAnalyzer.MayStartEarlier(decoded))
+                break;
+        }
+
+        // Slots before the decoded part stay empty: they are neither cards nor blank.
+        var frames = new List<CreditsFrameAnalyzer.FrameStats>(totalFrames);
+        frames.AddRange(Enumerable.Repeat(default(CreditsFrameAnalyzer.FrameStats), firstIndex));
+        frames.AddRange(decoded);
+        return frames;
+    }
+
+    private async Task<List<CreditsFrameAnalyzer.FrameStats>?> SampleFramesAsync(
+        string filePath,
+        double startSeconds,
+        double durationSeconds,
+        CancellationToken cancellationToken)
+    {
+        var interval = CreditsFrameAnalyzer.SampleIntervalSeconds.ToString("F3", CultureInfo.InvariantCulture);
+        var args = $"-v error -ss {startSeconds.ToString("F3", CultureInfo.InvariantCulture)} " +
+                   $"-i \"{filePath}\" " +
+                   $"-t {durationSeconds.ToString("F3", CultureInfo.InvariantCulture)} " +
+                   $"-an -dn -sn -map 0:v:0 " +
+                   $"-vf \"fps=1/{interval},scale={CreditsFrameAnalyzer.FrameWidth}:{CreditsFrameAnalyzer.FrameHeight}\" " +
+                   "-pix_fmt rgb24 -f rawvideo -";
+
+        try
+        {
+            using var process = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = GlobalFFOptions.GetFFMpegBinaryPath(),
+                    Arguments = args,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    RedirectStandardInput = false,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                }
+            };
+
+            if (!process.Start())
+            {
+                logger.LogWarning("Failed to start FFmpeg for credits frame sampling");
+                return null;
+            }
+
+            using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            timeoutCts.CancelAfter(TimeSpan.FromSeconds(MediaAnalysisTimeouts.CreditsFrameSamplingSeconds));
+
+            try
+            {
+                var stderrTask = process.StandardError.ReadToEndAsync(timeoutCts.Token);
+                var frames = await ReadFrameStatsAsync(process.StandardOutput.BaseStream, timeoutCts.Token);
+                await process.WaitForExitAsync(timeoutCts.Token);
+                await stderrTask;
+
+                if (process.ExitCode != 0)
+                {
+                    logger.LogDebug(
+                        "Credits frame sampling failed for '{FilePath}' with exit code {ExitCode}",
+                        filePath,
+                        process.ExitCode);
+                    return null;
+                }
+
+                return frames;
+            }
+            catch (OperationCanceledException)
+            {
+                TryKill(process);
+                if (cancellationToken.IsCancellationRequested)
+                    throw;
+
+                logger.LogWarning("Credits frame sampling timed out for '{FilePath}'", filePath);
+                return null;
+            }
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            logger.LogWarning(ex, "Credits frame sampling failed for '{FilePath}'", filePath);
+            return null;
+        }
+    }
+
+    private static async Task<List<CreditsFrameAnalyzer.FrameStats>> ReadFrameStatsAsync(
+        Stream stream,
+        CancellationToken cancellationToken)
+    {
+        var frames = new List<CreditsFrameAnalyzer.FrameStats>();
+        var buffer = new byte[CreditsFrameAnalyzer.FrameBytes];
+
+        while (true)
+        {
+            var read = await stream.ReadAtLeastAsync(
+                buffer, buffer.Length, throwOnEndOfStream: false, cancellationToken);
+            if (read < buffer.Length)
+                break;
+
+            frames.Add(CreditsFrameAnalyzer.ComputeStats(buffer));
+        }
+
+        return frames;
+    }
+
+    private void TryKill(Process process)
+    {
+        try
+        {
+            if (!process.HasExited)
+                process.Kill(entireProcessTree: true);
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or System.ComponentModel.Win32Exception)
+        {
+            logger.LogDebug(ex, "Credits frame sampling process kill failed");
+        }
     }
 
     public async Task<IReadOnlyList<double>> GetChapterTimesAsync(

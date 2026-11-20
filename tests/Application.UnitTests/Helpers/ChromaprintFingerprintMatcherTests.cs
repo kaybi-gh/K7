@@ -12,13 +12,13 @@ public class ChromaprintFingerprintMatcherTests
         // Without bridging, each run is kept separately; with bridging they merge past MinIntro.
         const int runPoints = 81; // ~10s
         const int gapPoints = 32; // ~4s
-        var shared = BuildUniqueFingerprint(runPoints * 2 + gapPoints);
+        var shared = BuildFingerprint(runPoints * 2 + gapPoints, seed: 1);
         var lhs = shared.ToArray();
         var rhs = shared.ToArray();
 
         // Punch a mismatch gap in the middle of rhs so FindContiguous sees two runs.
         for (var i = runPoints; i < runPoints + gapPoints; i++)
-            rhs[i] = unchecked(rhs[i] + 0x00FFFFFF);
+            rhs[i] = ~rhs[i];
 
         var match = ChromaprintFingerprintMatcher.FindContiguousAtShift(lhs, rhs, shift: 0);
 
@@ -28,25 +28,21 @@ public class ChromaprintFingerprintMatcherTests
     }
 
     [Test]
-    public void FindBestMatches_ShouldOnlyCompareWithinNeighborRadius()
+    public void FindBestMatches_ShouldKeepNeighbourMatch_WhenFartherEpisodeSharesMore()
     {
-        // Episodes 0 and 4 share a long identical fingerprint but are farther than radius 2.
-        // Episodes 0-1 and 3-4 are neighbours with short unique matches.
-        var sharedFar = BuildUniqueFingerprint(200); // ~25s
-        var nearA = BuildUniqueFingerprint(120); // ~15s
-        var nearB = BuildUniqueFingerprint(120);
+        // Episodes 0 and 1 share ~20s. Episode 4 shares ~45s with episode 0, but a valid
+        // neighbour match stops the search before it gets that far.
+        var near = BuildFingerprint(160, seed: 1); // ~20s
+        var far = BuildFingerprint(200, seed: 2); // ~25s
 
         uint[][] fps =
         [
-            Concat(nearA, Noise(50)),
-            Concat(nearA, Noise(50)),
-            Noise(250),
-            Concat(nearB, Noise(50)),
-            Concat(nearB, sharedFar), // far from 0
+            Concat(near, far),
+            Concat(near, BuildFingerprint(200, seed: 3)),
+            BuildFingerprint(360, seed: 4),
+            BuildFingerprint(360, seed: 5),
+            Concat(near, far),
         ];
-        // Put sharedFar also on episode 0 but after nearA so neighbour match with 1 wins on nearA;
-        // episode 0 vs 4 would be longer if compared - ensure they are NOT compared.
-        fps[0] = Concat(nearA, sharedFar);
 
         var matches = ChromaprintFingerprintMatcher.FindBestMatches(
             fps,
@@ -54,24 +50,128 @@ public class ChromaprintFingerprintMatcherTests
             maxDurationSeconds: 120);
 
         matches.Should().ContainKey(0);
-        matches.Should().ContainKey(1);
-        var duration01 = matches[0].EndSeconds - matches[0].StartSeconds;
-        duration01.Should().BeLessThan(20); // neighbour nearA (~15s), not the far sharedFar (~25s+)
+        var duration = matches[0].EndSeconds - matches[0].StartSeconds;
+        duration.Should().BeApproximately(160 * ChromaprintFingerprintMatcher.SampleDuration, 1);
     }
 
-    private static uint[] BuildUniqueFingerprint(int length)
+    [Test]
+    public void FindBestMatches_ShouldReachFartherEpisodes_WhenNeighboursShareNothing()
     {
-        var fp = new uint[length];
-        for (var i = 0; i < length; i++)
-            fp[i] = unchecked((uint)(0xA0000000 + i * 17));
-        return fp;
+        // The season alternates openings: episode 0 only matches episode 5.
+        var shared = BuildFingerprint(200, seed: 1); // ~25s
+
+        uint[][] fps =
+        [
+            Concat(shared, BuildFingerprint(100, seed: 10)),
+            BuildFingerprint(300, seed: 11),
+            BuildFingerprint(300, seed: 12),
+            BuildFingerprint(300, seed: 13),
+            BuildFingerprint(300, seed: 14),
+            Concat(shared, BuildFingerprint(100, seed: 15)),
+        ];
+
+        var matches = ChromaprintFingerprintMatcher.FindBestMatches(
+            fps,
+            minDurationSeconds: 15,
+            maxDurationSeconds: 120);
+
+        matches.Keys.Should().BeEquivalentTo([0, 5]);
+        matches[0].StartSeconds.Should().Be(0);
+        (matches[0].EndSeconds - matches[0].StartSeconds).Should().BeGreaterThan(20);
     }
 
-    private static uint[] Noise(int length)
+    [Test]
+    public void FindBestMatches_ShouldOnlyResolveTargets_WhenTargetsAreGiven()
     {
+        var shared = BuildFingerprint(200, seed: 1);
+
+        uint[][] fps =
+        [
+            Concat(shared, BuildFingerprint(100, seed: 10)),
+            Concat(shared, BuildFingerprint(100, seed: 11)),
+            Concat(shared, BuildFingerprint(100, seed: 12)),
+        ];
+
+        var matches = ChromaprintFingerprintMatcher.FindBestMatches(
+            fps,
+            minDurationSeconds: 15,
+            maxDurationSeconds: 120,
+            targets: new HashSet<int> { 2 });
+
+        matches.Keys.Should().BeEquivalentTo([2]);
+    }
+
+    [Test]
+    public void FindBestMatches_ShouldKeepShortMatch_WhenEnoughEpisodesShareIt()
+    {
+        // A ~10s title card, below the 15s minimum, repeated by the whole season.
+        var card = BuildFingerprint(81, seed: 1);
+
+        var fps = Enumerable.Range(0, 5)
+            .Select(i => Concat(
+                BuildFingerprint(40, seed: 20 + i),
+                Concat(card, BuildFingerprint(200, seed: 40 + i))))
+            .ToArray();
+
+        var matches = ChromaprintFingerprintMatcher.FindBestMatches(
+            fps,
+            minDurationSeconds: 15,
+            maxDurationSeconds: 120,
+            shortMinDurationSeconds: 8);
+
+        matches.Should().HaveCount(5);
+        var duration = matches[2].EndSeconds - matches[2].StartSeconds;
+        duration.Should().BeInRange(8, 15);
+        matches[2].StartSeconds.Should().BeApproximately(40 * ChromaprintFingerprintMatcher.SampleDuration, 0.5);
+    }
+
+    [Test]
+    public void FindBestMatches_ShouldRejectShortMatch_WhenOnlyOneEpisodeSharesIt()
+    {
+        var card = BuildFingerprint(81, seed: 1);
+
+        uint[][] fps =
+        [
+            Concat(card, BuildFingerprint(200, seed: 10)),
+            Concat(card, BuildFingerprint(200, seed: 11)),
+            BuildFingerprint(281, seed: 12),
+            BuildFingerprint(281, seed: 13),
+            BuildFingerprint(281, seed: 14),
+        ];
+
+        var matches = ChromaprintFingerprintMatcher.FindBestMatches(
+            fps,
+            minDurationSeconds: 15,
+            maxDurationSeconds: 120,
+            shortMinDurationSeconds: 8);
+
+        matches.Should().BeEmpty();
+    }
+
+    [Test]
+    public void FindBestMatches_ShouldRejectShortMatch_WhenShortMinimumIsNotSet()
+    {
+        var card = BuildFingerprint(81, seed: 1);
+
+        var fps = Enumerable.Range(0, 5)
+            .Select(i => Concat(card, BuildFingerprint(200, seed: 40 + i)))
+            .ToArray();
+
+        var matches = ChromaprintFingerprintMatcher.FindBestMatches(
+            fps,
+            minDurationSeconds: 15,
+            maxDurationSeconds: 120);
+
+        matches.Should().BeEmpty();
+    }
+
+    private static uint[] BuildFingerprint(int length, int seed)
+    {
+        // Seeded random points: two different seeds never match within the bit tolerance.
+        var random = new Random(seed);
         var fp = new uint[length];
         for (var i = 0; i < length; i++)
-            fp[i] = unchecked((uint)(0xB0000000 + i * 31 + 7));
+            fp[i] = (uint)random.NextInt64(0, (long)uint.MaxValue + 1);
         return fp;
     }
 

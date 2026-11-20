@@ -3711,6 +3711,9 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Property<Guid>("SeasonId")
                         .HasColumnType("TEXT");
 
+                    b.Property<int?>("SegmentDetectionVersion")
+                        .HasColumnType("INTEGER");
+
                     b.Property<Guid>("SerieId")
                         .HasColumnType("TEXT");
 

@@ -1,4 +1,4 @@
-﻿using K7.Server.Domain.Entities.Metadatas.External;
+using K7.Server.Domain.Entities.Metadatas.External;
 
 namespace K7.Server.Domain.Entities.Medias;
 
@@ -15,7 +15,12 @@ public class SerieEpisode() : BaseMedia(MediaType.SerieEpisode)
     public DateOnly? AirDate { get; set; }
     public int? Runtime { get; set; }
 
-
+    /// <summary>
+    /// Version of the intro/outro detection that last analysed this episode to the end, whether
+    /// or not it found segments. Null until then. An episode analysed by the current version and
+    /// still without an intro or outro has none to find, and is no longer reported as missing.
+    /// </summary>
+    public int? SegmentDetectionVersion { get; set; }
 
     public void ApplyMetadata(ExternalEpisodeMetadata metadata)
     {

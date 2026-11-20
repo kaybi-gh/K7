@@ -13,8 +13,24 @@ public static class ChromaprintFingerprintMatcher
     public const int InvertedIndexShift = 2;
     public const double SampleDuration = 4096.0 / 11025.0 / 3.0;
 
-    /// <summary>Compare each episode only to this many neighbours on each side (episode order).</summary>
+    /// <summary>
+    /// Neighbours on each side (episode order) that are always compared, so the longest match
+    /// among them wins even when the first one is already valid.
+    /// </summary>
     public const int NeighborRadius = 2;
+
+    /// <summary>
+    /// Upper bound of partners tried for one episode, nearest first. Neighbours often share the
+    /// same cut of the opening, but a season that alternates openings, or drops them on some
+    /// episodes, only matches farther away.
+    /// </summary>
+    public const int MaxComparisonPartners = 48;
+
+    /// <summary>Partners that must agree on the same region before a short match is trusted.</summary>
+    public const int ShortMatchConsensusPartners = 3;
+
+    /// <summary>How far apart two short matches may start and end and still be the same region.</summary>
+    public const double ShortMatchToleranceSeconds = 2.0;
 
     private const double BridgeMinimumRunDuration = 8.0;
     private const double BridgeMaximumGapShare = 0.5;
@@ -28,51 +44,146 @@ public static class ChromaprintFingerprintMatcher
     public readonly record struct SegmentMatch(double StartSeconds, double EndSeconds);
 
     /// <summary>
-    /// All-pairs within <see cref="NeighborRadius"/> of ordered fingerprints.
-    /// <paramref name="fingerprints"/> must be in episode order (same index = same episode).
+    /// Best shared region per episode. <paramref name="fingerprints"/> must be in episode order
+    /// (same index = same episode).
     /// </summary>
+    /// <param name="shortMinDurationSeconds">
+    /// When set, a region shorter than <paramref name="minDurationSeconds"/> but at least this long
+    /// is kept if <see cref="ShortMatchConsensusPartners"/> partners (or every partner, in a smaller
+    /// season of at least three episodes) share the same region: a title card of a few seconds is
+    /// only an intro when the whole season repeats it.
+    /// </param>
+    /// <param name="targets">Indexes to resolve; null resolves every episode.</param>
     public static Dictionary<int, SegmentMatch> FindBestMatches(
         IReadOnlyList<uint[]?> fingerprints,
         double minDurationSeconds,
-        double maxDurationSeconds)
+        double maxDurationSeconds,
+        double? shortMinDurationSeconds = null,
+        IReadOnlySet<int>? targets = null,
+        CancellationToken cancellationToken = default)
     {
         var bestMatches = new Dictionary<int, SegmentMatch>();
+        var pairCache = new Dictionary<(int, int), FingerprintMatch?>();
 
         for (var i = 0; i < fingerprints.Count; i++)
         {
+            if (targets is not null && !targets.Contains(i))
+                continue;
+
             var fpI = fingerprints[i];
             if (fpI is null || fpI.Length == 0)
                 continue;
 
-            var jMax = Math.Min(fingerprints.Count - 1, i + NeighborRadius);
-            for (var j = i + 1; j <= jMax; j++)
+            SegmentMatch? best = null;
+            var shortCandidates = new List<SegmentMatch>();
+            var partners = 0;
+
+            foreach (var j in PartnersNearestFirst(i, fingerprints.Count))
             {
                 var fpJ = fingerprints[j];
                 if (fpJ is null || fpJ.Length == 0)
                     continue;
 
-                var match = CompareFingerprints(fpI, fpJ);
-                if (match is null)
+                if (partners >= MaxComparisonPartners)
+                    break;
+
+                // Past the neighbours, the first valid match is enough.
+                if (best is not null && Math.Abs(j - i) > NeighborRadius)
+                    break;
+
+                cancellationToken.ThrowIfCancellationRequested();
+                partners++;
+
+                var region = CompareCached(pairCache, fingerprints, i, j);
+                if (region is null)
                     continue;
 
-                TryUpdateBestMatch(
-                    bestMatches,
-                    i,
-                    match.Value.LhsStartSeconds,
-                    match.Value.LhsEndSeconds,
-                    minDurationSeconds,
-                    maxDurationSeconds);
-                TryUpdateBestMatch(
-                    bestMatches,
-                    j,
-                    match.Value.RhsStartSeconds,
-                    match.Value.RhsEndSeconds,
-                    minDurationSeconds,
-                    maxDurationSeconds);
+                var duration = region.Value.EndSeconds - region.Value.StartSeconds;
+                if (duration > maxDurationSeconds)
+                    continue;
+
+                if (duration >= minDurationSeconds)
+                {
+                    if (best is null || duration > best.Value.EndSeconds - best.Value.StartSeconds)
+                        best = region;
+                }
+                else if (shortMinDurationSeconds is not null && duration >= shortMinDurationSeconds.Value)
+                {
+                    shortCandidates.Add(region.Value);
+                }
             }
+
+            best ??= FindShortConsensus(shortCandidates, partners);
+            if (best is not null)
+                bestMatches[i] = best.Value;
         }
 
         return bestMatches;
+    }
+
+    private static IEnumerable<int> PartnersNearestFirst(int index, int count)
+    {
+        for (var distance = 1; distance < count; distance++)
+        {
+            if (index + distance < count)
+                yield return index + distance;
+            if (index - distance >= 0)
+                yield return index - distance;
+        }
+    }
+
+    /// <summary>Region of episode <paramref name="i"/> shared with episode <paramref name="j"/>.</summary>
+    private static SegmentMatch? CompareCached(
+        Dictionary<(int, int), FingerprintMatch?> cache,
+        IReadOnlyList<uint[]?> fingerprints,
+        int i,
+        int j)
+    {
+        var key = i < j ? (i, j) : (j, i);
+        if (!cache.TryGetValue(key, out var match))
+        {
+            match = CompareFingerprints(fingerprints[key.Item1]!, fingerprints[key.Item2]!);
+            cache[key] = match;
+        }
+
+        if (match is null)
+            return null;
+
+        return i < j
+            ? new SegmentMatch(match.Value.LhsStartSeconds, match.Value.LhsEndSeconds)
+            : new SegmentMatch(match.Value.RhsStartSeconds, match.Value.RhsEndSeconds);
+    }
+
+    private static SegmentMatch? FindShortConsensus(List<SegmentMatch> candidates, int partners)
+    {
+        var required = Math.Min(ShortMatchConsensusPartners, partners);
+        if (required < 2 || candidates.Count < required)
+            return null;
+
+        List<SegmentMatch>? bestGroup = null;
+        foreach (var pivot in candidates)
+        {
+            var group = candidates
+                .Where(c => Math.Abs(c.StartSeconds - pivot.StartSeconds) <= ShortMatchToleranceSeconds
+                    && Math.Abs(c.EndSeconds - pivot.EndSeconds) <= ShortMatchToleranceSeconds)
+                .ToList();
+            if (bestGroup is null || group.Count > bestGroup.Count)
+                bestGroup = group;
+        }
+
+        if (bestGroup is null || bestGroup.Count < required)
+            return null;
+
+        return new SegmentMatch(
+            Median(bestGroup.Select(c => c.StartSeconds)),
+            Median(bestGroup.Select(c => c.EndSeconds)));
+    }
+
+    private static double Median(IEnumerable<double> values)
+    {
+        var sorted = values.Order().ToList();
+        var middle = sorted.Count / 2;
+        return sorted.Count % 2 == 1 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2;
     }
 
     public static FingerprintMatch? CompareFingerprints(uint[] lhs, uint[] rhs)
@@ -179,25 +290,6 @@ public static class ChromaprintFingerprintMatcher
 
         var gap = (right.Start - left.End) * SampleDuration;
         return gap <= shorter * BridgeMaximumGapShare;
-    }
-
-    private static void TryUpdateBestMatch(
-        Dictionary<int, SegmentMatch> matches,
-        int index,
-        double startSeconds,
-        double endSeconds,
-        double minDuration,
-        double maxDuration)
-    {
-        var duration = endSeconds - startSeconds;
-        if (duration < minDuration || duration > maxDuration)
-            return;
-
-        if (!matches.TryGetValue(index, out var existing)
-            || duration > existing.EndSeconds - existing.StartSeconds)
-        {
-            matches[index] = new SegmentMatch(startSeconds, endSeconds);
-        }
     }
 
     private static Dictionary<uint, int> CreateInvertedIndex(uint[] fingerprint)

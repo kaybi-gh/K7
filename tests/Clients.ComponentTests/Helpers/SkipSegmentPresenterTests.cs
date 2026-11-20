@@ -66,6 +66,18 @@ public class SkipSegmentPresenterTests
     }
 
     [Test]
+    public void CompletesPlayback_ShouldBeTrue_WhenOnlyAFewSecondsFollowTheOutro()
+    {
+        SkipSegmentPresenter.CompletesPlayback(Outro, durationSeconds: 1264.5).Should().BeTrue();
+    }
+
+    [Test]
+    public void CompletesPlayback_ShouldBeFalse_WhenMoreThanToleranceFollowsTheOutro()
+    {
+        SkipSegmentPresenter.CompletesPlayback(Outro, durationSeconds: 1266).Should().BeFalse();
+    }
+
+    [Test]
     public void CompletesPlayback_ShouldBeFalse_WhenOutroEndsBeforeCreditsClear()
     {
         SkipSegmentPresenter.CompletesPlayback(Outro, durationSeconds: 1400).Should().BeFalse();

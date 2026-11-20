@@ -177,8 +177,9 @@ restarts the count. Without an answer within 2 minutes the player closes, so the
 to sleep. Both settings follow your account across devices (server default under
 Admin -> Video playback).
 
-Skip outro that runs to the end of the file ends the episode (next-episode offer / autoplay) instead
-of parking on the last frame of the credits. Seeking the playhead to the end of the file does the
+Skip outro that runs to the end of the file, or leaves 5 seconds or less after it, ends the episode
+(next-episode offer / autoplay) instead of playing out a tail of logos or parking on the last frame
+of the credits. Seeking the playhead to the end of the file does the
 same.
 
 When controls are visible, arrows / D-pad also reach the skip intro/outro button (it is focused

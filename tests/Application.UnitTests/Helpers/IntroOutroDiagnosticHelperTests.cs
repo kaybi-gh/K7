@@ -133,6 +133,46 @@ public class IntroOutroDiagnosticHelperTests
         }
     }
 
+    [Test]
+    public async Task GetMissingIntroOutroEpisodes_ShouldSkipEpisode_WhenCurrentDetectionAlreadyAnalysedIt()
+    {
+        var libraryId = SeedSerieLibrary();
+        var (_, _, episode1, episode2) = SeedTwoEpisodes();
+
+        AddProbedEpisodeFile(libraryId, episode1, "/nonexistent/media/serie/s01/e01.mkv");
+        AddProbedEpisodeFile(libraryId, episode2, "/nonexistent/media/serie/s01/e02.mkv");
+        await _context.SaveChangesAsync();
+
+        var settled = await _context.Medias.OfType<SerieEpisode>().SingleAsync(e => e.Id == episode1);
+        settled.SegmentDetectionVersion = IntroOutroSegmentCompleteness.CurrentDetectionVersion;
+        await _context.SaveChangesAsync();
+
+        var candidates = await IntroOutroDiagnosticHelper.GetMissingIntroOutroEpisodesAsync(
+            _context, libraryId, verifyOnDisk: false, cancellationToken: CancellationToken.None);
+
+        candidates.Should().ContainSingle().Which.EpisodeId.Should().Be(episode2);
+    }
+
+    [Test]
+    public async Task GetMissingIntroOutroEpisodes_ShouldReportEpisode_WhenAnalysedByOlderDetection()
+    {
+        var libraryId = SeedSerieLibrary();
+        var (_, _, episode1, episode2) = SeedTwoEpisodes();
+
+        AddProbedEpisodeFile(libraryId, episode1, "/nonexistent/media/serie/s01/e01.mkv");
+        AddProbedEpisodeFile(libraryId, episode2, "/nonexistent/media/serie/s01/e02.mkv");
+        await _context.SaveChangesAsync();
+
+        var outdated = await _context.Medias.OfType<SerieEpisode>().SingleAsync(e => e.Id == episode1);
+        outdated.SegmentDetectionVersion = IntroOutroSegmentCompleteness.CurrentDetectionVersion - 1;
+        await _context.SaveChangesAsync();
+
+        var candidates = await IntroOutroDiagnosticHelper.GetMissingIntroOutroEpisodesAsync(
+            _context, libraryId, verifyOnDisk: false, cancellationToken: CancellationToken.None);
+
+        candidates.Select(c => c.EpisodeId).Should().BeEquivalentTo([episode1, episode2]);
+    }
+
     private (Guid SerieId, Guid SeasonId, Guid Episode1, Guid Episode2) SeedTwoEpisodes()
     {
         var serieId = Guid.NewGuid();

@@ -16,6 +16,7 @@ public static class IntroOutroDiagnosticHelper
     /// <summary>
     /// Episodes in intro-detection-enabled libraries whose season is detection-eligible
     /// (2+ episodes with existing files) and that are missing Intro and/or Outro.
+    /// Episodes the current detection already analysed are excluded: nothing more to find.
     /// Series with <see cref="MediaLockFields.IntroOutro"/> locked are excluded.
     /// </summary>
     /// <param name="verifyOnDisk">
@@ -42,6 +43,7 @@ public static class IntroOutroDiagnosticHelper
                 EpisodeId = episode.Id,
                 episode.SeasonId,
                 episode.SerieId,
+                episode.SegmentDetectionVersion,
                 file.LibraryId,
                 Path = file.Path!
             };
@@ -112,6 +114,7 @@ public static class IntroOutroDiagnosticHelper
 
         var candidates = existing
             .Where(r => eligibleSeasonIds.Contains(r.SeasonId))
+            .Where(r => !IntroOutroSegmentCompleteness.IsSettled(r.SegmentDetectionVersion))
             .GroupBy(r => r.EpisodeId)
             .Select(g => g.First())
             .Select(r =>
