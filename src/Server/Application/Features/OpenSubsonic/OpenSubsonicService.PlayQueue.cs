@@ -40,7 +40,7 @@ public sealed partial class OpenSubsonicService
             return EmptyPlayQueue(username);
 
         var mediaIds = snapshot.Items.Select(i => i.MediaId).Distinct().ToList();
-        var tracks = await LoadMappedTracksAsync(mediaIds, cancellationToken);
+        var tracks = await LoadMappedTracksAsync(mediaIds, userId.Value, cancellationToken);
         var byId = tracks.ToDictionary(t => t.Id);
         var songs = new List<OpenSubsonicSong>();
         foreach (var item in snapshot.Items)
@@ -131,7 +131,7 @@ public sealed partial class OpenSubsonicService
 
         var currentIndex = ResolvePlayQueueIndex(parameters, ids, byIndex);
         var slice = MusicSessionWindow.Slice(ids, currentIndex, hasSource: false);
-        var tracks = await LoadMappedTracksAsync(slice.Items.Distinct().ToList(), cancellationToken);
+        var tracks = await LoadMappedTracksAsync(slice.Items.Distinct().ToList(), userId.Value, cancellationToken);
         var byId = tracks.ToDictionary(t => t.Id);
         var items = new List<MusicSessionTrackDto>();
         foreach (var id in slice.Items)

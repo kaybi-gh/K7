@@ -4,8 +4,10 @@ using K7.Server.Application.Common.Services;
 using K7.Server.Application.Features.Devices.Commands.EnsureOpenSubsonicDevice;
 using K7.Server.Application.Features.OpenSubsonic;
 using K7.Server.Application.Services;
+using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Devices;
 using K7.Server.Domain.Entities.Medias;
+using K7.Server.Domain.Entities.Playlists;
 using K7.Server.Domain.Entities.Users;
 using K7.Server.Domain.Enums;
 using K7.Server.Domain.Interfaces;
@@ -28,6 +30,7 @@ public class OpenSubsonicPlayQueueTests
     private OpenSubsonicService _service = null!;
     private Guid _userId;
     private Guid _albumId;
+    private Guid _libraryId;
     private Guid _deviceA;
     private Guid _deviceB;
 
@@ -46,11 +49,29 @@ public class OpenSubsonicPlayQueueTests
 
         _userId = Guid.NewGuid();
         _albumId = Guid.NewGuid();
+        _libraryId = Guid.NewGuid();
         _deviceA = Guid.NewGuid();
         _deviceB = Guid.NewGuid();
 
         var user = new User { Id = _userId, IdentityUserId = "ident", DisplayName = "listener" };
+        var groupId = Guid.NewGuid();
         _context.Users.Add(user);
+        _context.LibraryGroups.Add(new LibraryGroup
+        {
+            Id = groupId,
+            Title = "Music",
+            MediaType = LibraryMediaType.Music
+        });
+        _context.Libraries.Add(new Library
+        {
+            Id = _libraryId,
+            LibraryGroupId = groupId,
+            Title = "Music",
+            MediaType = LibraryMediaType.Music,
+            MetadataProviderName = "none",
+            MetadataLanguage = "fr",
+            MetadataFallbackLanguage = "en"
+        });
         _context.Medias.Add(new MusicAlbum { Id = _albumId, Title = "Album" });
         _context.Devices.Add(ExternalDevice(_deviceA, "Tempus", user));
         _context.Devices.Add(ExternalDevice(_deviceB, "Feishin", user));
@@ -201,6 +222,89 @@ public class OpenSubsonicPlayQueueTests
         songs.Should().Contain(s => s.Id == current.ToString("D"));
     }
 
+    [Test]
+    public async Task SaveAndGet_ShouldOmitTracks_WhenLibraryIsExcluded()
+    {
+        var visible = await AddTrackAsync("PUBLIC-TRACK");
+        var hiddenLibraryId = await AddLibraryAsync("Private");
+        var hidden = await AddTrackAsync("PRIVATE-MARKER-TRACK", hiddenLibraryId);
+        _context.UserLibraryExclusions.Add(new UserLibraryExclusion
+        {
+            Id = Guid.NewGuid(),
+            UserId = _userId,
+            LibraryId = hiddenLibraryId,
+            IsAdminExcluded = true
+        });
+        await _context.SaveChangesAsync();
+
+        var save = await _service.ExecuteAsync(
+            "savePlayQueue",
+            new Dictionary<string, string[]>
+            {
+                ["id"] = [visible.ToString("D"), hidden.ToString("D")],
+                ["c"] = ["Tempus"]
+            },
+            "listener",
+            canWrite: true);
+
+        save.IsFailed.Should().BeFalse();
+        var songs = SongsOf(QueueOf(await GetAsync("Tempus")));
+        songs.Select(s => s.Title).Should().Equal("PUBLIC-TRACK");
+    }
+
+    [Test]
+    public async Task GetPlaylist_ShouldOmitTracks_WhenLibraryIsExcluded()
+    {
+        var visible = await AddTrackAsync("PUBLIC-TRACK");
+        var hiddenLibraryId = await AddLibraryAsync("Private");
+        var hidden = await AddTrackAsync("PRIVATE-MARKER-TRACK", hiddenLibraryId);
+        _context.UserLibraryExclusions.Add(new UserLibraryExclusion
+        {
+            Id = Guid.NewGuid(),
+            UserId = _userId,
+            LibraryId = hiddenLibraryId,
+            IsAdminExcluded = true
+        });
+
+        var playlistId = Guid.NewGuid();
+        _context.Playlists.Add(new Playlist
+        {
+            Id = playlistId,
+            Title = "mix",
+            MediaType = MediaType.MusicTrack,
+            UserId = _userId,
+            Items =
+            [
+                new PlaylistItem { Id = Guid.NewGuid(), MediaId = visible, Order = 0 },
+                new PlaylistItem { Id = Guid.NewGuid(), MediaId = hidden, Order = 1 }
+            ]
+        });
+        await _context.SaveChangesAsync();
+
+        var detail = await _service.ExecuteAsync(
+            "getPlaylist",
+            new Dictionary<string, string[]> { ["id"] = [playlistId.ToString("D")] },
+            "listener",
+            canWrite: true);
+
+        detail.IsFailed.Should().BeFalse();
+        var playlist = (OpenSubsonicPlaylist)detail.Data!["playlist"]!;
+        playlist.SongCount.Should().Be(1);
+        playlist.Entry.Should().ContainSingle();
+        playlist.Entry![0].Title.Should().Be("PUBLIC-TRACK");
+        playlist.Entry.Should().NotContain(s => s.Title == "PRIVATE-MARKER-TRACK");
+
+        var list = await _service.ExecuteAsync(
+            "getPlaylists",
+            new Dictionary<string, string[]>(),
+            "listener",
+            canWrite: true);
+        var wrapped = (Dictionary<string, object?>)list.Data!["playlists"]!;
+        var cards = (List<OpenSubsonicPlaylist>)wrapped["playlist"]!;
+        cards.Should().ContainSingle();
+        cards[0].SongCount.Should().Be(1);
+    }
+
     private async Task<OpenSubsonicActionResult> GetAsync(string client) =>
         await _service.ExecuteAsync(
             "getPlayQueue",
@@ -208,7 +312,9 @@ public class OpenSubsonicPlayQueueTests
             "listener",
             canWrite: true);
 
-    private async Task<Guid> AddTrackAsync(string title)
+    private Task<Guid> AddTrackAsync(string title) => AddTrackAsync(title, _libraryId);
+
+    private async Task<Guid> AddTrackAsync(string title, Guid libraryId)
     {
         var id = Guid.NewGuid();
         _context.Medias.Add(new MusicTrack
@@ -217,8 +323,37 @@ public class OpenSubsonicPlayQueueTests
             Title = title,
             AlbumId = _albumId
         });
+        _context.MediaLibraryAvailabilities.Add(new MediaLibraryAvailability
+        {
+            MediaId = id,
+            LibraryId = libraryId
+        });
         await _context.SaveChangesAsync();
         return id;
+    }
+
+    private async Task<Guid> AddLibraryAsync(string title)
+    {
+        var groupId = Guid.NewGuid();
+        var libraryId = Guid.NewGuid();
+        _context.LibraryGroups.Add(new LibraryGroup
+        {
+            Id = groupId,
+            Title = title,
+            MediaType = LibraryMediaType.Music
+        });
+        _context.Libraries.Add(new Library
+        {
+            Id = libraryId,
+            LibraryGroupId = groupId,
+            Title = title,
+            MediaType = LibraryMediaType.Music,
+            MetadataProviderName = "none",
+            MetadataLanguage = "fr",
+            MetadataFallbackLanguage = "en"
+        });
+        await _context.SaveChangesAsync();
+        return libraryId;
     }
 
     private static Device ExternalDevice(Guid id, string name, User user) =>

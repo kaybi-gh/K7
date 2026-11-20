@@ -1,5 +1,6 @@
 using Ardalis.GuardClauses;
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Common.Services;
 using K7.Server.Application.Features.DynamicPlaylists.Commands.EvaluateDynamicPlaylist;
 using K7.Server.Application.Features.DynamicPlaylists.Services;
 using K7.Server.Domain.Entities;
@@ -62,7 +63,7 @@ public class EvaluateDynamicPlaylistCommandHandlerTests
 
         _currentUser = Substitute.For<IUser>();
         _currentUser.Id.Returns(_userId);
-        _handler = new EvaluateDynamicPlaylistCommandHandler(_context, _currentUser);
+        _handler = new EvaluateDynamicPlaylistCommandHandler(_context, _currentUser, new MediaAccessFilter(_context));
     }
 
     [TearDown]
@@ -127,6 +128,45 @@ public class EvaluateDynamicPlaylistCommandHandlerTests
     }
 
     [Test]
+    public async Task Handle_ShouldOmitTracks_WhenLibraryIsExcluded()
+    {
+        var albumId = Guid.NewGuid();
+        _context.Medias.Add(new MusicAlbum { Id = albumId, Title = "Album" });
+
+        var publicLibraryId = await SeedMusicLibraryAsync("Public");
+        var privateLibraryId = await SeedMusicLibraryAsync("Private");
+        var visibleId = SeedLinkedTrack("PUBLIC-TRACK", publicLibraryId, albumId);
+        var hiddenId = SeedLinkedTrack("PRIVATE-MARKER-TRACK", privateLibraryId, albumId);
+        _context.UserLibraryExclusions.Add(new UserLibraryExclusion
+        {
+            Id = Guid.NewGuid(),
+            UserId = _userId,
+            LibraryId = privateLibraryId,
+            IsAdminExcluded = true
+        });
+
+        var playlistId = Guid.NewGuid();
+        _context.Playlists.Add(new DynamicPlaylist
+        {
+            Id = playlistId,
+            Title = "All music",
+            MediaType = MediaType.MusicTrack,
+            UserId = _userId,
+            RuleFilter = new RuleGroup { MatchCondition = RuleMatchCondition.All }
+        });
+        await _context.SaveChangesAsync();
+
+        await _handler.Handle(new EvaluateDynamicPlaylistCommand { Id = playlistId }, CancellationToken.None);
+
+        var playlist = await _context.Playlists.OfType<DynamicPlaylist>()
+            .Include(p => p.Items)
+            .SingleAsync(p => p.Id == playlistId);
+        playlist.Items.Should().ContainSingle();
+        playlist.Items.Single().MediaId.Should().Be(visibleId);
+        playlist.Items.Should().NotContain(i => i.MediaId == hiddenId);
+    }
+
+    [Test]
     public void ApplyRules_ShouldOrderByTitleAscending()
     {
         var medias = new List<BaseMedia>
@@ -172,7 +212,65 @@ public class EvaluateDynamicPlaylistCommandHandlerTests
             Size = 1
         });
         _context.Medias.Add(movie);
+        _context.MediaLibraryAvailabilities.Add(new MediaLibraryAvailability
+        {
+            MediaId = movie.Id,
+            LibraryId = _libraryId
+        });
         return movie;
+    }
+
+    private async Task<Guid> SeedMusicLibraryAsync(string title)
+    {
+        var groupId = Guid.NewGuid();
+        var libraryId = Guid.NewGuid();
+        _context.LibraryGroups.Add(new LibraryGroup
+        {
+            Id = groupId,
+            Title = title,
+            MediaType = LibraryMediaType.Music
+        });
+        _context.Libraries.Add(new Library
+        {
+            Id = libraryId,
+            LibraryGroupId = groupId,
+            Title = title,
+            MediaType = LibraryMediaType.Music,
+            RootPath = $"/{title}",
+            MetadataProviderName = "none",
+            MetadataLanguage = "fr",
+            MetadataFallbackLanguage = "en"
+        });
+        await _context.SaveChangesAsync();
+        return libraryId;
+    }
+
+    private Guid SeedLinkedTrack(string title, Guid libraryId, Guid albumId)
+    {
+        var track = new MusicTrack
+        {
+            Id = Guid.NewGuid(),
+            Title = title,
+            AlbumId = albumId
+        };
+        track.IndexedFiles.Add(new IndexedFile
+        {
+            Id = Guid.NewGuid(),
+            LibraryId = libraryId,
+            MediaId = track.Id,
+            Name = title,
+            Extension = ".mp3",
+            Path = $"/media/{title}.mp3",
+            Hash = 1,
+            Size = 1
+        });
+        _context.Medias.Add(track);
+        _context.MediaLibraryAvailabilities.Add(new MediaLibraryAvailability
+        {
+            MediaId = track.Id,
+            LibraryId = libraryId
+        });
+        return track.Id;
     }
 
     private void SeedMovieWithoutFile(string title)

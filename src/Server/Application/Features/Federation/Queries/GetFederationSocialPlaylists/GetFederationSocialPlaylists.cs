@@ -1,5 +1,6 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Mappings;
+using K7.Server.Application.Common.Services;
 using K7.Server.Application.Features.Federation.Services;
 using K7.Server.Domain.Entities.Playlists;
 using K7.Server.Domain.Enums;
@@ -14,7 +15,8 @@ public class GetFederationSocialPlaylistsQueryHandler(
     IPeerAuthorizationService peerAuthorization,
     IApplicationDbContext context,
     IUserFederationPrivacyService privacyService,
-    IContentVisibilityEvaluator visibilityEvaluator)
+    IContentVisibilityEvaluator visibilityEvaluator,
+    MediaAccessFilter mediaAccessFilter)
     : IRequestHandler<GetFederationSocialPlaylistsQuery, IReadOnlyList<FederatedPlaylistDto>>
 {
     public async Task<IReadOnlyList<FederatedPlaylistDto>> Handle(
@@ -54,6 +56,22 @@ public class GetFederationSocialPlaylistsQueryHandler(
             .Where(p => p.UserId == owner.Id && p.VisibilityScope != VisibilityScope.Nobody)
             .ToListAsync(cancellationToken);
 
+        var mediaIds = playlists.SelectMany(p => p.Items).Select(i => i.MediaId).Distinct().ToList();
+        HashSet<Guid> accessibleIds;
+        if (mediaIds.Count == 0)
+        {
+            accessibleIds = [];
+        }
+        else
+        {
+            var accessible = await mediaAccessFilter.ApplyAllAsync(
+                context.Medias.AsNoTracking(), owner.Id, cancellationToken);
+            accessibleIds = (await accessible
+                .Where(m => mediaIds.Contains(m.Id))
+                .Select(m => m.Id)
+                .ToListAsync(cancellationToken)).ToHashSet();
+        }
+
         var dtos = new List<FederatedPlaylistDto>();
         foreach (var playlist in playlists.Where(p => p is not DynamicPlaylist))
         {
@@ -74,6 +92,7 @@ public class GetFederationSocialPlaylistsQueryHandler(
                 Description = playlist.Description,
                 MediaType = playlist.MediaType,
                 Items = playlist.Items
+                    .Where(i => accessibleIds.Contains(i.MediaId))
                     .OrderBy(i => i.Order)
                     .Select(i => new FederatedPlaylistItemDto
                     {

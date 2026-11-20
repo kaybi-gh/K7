@@ -1,6 +1,7 @@
 using K7.Server.Application.Common;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Mappings;
+using K7.Server.Application.Common.Services;
 using K7.Server.Application.Features.DynamicPlaylists.Services;
 using K7.Server.Application.Features.Reviews;
 using K7.Server.Domain.Entities.Federation;
@@ -41,7 +42,8 @@ public class SocialUserProfileReader(
     ISocialUserProfileVisibilityService profileVisibilityService,
     IFederatedMediaResolver mediaResolver,
     IFederationSocialConsumerService consumerService,
-    IIdentityService identityService)
+    IIdentityService identityService,
+    MediaAccessFilter mediaAccessFilter)
     : ISocialUserProfileReader
 {
     private const int RecentLimit = 20;
@@ -910,6 +912,11 @@ public class SocialUserProfileReader(
             .Where(p => p.UserId == owner.Id && (isSelf || p.VisibilityScope != VisibilityScope.Nobody))
             .ToListAsync(cancellationToken);
 
+        var accessibleIds = await AccessibleMediaIdsAsync(
+            playlists.SelectMany(p => p.Items).Select(i => i.MediaId).Distinct().ToList(),
+            viewerUserId,
+            cancellationToken);
+
         var results = new List<SocialUserPlaylistCardDto>();
         foreach (var playlist in playlists)
         {
@@ -917,7 +924,8 @@ public class SocialUserProfileReader(
                 viewerUserId, owner.Id, FederationContentType.Playlists, playlist.VisibilityScope, playlistId: playlist.Id, cancellationToken: cancellationToken))
                 continue;
 
-            var previewItems = playlist.Items
+            var visibleItems = playlist.Items.Where(i => accessibleIds.Contains(i.MediaId)).ToList();
+            var previewItems = visibleItems
                 .OrderBy(i => i.Order)
                 .Take(PreviewItemLimit)
                 .Select(i => new SocialUserMediaCardDto
@@ -938,7 +946,7 @@ public class SocialUserProfileReader(
                 MediaType = playlist.MediaType,
                 IsDynamic = false,
                 CoverPictureId = playlist.CoverPicture?.Id,
-                ItemCount = playlist.Items.Count,
+                ItemCount = visibleItems.Count,
                 PreviewItems = previewItems
             });
         }
@@ -979,6 +987,7 @@ public class SocialUserProfileReader(
                 continue;
 
             var query = context.Medias.Where(m => m.IndexedFiles.Any()).AsNoTracking();
+            query = await mediaAccessFilter.ApplyAllAsync(query, viewerUserId, cancellationToken);
             query = DynamicPlaylistEvaluator.ApplyRules(query, playlist, viewerUserId);
             var mediaIds = await query.Select(m => m.Id).Take(PreviewItemLimit).ToListAsync(cancellationToken);
 
@@ -1241,6 +1250,7 @@ public class SocialUserProfileReader(
             };
 
             var query = context.Medias.Where(m => m.IndexedFiles.Any()).AsNoTracking();
+            query = await mediaAccessFilter.ApplyAllAsync(query, viewerUserId, cancellationToken);
             query = DynamicPlaylistEvaluator.ApplyRules(query, dynamicPlaylist, viewerUserId);
             var mediaIds = await query.Select(m => m.Id).Take(PreviewItemLimit).ToListAsync(cancellationToken);
 
@@ -1271,6 +1281,23 @@ public class SocialUserProfileReader(
         }
 
         return results;
+    }
+
+    private async Task<HashSet<Guid>> AccessibleMediaIdsAsync(
+        IReadOnlyList<Guid> mediaIds,
+        Guid userId,
+        CancellationToken cancellationToken)
+    {
+        if (mediaIds.Count == 0)
+            return [];
+
+        var query = await mediaAccessFilter.ApplyAllAsync(context.Medias.AsNoTracking(), userId, cancellationToken);
+        var accessible = await query
+            .Where(m => mediaIds.Contains(m.Id))
+            .Select(m => m.Id)
+            .ToListAsync(cancellationToken);
+
+        return accessible.ToHashSet();
     }
 
     private static bool HasSocialViewEnabled(FederationContentVisibilityDto view) =>

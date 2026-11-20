@@ -47,7 +47,15 @@ public sealed partial class OpenSubsonicService
             .Include(p => p.CoverPicture)
             .ToListAsync(cancellationToken);
 
-        var mapped = playlists.Select(p => MapPlaylist(p, username, includeEntries: false)).ToList();
+        var mediaIds = playlists.SelectMany(p => p.Items).Select(i => i.MediaId).Distinct().ToList();
+        var accessibleIds = await AccessibleTrackIdsAsync(mediaIds, userId.Value, cancellationToken);
+        var mapped = playlists
+            .Select(p => MapPlaylist(
+                p,
+                username,
+                includeEntries: false,
+                songCount: p.Items.Count(i => accessibleIds.Contains(i.MediaId))))
+            .ToList();
         return OpenSubsonicActionResult.Ok(new Dictionary<string, object?>
         {
             ["playlists"] = new Dictionary<string, object?> { ["playlist"] = mapped }
@@ -77,17 +85,7 @@ public sealed partial class OpenSubsonicService
             return OpenSubsonicActionResult.Fail(OpenSubsonicConstants.ErrorNotFound, "Playlist not found.");
 
         var mediaIds = playlist.Items.OrderBy(i => i.Order).Select(i => i.MediaId).ToList();
-        var tracks = await context.Medias.OfType<MusicTrack>()
-            .AsNoTracking()
-            .Where(t => mediaIds.Contains(t.Id))
-            .Include(t => t.Album).ThenInclude(a => a.MetadataTags).ThenInclude(mt => mt.MetadataTag)
-            .Include(t => t.Artist)
-            .Include(t => t.IndexedFiles).ThenInclude(f => f.FileMetadata)
-            .Include(t => t.MetadataTags).ThenInclude(mt => mt.MetadataTag)
-            .Include(t => t.Ratings)
-            .Include(t => t.UserMediaStates)
-            .AsSplitQuery()
-            .ToListAsync(cancellationToken);
+        var tracks = await LoadMappedTracksAsync(mediaIds, userId.Value, cancellationToken);
 
         var byId = tracks.ToDictionary(t => t.Id);
         var entries = mediaIds
@@ -294,6 +292,23 @@ public sealed partial class OpenSubsonicService
 
         await sender.Send(new DeletePlaylistCommand(id.Value), cancellationToken);
         return OpenSubsonicActionResult.OkEmpty();
+    }
+
+    private async Task<HashSet<Guid>> AccessibleTrackIdsAsync(
+        IReadOnlyList<Guid> mediaIds,
+        Guid userId,
+        CancellationToken cancellationToken)
+    {
+        if (mediaIds.Count == 0)
+            return [];
+
+        var query = await GetAccessibleTracksQueryAsync(userId, null, cancellationToken);
+        var accessible = await query
+            .Where(t => mediaIds.Contains(t.Id))
+            .Select(t => t.Id)
+            .ToListAsync(cancellationToken);
+
+        return accessible.ToHashSet();
     }
 
 }

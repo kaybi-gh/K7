@@ -1,5 +1,6 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Mappings;
+using K7.Server.Application.Common.Services;
 using K7.Server.Application.Features.DynamicPlaylists.Services;
 using K7.Server.Domain.Entities.Federation;
 using K7.Server.Domain.Entities.Playlists;
@@ -23,7 +24,8 @@ public class FederationSocialConsumerService(
     IFederationViewerAssertionService assertionService,
     IUserFederationPrivacyService privacyService,
     IContentVisibilityEvaluator visibilityEvaluator,
-    IFederatedMediaResolver mediaResolver)
+    IFederatedMediaResolver mediaResolver,
+    MediaAccessFilter mediaAccessFilter)
     : IFederationSocialConsumerService
 {
     public async Task<IReadOnlyList<FederatedCollectionViewDto>> GetCollectionsAsync(
@@ -293,6 +295,7 @@ public class FederationSocialConsumerService(
         };
 
         var query = context.Medias.Where(m => m.IndexedFiles.Any()).AsNoTracking();
+        query = await mediaAccessFilter.ApplyAllAsync(query, viewerUserId, cancellationToken);
         query = DynamicPlaylistEvaluator.ApplyRules(query, dynamicPlaylist, viewerUserId);
         var mediaIds = await query.Select(m => m.Id).ToListAsync(cancellationToken);
 

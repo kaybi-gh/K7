@@ -1,4 +1,5 @@
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Common.Services;
 using K7.Server.Application.Features.DynamicPlaylists.Services;
 using K7.Server.Domain.Entities.Playlists;
 
@@ -9,7 +10,10 @@ public record EvaluateDynamicPlaylistCommand : IRequest<Guid>
     public required Guid Id { get; init; }
 }
 
-public class EvaluateDynamicPlaylistCommandHandler(IApplicationDbContext context, IUser currentUser)
+public class EvaluateDynamicPlaylistCommandHandler(
+    IApplicationDbContext context,
+    IUser currentUser,
+    MediaAccessFilter mediaAccessFilter)
     : IRequestHandler<EvaluateDynamicPlaylistCommand, Guid>
 {
     public async Task<Guid> Handle(EvaluateDynamicPlaylistCommand request, CancellationToken cancellationToken)
@@ -26,6 +30,7 @@ public class EvaluateDynamicPlaylistCommandHandler(IApplicationDbContext context
             .Where(m => m.IndexedFiles.Any())
             .AsNoTracking();
 
+        query = await mediaAccessFilter.ApplyAllAsync(query, userId, cancellationToken);
         query = DynamicPlaylistEvaluator.ApplyRules(query, dynamicPlaylist, userId);
 
         var mediaIds = await query.Select(m => m.Id).ToListAsync(cancellationToken);

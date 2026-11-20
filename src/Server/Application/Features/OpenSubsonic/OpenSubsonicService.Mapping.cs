@@ -133,7 +133,11 @@ public sealed partial class OpenSubsonicService
         };
     }
 
-    private static OpenSubsonicPlaylist MapPlaylist(Playlist playlist, string username, bool includeEntries) =>
+    private static OpenSubsonicPlaylist MapPlaylist(
+        Playlist playlist,
+        string username,
+        bool includeEntries,
+        int? songCount = null) =>
         new()
         {
             Id = playlist.Id.ToString("D"),
@@ -141,7 +145,7 @@ public sealed partial class OpenSubsonicService
             Comment = playlist.Description,
             Owner = username,
             Public = playlist.VisibilityScope != VisibilityScope.Nobody,
-            SongCount = playlist.Items.Count,
+            SongCount = songCount ?? playlist.Items.Count,
             Created = FormatDate(playlist.Created),
             Changed = FormatDate(playlist.LastModified == default ? playlist.Created : playlist.LastModified),
             CoverArt = playlist.CoverPicture is not null ? playlist.Id.ToString("D") : null,

@@ -720,7 +720,7 @@ public sealed partial class OpenSubsonicService
             var mediaIds = matches.Select(m => m.ItemId).Where(m => m != Guid.Empty).Distinct().ToList();
             if (mediaIds.Count > 0)
             {
-                var tracks = await LoadMappedTracksAsync(mediaIds, cancellationToken);
+                var tracks = await LoadMappedTracksAsync(mediaIds, userId.Value, cancellationToken);
                 var byId = tracks.ToDictionary(t => t.Id);
                 songs = mediaIds.Where(byId.ContainsKey).Select(mid => MapSong(byId[mid], userId.Value)).ToList();
             }
@@ -737,7 +737,7 @@ public sealed partial class OpenSubsonicService
                 userId.Value, seedTrackId.Value, count, cancellationToken);
             if (fallbackIds.Count > 0)
             {
-                var tracks = await LoadMappedTracksAsync(fallbackIds, cancellationToken);
+                var tracks = await LoadMappedTracksAsync(fallbackIds, userId.Value, cancellationToken);
                 var byId = tracks.ToDictionary(t => t.Id);
                 songs = fallbackIds.Where(byId.ContainsKey).Select(mid => MapSong(byId[mid], userId.Value)).ToList();
             }
@@ -796,9 +796,14 @@ public sealed partial class OpenSubsonicService
 
     private async Task<List<MusicTrack>> LoadMappedTracksAsync(
         IReadOnlyList<Guid> mediaIds,
-        CancellationToken cancellationToken) =>
-        await context.Medias.OfType<MusicTrack>()
-            .AsNoTracking()
+        Guid userId,
+        CancellationToken cancellationToken)
+    {
+        if (mediaIds.Count == 0)
+            return [];
+
+        var query = await GetAccessibleTracksQueryAsync(userId, null, cancellationToken);
+        return await query
             .Where(t => mediaIds.Contains(t.Id))
             .Include(t => t.Album).ThenInclude(a => a.MetadataTags).ThenInclude(mt => mt.MetadataTag)
             .Include(t => t.Artist)
@@ -808,6 +813,7 @@ public sealed partial class OpenSubsonicService
             .Include(t => t.UserMediaStates)
             .AsSplitQuery()
             .ToListAsync(cancellationToken);
+    }
 
     private async Task<Guid?> ResolveSimilarSongsSeedTrackIdAsync(Guid id, CancellationToken cancellationToken)
     {
