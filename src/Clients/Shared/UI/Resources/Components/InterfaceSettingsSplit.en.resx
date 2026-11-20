@@ -13,6 +13,7 @@
   <data name="NavigationDescription" xml:space="preserve"><value>Shortcuts to your pages, collections and playlists</value></data>
   <data name="Appearance" xml:space="preserve"><value>Appearance</value></data>
   <data name="AppearanceDescription" xml:space="preserve"><value>Color theme and language of the app</value></data>
+  <data name="Language" xml:space="preserve"><value>Language</value></data>
   <data name="ThemeSongs" xml:space="preserve"><value>Theme songs</value></data>
   <data name="ThemeSongsDescription" xml:space="preserve"><value>Background music on movie and series pages</value></data>
   <data name="Cards" xml:space="preserve"><value>Media cards</value></data>

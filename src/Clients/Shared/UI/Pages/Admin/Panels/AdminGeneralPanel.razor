@@ -9,8 +9,10 @@
 @inject IStringLocalizer<AdvancedSettingsSplit> La
 @inject NavigationManager NavigationManager
 
-@* Server defaults shown as the Appearance sub-page of Interface (one form, one Save) and as
-   the Link previews sub-page of Advanced (one switch, saved on change). *@
+@* Server defaults shown as the Appearance sub-page of Interface (theme and corners per type of
+   device, the themes of the server, and the language in a panel of its own: one Save for the
+   defaults, they reach every account) and as the Link previews sub-page of Advanced (one
+   switch, saved on change). *@
 <PageTitle>@(IsLinkPreviewsPage ? La["Title"] : Li["Title"])</PageTitle>
 
 <div class="settings-form-page settings-form-page--section-actions">
@@ -35,24 +37,17 @@
         }
         else
         {
-            <InterfaceSettingsSplit Section="@InterfaceSettingsSections.Appearance" Admin="true">
+            <InterfaceSettingsSplit Section="@InterfaceSettingsSections.Appearance" Admin="true" Extra="LanguagePanel" ExtraTitle="@Li["Language"]" ExtraFirst="true">
                 @if (_isLoading)
                 {
                     <K7ProgressBar Indeterminate="true" />
                 }
                 else
                 {
-                    <K7SettingRow Label="@L["DefaultLanguage"]">
-                        <K7LanguageSelect Value="@_defaultLanguage"
-                                          ValueChanged="OnDefaultLanguageChanged"
-                                          Languages="SupportedLanguages.Interface" />
-                    </K7SettingRow>
-                    <K7SettingRow Label="@L["DefaultTheme"]" Stacked="true">
-                        <K7ThemePicker Themes="SelectableThemes"
-                                       Value="@_defaultTheme.Id"
-                                       ValueChanged="OnDefaultThemeChanged"
-                                       AriaLabel="@L["DefaultTheme"]" />
-                    </K7SettingRow>
+                    <AppearanceSettingsPanel @ref="_lookPanel"
+                                             Section="AppearancePanelSection.Look"
+                                             ServerDefaults="true"
+                                             OnStateChanged="OnLookStateChanged" />
                     <K7SettingRow Label="@L["ServerThemes"]" Hint="@L["ServerThemesHint"]" Stacked="true">
                         <CustomThemeList Themes="_serverThemes"
                                          Server="true"
@@ -77,8 +72,25 @@
     {
         <K7SettingsActionBar IsDirty="IsDirty"
                              IsSaving="_saving"
-                             ShowResetToDefaults="false"
+                             ResetDisabled="@(_lookPanel?.IsOnDefaults ?? true)"
+                             ResetRequiresConfirmation="false"
                              OnSave="SaveAsync"
-                             OnCancel="CancelChanges" />
+                             OnCancel="CancelChanges"
+                             OnResetToDefaults="ResetLookAsync" />
     }
 </div>
+
+@code {
+    // The language is the same on every device: it is not part of what the device selector
+    // below covers, so it sits in a panel of its own, first on the page.
+    private RenderFragment? LanguagePanel => _isLoading ? null : LanguageSettings;
+
+    private RenderFragment LanguageSettings => __builder =>
+    {
+        <K7SettingRow Label="@L["DefaultLanguage"]" Hint="@L["DefaultLanguageHint"]">
+            <K7LanguageSelect Value="@_defaultLanguage"
+                              ValueChanged="OnDefaultLanguageChanged"
+                              Languages="SupportedLanguages.Interface" />
+        </K7SettingRow>
+    };
+}

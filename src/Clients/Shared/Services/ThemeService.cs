@@ -33,6 +33,10 @@ public class ThemeService
 
     public DeviceType DeviceType { get; private set; } = DeviceType.Unknown;
 
+    /// <summary>
+    /// Theme of the accounts that picked none, on every device. A type of device can have its
+    /// own in <see cref="ServerSkins"/>.
+    /// </summary>
     public string ServerDefaultThemeId { get; private set; } = BuiltInThemes.DefaultDarkId;
 
     /// <summary>Themes made by an administrator, offered to every account.</summary>
@@ -51,10 +55,14 @@ public class ThemeService
     public bool IsResolved { get; private set; }
 
     /// <summary>
-    /// Media pages and players of the server, for the parts the user did not set up. Null means
+    /// Media pages and players of the server, for the parts the user did not set up: the set
+    /// shared by every device and the ones of the device types that have their own. Null means
     /// the built-in ones.
     /// </summary>
-    public AppearanceSettingsDto? ServerDefaultSkins { get; private set; }
+    public ServerSkinsDto? ServerSkins { get; private set; }
+
+    /// <summary>The media pages and players of the server for the device type being shown.</summary>
+    public AppearanceSettingsDto? ServerDefaultSkins => ServerSkins?.Resolve(DeviceType);
 
     /// <summary>
     /// What this device shows: the settings of the user for it, with the media pages and
@@ -78,8 +86,21 @@ public class ThemeService
             return ToDefinition(custom);
 
         return FindShared(themeId)
+               ?? FindShared(ServerSkins?.Resolve(DeviceType).ThemeId)
                ?? FindShared(ServerDefaultThemeId)
                ?? BuiltInThemes.DefaultDark;
+    }
+
+    /// <summary>Changes the theme shown to accounts that picked none, keeping the themes of the server.</summary>
+    public void SetServerDefaultThemeId(string? themeId)
+    {
+        var resolved = FindShared(themeId)?.Id ?? BuiltInThemes.DefaultDarkId;
+        if (resolved == ServerDefaultThemeId)
+            return;
+
+        ServerDefaultThemeId = resolved;
+        if (IsResolved)
+            ThemeOnChange?.Invoke();
     }
 
     /// <summary>
@@ -103,12 +124,16 @@ public class ThemeService
     }
 
     /// <summary>Sets the media pages and players of the server, for the parts the user did not set up.</summary>
-    public void SetServerDefaultSkins(AppearanceSettingsDto? skins)
+    public void SetServerSkins(ServerSkinsDto? skins)
     {
-        ServerDefaultSkins = skins;
+        ServerSkins = skins;
         if (IsResolved)
             ThemeOnChange?.Invoke();
     }
+
+    /// <summary>Sets one set of media pages and players of the server, shown on every device.</summary>
+    public void SetServerDefaultSkins(AppearanceSettingsDto? skins) =>
+        SetServerSkins(skins is null ? null : new ServerSkinsDto { Default = skins });
 
     /// <summary>Sets the card style of the server. Accounts with their own style do not change.</summary>
     public void SetServerDefaultCards(MediaCardPreferencesDto? cards)

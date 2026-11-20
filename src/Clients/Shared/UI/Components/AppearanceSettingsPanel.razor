@@ -13,31 +13,29 @@ else
     {
         <p class="settings-field-hint">@L["ServerDefaultsHint"]</p>
     }
-    else
-    {
-        <K7SettingRow Label="@L["Scope"]" Stacked="true">
-            <HintContent>
-                @ScopeHint
-                @if (IsPreviewOnly)
+    @* The defaults of the server are set per type of device like the preferences of an account. *@
+    <K7SettingRow Label="@L["Scope"]" Stacked="true">
+        <HintContent>
+            @ScopeHint
+            @if (IsPreviewOnly)
+            {
+                <span class="appearance-panel__scope-note">@L["ScopePreviewNote"]</span>
+            }
+        </HintContent>
+        <ChildContent>
+            <div class="appearance-panel__scope">
+                <K7ButtonGroup TValue="DeviceType"
+                               Options="ScopeOptions"
+                               Value="_scope"
+                               ValueChanged="OnScopeChanged"
+                               AriaLabel="@L["Scope"]" />
+                @if (ScopeHasOverride)
                 {
-                    <span class="appearance-panel__scope-note">@L["ScopePreviewNote"]</span>
+                    <K7Button Variant="text" OnClick="RemoveScopeOverride">@L["ScopeUseShared"]</K7Button>
                 }
-            </HintContent>
-            <ChildContent>
-                <div class="appearance-panel__scope">
-                    <K7ButtonGroup TValue="DeviceType"
-                                   Options="ScopeOptions"
-                                   Value="_scope"
-                                   ValueChanged="OnScopeChanged"
-                                   AriaLabel="@L["Scope"]" />
-                    @if (ScopeHasOverride)
-                    {
-                        <K7Button Variant="text" OnClick="RemoveScopeOverride">@L["ScopeUseShared"]</K7Button>
-                    }
-                </div>
-            </ChildContent>
-        </K7SettingRow>
-    }
+            </div>
+        </ChildContent>
+    </K7SettingRow>
     @if (Section == AppearancePanelSection.MediaPages)
     {
         <K7SettingRow Label="@L["MediaPageKind"]" Hint="@PageKindHint" Stacked="true">
@@ -211,11 +209,15 @@ else
     else
     {
         <K7SettingRow Label="@L["Theme"]" Stacked="true">
-            <K7ThemePicker Themes="AllThemes"
+            <K7ThemePicker Themes="@(ServerDefaults ? ServerSelectableThemes : AllThemes)"
                            Value="@ActiveThemeId"
                            ValueChanged="OnThemeChanged"
                            AriaLabel="@L["Theme"]" />
         </K7SettingRow>
+        @* The defaults of the server have no accent (a server theme carries one) and no text size
+           (it is for each user to choose). *@
+        @if (!ServerDefaults)
+        {
         <K7SettingRow Label="@L["AccentColor"]" Hint="@L["AccentColorHint"]">
             <div class="appearance-panel__accent">
                 @if (Current.AccentColor is not null)
@@ -232,6 +234,7 @@ else
                            ValueChanged="OnTextSizeChanged"
                            AriaLabel="@L["TextSize"]" />
         </K7SettingRow>
+        }
         <K7SettingRow Label="@L["Corners"]">
             <K7ButtonGroup TValue="AppearanceCornerStyle"
                            Options="CornerOptions"
@@ -239,11 +242,14 @@ else
                            ValueChanged="OnCornerStyleChanged"
                            AriaLabel="@L["Corners"]" />
         </K7SettingRow>
-        <K7SettingRow Label="@L["MyThemes"]" Hint="@L["MyThemesHint"]" Stacked="true">
-            <CustomThemeList Themes="_preferences.CustomThemes"
-                             OnAdded="AddTheme"
-                             OnEdited="ReplaceTheme"
-                             OnDeleted="RemoveTheme" />
-        </K7SettingRow>
+        @if (!ServerDefaults)
+        {
+            <K7SettingRow Label="@L["MyThemes"]" Hint="@L["MyThemesHint"]" Stacked="true">
+                <CustomThemeList Themes="_preferences.CustomThemes"
+                                 OnAdded="AddTheme"
+                                 OnEdited="ReplaceTheme"
+                                 OnDeleted="RemoveTheme" />
+            </K7SettingRow>
+        }
     }
 }

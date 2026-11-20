@@ -33,13 +33,16 @@
   <data name="ScopeHint_All" xml:space="preserve"><value>Réglages communs à tous vos appareils. Choisissez un type d'appareil pour lui donner un thème, une taille de texte ou des coins différents.</value></data>
   <data name="ScopeHint_Shared" xml:space="preserve"><value>Pas encore de réglages propres pour {0}, qui reprennent les réglages communs. Changez un réglage ci-dessous pour les différencier.</value></data>
   <data name="ScopeHint_Own" xml:space="preserve"><value>Réglages propres pour {0}. Les autres appareils gardent les leurs.</value></data>
+  <data name="ServerScopeHint_All" xml:space="preserve"><value>Présentation commune à tous les appareils. Choisissez un type d'appareil pour lui donner une présentation différente.</value></data>
+  <data name="ServerScopeHint_Shared" xml:space="preserve"><value>Pas encore de présentation propre pour {0}, qui reprennent la présentation commune. Changez un réglage ci-dessous pour les différencier.</value></data>
+  <data name="ServerScopeHint_Own" xml:space="preserve"><value>Présentation propre pour {0}. Les autres appareils gardent la présentation commune ou la leur.</value></data>
   <data name="ScopeUseShared" xml:space="preserve"><value>Reprendre les réglages communs</value></data>
   <data name="ScopePreviewNote" xml:space="preserve"><value>Aperçu : cet appareil retrouvera ses propres réglages quand vous quitterez la page.</value></data>
   <data name="MiniPlayer" xml:space="preserve"><value>Mini-lecteur de musique</value></data>
   <data name="MiniPlayerHint" xml:space="preserve"><value>Sur ordinateur, tablette et TV. Sur téléphone, il reste au-dessus de la barre du bas.</value></data>
   <data name="MiniPlayer_Bar" xml:space="preserve"><value>Dans la barre</value></data>
   <data name="MiniPlayer_Bottom" xml:space="preserve"><value>En bas</value></data>
-  <data name="ServerDefaultsHint" xml:space="preserve"><value>Présentation par défaut du serveur, pour tous les appareils : celle des comptes qui n'ont pas fait leurs propres réglages ici. Ils la verront au prochain lancement de l'application.</value></data>
+  <data name="ServerDefaultsHint" xml:space="preserve"><value>Présentation par défaut du serveur : celle des comptes qui n'ont pas fait leurs propres réglages ici. Ils la verront au prochain lancement de l'application.</value></data>
   <data name="MediaPageKind" xml:space="preserve"><value>Pages</value></data>
   <data name="MediaPageKind_All" xml:space="preserve"><value>Toutes</value></data>
   <data name="MediaPageKind_Movie" xml:space="preserve"><value>Films</value></data>

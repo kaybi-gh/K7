@@ -40,7 +40,7 @@ public class GetServerInfo : IEndpoint
             var defaultTheme = await serverSettings.GetAsync(ServerSettingKeys.DefaultTheme, cancellationToken) ?? "default-dark";
             var serverThemes = ServerThemes.Parse(await serverSettings.GetAsync(ServerSettingKeys.ServerThemes, cancellationToken));
             var defaultCards = MediaCardStyles.Parse(await serverSettings.GetAsync(ServerSettingKeys.DefaultCardStyle, cancellationToken));
-            var defaultSkins = AppearanceSkins.Parse(await serverSettings.GetAsync(ServerSettingKeys.DefaultSkins, cancellationToken));
+            var defaultSkins = AppearanceSkins.ParseSet(await serverSettings.GetAsync(ServerSettingKeys.DefaultSkins, cancellationToken));
             var policy = await passwordPolicy.GetAsync(cancellationToken);
 
             return Results.Ok(new ServerInfoDto
@@ -50,7 +50,9 @@ public class GetServerInfo : IEndpoint
                 DefaultTheme = defaultTheme,
                 ServerThemes = serverThemes,
                 DefaultCards = defaultCards,
-                DefaultSkins = defaultSkins,
+                // The shared set stays where clients from before the sets per device read it.
+                DefaultSkins = defaultSkins?.Default,
+                DefaultSkinsByDevice = defaultSkins is { DeviceOverrides.Count: > 0 } ? defaultSkins.DeviceOverrides : null,
                 PasswordPolicy = policy
             });
         })

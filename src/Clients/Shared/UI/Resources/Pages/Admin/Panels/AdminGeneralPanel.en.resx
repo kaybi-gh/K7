@@ -20,6 +20,7 @@
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
   <data name="DefaultLanguage" xml:space="preserve"><value>Default language</value></data>
+  <data name="DefaultLanguageHint" xml:space="preserve"><value>Language of the accounts that did not pick theirs, on every device.</value></data>
   <data name="DefaultTheme" xml:space="preserve"><value>Default theme</value></data>
   <data name="PlayThemeSongs" xml:space="preserve"><value>Enable theme songs</value></data>
   <data name="PlayThemeSongsHint" xml:space="preserve"><value>Plays the theme in the background on series or movie pages when a theme file is available.</value></data>

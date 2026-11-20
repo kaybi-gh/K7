@@ -12,26 +12,21 @@ namespace K7.Clients.Shared.UI.Pages.Admin.Panels;
 
 public partial class AdminGeneralPanel : IDisposable
 {
-    private sealed record GeneralFormState(
-        string Language,
-        string ThemeCssDataAttribute);
-
     [Inject] private IServerInfoService ServerInfoService { get; set; } = default!;
     [Inject] private IServerPreferencesService ServerPreferencesService { get; set; } = default!;
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
     [Inject] private ThemeService ThemeService { get; set; } = default!;
 
     private string _defaultLanguage = "en";
-    private ThemeDefinition _defaultTheme = BuiltInThemes.DefaultDark;
-    private string _savedDefaultThemeId = BuiltInThemes.DefaultDarkId;
+    private string _savedDefaultLanguage = "en";
+    private bool _saving;
+    private AppearanceSettingsPanel? _lookPanel;
     private List<CustomThemeDto> _serverThemes = [];
     private bool _savingThemes;
     private bool _mediaLinkPreviewsEnabled = true;
     private bool _linkPreviewsSaving;
     private SettingsSaveState _linkPreviewsSaveState;
     private bool _isLoading = true;
-    private bool _saving;
-    private readonly SettingsFormTracker<GeneralFormState> _formTracker = new();
 
     /// <summary>Link previews are not part of Interface: own page, under its current or former address.</summary>
     private bool IsLinkPreviewsPage
@@ -44,14 +39,8 @@ public partial class AdminGeneralPanel : IDisposable
         }
     }
 
-    /// <summary>What the default theme can be: a built-in theme or a theme of this server.</summary>
-    private IReadOnlyList<ThemeDefinition> SelectableThemes =>
-        [.. BuiltInThemes.All, .. _serverThemes.Select(ThemeService.ToDefinition)];
-
-    private bool IsDirty =>
-        _formTracker.IsDirty(new GeneralFormState(
-            _defaultLanguage,
-            _defaultTheme.Id));
+    /// <summary>The look and the language wait for Save: they reach every account.</summary>
+    private bool IsDirty => (_lookPanel?.IsDirty ?? false) || _defaultLanguage != _savedDefaultLanguage;
 
     public void Dispose() => NavigationManager.LocationChanged -= OnLocationChanged;
 
@@ -65,15 +54,12 @@ public partial class AdminGeneralPanel : IDisposable
             if (serverInfo is not null)
             {
                 _defaultLanguage = serverInfo.DefaultLanguage;
+                _savedDefaultLanguage = serverInfo.DefaultLanguage;
                 _serverThemes = serverInfo.ServerThemes;
-                _defaultTheme = FindTheme(serverInfo.DefaultTheme);
-                _savedDefaultThemeId = _defaultTheme.Id;
             }
 
             var flags = await ServerPreferencesService.GetServerFeatureFlagsAsync();
             _mediaLinkPreviewsEnabled = flags.MediaLinkPreviewsEnabled;
-
-            CaptureFormState();
         }
         finally
         {
@@ -81,34 +67,49 @@ public partial class AdminGeneralPanel : IDisposable
         }
     }
 
-    private void CaptureFormState()
+    private void OnLookStateChanged() => StateHasChanged();
+
+    private void OnDefaultLanguageChanged(string language) => _defaultLanguage = language;
+
+    private async Task SaveAsync()
     {
-        _formTracker.Capture(new GeneralFormState(
-            _defaultLanguage,
-            _defaultTheme.Id));
+        if (_saving || !IsDirty)
+            return;
+
+        _saving = true;
+        try
+        {
+            if (_defaultLanguage != _savedDefaultLanguage)
+            {
+                await ServerInfoService.UpdateDefaultLanguageAsync(_defaultLanguage);
+                _savedDefaultLanguage = _defaultLanguage;
+            }
+
+            // The panel reports its own failures.
+            if (_lookPanel is { IsDirty: true })
+                await _lookPanel.SaveChangesAsync();
+
+            if (!IsDirty)
+                Snackbar.Add(L["SaveSuccess"], K7Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), K7Severity.Error);
+        }
+        finally
+        {
+            _saving = false;
+        }
     }
 
     private void CancelChanges()
     {
-        var state = _formTracker.Restore();
-        _defaultLanguage = state.Language;
-        _defaultTheme = FindTheme(state.ThemeCssDataAttribute);
+        _defaultLanguage = _savedDefaultLanguage;
+        _lookPanel?.CancelChanges();
     }
 
-    private void OnDefaultLanguageChanged(string language)
-    {
-        _defaultLanguage = language;
-        StateHasChanged();
-    }
-
-    private void OnDefaultThemeChanged(string themeId)
-    {
-        _defaultTheme = FindTheme(themeId);
-        StateHasChanged();
-    }
-
-    private ThemeDefinition FindTheme(string? themeId) =>
-        SelectableThemes.FirstOrDefault(t => t.Id == themeId) ?? BuiltInThemes.DefaultDark;
+    /// <summary>Theme and corners back on the built-in look. Like any change, it waits for Save.</summary>
+    private Task ResetLookAsync() => _lookPanel?.ResetAsync() ?? Task.CompletedTask;
 
     private Task AddServerThemeAsync(CustomThemeDto theme) =>
         SaveServerThemesAsync([.. _serverThemes, theme]);
@@ -120,8 +121,8 @@ public partial class AdminGeneralPanel : IDisposable
         SaveServerThemesAsync([.. _serverThemes.Where(t => t.Id != theme.Id)]);
 
     /// <summary>
-    /// Server themes are saved as soon as they change, apart from the Save bar: a theme has to
-    /// exist on the server before it can be picked as the default.
+    /// Server themes are saved as soon as they change: a theme has to exist on the server
+    /// before it can be picked as a default.
     /// </summary>
     private async Task SaveServerThemesAsync(List<CustomThemeDto> themes)
     {
@@ -134,16 +135,13 @@ public partial class AdminGeneralPanel : IDisposable
             await ServerInfoService.UpdateServerThemesAsync(themes);
             _serverThemes = themes;
 
-            // The server puts the default back on the dark base when its theme is deleted.
-            if (themes.All(t => t.Id != _savedDefaultThemeId) && !BuiltInThemes.Contains(_savedDefaultThemeId))
-            {
-                _savedDefaultThemeId = BuiltInThemes.DefaultDarkId;
-                _formTracker.Capture(_formTracker.Restore() with { ThemeCssDataAttribute = _savedDefaultThemeId });
-            }
+            // The server puts the default back on the dark base when its theme is deleted. The
+            // look panel follows the themes of the service: an edited theme, a deleted one.
+            var defaultThemeId = ThemeService.ServerDefaultThemeId;
+            if (themes.All(t => t.Id != defaultThemeId) && !BuiltInThemes.Contains(defaultThemeId))
+                defaultThemeId = BuiltInThemes.DefaultDarkId;
 
-            // Follows an edited theme, and leaves a deleted one.
-            _defaultTheme = FindTheme(_defaultTheme.Id);
-            ThemeService.SetServerDefault(_savedDefaultThemeId, _serverThemes);
+            ThemeService.SetServerDefault(defaultThemeId, _serverThemes);
             Snackbar.Add(L["ServerThemesSaved"], K7Severity.Success);
         }
         catch (Exception ex)
@@ -188,28 +186,4 @@ public partial class AdminGeneralPanel : IDisposable
         }
     }
 
-    private async Task SaveAsync()
-    {
-        if (_saving || !IsDirty)
-            return;
-
-        _saving = true;
-        try
-        {
-            await ServerInfoService.UpdateDefaultLanguageAsync(_defaultLanguage);
-            await ServerInfoService.UpdateDefaultThemeAsync(_defaultTheme.Id);
-            _savedDefaultThemeId = _defaultTheme.Id;
-            ThemeService.SetServerDefault(_savedDefaultThemeId, _serverThemes);
-            CaptureFormState();
-            Snackbar.Add(L["SaveSuccess"], K7Severity.Success);
-        }
-        catch (Exception ex)
-        {
-            Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), K7Severity.Error);
-        }
-        finally
-        {
-            _saving = false;
-        }
-    }
 }

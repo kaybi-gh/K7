@@ -84,6 +84,34 @@ public class K7SettingsSplitTests
     }
 
     [Test]
+    public void Render_ShouldPutTheSecondPanelFirst_WithTheBackLink_WhenExtraFirstIsSet()
+    {
+        // Arrange
+        using var ctx = new BunitContext();
+
+        // Act
+        var cut = ctx.Render<K7SettingsSplit>(p => p
+            .Add(c => c.IndexLabel, "Interface")
+            .Add(c => c.DetailTitle, "Appearance")
+            .Add(c => c.BackHref, "/settings/interface")
+            .Add(c => c.Index, "<span>index</span>")
+            .Add(c => c.Detail, "<span>detail</span>")
+            .Add(c => c.ExtraTitle, "Language")
+            .Add(c => c.Extra, "<span>extra</span>")
+            .Add(c => c.ExtraFirst, true));
+
+        // Assert
+        var panels = cut.FindAll(".k7-settings-split__panel");
+        panels.Should().HaveCount(2);
+        panels[0].ClassList.Should().Contain("k7-settings-split__panel--extra");
+        panels[0].QuerySelector(".k7-settings-split__title")!.TextContent.Should().Be("Language");
+        // The way back to the index stays at the top of the sub-page.
+        panels[0].QuerySelector(".k7-settings-split__back").Should().NotBeNull();
+        panels[1].QuerySelector(".k7-settings-split__back").Should().BeNull();
+        panels[1].QuerySelector(".k7-settings-split__title")!.TextContent.Should().Be("Appearance");
+    }
+
+    [Test]
     public void Render_ShouldShowTheSaveIndicatorInTheFooter_WhenSaveStateIsSet()
     {
         // Arrange

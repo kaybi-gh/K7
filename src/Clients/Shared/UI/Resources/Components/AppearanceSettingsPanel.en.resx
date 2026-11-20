@@ -33,13 +33,16 @@
   <data name="ScopeHint_All" xml:space="preserve"><value>Settings shared by all your devices. Pick a type of device to give it a different theme, text size or corners.</value></data>
   <data name="ScopeHint_Shared" xml:space="preserve"><value>No separate settings for {0} yet: they use the shared settings. Change a setting below to set them apart.</value></data>
   <data name="ScopeHint_Own" xml:space="preserve"><value>Separate settings for {0}. Your other devices keep theirs.</value></data>
+  <data name="ServerScopeHint_All" xml:space="preserve"><value>Presentation shared by every device. Pick a type of device to give it a different one.</value></data>
+  <data name="ServerScopeHint_Shared" xml:space="preserve"><value>No separate presentation for {0} yet: they use the shared one. Change a setting below to set them apart.</value></data>
+  <data name="ServerScopeHint_Own" xml:space="preserve"><value>Separate presentation for {0}. The other devices keep the shared one or their own.</value></data>
   <data name="ScopeUseShared" xml:space="preserve"><value>Use the shared settings</value></data>
   <data name="ScopePreviewNote" xml:space="preserve"><value>Preview: this device goes back to its own settings when you leave the page.</value></data>
   <data name="MiniPlayer" xml:space="preserve"><value>Mini music player</value></data>
   <data name="MiniPlayerHint" xml:space="preserve"><value>On desktop, tablet and TV. On a phone it stays above the bottom bar.</value></data>
   <data name="MiniPlayer_Bar" xml:space="preserve"><value>In the bar</value></data>
   <data name="MiniPlayer_Bottom" xml:space="preserve"><value>At the bottom</value></data>
-  <data name="ServerDefaultsHint" xml:space="preserve"><value>Default presentation of the server, for every device: the one of the accounts that did not make their own settings here. They will see it the next time they start the app.</value></data>
+  <data name="ServerDefaultsHint" xml:space="preserve"><value>Default presentation of the server: the one of the accounts that did not make their own settings here. They will see it the next time they start the app.</value></data>
   <data name="MediaPageKind" xml:space="preserve"><value>Pages</value></data>
   <data name="MediaPageKind_All" xml:space="preserve"><value>All</value></data>
   <data name="MediaPageKind_Movie" xml:space="preserve"><value>Movies</value></data>

@@ -15,6 +15,12 @@ public sealed record AppearanceSettingsDto
     public AppearanceCornerStyle CornerStyle { get; set; }
 
     /// <summary>
+    /// True once the user picked their corners: the standard corners are then a choice, not
+    /// "follow the server". Any other style is a choice whatever this says.
+    /// </summary>
+    public bool CornerStyleOwn { get; set; }
+
+    /// <summary>
     /// Place of the mini music player on wide screens. Phones are not concerned. Part of the
     /// music player settings: it follows the defaults of the server with them.
     /// </summary>
@@ -84,7 +90,10 @@ public sealed record AppearanceSettingsDto
         ThemeId is null
         && AccentColor is null
         && TextSize == AppearanceTextSize.Default
-        && CornerStyle == AppearanceCornerStyle.Default;
+        && !OwnsCorners;
+
+    /// <summary>The user chose their corners: they do not follow the ones of the server.</summary>
+    public bool OwnsCorners => CornerStyleOwn || CornerStyle != AppearanceCornerStyle.Default;
 
     /// <summary>Nothing set up here: the media pages follow the defaults of the server.</summary>
     public bool IsMediaPagesDefault => !OwnsMediaPages;
@@ -196,15 +205,17 @@ public sealed record AppearanceSettingsDto
 
     /// <summary>
     /// These settings as the app shows them: the parts the user did not set up (media pages,
-    /// music player, video player, each as a whole) come from the defaults of the server.
-    /// Returns this instance when there is nothing to take from the server.
+    /// music player, video player, each as a whole, and the corners) come from the defaults of
+    /// the server. Returns this instance when there is nothing to take from the server.
     /// </summary>
     public AppearanceSettingsDto WithServerSkins(AppearanceSettingsDto? server)
     {
-        if (server is null || (OwnsMediaPages && OwnsAudioPlayer && OwnsVideoPlayer))
+        if (server is null || (OwnsMediaPages && OwnsAudioPlayer && OwnsVideoPlayer && OwnsCorners))
             return this;
 
         var shown = Copy();
+        if (!OwnsCorners)
+            shown.CornerStyle = server.CornerStyle;
         if (!OwnsMediaPages)
             shown.CopyMediaPagesFrom(server);
         if (!OwnsAudioPlayer)

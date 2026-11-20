@@ -12,28 +12,25 @@
             @Index
         </nav>
         <div class="k7-settings-split__detail">
+            @if (ExtraLeads)
+            {
+                @ExtraPanel
+            }
             <section class="k7-settings-split__panel">
                 <header class="k7-settings-split__header">
-                    <a class="k7-settings-split__back focusable" href="@BackHref">
-                        <K7Icon Icon="@Phosphor.ArrowLeft" IconSize="@K7IconSize.Sm" />
-                        <span>@IndexLabel</span>
-                    </a>
+                    @if (!ExtraLeads)
+                    {
+                        @BackLink
+                    }
                     <h5 class="k7-settings-split__title">@DetailTitle</h5>
                 </header>
                 <div class="k7-settings-split__body">
                     @Detail
                 </div>
             </section>
-            @if (Extra is not null)
+            @if (Extra is not null && !ExtraLeads)
             {
-                <section class="k7-settings-split__panel k7-settings-split__panel--extra">
-                    <header class="k7-settings-split__header">
-                        <h5 class="k7-settings-split__title">@ExtraTitle</h5>
-                    </header>
-                    <div class="k7-settings-split__body">
-                        @Extra
-                    </div>
-                </section>
+                @ExtraPanel
             }
         </div>
         @if (Footer is not null || SaveState != SettingsSaveState.Idle)
@@ -45,3 +42,31 @@
         }
     </div>
 </div>
+
+@code {
+    // The way back to the index stays at the top of the sub-page: in the first panel, whichever
+    // it is.
+    private RenderFragment BackLink => __builder =>
+    {
+        <a class="k7-settings-split__back focusable" href="@BackHref">
+            <K7Icon Icon="@Phosphor.ArrowLeft" IconSize="@K7IconSize.Sm" />
+            <span>@IndexLabel</span>
+        </a>
+    };
+
+    private RenderFragment ExtraPanel => __builder =>
+    {
+        <section class="k7-settings-split__panel k7-settings-split__panel--extra">
+            <header class="k7-settings-split__header">
+                @if (ExtraLeads)
+                {
+                    @BackLink
+                }
+                <h5 class="k7-settings-split__title">@ExtraTitle</h5>
+            </header>
+            <div class="k7-settings-split__body">
+                @Extra
+            </div>
+        </section>
+    };
+}

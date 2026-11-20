@@ -28,6 +28,14 @@ public partial class K7SettingsSplit
 
     [Parameter] public string ExtraTitle { get; set; } = "";
 
+    /// <summary>
+    /// Shows <see cref="Extra"/> above <see cref="Detail"/> instead of under it: for a setting
+    /// that comes first in reading order (the language before the look).
+    /// </summary>
+    [Parameter] public bool ExtraFirst { get; set; }
+
+    private bool ExtraLeads => Extra is not null && ExtraFirst;
+
     /// <summary>Actions under the index that apply to the whole page, e.g. reset to defaults.</summary>
     [Parameter] public RenderFragment? Footer { get; set; }
 

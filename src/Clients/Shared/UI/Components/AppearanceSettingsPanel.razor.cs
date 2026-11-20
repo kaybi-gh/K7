@@ -22,6 +22,10 @@ public partial class AppearanceSettingsPanel : IDisposable
     private AppearancePreferencesDto _preferences = new();
     private DeviceType _deviceType = DeviceType.Unknown;
 
+    // Server defaults: the theme shared by every device as the server has it. It is stored
+    // apart from the sets (it is the default theme older apps read), so it is saved apart.
+    private string _savedServerThemeId = BuiltInThemes.DefaultDarkId;
+
     // Unknown stands for "all devices": the shared settings.
     private DeviceType _scope = DeviceType.Unknown;
 
@@ -36,8 +40,13 @@ public partial class AppearanceSettingsPanel : IDisposable
     [Inject] private IServerInfoService ServerInfoService { get; set; } = default!;
 
     /// <summary>
-    /// Edits the defaults of the server (media pages and players, for the accounts that did not
-    /// set them up) instead of the preferences of the user. One set for every device.
+    /// Edits the defaults of the server (theme, corners, media pages and players, for the
+    /// accounts that did not set them up) instead of the preferences of the user. Like them,
+    /// one set shared by every device and a set of its own for a type of device. Accent and
+    /// text size are not offered: a server theme carries the accent, and the text size is for
+    /// each user to choose. Unlike the preferences of a user, nothing is saved on change: the
+    /// defaults reach every account, so the host page saves them (<see cref="SaveChangesAsync"/>)
+    /// or drops them (<see cref="CancelChanges"/>) from its save bar.
     /// </summary>
     [Parameter] public bool ServerDefaults { get; set; }
 
@@ -51,11 +60,18 @@ public partial class AppearanceSettingsPanel : IDisposable
 
     public bool IsBusy => _session?.IsBusy ?? false;
 
+    /// <summary>Changes not saved yet. Only the defaults of the server wait for a save.</summary>
+    public bool IsDirty => _session?.IsDirty ?? false;
+
     public bool IsOnDefaults => Section switch
     {
         AppearancePanelSection.MediaPages => AllSettings.All(s => s.IsMediaPagesDefault),
         AppearancePanelSection.AudioPlayer => AllSettings.All(s => s.IsAudioPlayerDefault),
         AppearancePanelSection.VideoPlayer => AllSettings.All(s => s.IsVideoPlayerDefault),
+        // The look of the server out of the box: the dark base and the standard corners everywhere.
+        _ when ServerDefaults => FindServerTheme(_preferences.Default.ThemeId).Id == BuiltInThemes.DefaultDarkId
+            && AllSettings.All(s => s.CornerStyle == AppearanceCornerStyle.Default)
+            && _preferences.DeviceOverrides.Values.All(s => s.ThemeId is null),
         _ => _preferences.Default.IsLookDefault && _preferences.DeviceOverrides.Values.All(SameLookAsShared)
     };
 
@@ -95,9 +111,9 @@ public partial class AppearanceSettingsPanel : IDisposable
     private string PagePreviewTitle => L[$"Preview_{_pageKind?.ToString() ?? nameof(MediaPageKind.Movie)}"];
 
     // A choice a device cannot show is not offered for it. "All devices" offers everything.
-    private bool PhoneScope => !ServerDefaults && _scope is DeviceType.Phone;
+    private bool PhoneScope => _scope is DeviceType.Phone;
 
-    private bool TvScope => !ServerDefaults && _scope is DeviceType.TV;
+    private bool TvScope => _scope is DeviceType.TV;
 
     /// <summary>
     /// What the season page shows on the devices being set up. A TV is not one of them: its
@@ -128,9 +144,12 @@ public partial class AppearanceSettingsPanel : IDisposable
     private IReadOnlyList<ButtonGroupOption<MediaPageKind?>> SeasonKindOptions =>
         TvScope ? [] : [new(MediaPageKind.Season, L["MediaPageKind_Season"])];
 
+    // The defaults of the server are a presentation for accounts, not "your devices".
+    private string ScopeHintPrefix => ServerDefaults ? "ServerScopeHint" : "ScopeHint";
+
     private string ScopeHint => _scope is DeviceType.Unknown
-        ? L["ScopeHint_All"]
-        : string.Format(L[ScopeHasOverride ? "ScopeHint_Own" : "ScopeHint_Shared"], L[$"Device_{_scope}"]);
+        ? L[$"{ScopeHintPrefix}_All"]
+        : string.Format(L[ScopeHasOverride ? $"{ScopeHintPrefix}_Own" : $"{ScopeHintPrefix}_Shared"], L[$"Device_{_scope}"]);
 
     private IReadOnlyList<ButtonGroupOption<DeviceType>> ScopeOptions =>
     [
@@ -141,7 +160,10 @@ public partial class AppearanceSettingsPanel : IDisposable
         new(DeviceType.TV, L["Scope_TV"], Phosphor.Television)
     ];
 
-    private string ActiveThemeId => ThemeService.ResolveTheme(Current.ThemeId).Id;
+    // A type of device of the server without a theme of its own shows the shared one.
+    private string ActiveThemeId => ServerDefaults
+        ? FindServerTheme(Current.ThemeId ?? _preferences.Default.ThemeId).Id
+        : ThemeService.ResolveTheme(Current.ThemeId).Id;
 
     private string AccentValue => Current.AccentColor ?? ThemeService.ResolveTheme(Current.ThemeId).Palette.Accent;
 
@@ -149,6 +171,14 @@ public partial class AppearanceSettingsPanel : IDisposable
 
     private IReadOnlyList<ThemeDefinition> AllThemes =>
         [.. BuiltInThemes.All, .. ThemeService.ServerThemes, .. _preferences.CustomThemes.Select(ThemeService.ToDefinition)];
+
+    private IReadOnlyList<ThemeDefinition> ServerSelectableThemes => [.. BuiltInThemes.All, .. ThemeService.ServerThemes];
+
+    /// <summary>What a default theme can be: a built-in theme or a theme of this server.</summary>
+    private ThemeDefinition FindServerTheme(string? themeId) =>
+        BuiltInThemes.Find(themeId)
+        ?? ThemeService.ServerThemes.FirstOrDefault(t => t.Id == themeId)
+        ?? BuiltInThemes.DefaultDark;
 
     private IReadOnlyList<ButtonGroupOption<AppearanceTextSize>> TextSizeOptions =>
     [
@@ -242,19 +272,29 @@ public partial class AppearanceSettingsPanel : IDisposable
 
         if (ServerDefaults)
         {
-            AppearanceSettingsDto? skins = null;
+            ServerSkinsDto? skins = null;
+            _savedServerThemeId = ThemeService.ServerDefaultThemeId;
             try
             {
-                skins = (await ServerInfoService.GetServerInfoAsync())?.DefaultSkins;
+                var serverInfo = await ServerInfoService.GetServerInfoAsync();
+                skins = serverInfo?.ToServerSkins();
+                if (serverInfo is not null)
+                    _savedServerThemeId = FindServerTheme(serverInfo.DefaultTheme).Id;
             }
             catch (HttpRequestException)
             {
                 // Offline: start from what the app knows, the save will report the failure.
-                skins = ThemeService.ServerDefaultSkins;
+                skins = ThemeService.ServerSkins;
             }
 
-            _preferences = new AppearancePreferencesDto { Default = skins?.Copy() ?? new AppearanceSettingsDto() };
+            _preferences = new AppearancePreferencesDto
+            {
+                Default = skins?.Default.Copy() ?? new AppearanceSettingsDto(),
+                DeviceOverrides = skins?.DeviceOverrides.ToDictionary(p => p.Key, p => p.Value.Copy()) ?? []
+            };
+            _preferences.Default.ThemeId = _savedServerThemeId;
             _scope = DeviceType.Unknown;
+            ThemeService.ThemeOnChange += OnServerLookChanged;
         }
         else
         {
@@ -286,11 +326,40 @@ public partial class AppearanceSettingsPanel : IDisposable
         await OnStateChanged.InvokeAsync();
     }
 
-    protected override void OnAfterRender(bool firstRender) => _session?.OnAfterRender();
+    protected override void OnAfterRender(bool firstRender)
+    {
+        // The defaults of the server wait for the save bar of the host page.
+        if (!ServerDefaults)
+            _session?.OnAfterRender();
+    }
+
+    /// <summary>Saves the defaults of the server being edited.</summary>
+    public Task SaveChangesAsync() => _session?.SaveAsync() ?? Task.CompletedTask;
+
+    /// <summary>Drops the changes not saved yet and shows the saved defaults again.</summary>
+    public void CancelChanges()
+    {
+        if (!_loaded || !ServerDefaults || !IsDirty)
+            return;
+
+        _preferences = _tracker.Restore();
+        Show(_scope);
+        NotifyStateChanged();
+    }
 
     public void Dispose()
     {
         ThemeService.RemoteApplied -= OnRemoteApplied;
+        ThemeService.ThemeOnChange -= OnServerLookChanged;
+
+        // Defaults of the server left without saving: they are dropped, and the app goes back
+        // to the saved ones instead of keeping what was only being tried.
+        if (_loaded && ServerDefaults && IsDirty)
+        {
+            _preferences = _tracker.Restore();
+            Show(_scope);
+        }
+
         _session?.Dispose();
 
         // Leave the preview of another device type.
@@ -306,6 +375,38 @@ public partial class AppearanceSettingsPanel : IDisposable
     {
         if (_session is null)
             return;
+
+        if (ServerDefaults)
+        {
+            // Like any change to the defaults of the server, the reset waits for the save bar.
+            foreach (var settings in AllSettings)
+            {
+                switch (Section)
+                {
+                    case AppearancePanelSection.MediaPages:
+                        settings.ResetMediaPages();
+                        break;
+                    case AppearancePanelSection.AudioPlayer:
+                        settings.ResetAudioPlayer();
+                        break;
+                    case AppearancePanelSection.VideoPlayer:
+                        settings.ResetVideoPlayer();
+                        break;
+                    default:
+                        // The look of the server: the dark base and the standard corners.
+                        settings.ThemeId = null;
+                        settings.CornerStyle = AppearanceCornerStyle.Default;
+                        break;
+                }
+            }
+
+            if (Section == AppearancePanelSection.Look)
+                _preferences.Default.ThemeId = BuiltInThemes.DefaultDarkId;
+
+            Show(_scope);
+            NotifyStateChanged();
+            return;
+        }
 
         if (Section != AppearancePanelSection.Look)
         {
@@ -386,8 +487,23 @@ public partial class AppearanceSettingsPanel : IDisposable
     }
 
     private Task SaveAsync() => ServerDefaults
-        ? ServerInfoService.UpdateDefaultSkinsAsync(_preferences.Default)
+        ? SaveServerDefaultsAsync()
         : PreferencesService.UpdateAppearancePreferencesAsync(_preferences);
+
+    private async Task SaveServerDefaultsAsync()
+    {
+        var themeId = FindServerTheme(_preferences.Default.ThemeId).Id;
+        if (themeId != _savedServerThemeId)
+        {
+            await ServerInfoService.UpdateDefaultThemeAsync(themeId);
+            _savedServerThemeId = themeId;
+        }
+
+        await ServerInfoService.UpdateDefaultSkinsAsync(EditedServerSkins());
+    }
+
+    private ServerSkinsDto EditedServerSkins() =>
+        new() { Default = _preferences.Default, DeviceOverrides = _preferences.DeviceOverrides };
 
     /// <summary>
     /// Shows the preferences being edited. The defaults of the server are not a look of this
@@ -396,7 +512,10 @@ public partial class AppearanceSettingsPanel : IDisposable
     private void Show(DeviceType deviceType)
     {
         if (ServerDefaults)
-            ThemeService.SetServerDefaultSkins(AppearanceSkins.Parse(AppearanceSkins.Serialize(_preferences.Default)));
+        {
+            ThemeService.SetServerSkins(AppearanceSkins.ParseSet(AppearanceSkins.Serialize(EditedServerSkins())));
+            ThemeService.SetServerDefaultThemeId(_preferences.Default.ThemeId);
+        }
         else
             ThemeService.Apply(_preferences, deviceType);
     }
@@ -446,6 +565,9 @@ public partial class AppearanceSettingsPanel : IDisposable
         NotifyStateChanged();
     }).FireAndForget();
 
+    // The themes of the server changed on the page that hosts this panel: draw the picker again.
+    private void OnServerLookChanged() => InvokeAsync(StateHasChanged).FireAndForget();
+
     private void NotifyStateChanged()
     {
         StateHasChanged();
@@ -470,6 +592,9 @@ public partial class AppearanceSettingsPanel : IDisposable
         if (!_preferences.DeviceOverrides.TryGetValue(_scope, out var settings))
         {
             settings = _preferences.Default.Copy();
+            // A type of device of the server follows the shared theme until it gets another one.
+            if (ServerDefaults)
+                settings.ThemeId = null;
             _preferences.DeviceOverrides[_scope] = settings;
         }
 
@@ -532,7 +657,11 @@ public partial class AppearanceSettingsPanel : IDisposable
 
     private void OnThemeChanged(string themeId)
     {
-        Editable().ThemeId = themeId;
+        var settings = Editable();
+        // The shared theme again on a type of device of the server: it follows it from now on.
+        settings.ThemeId = ServerDefaults && _scope is not DeviceType.Unknown && themeId == _preferences.Default.ThemeId
+            ? null
+            : themeId;
         Commit();
     }
 
@@ -559,7 +688,10 @@ public partial class AppearanceSettingsPanel : IDisposable
 
     private void OnCornerStyleChanged(AppearanceCornerStyle style)
     {
-        Editable().CornerStyle = style;
+        var settings = Editable();
+        settings.CornerStyle = style;
+        // The standard corners are a choice of the user from now on, not the ones of the server.
+        settings.CornerStyleOwn = !ServerDefaults;
         Commit();
     }
 

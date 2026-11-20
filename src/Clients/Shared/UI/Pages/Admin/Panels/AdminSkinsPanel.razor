@@ -17,10 +17,12 @@
         </InterfaceSettingsSplit>
     </div>
 
-    <K7SettingsActionBar AutoSave="true"
-                         SaveState="ActiveSaveState"
-                         IsSaving="_resetting"
+    <K7SettingsActionBar IsDirty="IsDirty"
+                         IsSaving="_saving"
                          ResetDisabled="ResetDisabled"
+                         ResetRequiresConfirmation="false"
+                         OnSave="SaveAsync"
+                         OnCancel="CancelChanges"
                          OnResetToDefaults="ResetAsync" />
 </div>
 
@@ -35,8 +37,8 @@
         <K7SettingRow Label="@Lg["PlayThemeSongs"]" Hint="@Lg["PlayThemeSongsHint"]">
             <K7Switch AriaLabel="@Lg["PlayThemeSongs"]"
                       Value="_playThemeSongs"
-                      ValueChanged="OnPlayThemeSongsChangedAsync"
-                      Disabled="_themeSongsSaving" />
+                      ValueChanged="OnPlayThemeSongsChanged"
+                      Disabled="_saving" />
         </K7SettingRow>
     };
 }

@@ -28,6 +28,9 @@ public partial class InterfaceSettingsSplit
 
     [Parameter] public string ExtraTitle { get; set; } = "";
 
+    /// <summary>Shows the second panel above the form instead of under it.</summary>
+    [Parameter] public bool ExtraFirst { get; set; }
+
     [Inject] private IUserAdminService UserService { get; set; } = default!;
 
     private string BasePath => Admin ? InterfaceSettingsSections.AdminBasePath : InterfaceSettingsSections.SettingsBasePath;

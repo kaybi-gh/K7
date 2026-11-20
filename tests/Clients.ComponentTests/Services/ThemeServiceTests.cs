@@ -131,6 +131,72 @@ public class ThemeServiceTests
     }
 
     [Test]
+    public void Settings_ShouldTakeTheSkinsOfTheServerForItsDeviceType_WhenThatTypeHasItsOwn()
+    {
+        var service = new ThemeService();
+        service.SetServerSkins(new ServerSkinsDto
+        {
+            Default = { MediaPageHero = MediaHeroStyle.Banner },
+            DeviceOverrides = { [DeviceType.TV] = new AppearanceSettingsDto { MediaPageHero = MediaHeroStyle.Cut } }
+        });
+
+        service.Apply(new AppearancePreferencesDto(), DeviceType.TV);
+        service.Settings.MediaPageHero.Should().Be(MediaHeroStyle.Cut);
+
+        // A type of device without a set of its own shows the shared one.
+        service.Apply(new AppearancePreferencesDto(), DeviceType.Phone);
+        service.Settings.MediaPageHero.Should().Be(MediaHeroStyle.Banner);
+
+        // An account that set up its media pages keeps them on every device.
+        service.Apply(new AppearancePreferencesDto { Default = { MediaPagesOwn = true } }, DeviceType.TV);
+        service.Settings.MediaPageHero.Should().Be(MediaHeroStyle.Fade);
+    }
+
+    [Test]
+    public void Look_ShouldTakeTheThemeAndCornersOfTheServerForItsDeviceType_UntilTheUserPicksTheirs()
+    {
+        var service = new ThemeService();
+        service.SetServerDefault("midnight");
+        service.SetServerSkins(new ServerSkinsDto
+        {
+            Default = { CornerStyle = AppearanceCornerStyle.Round },
+            DeviceOverrides =
+            {
+                [DeviceType.TV] = new AppearanceSettingsDto { ThemeId = "oled", CornerStyle = AppearanceCornerStyle.Square },
+                // No theme of its own: the shared one.
+                [DeviceType.Tablet] = new AppearanceSettingsDto { CornerStyle = AppearanceCornerStyle.Square }
+            }
+        });
+
+        service.Apply(new AppearancePreferencesDto(), DeviceType.TV);
+        service.Theme.Id.Should().Be("oled");
+        service.Settings.CornerStyle.Should().Be(AppearanceCornerStyle.Square);
+
+        service.Apply(new AppearancePreferencesDto(), DeviceType.Tablet);
+        service.Theme.Id.Should().Be("midnight");
+        service.Settings.CornerStyle.Should().Be(AppearanceCornerStyle.Square);
+
+        service.Apply(new AppearancePreferencesDto(), DeviceType.Desktop);
+        service.Theme.Id.Should().Be("midnight");
+        service.Settings.CornerStyle.Should().Be(AppearanceCornerStyle.Round);
+
+        // The user picked a theme and the standard corners: both are theirs.
+        service.Apply(
+            new AppearancePreferencesDto { Default = { ThemeId = "paper", CornerStyleOwn = true } },
+            DeviceType.TV);
+        service.Theme.Id.Should().Be("paper");
+        service.Settings.CornerStyle.Should().Be(AppearanceCornerStyle.Default);
+
+        // A theme the server no longer has falls back on the shared one.
+        service.SetServerSkins(new ServerSkinsDto
+        {
+            DeviceOverrides = { [DeviceType.TV] = new AppearanceSettingsDto { ThemeId = "server-gone" } }
+        });
+        service.Apply(new AppearancePreferencesDto(), DeviceType.TV);
+        service.Theme.Id.Should().Be("midnight");
+    }
+
+    [Test]
     public void Theme_ShouldFollowServerDefault_WhenUserPickedNothing()
     {
         var service = new ThemeService();

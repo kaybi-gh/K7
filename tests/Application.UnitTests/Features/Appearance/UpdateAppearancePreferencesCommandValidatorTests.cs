@@ -91,6 +91,112 @@ public class UpdateAppearancePreferencesCommandValidatorTests
     }
 
     [Test]
+    public void ServerSkins_ShouldKeepASetPerDeviceType_AndReadTheFormerSingleSet()
+    {
+        var skins = new ServerSkinsDto
+        {
+            Default = { MediaPageHero = MediaHeroStyle.Banner, ThemeId = "oled" },
+            DeviceOverrides =
+            {
+                [DeviceType.TV] = new AppearanceSettingsDto { MediaPageHero = MediaHeroStyle.Cut },
+                // Same as the shared set: not a set of its own.
+                [DeviceType.Phone] = new AppearanceSettingsDto { MediaPageHero = MediaHeroStyle.Banner },
+                // The built-in pages are a choice when the shared set is something else.
+                [DeviceType.Tablet] = new AppearanceSettingsDto()
+            }
+        };
+
+        var read = AppearanceSkins.ParseSet(AppearanceSkins.Serialize(skins))!;
+
+        read.Default.MediaPageHero.Should().Be(MediaHeroStyle.Banner);
+        read.Default.ThemeId.Should().BeNull("only the skins are stored");
+        read.DeviceOverrides.Keys.Should().BeEquivalentTo([DeviceType.TV, DeviceType.Tablet]);
+        read.Resolve(DeviceType.TV).MediaPageHero.Should().Be(MediaHeroStyle.Cut);
+        read.Resolve(DeviceType.Tablet).MediaPageHero.Should().Be(MediaHeroStyle.Fade);
+        read.Resolve(DeviceType.Phone).MediaPageHero.Should().Be(MediaHeroStyle.Banner);
+        read.Resolve(DeviceType.Desktop).MediaPageHero.Should().Be(MediaHeroStyle.Banner);
+
+        // What a server stored before device types had their own set: the shared set alone.
+        var former = AppearanceSkins.ParseSet(AppearanceSkins.Serialize(new AppearanceSettingsDto { AudioLayout = AudioPlayerLayout.Centered }))!;
+        former.Default.AudioLayout.Should().Be(AudioPlayerLayout.Centered);
+        former.DeviceOverrides.Should().BeEmpty();
+
+        AppearanceSkins.ParseSet(AppearanceSkins.Serialize(new ServerSkinsDto())).Should().BeNull();
+        AppearanceSkins.ParseSet(null).Should().BeNull();
+        AppearanceSkins.ParseSet("not json").Should().BeNull();
+        AppearanceSkins.ParseSet("[]").Should().BeNull();
+    }
+
+    [Test]
+    public void ServerSkins_ShouldKeepCornersAndTheThemeOfADeviceType_ButNotTheSharedTheme()
+    {
+        var skins = new ServerSkinsDto
+        {
+            // The shared theme is the default theme of the server, stored on its own.
+            Default = { ThemeId = "midnight", CornerStyle = AppearanceCornerStyle.Round, AccentColor = "#ff0000", TextSize = AppearanceTextSize.Large },
+            DeviceOverrides =
+            {
+                [DeviceType.TV] = new AppearanceSettingsDto { ThemeId = "oled", CornerStyle = AppearanceCornerStyle.Round },
+                // The shared theme and other corners: it follows the shared theme.
+                [DeviceType.Phone] = new AppearanceSettingsDto { ThemeId = "midnight", CornerStyle = AppearanceCornerStyle.Square },
+                // The shared theme and the shared corners: not a set of its own.
+                [DeviceType.Tablet] = new AppearanceSettingsDto { ThemeId = "midnight", CornerStyle = AppearanceCornerStyle.Round }
+            }
+        };
+
+        var read = AppearanceSkins.ParseSet(AppearanceSkins.Serialize(skins))!;
+
+        read.Default.ThemeId.Should().BeNull();
+        read.Default.CornerStyle.Should().Be(AppearanceCornerStyle.Round);
+        read.Default.AccentColor.Should().BeNull("the server sets no accent");
+        read.Default.TextSize.Should().Be(AppearanceTextSize.Default, "the text size is for each user to choose");
+        read.DeviceOverrides.Keys.Should().BeEquivalentTo([DeviceType.TV, DeviceType.Phone]);
+        read.DeviceOverrides[DeviceType.TV].ThemeId.Should().Be("oled");
+        read.DeviceOverrides[DeviceType.Phone].ThemeId.Should().BeNull();
+        read.DeviceOverrides[DeviceType.Phone].CornerStyle.Should().Be(AppearanceCornerStyle.Square);
+
+        // Corners alone are worth storing.
+        AppearanceSkins.ParseSet(AppearanceSkins.Serialize(new ServerSkinsDto { Default = { CornerStyle = AppearanceCornerStyle.Square } }))
+            .Should().NotBeNull();
+
+        // The theme of a device type is built-in or of the server, never the theme of an account.
+        AppearanceSkins.IsValid(new ServerSkinsDto
+        {
+            DeviceOverrides = { [DeviceType.TV] = new AppearanceSettingsDto { ThemeId = "custom-abc" } }
+        }).Should().BeFalse();
+    }
+
+    [Test]
+    public void Settings_ShouldFollowTheCornersOfTheServer_UntilTheUserPicksTheirs()
+    {
+        var server = new AppearanceSettingsDto { CornerStyle = AppearanceCornerStyle.Round };
+
+        new AppearanceSettingsDto().WithServerSkins(server).CornerStyle.Should().Be(AppearanceCornerStyle.Round);
+        new AppearanceSettingsDto { CornerStyle = AppearanceCornerStyle.Square }.WithServerSkins(server).CornerStyle
+            .Should().Be(AppearanceCornerStyle.Square);
+
+        // The standard corners, picked: a choice, not "follow the server".
+        var own = new AppearanceSettingsDto { CornerStyleOwn = true };
+        own.WithServerSkins(server).CornerStyle.Should().Be(AppearanceCornerStyle.Default);
+        own.IsLookDefault.Should().BeFalse();
+    }
+
+    [Test]
+    public void ServerSkins_ShouldRejectASetForNoDeviceTypeOrWithInvalidValues()
+    {
+        AppearanceSkins.IsValid(new ServerSkinsDto
+        {
+            DeviceOverrides = { [DeviceType.Unknown] = new AppearanceSettingsDto() }
+        }).Should().BeFalse();
+        AppearanceSkins.IsValid(new ServerSkinsDto
+        {
+            DeviceOverrides = { [DeviceType.TV] = new AppearanceSettingsDto { SeasonPage = (SeasonPageLayout)99 } }
+        }).Should().BeFalse();
+        AppearanceSkins.IsValid(new ServerSkinsDto { Default = { AudioSeek = (AudioSeekStyle)99 } }).Should().BeFalse();
+        AppearanceSkins.IsValid((ServerSkinsDto?)null).Should().BeFalse();
+    }
+
+    [Test]
     public void Settings_ShouldTreatTheMiniPlayerAsPartOfTheMusicPlayer()
     {
         // Set up on the music player page: it follows the server defaults with it, and

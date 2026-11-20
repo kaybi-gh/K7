@@ -8,19 +8,18 @@ namespace K7.Clients.Shared.UI.Pages.Admin.Panels;
 
 /// <summary>
 /// The default media pages and players of the server, shown to every account that did not set
-/// them up. Same settings as the personal ones (<see cref="AppearanceSettingsPanel"/>), one set
-/// for every device, saved on change. The media pages come with the server default of theme
-/// songs, in a second panel, like on the personal page.
+/// them up. Same settings as the personal ones (<see cref="AppearanceSettingsPanel"/>), for
+/// every device or for one type of device. The media pages come with the server default of
+/// theme songs, in a second panel, like on the personal page. Nothing is saved on change:
+/// the defaults reach every account, so they wait for Save, and Cancel drops them.
 /// </summary>
 public partial class AdminSkinsPanel : IDisposable
 {
     private AppearanceSettingsPanel? _panel;
-    private bool _resetting;
-    private VideoPlayerSettingsDto _videoPlayerSettings = new();
+    private bool _saving;
     private bool _playThemeSongs = true;
+    private bool _savedPlayThemeSongs = true;
     private bool _themeSongsLoaded;
-    private bool _themeSongsSaving;
-    private SettingsSaveState _themeSongsSaveState;
 
     [Inject] private IServerPreferencesService ServerPreferencesService { get; set; } = default!;
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
@@ -42,13 +41,11 @@ public partial class AdminSkinsPanel : IDisposable
         _ => AppearancePanelSection.MediaPages
     };
 
+    private bool ThemeSongsDirty => _themeSongsLoaded && _playThemeSongs != _savedPlayThemeSongs;
+
     private bool ThemeSongsOnDefaults => _playThemeSongs == new VideoPlayerSettingsDto().PlayThemeSongs;
 
-    /// <summary>The state of the last change, whichever panel made it.</summary>
-    private SettingsSaveState ActiveSaveState =>
-        IsMediaPages && _themeSongsSaveState != SettingsSaveState.Idle
-            ? _themeSongsSaveState
-            : _panel?.SaveState ?? SettingsSaveState.Idle;
+    private bool IsDirty => (_panel?.IsDirty ?? false) || ThemeSongsDirty;
 
     /// <summary>Reset only covers the sub-page on screen.</summary>
     private bool ResetDisabled => (_panel?.IsOnDefaults ?? true) && (!IsMediaPages || ThemeSongsOnDefaults);
@@ -61,9 +58,9 @@ public partial class AdminSkinsPanel : IDisposable
 
         try
         {
-            _videoPlayerSettings = await ServerPreferencesService.GetServerVideoPlayerSettingsAsync()
-                                   ?? new VideoPlayerSettingsDto();
-            _playThemeSongs = _videoPlayerSettings.PlayThemeSongs;
+            var settings = await ServerPreferencesService.GetServerVideoPlayerSettingsAsync() ?? new VideoPlayerSettingsDto();
+            _playThemeSongs = settings.PlayThemeSongs;
+            _savedPlayThemeSongs = settings.PlayThemeSongs;
             _themeSongsLoaded = true;
         }
         catch (Exception ex)
@@ -75,61 +72,59 @@ public partial class AdminSkinsPanel : IDisposable
     // The three sub-pages are the same page: render again when only the address changes.
     private void OnLocationChanged(object? sender, LocationChangedEventArgs e) => InvokeAsync(StateHasChanged);
 
-    private void OnPanelStateChanged()
-    {
-        // The panel has news: its state replaces the one the theme song switch left.
-        _themeSongsSaveState = SettingsSaveState.Idle;
-        StateHasChanged();
-    }
+    private void OnPanelStateChanged() => StateHasChanged();
 
-    private Task OnPlayThemeSongsChangedAsync(bool enabled) => SavePlayThemeSongsAsync(enabled);
+    private void OnPlayThemeSongsChanged(bool enabled) => _playThemeSongs = enabled;
 
-    /// <summary>A single switch: saved as soon as it is flipped, like the settings above it.</summary>
-    private async Task SavePlayThemeSongsAsync(bool enabled)
+    private async Task SaveAsync()
     {
-        if (_themeSongsSaving || enabled == _playThemeSongs)
+        if (_saving || !IsDirty)
             return;
 
-        _themeSongsSaving = true;
-        _playThemeSongs = enabled;
-        _themeSongsSaveState = SettingsSaveState.Saving;
+        _saving = true;
         try
         {
-            // The other video settings may have changed on their own page since this one loaded.
-            _videoPlayerSettings = await ServerPreferencesService.GetServerVideoPlayerSettingsAsync()
-                                   ?? _videoPlayerSettings;
-            _videoPlayerSettings.PlayThemeSongs = enabled;
-            await ServerPreferencesService.UpdateServerVideoPlayerSettingsAsync(_videoPlayerSettings);
-            _themeSongsSaveState = SettingsSaveState.Saved;
+            if (ThemeSongsDirty)
+            {
+                // The other video settings may have changed on their own page since this one loaded.
+                var settings = await ServerPreferencesService.GetServerVideoPlayerSettingsAsync() ?? new VideoPlayerSettingsDto();
+                settings.PlayThemeSongs = _playThemeSongs;
+                await ServerPreferencesService.UpdateServerVideoPlayerSettingsAsync(settings);
+                _savedPlayThemeSongs = _playThemeSongs;
+            }
+
+            // The panel reports its own failures.
+            if (_panel is { IsDirty: true })
+                await _panel.SaveChangesAsync();
+
+            if (!IsDirty)
+                Snackbar.Add(Lg["SaveSuccess"], K7Severity.Success);
         }
         catch (Exception ex)
         {
-            _playThemeSongs = !enabled;
-            _themeSongsSaveState = SettingsSaveState.Failed;
             Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), K7Severity.Error);
         }
         finally
         {
-            _themeSongsSaving = false;
+            _saving = false;
         }
     }
 
+    private void CancelChanges()
+    {
+        _playThemeSongs = _savedPlayThemeSongs;
+        _panel?.CancelChanges();
+    }
+
+    /// <summary>Puts the sub-page on screen back on the defaults. Like any change, it waits for Save.</summary>
     private async Task ResetAsync()
     {
-        if (_resetting || _panel is null)
+        if (_panel is null)
             return;
 
-        _resetting = true;
-        try
-        {
-            if (IsMediaPages && _themeSongsLoaded && !ThemeSongsOnDefaults)
-                await SavePlayThemeSongsAsync(new VideoPlayerSettingsDto().PlayThemeSongs);
+        if (IsMediaPages && _themeSongsLoaded)
+            _playThemeSongs = new VideoPlayerSettingsDto().PlayThemeSongs;
 
-            await _panel.ResetAsync();
-        }
-        finally
-        {
-            _resetting = false;
-        }
+        await _panel.ResetAsync();
     }
 }

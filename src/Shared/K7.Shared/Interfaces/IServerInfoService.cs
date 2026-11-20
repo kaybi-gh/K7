@@ -24,7 +24,7 @@ public interface IServerInfoService
     Task UpdateDefaultThemeAsync(string theme, CancellationToken cancellationToken = default);
     Task UpdateServerThemesAsync(IReadOnlyList<CustomThemeDto> themes, CancellationToken cancellationToken = default);
     Task UpdateDefaultCardStyleAsync(MediaCardPreferencesDto cards, CancellationToken cancellationToken = default);
-    Task UpdateDefaultSkinsAsync(AppearanceSettingsDto skins, CancellationToken cancellationToken = default);
+    Task UpdateDefaultSkinsAsync(ServerSkinsDto skins, CancellationToken cancellationToken = default);
     Task<List<ActiveStreamDto>?> GetActiveStreamsAsync(CancellationToken cancellationToken = default);
     Task<ServerMetricsHistoryDto?> GetServerMetricsAsync(CancellationToken cancellationToken = default);
     Task<PlaybackHistoryPageDto?> GetAdminPlaybackHistoryAsync(int page = 1, int pageSize = 25, string? mediaType = null, Guid? userId = null, string period = "all", DateTime? from = null, DateTime? to = null, string? q = null, CancellationToken cancellationToken = default);

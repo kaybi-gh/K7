@@ -8,7 +8,7 @@ namespace K7.Server.Web.Endpoints.Admin;
 
 /// <summary>
 /// Stores the default media pages and players of the server: what accounts that did not set
-/// theirs up are shown.
+/// theirs up are shown, on every device or on one type of device.
 /// </summary>
 public class UpdateDefaultSkins : IEndpoint
 {
@@ -22,12 +22,25 @@ public class UpdateDefaultSkins : IEndpoint
             [FromServices] IServerSettingsService serverSettings,
             CancellationToken cancellationToken) =>
         {
-            if (!AppearanceSkins.IsValid(request.Skins))
+            var skins = new ServerSkinsDto { Default = request.Skins };
+            if (request.DeviceSkins is not null)
+            {
+                skins.DeviceOverrides = request.DeviceSkins;
+            }
+            else
+            {
+                // A client from before the sets per device only sends the shared one: the sets
+                // of the device types are not its to remove.
+                var stored = AppearanceSkins.ParseSet(await serverSettings.GetAsync(ServerSettingKeys.DefaultSkins, cancellationToken));
+                skins.DeviceOverrides = stored?.DeviceOverrides ?? [];
+            }
+
+            if (!AppearanceSkins.IsValid(skins))
                 return Results.BadRequest("Skins are not valid.");
 
             await serverSettings.SetAsync(
                 ServerSettingKeys.DefaultSkins,
-                AppearanceSkins.Serialize(request.Skins),
+                AppearanceSkins.Serialize(skins),
                 cancellationToken);
 
             return Results.NoContent();
@@ -38,4 +51,8 @@ public class UpdateDefaultSkins : IEndpoint
     }
 }
 
-public record UpdateDefaultSkinsRequest(AppearanceSettingsDto Skins);
+/// <param name="Skins">The set shared by every device.</param>
+/// <param name="DeviceSkins">The types of devices with a set of their own. Null leaves the stored ones alone.</param>
+public record UpdateDefaultSkinsRequest(
+    AppearanceSettingsDto Skins,
+    Dictionary<K7.Server.Domain.Enums.DeviceType, AppearanceSettingsDto>? DeviceSkins = null);

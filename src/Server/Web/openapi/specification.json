@@ -12567,6 +12567,9 @@
           "cornerStyle": {
             "$ref": "#/components/schemas/AppearanceCornerStyle"
           },
+          "cornerStyleOwn": {
+            "type": "boolean"
+          },
           "miniPlayer": {
             "$ref": "#/components/schemas/MiniPlayerPlacement"
           },
@@ -12637,6 +12640,9 @@
             "type": "boolean"
           },
           "isLookDefault": {
+            "type": "boolean"
+          },
+          "ownsCorners": {
             "type": "boolean"
           },
           "isMediaPagesDefault": {
@@ -23921,6 +23927,15 @@
         "properties": {
           "skins": {
             "$ref": "#/components/schemas/AppearanceSettingsDto"
+          },
+          "deviceSkins": {
+            "type": [
+              "null",
+              "object"
+            ],
+            "additionalProperties": {
+              "$ref": "#/components/schemas/AppearanceSettingsDto"
+            }
           }
         }
       },

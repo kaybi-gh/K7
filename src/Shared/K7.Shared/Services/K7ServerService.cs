@@ -1022,9 +1022,13 @@ public partial class K7ServerService : IK7ServerService, IMediaService, ILibrary
         response.EnsureSuccessStatusCode();
     }
 
-    public async Task UpdateDefaultSkinsAsync(Theming.AppearanceSettingsDto skins, CancellationToken cancellationToken = default)
+    public async Task UpdateDefaultSkinsAsync(Theming.ServerSkinsDto skins, CancellationToken cancellationToken = default)
     {
-        var response = await HttpClient.PutAsJsonAsync("api/admin/settings/skins", new { Skins = skins }, _serializerOptions, cancellationToken);
+        var response = await HttpClient.PutAsJsonAsync(
+            "api/admin/settings/skins",
+            new { Skins = skins.Default, DeviceSkins = skins.DeviceOverrides },
+            _serializerOptions,
+            cancellationToken);
         response.EnsureSuccessStatusCode();
     }
 

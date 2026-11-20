@@ -22,15 +22,7 @@
 
 <div class="settings-form-page settings-form-page--section-actions">
     <div class="settings-form-page__body">
-        <InterfaceSettingsSplit Section="@ActiveSection" Extra="ThemeSongsPanel" ExtraTitle="@Li["ThemeSongs"]">
-            @if (PanelSection == AppearancePanelSection.Look)
-            {
-                <K7SettingRow Label="@L["Language"]">
-                    <K7LanguageSelect Value="@_currentCulture"
-                                      ValueChanged="OnCultureChanged"
-                                      Languages="SupportedLanguages.Interface" />
-                </K7SettingRow>
-            }
+        <InterfaceSettingsSplit Section="@ActiveSection" Extra="ExtraPanel" ExtraTitle="@ExtraPanelTitle" ExtraFirst="@(PanelSection == AppearancePanelSection.Look)">
             <AppearanceSettingsPanel @ref="_appearancePanel" Section="PanelSection" OnStateChanged="OnAppearanceStateChanged" />
         </InterfaceSettingsSplit>
     </div>
@@ -46,6 +38,22 @@
     // Theme songs play on movie and series pages: they are set up with them, in a panel of
     // their own under the layout settings.
     private RenderFragment? ThemeSongsPanel => IsMediaPages ? ThemeSongsSettings : null;
+
+    // The second panel of the sub-page: theme songs under the media pages, the language above
+    // the appearance. The language is the same on every device, unlike what the device
+    // selector of the appearance covers.
+    private RenderFragment? ExtraPanel => PanelSection == AppearancePanelSection.Look ? LanguageSettings : ThemeSongsPanel;
+
+    private string ExtraPanelTitle => PanelSection == AppearancePanelSection.Look ? Li["Language"] : Li["ThemeSongs"];
+
+    private RenderFragment LanguageSettings => __builder =>
+    {
+        <K7SettingRow Label="@L["Language"]">
+            <K7LanguageSelect Value="@_currentCulture"
+                              ValueChanged="OnCultureChanged"
+                              Languages="SupportedLanguages.Interface" />
+        </K7SettingRow>
+    };
 
     private RenderFragment ThemeSongsSettings => __builder =>
     {
