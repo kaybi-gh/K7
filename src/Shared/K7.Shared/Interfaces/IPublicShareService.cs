@@ -21,7 +21,8 @@ public interface IPublicShareService
 
     Task<StreamingSessionDto?> CreateStreamSessionAsync(Guid shareId, CreateShareStreamSessionRequest request, CancellationToken cancellationToken = default);
 
-    Task ReportProgressAsync(Guid shareId, Guid mediaId, double positionSeconds, double durationSeconds, CancellationToken cancellationToken = default);
+    /// <summary>Player progress of a visitor: shown to administrators and used to close a share once played.</summary>
+    Task ReportProgressAsync(Guid shareId, ReportShareProgressRequest request, CancellationToken cancellationToken = default);
 
     string GetDownloadUrl(Guid shareId, Guid indexedFileId);
 

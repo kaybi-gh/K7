@@ -32,7 +32,6 @@ public enum ShareViewState
 public partial class SharePage : IDisposable
 {
     /// <summary>How often the playback position is sent while playing.</summary>
-    private static readonly TimeSpan ProgressInterval = TimeSpan.FromSeconds(10);
 
     [Inject] private IPublicShareService PublicShare { get; set; } = default!;
     [Inject] private ISharePlaybackScope PlaybackScope { get; set; } = default!;
@@ -61,7 +60,6 @@ public partial class SharePage : IDisposable
     private bool _isSubmitting;
     private (Guid? ShareId, Guid? MediaId) _loaded = (Guid.Empty, Guid.Empty);
     private Guid? _playingVideoMediaId;
-    private DateTimeOffset _lastProgressReport;
     private bool _startedPlayback;
 
     /// <summary>Back to the root of the share, when the visitor is deeper in it.</summary>
@@ -110,12 +108,6 @@ public partial class SharePage : IDisposable
         ShareViewState.Error => L["ErrorText"],
         _ => L["NotFoundText"]
     };
-
-    protected override void OnInitialized()
-    {
-        PlayerService.CurrentTimeChanged += OnVideoTimeChanged;
-        AudioPlayer.CurrentTimeChanged += OnAudioTimeChanged;
-    }
 
     protected override async Task OnParametersSetAsync()
     {
@@ -311,10 +303,9 @@ public partial class SharePage : IDisposable
             AudioPlayer.Stop();
             _startedPlayback = true;
             _playingVideoMediaId = media.Id;
-            _lastProgressReport = default;
 
-            // Nothing is reported to the visitor's (nonexistent) history: tracking only keeps
-            // the player state consistent.
+            // A visitor has no account: the tracker reports through the share, so the
+            // stream shows up for administrators (live streams, playback history).
             PlaybackProgressTracker.StartTracking(media.Id, isAuthenticated: false, indexedFileId: file.Id);
 
             var coverUrl = ServerService.GetAbsoluteUri(
@@ -358,7 +349,6 @@ public partial class SharePage : IDisposable
         {
             _startedPlayback = true;
             _playingVideoMediaId = null;
-            _lastProgressReport = default;
             await AudioPlayer.PlayTracksAsync(request.Queue, request.StartIndex);
         }
         catch (HttpRequestException ex) when (ex.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.NotFound)
@@ -371,48 +361,14 @@ public partial class SharePage : IDisposable
         }
     }
 
-    private void OnVideoTimeChanged(double position)
-    {
-        if (_playingVideoMediaId is { } mediaId)
-            ReportProgress(mediaId, position, PlayerService.Duration);
-    }
-
-    private void OnAudioTimeChanged(double position)
-    {
-        if (_playingVideoMediaId is null && AudioPlayer.CurrentTrack is { } track)
-            ReportProgress(track.MediaId, position, AudioPlayer.Duration);
-    }
-
-    /// <summary>
-    /// The position only serves shares set to close once played. The end of the media is
-    /// always sent, whatever the interval.
-    /// </summary>
-    private void ReportProgress(Guid mediaId, double position, double duration)
-    {
-        if (_session?.ShareId is not { } shareId || duration <= 0)
-            return;
-
-        var now = DateTimeOffset.UtcNow;
-        var nearEnd = position / duration >= 0.9;
-        if (now - _lastProgressReport < ProgressInterval && !nearEnd)
-            return;
-
-        if (now - _lastProgressReport < TimeSpan.FromSeconds(2))
-            return;
-
-        _lastProgressReport = now;
-        _ = PublicShare.ReportProgressAsync(shareId, mediaId, position, duration);
-    }
-
     public void Dispose()
     {
-        PlayerService.CurrentTimeChanged -= OnVideoTimeChanged;
-        AudioPlayer.CurrentTimeChanged -= OnAudioTimeChanged;
-
         // Leaving the share: nothing keeps playing through it, and the regular client
         // talks to the server again.
         if (_startedPlayback)
         {
+            // Last report while the share is still open.
+            PlaybackProgressTracker.StopTracking();
             PlayerService.Stop();
             AudioPlayer.Stop();
         }

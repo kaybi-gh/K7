@@ -722,6 +722,7 @@ public sealed class MockDeviceApiService : IDeviceApiService
 public sealed class MockUserAdminService : IUserAdminService
 {
     public Task<List<UserDto>> GetUsersAsync(CancellationToken cancellationToken = default) => Task.FromResult(new List<UserDto>());
+    public Task<List<UserDto>> GetUsersAsync(bool includeSystemUsers, CancellationToken cancellationToken = default) => Task.FromResult(new List<UserDto>());
     public Task<UserDto?> GetCurrentUserAsync(CancellationToken cancellationToken = default) => Task.FromResult<UserDto?>(null);
     public Task UpdateUserRoleAsync(Guid userId, UpdateUserRoleRequest request, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task UpdateUserCapabilitiesAsync(Guid userId, UpdateUserCapabilitiesRequest request, CancellationToken cancellationToken = default) => Task.CompletedTask;

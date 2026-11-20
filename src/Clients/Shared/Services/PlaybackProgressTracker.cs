@@ -4,6 +4,7 @@ using K7.Clients.Shared.Models;
 using K7.Server.Domain.Enums;
 using K7.Shared;
 using K7.Shared.Dtos.Entities.Metadatas.Files.Tracks;
+using K7.Shared.Dtos.Shares;
 using K7.Shared.Interfaces;
 
 namespace K7.Clients.Shared.Services;
@@ -25,6 +26,8 @@ public class PlaybackProgressTracker : IDisposable
     private readonly ISharedProfileSessionService? _viewingGroupSession;
     private readonly ISyncPlayService? _syncPlayService;
     private readonly MediaCacheStore _cacheStore;
+    private readonly ISharePlaybackScope? _shareScope;
+    private readonly IPublicShareService? _publicShare;
     private Timer? _reportTimer;
     private Timer? _bufferingTimer;
     private Guid? _currentMediaId;
@@ -62,8 +65,12 @@ public class PlaybackProgressTracker : IDisposable
         ILocalUserService localUsers,
         MediaCacheStore cacheStore,
         ISharedProfileSessionService? viewingGroupSession = null,
-        ISyncPlayService? syncPlayService = null)
+        ISyncPlayService? syncPlayService = null,
+        ISharePlaybackScope? shareScope = null,
+        IPublicShareService? publicShare = null)
     {
+        _shareScope = shareScope;
+        _publicShare = publicShare;
         _playerService = playerService;
         _serverService = serverService;
         _deviceStorage = deviceStorage;
@@ -250,7 +257,10 @@ public class PlaybackProgressTracker : IDisposable
     private async Task ReportProgressAsync(Guid? mediaId, bool force = false, PlaybackState? state = null)
     {
         if (mediaId is null) return;
-        if (!_isAuthenticated) return;
+
+        // A public share visitor has no account: its progress goes through the share.
+        var shareId = _publicShare is not null ? _shareScope?.ShareId : null;
+        if (shareId is null && !_isAuthenticated) return;
 
         var reportState = ResolveReportState(state ?? _lastState);
         if (reportState is PlaybackState.Unknown)
@@ -280,6 +290,25 @@ public class PlaybackProgressTracker : IDisposable
 
             _lastReportedPosition = position;
             ClearResumeFloorIfReached(position);
+
+            if (shareId is { } openShareId)
+            {
+                await _publicShare!.ReportProgressAsync(
+                    openShareId,
+                    new ReportShareProgressRequest
+                    {
+                        MediaId = mediaId.Value,
+                        PositionSeconds = position,
+                        DurationSeconds = duration,
+                        SessionId = _sessionId,
+                        ReferenceId = _referenceId,
+                        State = (int)reportState,
+                        IndexedFileId = _currentIndexedFileId,
+                        AudioTrackIndex = _playerService.SelectedAudioTrack?.Index,
+                        SubtitleTrackIndex = _playerService.SelectedSubtitleTrack?.Index
+                    });
+                return;
+            }
 
             var identityUserId = _localUsers.GetLastActive()?.IdentityUserId;
 

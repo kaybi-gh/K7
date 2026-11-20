@@ -3,22 +3,27 @@ using System.Net.Http.Json;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Security;
 using K7.Server.Application.Common.Settings;
+using K7.Server.Application.Services;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities;
+using K7.Server.Domain.Entities.Devices;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Shares;
 using K7.Server.Domain.Entities.Users;
 using K7.Server.Domain.Enums;
 using K7.Server.Domain.Settings;
+using K7.Server.Web.Services;
 using K7.Shared.Dtos;
 using K7.Shared.Dtos.Shares;
 using K7.Shared.Json;
 using K7.Tests.Helpers.Smoke;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.TestHost;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace K7.Server.Web.SmokeTests;
 
@@ -36,6 +41,7 @@ public class PublicShareEndpointsTests
     private static readonly System.Text.Json.JsonSerializerOptions Json = K7JsonSerializerOptions.CreateDefault();
 
     private SmokeWebApplicationFactory _factory = null!;
+    private WebApplicationFactory<Program> _app = null!;
     private Guid _shareId;
     private Guid _serieId;
     private Guid _seasonId;
@@ -49,13 +55,25 @@ public class PublicShareEndpointsTests
     public async Task OneTimeSetUp()
     {
         _factory = new SmokeWebApplicationFactory();
+
+        // The smoke factory replaces the current user with a fixed one. A visitor is told
+        // apart by its principal, so these tests need the real one.
+        _app = _factory.WithWebHostBuilder(builder => builder.ConfigureTestServices(services =>
+        {
+            services.RemoveAll<IUser>();
+            services.AddScoped<IUser, CurrentUser>();
+        }));
         await SeedAsync();
     }
 
     [OneTimeTearDown]
-    public void OneTimeTearDown() => _factory.Dispose();
+    public void OneTimeTearDown()
+    {
+        _app.Dispose();
+        _factory.Dispose();
+    }
 
-    private HttpClient CreateVisitor() => _factory.CreateClient(new WebApplicationFactoryClientOptions
+    private HttpClient CreateVisitor() => _app.CreateClient(new WebApplicationFactoryClientOptions
     {
         AllowAutoRedirect = false,
         BaseAddress = new Uri("https://localhost")
@@ -219,7 +237,7 @@ public class PublicShareEndpointsTests
         var client = CreateVisitor();
         var revokedToken = "smoke-revoked-link-token";
         var revokedShareId = Guid.NewGuid();
-        using (var scope = _factory.Services.CreateScope())
+        using (var scope = _app.Services.CreateScope())
         {
             var context = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
             var creatorId = await context.MediaShares.Where(s => s.Id == _shareId).Select(s => s.CreatedByUserId).SingleAsync();
@@ -230,7 +248,7 @@ public class PublicShareEndpointsTests
         await OpenAsync(client, revokedToken);
         var before = await client.GetAsync($"/api/public/shares/{revokedShareId}/medias/{_movieId}");
 
-        using (var scope = _factory.Services.CreateScope())
+        using (var scope = _app.Services.CreateScope())
         {
             var context = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
             var share = await context.MediaShares.SingleAsync(s => s.Id == revokedShareId);
@@ -259,7 +277,7 @@ public class PublicShareEndpointsTests
     [Test]
     public void PublicShareRoutes_ShouldRequireTheSharePolicy_ExceptOpening()
     {
-        var routes = _factory.Services.GetRequiredService<EndpointDataSource>().Endpoints
+        var routes = _app.Services.GetRequiredService<EndpointDataSource>().Endpoints
             .OfType<RouteEndpoint>()
             .Where(endpoint => endpoint.RoutePattern.RawText?.StartsWith("/api/public/shares", StringComparison.Ordinal) == true)
             .ToArray();
@@ -292,7 +310,7 @@ public class PublicShareEndpointsTests
             "/api/stream-sessions/{sessionId:guid}/hls/{*file}"
         ];
 
-        var routesWithoutFileId = _factory.Services.GetRequiredService<EndpointDataSource>().Endpoints
+        var routesWithoutFileId = _app.Services.GetRequiredService<EndpointDataSource>().Endpoints
             .OfType<RouteEndpoint>()
             .Where(endpoint => endpoint.Metadata.GetOrderedMetadata<IAuthorizeData>()
                 .Any(data => data.Policy == Policies.StreamAccess))
@@ -315,9 +333,131 @@ public class PublicShareEndpointsTests
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
+    [Test]
+    public async Task Progress_ShouldShowTheVisitorToAdministrators_WhenAVisitorPlays()
+    {
+        var client = CreateVisitor();
+        await OpenAsync(client, Token);
+        var deviceId = await GiveVisitorsADeviceAsync();
+        var sessionId = Guid.NewGuid();
+
+        var response = await ReportAsync(client, _episodeId, sessionId, PlaybackState.Playing);
+
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        var live = _app.Services.GetRequiredService<IActiveStreamTracker>().GetStreamInfo(sessionId);
+        live.Should().NotBeNull();
+        live!.MediaId.Should().Be(_episodeId);
+        live.DeviceId.Should().Be(deviceId);
+
+        using var scope = _app.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
+        var recorded = await context.MediaPlaybackSessions.AsNoTracking().SingleAsync(s => s.SessionId == sessionId);
+        // Recorded under the technical share visitor account, never under the share owner.
+        var visitorUserId = recorded.UserId;
+        var ownerId = await context.MediaShares.Where(s => s.Id == _shareId).Select(s => s.CreatedByUserId).SingleAsync();
+        visitorUserId.Should().NotBe(ownerId);
+        (await context.Users.Where(u => u.Id == visitorUserId).Select(u => u.IsActive).SingleAsync()).Should().BeFalse();
+        recorded.MediaId.Should().Be(_episodeId);
+        recorded.DeviceId.Should().Be(deviceId);
+        // Like a guest: history only, no personal state.
+        (await context.UserMediaStates.AnyAsync(s => s.UserId == visitorUserId)).Should().BeFalse();
+    }
+
+    [Test]
+    public async Task Progress_ShouldRecordNothing_WhenMediaIsOutsideTheShare()
+    {
+        var client = CreateVisitor();
+        await OpenAsync(client, Token);
+        await GiveVisitorsADeviceAsync();
+        var sessionId = Guid.NewGuid();
+
+        var response = await ReportAsync(client, _movieId, sessionId, PlaybackState.Playing);
+
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        _app.Services.GetRequiredService<IActiveStreamTracker>().GetStreamInfo(sessionId).Should().BeNull();
+        using var scope = _app.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
+        (await context.MediaPlaybackSessions.AnyAsync(s => s.SessionId == sessionId)).Should().BeFalse();
+    }
+
+    [Test]
+    public async Task Progress_ShouldNotTouchSomeoneElsesPlaybackSession_WhenVisitorSendsItsId()
+    {
+        var client = CreateVisitor();
+        await OpenAsync(client, Token);
+        await GiveVisitorsADeviceAsync();
+        var sessionId = Guid.NewGuid();
+
+        using (var scope = _app.Services.CreateScope())
+        {
+            var context = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
+            var ownerId = await context.MediaShares.Where(s => s.Id == _shareId).Select(s => s.CreatedByUserId).SingleAsync();
+            context.MediaPlaybackSessions.Add(new MediaPlaybackSession
+            {
+                UserId = ownerId,
+                MediaId = _movieId,
+                SessionId = sessionId,
+                ReferenceId = Guid.NewGuid(),
+                StartedAt = DateTime.UtcNow,
+                LastUpdateAt = DateTime.UtcNow,
+                State = PlaybackState.Playing,
+                PositionSeconds = 42
+            });
+            await context.SaveChangesAsync(CancellationToken.None);
+        }
+
+        await ReportAsync(client, _episodeId, sessionId, PlaybackState.Playing);
+
+        using var check = _app.Services.CreateScope();
+        var stored = await check.ServiceProvider.GetRequiredService<IApplicationDbContext>()
+            .MediaPlaybackSessions.AsNoTracking().SingleAsync(s => s.SessionId == sessionId);
+        stored.MediaId.Should().Be(_movieId);
+        stored.PositionSeconds.Should().Be(42);
+    }
+
+    private Task<HttpResponseMessage> ReportAsync(HttpClient client, Guid mediaId, Guid sessionId, PlaybackState state) =>
+        client.PostAsJsonAsync(
+            $"/api/public/shares/{_shareId}/progress",
+            new ReportShareProgressRequest
+            {
+                MediaId = mediaId,
+                PositionSeconds = 60,
+                DurationSeconds = 1200,
+                SessionId = sessionId,
+                ReferenceId = Guid.NewGuid(),
+                State = (int)state
+            },
+            Json);
+
+    /// <summary>
+    /// A visitor gets its technical device when it creates a stream session, which needs a
+    /// real media file. Tests attach one directly.
+    /// </summary>
+    private async Task<Guid> GiveVisitorsADeviceAsync()
+    {
+        using var scope = _app.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
+        var session = await context.MediaShareSessions
+            .Where(s => s.ShareId == _shareId && s.DeviceId == null)
+            .OrderByDescending(s => s.CreatedAt)
+            .FirstAsync();
+        var device = new Device
+        {
+            Id = Guid.NewGuid(),
+            DeviceName = "Share visitor",
+            ClientType = ClientType.Web,
+            DeviceType = DeviceType.Unknown
+        };
+        context.Devices.Add(device);
+        session.Device = device;
+        await context.SaveChangesAsync(CancellationToken.None);
+        return device.Id;
+    }
+
     private async Task SeedAsync()
     {
-        using var scope = _factory.Services.CreateScope();
+        using var scope = _app.Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
         var settings = scope.ServiceProvider.GetRequiredService<IServerSettingsService>();
 

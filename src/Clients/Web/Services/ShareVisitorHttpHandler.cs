@@ -16,7 +16,10 @@ public sealed class ShareVisitorHttpHandler(ISharePlaybackScope scope) : Delegat
     [
         "/api/public/shares/",
         "/api/metadata-pictures/",
-        "/api/indexed-files/"
+        "/api/indexed-files/",
+
+        // Anonymous: the look the administrator set for the server (theme, skins).
+        "/api/server-info"
     ];
 
     protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)

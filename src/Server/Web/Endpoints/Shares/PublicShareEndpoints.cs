@@ -132,7 +132,13 @@ public class PublicShareEndpoints : IEndpoint
                     ShareId = shareId,
                     MediaId = request.MediaId,
                     PositionSeconds = request.PositionSeconds,
-                    DurationSeconds = request.DurationSeconds
+                    DurationSeconds = request.DurationSeconds,
+                    SessionId = request.SessionId,
+                    ReferenceId = request.ReferenceId,
+                    State = request.State,
+                    IndexedFileId = request.IndexedFileId,
+                    AudioTrackIndex = request.AudioTrackIndex,
+                    SubtitleTrackIndex = request.SubtitleTrackIndex
                 },
                 cancellationToken);
             return Results.NoContent();

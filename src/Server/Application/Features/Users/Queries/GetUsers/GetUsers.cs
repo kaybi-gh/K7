@@ -15,6 +15,12 @@ public record GetUsersQuery : IRequest<GetUsersResult>
 {
     public string? Role { get; init; }
     public bool? IsActive { get; init; }
+
+    /// <summary>
+    /// Also returns technical accounts (the public share visitor). Only for places that
+    /// filter recorded activity by user, never for user management.
+    /// </summary>
+    public bool IncludeSystemUsers { get; init; }
 }
 
 public class GetUsersQueryHandler : IRequestHandler<GetUsersQuery, GetUsersResult>
@@ -73,7 +79,7 @@ public class GetUsersQueryHandler : IRequestHandler<GetUsersQuery, GetUsersResul
                 };
             })
             // The share visitor account is technical: it never shows up in user management.
-            .Where(user => user.Role != Roles.ShareVisitor)
+            .Where(user => request.IncludeSystemUsers || user.Role != Roles.ShareVisitor)
             .Where(user => request.Role is null || user.Role == request.Role)
             .ToList();
 

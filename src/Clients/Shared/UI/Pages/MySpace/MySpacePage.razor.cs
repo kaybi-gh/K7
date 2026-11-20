@@ -37,10 +37,10 @@ public partial class MySpacePage
             LoadCanShareAsync());
     }
 
-    // Users allowed to share keep the entry even while the server switch is off,
-    // so they can still revoke or delete their links.
+    // No entry while the server switch is off: no link opens and none can be created.
+    // The page itself stays reachable by its address.
     private async Task LoadCanShareAsync() =>
-        _canShare = (await SharingAccess.GetAsync()).CanShare;
+        _canShare = await SharingAccess.GetAsync() is { Enabled: true, CanShare: true };
 
     private async Task LoadHasMusicLibraryAsync()
     {

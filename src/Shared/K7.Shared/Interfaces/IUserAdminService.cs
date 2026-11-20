@@ -8,6 +8,12 @@ namespace K7.Shared.Interfaces;
 public interface IUserAdminService
 {
     Task<List<UserDto>> GetUsersAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Users, plus technical accounts (the public share visitor) when asked. For filters on
+    /// recorded activity, never for user management.
+    /// </summary>
+    Task<List<UserDto>> GetUsersAsync(bool includeSystemUsers, CancellationToken cancellationToken = default);
     Task<UserDto?> GetCurrentUserAsync(CancellationToken cancellationToken = default);
     Task UpdateUserRoleAsync(Guid userId, UpdateUserRoleRequest request, CancellationToken cancellationToken = default);
     Task UpdateUserCapabilitiesAsync(Guid userId, UpdateUserCapabilitiesRequest request, CancellationToken cancellationToken = default);

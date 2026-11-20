@@ -44,11 +44,11 @@
     <div class="data-page-toolbar">
             <K7Select TValue="Guid?" Class="history-user-select data-toolbar-field"
                       Value="_selectedUserId" ValueChanged="OnUserChanged" Clearable="true"
-                      ToStringFunc="@(id => id is null ? L["AllUsers"] : _users.FirstOrDefault(u => u.Id == id)?.DisplayName ?? _users.FirstOrDefault(u => u.Id == id)?.UserName ?? L["AllUsers"])"
+                      ToStringFunc="@(id => id is null ? L["AllUsers"] : GetUserLabel(id) ?? L["AllUsers"])"
                       FullWidth="false">
                 @foreach (var user in _users)
                 {
-                    var userLabel = user.DisplayName ?? user.UserName ?? user.Email;
+                    var userLabel = GetUserLabel(user);
                     <K7SelectItem TValue="Guid?" Value="@user.Id" Text="@userLabel">@userLabel</K7SelectItem>
                 }
             </K7Select>
@@ -109,8 +109,8 @@
             <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["User"]" Width="100px" VisibleOnMobile="false">
                 <CellTemplate>
                     <div class="d-flex align-center" style="gap: var(--space-2);">
-                        <K7Avatar Size="sm">@((context.UserName ?? "?")[..1].ToUpperInvariant())</K7Avatar>
-                        <span class="text-sm">@(context.UserName ?? "-")</span>
+                        <K7Avatar Size="sm">@(GetRowUserName(context.UserName)[..1].ToUpperInvariant())</K7Avatar>
+                        <span class="text-sm">@GetRowUserName(context.UserName)</span>
                     </div>
                 </CellTemplate>
             </K7DataColumn>

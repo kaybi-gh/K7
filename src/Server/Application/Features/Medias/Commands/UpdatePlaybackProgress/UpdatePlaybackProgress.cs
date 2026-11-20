@@ -20,7 +20,8 @@ using Microsoft.Extensions.Logging;
 
 namespace K7.Server.Application.Features.Medias.Commands.UpdatePlaybackProgress;
 
-[Authorize(Roles = $"{Roles.Guest},{Roles.User},{Roles.Administrator}")]
+// Share visitors only reach this through ReportShareProgressCommand, which checks the share first.
+[Authorize(Roles = $"{Roles.Guest},{Roles.User},{Roles.Administrator},{Roles.ShareVisitor}")]
 public record UpdatePlaybackProgressCommand(
     Guid MediaId,
     Guid SessionId,
@@ -86,8 +87,11 @@ public class UpdatePlaybackProgressCommandHandler(
         if (media is null) return;
 
         var timeNow = DateTime.UtcNow;
-        var isGuest = !string.IsNullOrEmpty(_currentUser.IdentityId)
-            && await _identityService.IsInRoleAsync(_currentUser.IdentityId, Roles.Guest);
+        // A public share visitor is recorded like a guest: session history and live streams,
+        // no personal state.
+        var isGuest = _currentUser.IsInRole(Roles.ShareVisitor)
+            || (!string.IsNullOrEmpty(_currentUser.IdentityId)
+                && await _identityService.IsInRoleAsync(_currentUser.IdentityId, Roles.Guest));
 
         if (request.State is PlaybackState.Playing or PlaybackState.Buffering or PlaybackState.Paused or PlaybackState.Ended)
             await TryHydrateStreamDecisionAsync(request.SessionId, cancellationToken);

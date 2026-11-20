@@ -5,6 +5,7 @@ using K7.Clients.Shared.UI.Components;
 using K7.Clients.Shared.UI.Components.Dialogs;
 using K7.Clients.Shared.UI.Helpers;
 using K7.Clients.Shared.UI.Pages.Admin.Components;
+using K7.Server.Domain.Constants;
 using K7.Shared.Dtos;
 using K7.Shared.Dtos.Users;
 using Microsoft.AspNetCore.Components;
@@ -79,6 +80,18 @@ public partial class AdminPlaybackHistoryPanel : IAsyncDisposable
         }
     }
 
+    private string? GetUserLabel(UserDto user) =>
+        user.Role == Roles.ShareVisitor
+            ? L["PublicShareUser"]
+            : user.DisplayName ?? user.UserName ?? user.Email;
+
+    private string? GetUserLabel(Guid? userId) =>
+        _users.FirstOrDefault(u => u.Id == userId) is { } user ? GetUserLabel(user) : null;
+
+    /// <summary>The technical share visitor account gets a readable name.</summary>
+    private string GetRowUserName(string? userName) =>
+        userName == SystemUsers.ShareVisitorUserName ? L["PublicShareUser"] : userName ?? "-";
+
     private int SelectedReassignableCount =>
         _selectedIds.Count(id => _loadedItems.TryGetValue(id, out var item) && item.CanReassign);
 
@@ -111,7 +124,9 @@ public partial class AdminPlaybackHistoryPanel : IAsyncDisposable
 
         try
         {
-            _users = await UserAdminService.GetUsersAsync();
+            // Plays made through public share links are recorded under a technical account:
+            // it is listed here so they can be filtered.
+            _users = await UserAdminService.GetUsersAsync(includeSystemUsers: true);
         }
         catch
         {

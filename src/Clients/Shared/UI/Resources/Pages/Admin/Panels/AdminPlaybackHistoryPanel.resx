@@ -24,6 +24,7 @@
   <data name="User" xml:space="preserve"><value>Utilisateur</value></data>
   <data name="SharedProfile" xml:space="preserve"><value>Groupe</value></data>
   <data name="AllUsers" xml:space="preserve"><value>Tous les utilisateurs</value></data>
+  <data name="PublicShareUser" xml:space="preserve"><value>Partage public</value></data>
   <data name="All" xml:space="preserve"><value>Tous</value></data>
   <data name="Music" xml:space="preserve"><value>Musique</value></data>
   <data name="Movies" xml:space="preserve"><value>Films</value></data>

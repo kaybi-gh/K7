@@ -90,7 +90,9 @@ The public pages use the regular players (video player with audio tracks, subtit
 - Seek bar previews use the thumbnail sheet of the file (`VideoFileMetadataDto.Thumbnails`), served like every picture by the anonymous `/api/metadata-pictures/{id}` endpoint.
 - Download streams the original file (`/api/public/shares/{shareId}/files/{indexedFileId}/download`), with no transcoding.
 
-`CloseWhenConsumed` is only allowed on a single playable item. `SharePage` reports the player position to `POST .../progress`. At 90% of the runtime, or on a download, the share is marked consumed. The position comes from the visitor browser, so this is a convenience and not a guarantee: expiration and the access limit are the real barriers.
+`PlaybackProgressTracker` and `AudioPlaybackProgressTracker` report through `POST .../progress` while a share is open (state, position, stream session id). `ReportShareProgressCommand` checks the media is in the share and that playback is allowed, then sends the regular `UpdatePlaybackProgressCommand`: the visitor is recorded like a guest (live streams and playback history for administrators, no personal state), under the share visitor account and the technical device of its session. The account is hidden from user management (`GetUsersQuery`), except with `IncludeSystemUsers`, which the playback history filter uses. The stream session id comes from the browser: a report is dropped when that id already belongs to a playback session or a live stream of another device.
+
+`CloseWhenConsumed` is only allowed on a single playable item. It uses the same reports. At 90% of the runtime, or on a download, the share is marked consumed. The position comes from the visitor browser, so this is a convenience and not a guarantee: expiration and the access limit are the real barriers.
 
 ## Client
 
@@ -101,9 +103,11 @@ The public pages use the regular players (video player with audio tracks, subtit
 | Media view (same hero as the media pages) | `Components/Shares/ShareMediaView` |
 | Create / edit dialog, link dialog | `Components/Dialogs/ShareMediaDialog`, `ShareLinkDialog` |
 | Menu entry | `Components/ShareMenuSection` (card menu, track menu, detail pages) |
-| Management | `Components/MediaSharesManager`, used by `/admin/shares` and `/my-space/shares` |
+| Management | `Components/MediaSharesManager`, used by `/admin/shares` and `/my-space/shares` (the My space card is hidden while the server switch is off) |
 
 `IPublicShareService` uses its own `HttpClient` without the sign-in redirect handler: a refused call must not send a visitor to the sign-in page. `IMediaSharingAccess` caches whether to offer **Share** to the current user (server switch plus capability, overrides included).
+
+`ShareLayout` applies the server look (default theme and skins from the anonymous `/api/server-info`, which `ShareVisitorHttpHandler` lets through): a visitor has no account preferences. Someone who came from the app keeps the look already applied.
 
 The share pages are marked `noindex` and `no-referrer` in the app shell.
 
@@ -111,7 +115,7 @@ The share pages are marked `noindex` and `no-referrer` in the app shell.
 
 - `Domain.UnitTests/Entities/MediaShareTests`: status and session rules.
 - `Application.UnitTests`: scope resolver, access guard for visitors, opening a share (password lock included), editing a share, session validation, media description, transcode output path checks.
-- `Web.SmokeTests/PublicShareEndpointsTests`: end to end over HTTP. A visitor reads the share, gets 404 outside of it, is refused by the regular API and by streams outside the share. It also lists every `StreamAccess` route without a file id: a new one must be reviewed there. `CurrentUserTests` covers a real account combined with a share cookie.
+- `Web.SmokeTests/PublicShareEndpointsTests`: end to end over HTTP. A visitor reads the share, gets 404 outside of it, is refused by the regular API and by streams outside the share. Its playback shows up for administrators and cannot touch someone else's playback session. It also lists every `StreamAccess` route without a file id: a new one must be reviewed there. `CurrentUserTests` covers a real account combined with a share cookie.
 - `Clients.ComponentTests`: `ShareMenuSection`, `ShareMediaView`.
 
 ## Cleanup

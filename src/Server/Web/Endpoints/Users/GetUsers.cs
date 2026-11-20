@@ -16,12 +16,14 @@ public class GetUsers : IEndpoint
             [FromServices] ISender sender,
             [FromQuery] string? role,
             [FromQuery] bool? isActive,
+            [FromQuery] bool? includeSystem,
             CancellationToken cancellationToken) =>
         {
             var result = await sender.Send(new GetUsersQuery
             {
                 Role = role,
-                IsActive = isActive
+                IsActive = isActive,
+                IncludeSystemUsers = includeSystem == true
             }, cancellationToken);
             return Results.Ok(result.Users.Select(user =>
             {

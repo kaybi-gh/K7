@@ -90,7 +90,7 @@ public sealed class MockPublicShareService : IPublicShareService
     public Task<StreamingSessionDto?> CreateStreamSessionAsync(Guid shareId, CreateShareStreamSessionRequest request, CancellationToken cancellationToken = default) =>
         Task.FromResult<StreamingSessionDto?>(null);
 
-    public Task ReportProgressAsync(Guid shareId, Guid mediaId, double positionSeconds, double durationSeconds, CancellationToken cancellationToken = default) =>
+    public Task ReportProgressAsync(Guid shareId, ReportShareProgressRequest request, CancellationToken cancellationToken = default) =>
         Task.CompletedTask;
 
     public string GetDownloadUrl(Guid shareId, Guid indexedFileId) => "#";

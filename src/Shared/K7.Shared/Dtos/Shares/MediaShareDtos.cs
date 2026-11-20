@@ -145,6 +145,16 @@ public sealed record ReportShareProgressRequest
     public Guid MediaId { get; init; }
     public double PositionSeconds { get; init; }
     public double DurationSeconds { get; init; }
+
+    /// <summary>Stream session being played. Without it the report only serves "close once consumed".</summary>
+    public Guid? SessionId { get; init; }
+    public Guid? ReferenceId { get; init; }
+
+    /// <summary>Player state, as <c>PlaybackState</c>.</summary>
+    public int? State { get; init; }
+    public Guid? IndexedFileId { get; init; }
+    public int? AudioTrackIndex { get; init; }
+    public int? SubtitleTrackIndex { get; init; }
 }
 
 /// <summary>

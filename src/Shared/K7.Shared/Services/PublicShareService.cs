@@ -78,22 +78,16 @@ public class PublicShareService(HttpClient httpClient) : IPublicShareService
 
     public async Task ReportProgressAsync(
         Guid shareId,
-        Guid mediaId,
-        double positionSeconds,
-        double durationSeconds,
+        ReportShareProgressRequest request,
         CancellationToken cancellationToken = default)
     {
-        // Best effort: a lost report only delays closing a share set to close once played.
+        // Best effort: a lost report only delays what administrators see, or closing a
+        // share set to close once played.
         try
         {
             using var response = await httpClient.PostAsJsonAsync(
                 $"api/public/shares/{shareId}/progress",
-                new ReportShareProgressRequest
-                {
-                    MediaId = mediaId,
-                    PositionSeconds = positionSeconds,
-                    DurationSeconds = durationSeconds
-                },
+                request,
                 _serializerOptions,
                 cancellationToken);
         }

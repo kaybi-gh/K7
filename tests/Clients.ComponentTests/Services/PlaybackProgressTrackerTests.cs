@@ -104,6 +104,39 @@ public class PlaybackProgressTrackerTests
     }
 
     [Test]
+    public async Task Report_ShouldGoThroughTheShare_WhenAPublicShareIsOpen()
+    {
+        var shareId = Guid.NewGuid();
+        var mediaId = Guid.NewGuid();
+        var scope = new SharePlaybackScope();
+        scope.Enter(shareId, new ShareBrowserCapabilities());
+        var publicShare = Substitute.For<IPublicShareService>();
+        using var sut = new PlaybackProgressTracker(
+            _player, _streaming, _storage, _connectivity, _journal, _localUsers, _cache,
+            shareScope: scope,
+            publicShare: publicShare);
+
+        _source.PendingSeekTime = null;
+        // A visitor has no account: reporting is off for the signed-in path.
+        sut.StartTracking(mediaId, isAuthenticated: false);
+        _player.CurrentTime.Returns(300d);
+        _player.PlaybackStateChanged += Raise.Event<Action<PlaybackState>>(PlaybackState.Playing);
+
+        await Task.Delay(50);
+
+        await publicShare.Received().ReportProgressAsync(
+            shareId,
+            Arg.Is<K7.Shared.Dtos.Shares.ReportShareProgressRequest>(request =>
+                request.MediaId == mediaId
+                && request.SessionId == _source.StreamSessionId
+                && request.State == (int)PlaybackState.Playing
+                && request.PositionSeconds == 300d),
+            Arg.Any<CancellationToken>());
+        await _streaming.DidNotReceiveWithAnyArgs()
+            .ReportPlaybackProgressAsync(default, default, default, default, default, default, default);
+    }
+
+    [Test]
     public async Task Report_ShouldSkipSpuriousZero_AfterSignificantProgress()
     {
         var mediaId = Guid.NewGuid();

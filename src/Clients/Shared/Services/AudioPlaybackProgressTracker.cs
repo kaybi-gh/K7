@@ -2,6 +2,7 @@ using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Server.Domain.Enums;
 using K7.Shared;
+using K7.Shared.Dtos.Shares;
 using K7.Shared.Interfaces;
 
 namespace K7.Clients.Shared.Services;
@@ -16,6 +17,8 @@ public class AudioPlaybackProgressTracker : IDisposable
     private readonly ILocalUserService _localUsers;
     private readonly ISyncPlayService? _syncPlayService;
     private readonly ISharedProfileSessionService? _sharedProfileSession;
+    private readonly ISharePlaybackScope? _shareScope;
+    private readonly IPublicShareService? _publicShare;
     private Timer? _reportTimer;
     private Guid? _currentMediaId;
     private Guid? _currentIndexedFileId;
@@ -37,8 +40,12 @@ public class AudioPlaybackProgressTracker : IDisposable
         IPlaybackJournal journal,
         ILocalUserService localUsers,
         ISyncPlayService? syncPlayService = null,
-        ISharedProfileSessionService? sharedProfileSession = null)
+        ISharedProfileSessionService? sharedProfileSession = null,
+        ISharePlaybackScope? shareScope = null,
+        IPublicShareService? publicShare = null)
     {
+        _shareScope = shareScope;
+        _publicShare = publicShare;
         _audio = audio;
         _serverService = serverService;
         _deviceStorage = deviceStorage;
@@ -136,8 +143,27 @@ public class AudioPlaybackProgressTracker : IDisposable
 
     private async Task SendReportAsync(Guid mediaId, Guid? indexedFileId, Guid sessionId, double position, double duration, PlaybackState state)
     {
-        if (!_canReport) return;
         if (sessionId == Guid.Empty) return;
+
+        // A public share visitor has no account: its progress goes through the share.
+        if (_publicShare is not null && _shareScope?.ShareId is { } shareId)
+        {
+            await _publicShare.ReportProgressAsync(
+                shareId,
+                new ReportShareProgressRequest
+                {
+                    MediaId = mediaId,
+                    PositionSeconds = position,
+                    DurationSeconds = duration,
+                    SessionId = sessionId,
+                    ReferenceId = _referenceId,
+                    State = (int)state,
+                    IndexedFileId = indexedFileId
+                });
+            return;
+        }
+
+        if (!_canReport) return;
 
         var identityUserId = _localUsers.GetLastActive()?.IdentityUserId;
 

@@ -1082,9 +1082,13 @@ public partial class K7ServerService : IK7ServerService, IMediaService, ILibrary
         await response.EnsureSuccessWithDetailsAsync(cancellationToken);
     }
 
-    public async Task<List<UserDto>> GetUsersAsync(CancellationToken cancellationToken = default)
+    public Task<List<UserDto>> GetUsersAsync(CancellationToken cancellationToken = default) =>
+        GetUsersAsync(includeSystemUsers: false, cancellationToken);
+
+    public async Task<List<UserDto>> GetUsersAsync(bool includeSystemUsers, CancellationToken cancellationToken = default)
     {
-        var users = await HttpClient.GetFromJsonAsync<List<UserDto>>("api/users", _serializerOptions, cancellationToken);
+        var url = includeSystemUsers ? "api/users?includeSystem=true" : "api/users";
+        var users = await HttpClient.GetFromJsonAsync<List<UserDto>>(url, _serializerOptions, cancellationToken);
         return users ?? [];
     }
 
