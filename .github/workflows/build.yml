@@ -134,8 +134,36 @@ jobs:
       - name: Install MAUI workload
         run: dotnet workload install maui --skip-manifest-update
 
+      # packageSourceMapping hides the workload fallback folder, so Mono runtime packs already on the runner are ignored.
+      - name: Map workload library packs
+        shell: pwsh
+        run: |
+          $packs = Join-Path $env:ProgramFiles "dotnet\library-packs"
+          if (-not (Test-Path $packs)) {
+            Write-Error "Workload library-packs not found at $packs"
+            exit 1
+          }
+          $configPath = Join-Path (Get-Location) "NuGet.config"
+          $xml = New-Object System.Xml.XmlDocument
+          $xml.Load($configPath)
+          $source = $xml.CreateElement("add")
+          $source.SetAttribute("key", "library-packs")
+          $source.SetAttribute("value", $packs)
+          $xml.SelectSingleNode("/configuration/packageSources").AppendChild($source) | Out-Null
+          $mapped = $xml.CreateElement("packageSource")
+          $mapped.SetAttribute("key", "library-packs")
+          foreach ($pattern in @("Microsoft.NETCore.App.Runtime.Mono.*", "Microsoft.AspNetCore.App.Runtime.Mono.*")) {
+            $package = $xml.CreateElement("package")
+            $package.SetAttribute("pattern", $pattern)
+            $mapped.AppendChild($package) | Out-Null
+          }
+          $xml.SelectSingleNode("/configuration/packageSourceMapping").AppendChild($mapped) | Out-Null
+          $xml.Save($configPath)
+
       - name: Restore
-        run: dotnet restore tests/Clients.MAUI.SmokeTests/Clients.MAUI.SmokeTests.csproj
+        run: >
+          dotnet restore tests/Clients.MAUI.SmokeTests/Clients.MAUI.SmokeTests.csproj
+          -p:UseMonoRuntime=false
 
       - name: Restore LibMan libraries
         working-directory: src/Clients/Shared/UI
@@ -148,6 +176,7 @@ jobs:
           dotnet build tests/Clients.MAUI.SmokeTests/Clients.MAUI.SmokeTests.csproj
           --configuration Release
           -f net10.0-windows10.0.19041.0
+          -p:UseMonoRuntime=false
 
       - name: Test (maui smoke)
         run: >
