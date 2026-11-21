@@ -105,6 +105,8 @@ Release CI applies extra sideload packaging (ad-hoc IPA, AltStore `apps.json`). 
 
 Published Release assets (APK, Windows zip, Linux deb / tarball / Flatpak, iOS sideload IPA) are produced by [client-release](releasing.md) on each GitHub Release.
 
+Android Release builds run R8 (`AndroidLinkTool=r8`): the Java side is shrunk and private members are renamed, which Google Play requires (DEX obfuscation above 0 %). Java members reached only by name through reflection are invisible to R8 and must be kept in [`Platforms/Android/proguard.cfg`](../../src/Clients/MAUI/Platforms/Android/proguard.cfg) (Media3 is kept whole for that reason). The build writes `mapping.txt` next to the APK / AAB; the AAB embeds it so Play deobfuscates Java stack traces.
+
 Android TV: leanback launcher category is registered - use a TV emulator for D-pad testing. Fire TV Stick uses the same APK (leanback / Fire TV feature / AFT model, not UiMode alone). Couch layout stays near 1920 CSS px so a 4K framebuffer does not shrink the 10-foot UI.
 
 Shared UI placement: [architecture.md](architecture.md#ui-layout).

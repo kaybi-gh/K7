@@ -132,6 +132,13 @@
     <NoWarn>$(NoWarn);IL2037</NoWarn>
     <TrimMode>partial</TrimMode>
     <!--
+      R8 shrinks the Java side (AndroidX, Media3, Play services, Material) and renames private
+      members (AndroidR8ObfuscationMode defaults to private-members, the only mode the SDK
+      supports besides disabled: bindings resolve public names over JNI). Google Play flags a
+      release whose DEX obfuscation is at 0 %. K7-specific keep rules: Platforms/Android/proguard.cfg.
+    -->
+    <AndroidLinkTool>r8</AndroidLinkTool>
+    <!--
       Profiled Mono AOT: the default maui / maui-blazor profiles plus custom.aprof recorded on
       the TV box (K7 pages, SignalR, auth stack and the generic instantiations created at
       runtime by System.Text.Json / EF Core, which a static full AOT cannot see). Full AOT of
@@ -152,6 +159,7 @@
   -->
   <ItemGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net10.0-android|AnyCPU'">
     <AndroidAotProfile Include="$(MSBuildThisFileDirectory)*.aprof" />
+    <ProguardConfiguration Include="Platforms\Android\proguard.cfg" />
   </ItemGroup>
 
   <!--
