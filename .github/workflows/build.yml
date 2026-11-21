@@ -161,9 +161,7 @@ jobs:
           $xml.Save($configPath)
 
       - name: Restore
-        run: >
-          dotnet restore tests/Clients.MAUI.SmokeTests/Clients.MAUI.SmokeTests.csproj
-          -p:UseMonoRuntime=false
+        run: dotnet restore tests/Clients.MAUI.SmokeTests/Clients.MAUI.SmokeTests.csproj
 
       - name: Restore LibMan libraries
         working-directory: src/Clients/Shared/UI
