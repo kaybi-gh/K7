@@ -61,7 +61,8 @@ mkdir -p "$CACHE_DIR"
 SNAP="$CACHE_DIR/vlc_${VLC_SNAP_REVISION}.snap"
 if [ ! -f "$SNAP" ] || ! echo "$VLC_SNAP_SHA256  $SNAP" | sha256sum -c --quiet - >/dev/null 2>&1; then
   echo "bundle-libvlc: downloading VLC snap revision $VLC_SNAP_REVISION"
-  curl -fSL --retry 3 -o "$SNAP.part" "$VLC_SNAP_URL"
+  # --retry alone skips TLS / connection failures (curl exit 35), which the snap store throws now and then.
+  curl -fSL --retry 5 --retry-delay 5 --retry-all-errors --connect-timeout 30 -o "$SNAP.part" "$VLC_SNAP_URL"
   mv "$SNAP.part" "$SNAP"
   if ! echo "$VLC_SNAP_SHA256  $SNAP" | sha256sum -c --quiet -; then
     echo "bundle-libvlc: checksum mismatch for $SNAP" >&2
