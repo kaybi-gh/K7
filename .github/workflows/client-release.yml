@@ -123,8 +123,11 @@ jobs:
           distribution: temurin
           java-version: '17'
 
+      # Pin the workload set to the SDK in use. --skip-manifest-update falls back to the
+      # .NET 10 GA manifests on runner images without a VS-managed SDK, and those ask for
+      # the unpublished Microsoft.NETCore.App.Runtime.Mono.win-x64 pack (NU1102).
       - name: Install MAUI Android workload
-        run: dotnet workload install maui-android --skip-manifest-update
+        run: dotnet workload install maui-android --version $(dotnet --version)
 
       # wwwroot/dist is gitignored; restore before publish so static web assets include Embla/video.js/etc.
       - name: Restore LibMan libraries
@@ -234,7 +237,7 @@ jobs:
           global-json-file: global.json
 
       - name: Install MAUI Windows workload
-        run: dotnet workload install maui-windows --skip-manifest-update
+        run: dotnet workload install maui-windows --version $(dotnet --version)
 
       # wwwroot/dist is gitignored; restore before publish so static web assets include Embla/video.js/etc.
       - name: Restore LibMan libraries
