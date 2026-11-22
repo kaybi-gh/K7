@@ -330,6 +330,40 @@ public class GetHlsStreamManifestQueryHandlerTests
         playlist.Should().Contain("audio/1/index.m3u8");
     }
 
+    [TestCase("ac3")]
+    [TestCase("eac3")]
+    public async Task Handle_ShouldForceAacAudioUris_WhenNativeMasterOmitsAudioTranscodings(string codec)
+    {
+        // Direct Play -> HLS quality promote on Android: the client builds the master URL
+        // itself, with no AudioTrackTranscodings and no VideoCodecsOnly.
+        var entity = await _context.IndexedFiles
+            .Include(x => x.FileMetadata)
+            .FirstAsync(x => x.Id == _indexedFileId);
+        var video = (VideoFileMetadata)entity.FileMetadata!;
+        await _context.Entry(video).Collection(v => v.AudioTracks).LoadAsync();
+        video.AudioTracks.Clear();
+        video.AudioTracks.Add(new AudioFileTrack
+        {
+            Index = 1,
+            Codec = codec,
+            Channels = 6,
+            IsDefault = true,
+            Language = "fra",
+            Name = "FR VFF"
+        });
+        await _context.SaveChangesAsync();
+
+        var result = await _handler.Handle(new GetHlsStreamManifestQuery
+        {
+            Id = _indexedFileId,
+            StreamSessionId = Guid.NewGuid(),
+            Quality = "720p"
+        }, CancellationToken.None);
+
+        var playlist = ((TextHttpContentResult)result).Content;
+        playlist.Should().Contain("TranscodingAudioCodec=aac");
+    }
+
     [Test]
     public async Task Handle_ShouldAdvertiseStartOffsetOnMaster_WhenStartSecondsIsSet()
     {

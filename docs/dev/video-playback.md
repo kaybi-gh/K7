@@ -196,7 +196,7 @@ next to `-ac 2`. libswresample's default mix buries dialogue and drops LFE. Unkn
 or a failed probe keep plain `-ac 2`. Windows MAUI uses LibVLC
 for the same formats. Android text cues use
 ExoPlayer `SubtitleView` (`CaptionStyleCompat`). Windows Direct text cues use a sibling XAML
-WebVTT layer on `RootGrid`. A non-Original quality step still promotes the session to HLS.
+WebVTT layer on `RootGrid`. A non-Original quality step still promotes the session to HLS. The client builds that master URL itself, without `GetStreamUri` and so without `AudioTrackTranscodings`: the master then asks AAC for AC3/EAC3 on its own unless `VideoCodecsOnly` is set (Video.js), since copying them into `-f segment` fMP4 fails on the init header.
 iOS/Mac do not advertise `matroska` (AVPlayer). Do not promote Direct Play to HLS burn-in just
 to show PGS.
 

@@ -332,13 +332,20 @@ public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamMani
         // GetStreamUri decides AC3/EAC3 remux vs AAC. Only force AAC here for codecs
         // whose fMP4 remux still hangs on an empty init.m4s (DTS/TrueHD), including
         // when AudioTrackTranscodings was omitted from the URL.
+        // Native HLS (no VideoCodecsOnly) never remuxes AC3/EAC3: GetStreamUri always asks
+        // AAC there. A Direct Play -> HLS quality promote builds this URL on the client
+        // without GetStreamUri, so the same rule is applied here. Otherwise the audio job
+        // copies AC3 into fMP4 and ffmpeg fails on the init header in a retry loop.
         foreach (var track in videoFileMetadata.AudioTracks)
         {
             if (audioTrackTranscodings.ContainsKey(track.Index))
                 continue;
 
-            if (IsAlwaysUnsafeHlsFmp4AudioRemux(track.Codec))
+            if (IsAlwaysUnsafeHlsFmp4AudioRemux(track.Codec)
+                || (!query.VideoCodecsOnly && IsNativeHlsUnsafeFmp4AudioRemux(track.Codec)))
+            {
                 audioTrackTranscodings[track.Index] = "aac";
+            }
         }
 
         var hasVideoTranscoding = !string.IsNullOrWhiteSpace(query.TranscodingVideoCodec);
@@ -557,6 +564,16 @@ public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamMani
     {
         var canonical = MediaCodecNames.Canonical(codec);
         return canonical is "dts" or "truehd" or "dtshd" or "mlp";
+    }
+
+    /// <summary>
+    /// AC3/EAC3 are remuxed only for Video.js when GetStreamUri left them so. A native HLS
+    /// master (Android Exo, iOS) always gets AAC for them, as in GetStreamUri.
+    /// </summary>
+    private static bool IsNativeHlsUnsafeFmp4AudioRemux(string? codec)
+    {
+        var canonical = MediaCodecNames.Canonical(codec);
+        return canonical is "ac3" or "eac3";
     }
 
     private static string BoolToYesNo(bool value) => value ? "YES" : "NO";
