@@ -1,6 +1,7 @@
 using K7.Clients.MAUI.Interfaces;
 using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
+using K7.Server.Domain.Common;
 using K7.Server.Domain.Enums;
 using K7.Shared;
 using K7.Shared.Dtos.Devices;
@@ -24,12 +25,23 @@ public class DeviceService(ICodecService codecHelper, IDeviceIdService deviceIdS
 
     public DeviceType? CachedDeviceType => _cachedDeviceType;
 
-    public Task<CreateDeviceRequest> GenerateCreateDeviceRequestAsync()
+    public async Task<CreateDeviceRequest> GenerateCreateDeviceRequestAsync()
     {
+        Task<CreateDeviceRequest>? cached;
         lock (_requestCacheLock)
-        {
-            return _cachedCreateRequest ??= GenerateCreateDeviceRequestCoreAsync();
-        }
+            cached = _cachedCreateRequest;
+
+        if (cached is not null)
+            return await cached;
+
+        var request = await GenerateCreateDeviceRequestCoreAsync();
+        if (!DeviceCapabilityIds.HasCatalogFormat(request.PlaybackCapabilities.SupportedMediaFormatIds))
+            return request;
+
+        lock (_requestCacheLock)
+            _cachedCreateRequest ??= Task.FromResult(request);
+
+        return request;
     }
 
     private async Task<CreateDeviceRequest> GenerateCreateDeviceRequestCoreAsync()
@@ -123,12 +135,23 @@ public class DeviceService(ICodecService codecHelper, IDeviceIdService deviceIdS
         };
     }
 
-    public Task<List<MediaFormatDto>> GetSupportedMediaFormatsAsync()
+    public async Task<List<MediaFormatDto>> GetSupportedMediaFormatsAsync()
     {
+        Task<List<MediaFormatDto>>? cached;
         lock (_requestCacheLock)
-        {
-            return _cachedSupportedFormats ??= GetSupportedMediaFormatsCoreAsync();
-        }
+            cached = _cachedSupportedFormats;
+
+        if (cached is not null)
+            return await cached;
+
+        var supported = await GetSupportedMediaFormatsCoreAsync();
+        if (supported.Count == 0)
+            return supported;
+
+        lock (_requestCacheLock)
+            _cachedSupportedFormats ??= Task.FromResult(supported);
+
+        return supported;
     }
 
     private async Task<List<MediaFormatDto>> GetSupportedMediaFormatsCoreAsync()

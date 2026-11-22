@@ -1,4 +1,5 @@
 using K7.Clients.Shared.Interfaces;
+using K7.Server.Domain.Common;
 using K7.Shared;
 using K7.Shared.Dtos.Requests;
 using K7.Shared.Interfaces;
@@ -8,14 +9,26 @@ namespace K7.Clients.Shared.Services;
 
 public static class DeviceInitializer
 {
+    private const int ProbeAttempts = 5;
     private static readonly SemaphoreSlim InitGate = new(1, 1);
 
-    public static async Task InitializeDeviceAsync(IServiceProvider services, string? userId = null)
+    public static async Task<bool> InitializeDeviceAsync(IServiceProvider services, string? userId = null)
     {
         await InitGate.WaitAsync();
         try
         {
-            await InitializeDeviceCoreAsync(services, userId);
+            // First registration has no stored codec list. A single 401 or a cold catalog
+            // would leave the device with no profile until the next auth change.
+            for (var attempt = 1; attempt <= ProbeAttempts; attempt++)
+            {
+                if (await InitializeDeviceCoreAsync(services, userId))
+                    return true;
+
+                if (attempt < ProbeAttempts)
+                    await Task.Delay(TimeSpan.FromMilliseconds(500 * attempt));
+            }
+
+            return false;
         }
         finally
         {
@@ -23,7 +36,7 @@ public static class DeviceInitializer
         }
     }
 
-    private static async Task InitializeDeviceCoreAsync(IServiceProvider services, string? userId = null)
+    private static async Task<bool> InitializeDeviceCoreAsync(IServiceProvider services, string? userId = null)
     {
         try
         {
@@ -56,20 +69,24 @@ public static class DeviceInitializer
                         deviceStorageService.Remove(PreferenceKeys.DEVICE_ATTACHED_USER_ID);
                         existingDeviceId = await CreateNewDeviceAsync(services, deviceStorageService);
                         if (!Guid.TryParse(existingDeviceId, out parsedId))
-                            return;
+                            return false;
                     }
                 }
 
-                await RefreshDeviceCapabilitiesAsync(services, parsedId);
+                return await RefreshDeviceCapabilitiesAsync(services, parsedId);
             }
+
+            return false;
         }
         catch (HttpRequestException)
         {
-            // Not authenticated yet - device will be initialized after login
+            // Catalog or device API rejected the call. The attempt loop retries.
+            return false;
         }
         catch (InvalidOperationException)
         {
             // WebView JS runtime not ready yet on Windows - capabilities refresh retries next launch.
+            return false;
         }
     }
 
@@ -78,6 +95,9 @@ public static class DeviceInitializer
         var deviceService = services.GetRequiredService<IDeviceService>();
         var deviceApiService = services.GetRequiredService<IDeviceApiService>();
         var request = await deviceService.GenerateCreateDeviceRequestAsync();
+        if (!DeviceCapabilityIds.HasCatalogFormat(request.PlaybackCapabilities.SupportedMediaFormatIds))
+            return "";
+
         var deviceId = await deviceApiService.CreateDeviceAsync(request);
         var deviceIdStr = deviceId.ToString();
         deviceStorageService.Set(PreferenceKeys.DEVICE_ID, deviceIdStr);
@@ -85,12 +105,14 @@ public static class DeviceInitializer
         return deviceIdStr;
     }
 
-    public static async Task RefreshDeviceCapabilitiesAsync(IServiceProvider services, Guid deviceId)
+    public static async Task<bool> RefreshDeviceCapabilitiesAsync(IServiceProvider services, Guid deviceId)
     {
         var deviceService = services.GetRequiredService<IDeviceService>();
         var deviceApiService = services.GetRequiredService<IDeviceApiService>();
         var deviceStorageService = services.GetRequiredService<IDeviceStorageService>();
         var createRequest = await deviceService.GenerateCreateDeviceRequestAsync();
+        if (!DeviceCapabilityIds.HasCatalogFormat(createRequest.PlaybackCapabilities.SupportedMediaFormatIds))
+            return false;
 
         var updateRequest = new UpdateDeviceRequest
         {
@@ -110,6 +132,7 @@ public static class DeviceInitializer
 
         await deviceApiService.UpdateDeviceAsync(deviceId, updateRequest);
         PersistDeviceName(deviceStorageService, createRequest.DeviceName);
+        return true;
     }
 
     private static void PersistDeviceName(IDeviceStorageService deviceStorageService, string? deviceName)

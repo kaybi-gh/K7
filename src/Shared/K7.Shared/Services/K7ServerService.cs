@@ -84,15 +84,10 @@ public partial class K7ServerService : IK7ServerService, IMediaService, ILibrary
 
     public async Task<List<MediaFormatDto>> GetMediaFormatsAsync(CancellationToken cancellationToken = default)
     {
-        try
-        {
-            var formats = await HttpClient.GetFromJsonAsync<List<MediaFormatDto>>("api/media-formats", _serializerOptions, cancellationToken);
-            return formats ?? [];
-        }
-        catch
-        {
-            return [];
-        }
+        // A 401 before the Bearer is on the client must fail the probe. Swallowing it
+        // as an empty catalog made every local codec look unsupported.
+        var formats = await HttpClient.GetFromJsonAsync<List<MediaFormatDto>>("api/media-formats", _serializerOptions, cancellationToken);
+        return formats ?? [];
     }
 
     public async Task<MovieDto?> GetMovieAsync(Guid id, CancellationToken cancellationToken = default, bool bypassCache = false)

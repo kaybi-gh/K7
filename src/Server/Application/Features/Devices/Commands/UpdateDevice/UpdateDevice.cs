@@ -1,5 +1,6 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Services;
+using K7.Server.Domain.Common;
 using K7.Server.Domain.Entities.Devices;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Requests;
@@ -35,7 +36,11 @@ public class UpdateDeviceCommandHandler(
         entity.DisplayResolutionWidth = update.DisplayResolutionWidth;
         entity.PlaybackCapabilities = new DevicePlaybackCapabilities
         {
-            SupportedMediaFormatIds = update.PlaybackCapabilities.SupportedMediaFormatIds?.ToList() ?? [],
+            // The row already has the codec list. A startup probe often arrives empty
+            // and must not replace it.
+            SupportedMediaFormatIds = DeviceCapabilityIds.Resolve(
+                update.PlaybackCapabilities.SupportedMediaFormatIds,
+                entity.PlaybackCapabilities.SupportedMediaFormatIds),
             SupportedSubtitlesCodecs = update.PlaybackCapabilities.SupportedSubtitlesCodecs?.ToList() ?? [],
             SupportsHDR = update.PlaybackCapabilities.SupportsHDR
         };

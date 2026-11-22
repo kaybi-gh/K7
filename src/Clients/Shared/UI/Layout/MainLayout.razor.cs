@@ -54,6 +54,7 @@ public partial class MainLayout : IDisposable
     // The account whose appearance preferences came from the server in this session. From then
     // on every change is copied to the device, and the copy on the device is no longer applied.
     private string? _appearanceUserId;
+    private bool _deviceCatalogPublished;
 
     private static readonly TimeSpan OverlayDelay = TimeSpan.FromSeconds(3);
 
@@ -163,6 +164,7 @@ public partial class MainLayout : IDisposable
 
                 _sessionUserId = null;
                 _appearanceUserId = null;
+                _deviceCatalogPublished = false;
                 return;
             }
 
@@ -177,12 +179,17 @@ public partial class MainLayout : IDisposable
             }
 
             if (userChanged && Connectivity.IsOnline)
-            {
                 LoadAppearanceAsync(userId).FireAndForget(Logger, "Appearance preferences load failed");
 
+            // Offline continue is authenticated but has no Bearer. The catalog call would 401.
+            // Retry on the next auth change until a probe actually publishes formats.
+            if (Connectivity.IsOnline
+                && AuthIdentity.IsOnlineAuthenticated(authState.User)
+                && (userChanged || !_deviceCatalogPublished))
+            {
                 try
                 {
-                    await DeviceInitializer.InitializeDeviceAsync(Services, userId);
+                    _deviceCatalogPublished = await DeviceInitializer.InitializeDeviceAsync(Services, userId);
                 }
                 catch (Exception ex)
                 {

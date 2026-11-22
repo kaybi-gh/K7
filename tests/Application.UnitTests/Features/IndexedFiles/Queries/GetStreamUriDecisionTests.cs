@@ -54,6 +54,44 @@ public class GetStreamUriDecisionTests
     }
 
     [Test]
+    public void GetVideoFileStreamUri_ShouldTranscodeBothCodecs_WhenDeviceFormatsAreEmpty_AndDirectPlayOnceTheyArrive()
+    {
+        var (indexedFile, metadata) = CreateVideoFile("mp4", "h264", "aac");
+        var video = metadata.VideoTracks.First();
+        video.Profile = "High";
+        video.Level = 50;
+        video.BitDepth = 8;
+        video.PixelFormat = "yuv420p";
+        var audio = metadata.AudioTracks.First();
+        audio.Profile = "LC";
+        audio.Channels = 2;
+        var request = new GetStreamUriQuery
+        {
+            Id = indexedFile.Id,
+            StreamSessionId = Guid.NewGuid(),
+            AudioTrackIndex = 0
+        };
+
+        var (_, emptyDecision) = GetStreamUriQueryHandler.GetVideoFileStreamUri(
+            CreateDevice([]), indexedFile, metadata, request, hlsSegmentsAvailable: true, subtitleTrackIndex: null);
+
+        emptyDecision.Mode.Should().Be(PlaybackMode.Transcode);
+        emptyDecision.Reason.Should().HaveFlag(TranscodeReason.VideoCodecNotSupported);
+        emptyDecision.Reason.Should().HaveFlag(TranscodeReason.AudioCodecNotSupported);
+
+        var (_, readyDecision) = GetStreamUriQueryHandler.GetVideoFileStreamUri(
+            CreateDevice(["audio-mp4-aac", "video-mp4-aac-h264"]),
+            indexedFile,
+            metadata,
+            request,
+            hlsSegmentsAvailable: true,
+            subtitleTrackIndex: null);
+
+        readyDecision.Mode.Should().Be(PlaybackMode.Direct);
+        readyDecision.Reason.Should().Be(TranscodeReason.None);
+    }
+
+    [Test]
     public void GetVideoFileStreamUri_ShouldReturnDirect_WhenAudioAndVideoSupported()
     {
         var device = CreateDevice(["audio-mp4-aac", "video-mp4-aac-h264"]);
