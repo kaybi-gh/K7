@@ -1,7 +1,26 @@
-// A banner only moves on its own while the page is visible and the system does not ask for
-// reduced motion.
-export function canAutoAdvance() {
-    return !document.hidden && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+// A banner only moves on its own while it is actually on screen and the system does not ask
+// for reduced motion. Home stays mounted under the player and under other pages (FeedHub), so
+// a hidden banner would keep requesting its next backdrop.
+export function canAutoAdvance(banner) {
+    if (document.hidden || window.matchMedia('(prefers-reduced-motion: reduce)').matches)
+        return false;
+
+    if (document.documentElement.classList.contains('native-player-active'))
+        return false;
+
+    // Web and remote playback cover the page. The node exists only while that UI is up.
+    if (document.querySelector('.video-container, .remote-control-host'))
+        return false;
+
+    return isPainted(banner);
+}
+
+function isPainted(banner) {
+    if (!banner || typeof banner.getBoundingClientRect !== 'function')
+        return false;
+
+    var style = window.getComputedStyle(banner);
+    return style.display !== 'none' && style.visibility !== 'hidden';
 }
 
 // Arrow-key navigation picks what is straight above or below. The button of a banner sits in

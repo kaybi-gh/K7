@@ -158,7 +158,7 @@ public class HomeHeroTests
 
     private static IRenderedComponent<HomeHero> RenderAuto(BunitContext ctx, bool canMove = true)
     {
-        ctx.JSInterop.SetupModule(HomeHero.ModulePath).Setup<bool>("canAutoAdvance").SetResult(canMove);
+        ctx.JSInterop.SetupModule(HomeHero.ModulePath).Setup<bool>("canAutoAdvance", _ => true).SetResult(canMove);
         return ctx.Render<HomeHero>(p => p
             .Add(h => h.Items, new[] { Card("1"), Card("2") })
             .Add(h => h.AutoAdvanceSeconds, 1)

@@ -7,7 +7,7 @@ namespace K7.Clients.Shared.UI.Components;
 /// The banner of a home row on desktop, tablet and phone: backdrop, title, details and a link to
 /// the page of the title. With several items, dots switch between them. It stays still unless
 /// the row asks for auto-advance, which pauses on hover and focus, can be paused with its
-/// button, and never runs when the system asks for reduced motion or the page is hidden.
+/// button, and never runs for reduced motion, a hidden page, a parked home, or video playback.
 /// The TV home uses <see cref="HomeTvHero"/> instead.
 /// </summary>
 public partial class HomeHero : IAsyncDisposable
@@ -204,12 +204,13 @@ public partial class HomeHero : IAsyncDisposable
         }
     }
 
-    // Hidden page or reduced motion: stay on the current title.
+    // Hidden tab, reduced motion, parked home, or playback covering the page: stay on this title
+    // so the next backdrop is not fetched behind the player.
     private async Task<bool> CanMoveAsync()
     {
         try
         {
-            return await (await ModuleAsync()).InvokeAsync<bool>("canAutoAdvance");
+            return await (await ModuleAsync()).InvokeAsync<bool>("canAutoAdvance", _root);
         }
         catch (Exception ex) when (ex is JSException or JSDisconnectedException or InvalidOperationException or TaskCanceledException)
         {
