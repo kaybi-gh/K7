@@ -1,3 +1,4 @@
+using System.Text;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Helpers;
 using K7.Server.Domain.Entities;
@@ -11,35 +12,35 @@ public sealed class MediaLibraryAvailabilityService(
     IMediaQueryCacheInvalidator cacheInvalidator,
     ILogger<MediaLibraryAvailabilityService> logger) : IMediaLibraryAvailabilityService
 {
-    private const int InsertBatchSize = 1000;
+    private const int BatchSize = 500;
+
+    // ON CONFLICT DO NOTHING is understood by both Postgres and SQLite. It makes the insert
+    // idempotent in the database, so writers racing on the same pair never fail a batch.
+    private const string InsertSqlPrefix =
+        $"INSERT INTO \"{nameof(IApplicationDbContext.MediaLibraryAvailabilities)}\" "
+        + $"(\"{nameof(MediaLibraryAvailability.LibraryId)}\", \"{nameof(MediaLibraryAvailability.MediaId)}\") VALUES ";
+
+    private const string InsertSqlSuffix = " ON CONFLICT DO NOTHING";
 
     public async Task RebuildForLibraryAsync(Guid libraryId, CancellationToken cancellationToken = default)
     {
-        await context.MediaLibraryAvailabilities
-            .Where(a => a.LibraryId == libraryId)
-            .ExecuteDeleteAsync(cancellationToken);
+        var (inserted, removed) = await SyncAsync(libraryId, cancellationToken);
 
-        var pairs = await MediaLibraryLinkageHelper.SelectMediaLibraryPairs(context)
-            .Where(p => p.LibraryId == libraryId)
-            .Distinct()
-            .ToListAsync(cancellationToken);
-
-        await InsertPairsAsync(pairs, clearChangeTracker: true, cancellationToken);
-
-        logger.LogDebug("Rebuilt media library availability for library {LibraryId} ({Count} pairs)", libraryId, pairs.Count);
+        logger.LogDebug(
+            "Rebuilt media library availability for library {LibraryId} ({InsertedCount} inserted, {RemovedCount} removed)",
+            libraryId,
+            inserted,
+            removed);
     }
 
     public async Task RebuildAllAsync(CancellationToken cancellationToken = default)
     {
-        await context.MediaLibraryAvailabilities.ExecuteDeleteAsync(cancellationToken);
+        var (inserted, removed) = await SyncAsync(libraryId: null, cancellationToken);
 
-        var pairs = await MediaLibraryLinkageHelper.SelectMediaLibraryPairs(context)
-            .Distinct()
-            .ToListAsync(cancellationToken);
-
-        await InsertPairsAsync(pairs, clearChangeTracker: true, cancellationToken);
-
-        logger.LogInformation("Rebuilt media library availability for all libraries ({Count} pairs)", pairs.Count);
+        logger.LogInformation(
+            "Rebuilt media library availability for all libraries ({InsertedCount} inserted, {RemovedCount} removed)",
+            inserted,
+            removed);
     }
 
     public async Task EnsurePopulatedAsync(CancellationToken cancellationToken = default)
@@ -77,104 +78,118 @@ public sealed class MediaLibraryAvailabilityService(
         var existingSet = existingMediaIds.ToHashSet();
         var missing = pairs
             .Where(p => !existingSet.Contains(p.MediaId))
-            .GroupBy(p => p.MediaId)
-            .Select(g => g.First())
+            .Select(p => new MediaLibraryPair(p.LibraryId, p.MediaId))
+            .Distinct()
             .ToList();
 
         if (missing.Count == 0)
             return;
 
-        // Do not clear the change tracker: CreateMedia still holds tracked entities on this context.
-        await InsertPairsAsync(missing, clearChangeTracker: false, cancellationToken);
+        var inserted = await InsertPairsAsync(missing, cancellationToken);
         cacheInvalidator.InvalidateAll();
 
         logger.LogDebug(
             "Ensured media library availability for library {LibraryId} from {FileCount} files ({InsertedCount} new pairs)",
             libraryId,
             indexedFileIds.Count,
-            missing.Count);
+            inserted);
     }
 
-    private async Task InsertPairsAsync(
-        IReadOnlyList<MediaLibraryPairProjection> pairs,
-        bool clearChangeTracker,
-        CancellationToken cancellationToken)
+    /// <summary>
+    /// Inserts the given pairs, skipping the ones another writer already inserted.
+    /// Returns the number of rows actually written.
+    /// </summary>
+    internal async Task<int> InsertPairsAsync(
+        IReadOnlyCollection<MediaLibraryPair> pairs,
+        CancellationToken cancellationToken = default)
     {
         if (pairs.Count == 0)
-            return;
+            return 0;
 
-        // Collapse accidental duplicates inside one writer; concurrent writers still need conflict handling below.
-        var uniquePairs = pairs
-            .GroupBy(p => (p.LibraryId, p.MediaId))
-            .Select(g => g.First())
-            .ToList();
+        if (context is not DbContext dbContext)
+            throw new InvalidOperationException("Media library availability writes require a relational DbContext.");
 
-        foreach (var batch in uniquePairs.Chunk(InsertBatchSize))
+        var inserted = 0;
+
+        foreach (var batch in pairs.Distinct().Chunk(BatchSize))
         {
-            var entities = batch.Select(p => new MediaLibraryAvailability
+            var sql = new StringBuilder(InsertSqlPrefix);
+            var parameters = new object[batch.Length * 2];
+
+            for (var i = 0; i < batch.Length; i++)
             {
-                LibraryId = p.LibraryId,
-                MediaId = p.MediaId
-            }).ToList();
+                if (i > 0)
+                    sql.Append(", ");
 
-            context.MediaLibraryAvailabilities.AddRange(entities);
-
-            try
-            {
-                await context.SaveChangesAsync(cancellationToken);
-            }
-            catch (DbUpdateException ex) when (IsDuplicateAvailability(ex))
-            {
-                // Rebuild (scan) races Ensure (CreateMedia), and two Ensures can race on shared
-                // parents (serie/album/artist). Detach the batch and insert one-by-one like
-                // CreateBackgroundTasksBatch does for unique active-task races.
-                DetachAvailabilities(entities);
-
-                foreach (var entity in entities)
-                {
-                    var exists = await context.MediaLibraryAvailabilities
-                        .AsNoTracking()
-                        .AnyAsync(
-                            a => a.LibraryId == entity.LibraryId && a.MediaId == entity.MediaId,
-                            cancellationToken);
-                    if (exists)
-                        continue;
-
-                    context.MediaLibraryAvailabilities.Add(entity);
-                    try
-                    {
-                        await context.SaveChangesAsync(cancellationToken);
-                    }
-                    catch (DbUpdateException rowEx) when (IsDuplicateAvailability(rowEx))
-                    {
-                        DetachAvailabilities([entity]);
-                    }
-                }
+                sql.Append("({").Append(i * 2).Append("}, {").Append((i * 2) + 1).Append("})");
+                parameters[i * 2] = batch[i].LibraryId;
+                parameters[(i * 2) + 1] = batch[i].MediaId;
             }
 
-            if (clearChangeTracker)
-                ClearChangeTracker();
+            sql.Append(InsertSqlSuffix);
+
+            inserted += await dbContext.Database.ExecuteSqlRawAsync(sql.ToString(), parameters, cancellationToken);
         }
+
+        return inserted;
     }
 
-    private void DetachAvailabilities(IEnumerable<MediaLibraryAvailability> entities)
+    /// <summary>
+    /// Brings the table in line with the current file links by writing only the difference.
+    /// Rows that are still valid are never deleted, so a library stays browsable during a rebuild.
+    /// </summary>
+    private async Task<(int Inserted, int Removed)> SyncAsync(Guid? libraryId, CancellationToken cancellationToken)
     {
-        foreach (var entity in entities)
+        var existingQuery = context.MediaLibraryAvailabilities.AsNoTracking();
+        var desiredQuery = MediaLibraryLinkageHelper.SelectMediaLibraryPairs(context);
+
+        if (libraryId is Guid scopedLibraryId)
         {
-            var entry = context.Entry(entity);
-            if (entry.State != EntityState.Detached)
-                entry.State = EntityState.Detached;
+            existingQuery = existingQuery.Where(a => a.LibraryId == scopedLibraryId);
+            desiredQuery = desiredQuery.Where(p => p.LibraryId == scopedLibraryId);
         }
+
+        // Existing rows are read before the desired pairs on purpose. A row inserted concurrently by
+        // EnsureFromIndexedFilesAsync is then either absent from the existing set, or its file link was
+        // committed before the desired pairs are read. Either way it is not mistaken for a stale row.
+        var existingRows = await existingQuery
+            .Select(a => new { a.LibraryId, a.MediaId })
+            .ToListAsync(cancellationToken);
+        var desiredRows = await desiredQuery
+            .Distinct()
+            .ToListAsync(cancellationToken);
+
+        var existing = existingRows.Select(a => new MediaLibraryPair(a.LibraryId, a.MediaId)).ToHashSet();
+        var desired = desiredRows.Select(p => new MediaLibraryPair(p.LibraryId, p.MediaId)).ToHashSet();
+
+        var stale = existing.Where(p => !desired.Contains(p)).ToList();
+        var missing = desired.Where(p => !existing.Contains(p)).ToList();
+
+        var removed = await DeletePairsAsync(stale, cancellationToken);
+        var inserted = await InsertPairsAsync(missing, cancellationToken);
+
+        return (inserted, removed);
     }
 
-    private void ClearChangeTracker()
+    private async Task<int> DeletePairsAsync(
+        IReadOnlyCollection<MediaLibraryPair> pairs,
+        CancellationToken cancellationToken)
     {
-        if (context is DbContext dbContext)
-            dbContext.ChangeTracker.Clear();
-    }
+        var removed = 0;
 
-    private static bool IsDuplicateAvailability(DbUpdateException ex) =>
-        ex.InnerException?.Message.Contains("PK_MediaLibraryAvailabilities", StringComparison.OrdinalIgnoreCase) == true
-        || ex.InnerException?.Message.Contains("23505", StringComparison.Ordinal) == true
-        || ex.InnerException?.Message.Contains("UNIQUE", StringComparison.OrdinalIgnoreCase) == true;
+        foreach (var libraryPairs in pairs.GroupBy(p => p.LibraryId))
+        {
+            var libraryId = libraryPairs.Key;
+
+            foreach (var batch in libraryPairs.Select(p => p.MediaId).Chunk(BatchSize))
+            {
+                var mediaIds = batch.ToList();
+                removed += await context.MediaLibraryAvailabilities
+                    .Where(a => a.LibraryId == libraryId && mediaIds.Contains(a.MediaId))
+                    .ExecuteDeleteAsync(cancellationToken);
+            }
+        }
+
+        return removed;
+    }
 }
