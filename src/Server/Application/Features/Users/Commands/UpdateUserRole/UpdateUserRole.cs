@@ -37,6 +37,16 @@ public class UpdateUserRoleCommandHandler : IRequestHandler<UpdateUserRoleComman
                 new ValidationFailure("Id", "User has no identity account.")
             ]);
 
+        // Guardians get a full session of the account: it cannot gain admin rights while managed.
+        if (request.Role == Roles.Administrator
+            && await _context.UserGuardians.AnyAsync(g => g.UserId == request.Id, cancellationToken))
+        {
+            throw new ValidationException(
+            [
+                new ValidationFailure("Role", "Remove the guardians of this account before making it an administrator.")
+            ]);
+        }
+
         await _identityService.SetRoleAsync(domainUser.IdentityUserId, request.Role);
     }
 }

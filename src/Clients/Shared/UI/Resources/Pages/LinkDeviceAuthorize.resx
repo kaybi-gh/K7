@@ -28,4 +28,9 @@
   <data name="CodePart1" xml:space="preserve"><value>Partie 1 du code</value></data>
   <data name="CodePart2" xml:space="preserve"><value>Partie 2 du code</value></data>
   <data name="CodePart3" xml:space="preserve"><value>Partie 3 du code</value></data>
+  <data name="ChooseAccount" xml:space="preserve"><value>Pour qui ouvrir la session ?</value></data>
+  <data name="Myself" xml:space="preserve"><value>Moi</value></data>
+  <data name="PinLabel" xml:space="preserve"><value>PIN de {0}</value></data>
+  <data name="InvalidPin" xml:space="preserve"><value>PIN incorrect. Veuillez réessayer.</value></data>
+  <data name="AccessDenied" xml:space="preserve"><value>Vous ne pouvez pas ouvrir cette session.</value></data>
 </root>

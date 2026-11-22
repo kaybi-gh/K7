@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="Hint" xml:space="preserve"><value>A guardian can open a session for this account on a device, signing in with their own account. Handy for a child who has no phone.</value></data>
+  <data name="Managed" xml:space="preserve"><value>Enable guardianship</value></data>
+  <data name="ManagedHint" xml:space="preserve"><value>Turning this off removes every guardian. Sessions already open stay active.</value></data>
+  <data name="GuardiansTitle" xml:space="preserve"><value>Guardians</value></data>
+  <data name="NoCandidates" xml:space="preserve"><value>No other account can be a guardian.</value></data>
+  <data name="SearchPlaceholder" xml:space="preserve"><value>Search for an account</value></data>
+  <data name="NoMatch" xml:space="preserve"><value>No matching account.</value></data>
+  <data name="MoreCandidates" xml:space="preserve"><value>Other accounts not shown: {0}. Refine the search.</value></data>
+  <data name="GuardianRequired" xml:space="preserve"><value>Choose at least one guardian.</value></data>
+  <data name="AdministratorNotManageable" xml:space="preserve"><value>An administrator account cannot be under guardianship: its guardians would get administration rights.</value></data>
+</root>

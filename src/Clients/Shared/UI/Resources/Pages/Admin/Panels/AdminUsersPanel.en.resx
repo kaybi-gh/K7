@@ -78,5 +78,10 @@
   <data name="BadgeAgeLimit" xml:space="preserve"><value>Age limit</value></data>
   <data name="UserOnline" xml:space="preserve"><value>Online</value></data>
   <data name="UserOffline" xml:space="preserve"><value>Offline</value></data>
+  <data name="Managed" xml:space="preserve"><value>Under guardianship</value></data>
+  <data name="ActionGuardians" xml:space="preserve"><value>Guardianship</value></data>
+  <data name="GuardiansTitle" xml:space="preserve"><value>Guardianship</value></data>
+  <data name="GuardiansUpdated" xml:space="preserve"><value>Guardians updated.</value></data>
+  <data name="RoleManagedHint" xml:space="preserve"><value>An account under guardianship cannot be an administrator. Remove its guardians first.</value></data>
 </root>
 

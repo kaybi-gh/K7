@@ -78,5 +78,10 @@
   <data name="BadgeAgeLimit" xml:space="preserve"><value>Limite d'âge</value></data>
   <data name="UserOnline" xml:space="preserve"><value>En ligne</value></data>
   <data name="UserOffline" xml:space="preserve"><value>Hors ligne</value></data>
+  <data name="Managed" xml:space="preserve"><value>Sous tutorat</value></data>
+  <data name="ActionGuardians" xml:space="preserve"><value>Tutorat</value></data>
+  <data name="GuardiansTitle" xml:space="preserve"><value>Tutorat</value></data>
+  <data name="GuardiansUpdated" xml:space="preserve"><value>Tuteurs mis à jour.</value></data>
+  <data name="RoleManagedHint" xml:space="preserve"><value>Un compte sous tutorat ne peut pas être administrateur. Retirez d'abord ses tuteurs.</value></data>
 </root>
 

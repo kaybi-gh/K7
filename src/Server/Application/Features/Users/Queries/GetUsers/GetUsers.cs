@@ -40,6 +40,7 @@ public class GetUsersQueryHandler : IRequestHandler<GetUsersQuery, GetUsersResul
             .Include(u => u.CapabilityOverrides)
             .Include(u => u.LibraryExclusions)
             .Include(u => u.MediaExclusions)
+            .Include(u => u.Guardians)
             .AsSplitQuery()
             .AsNoTracking()
             .AsQueryable();

@@ -1000,6 +1000,19 @@
         }
       }
     },
+    "/api/users/me/managed-accounts": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "GetManagedAccounts",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/users/me/preferences/library-exclusions": {
       "get": {
         "tags": [
@@ -1610,6 +1623,40 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/UpdateUserCapabilitiesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/users/{id}/guardians": {
+      "put": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "UpdateUserGuardians",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserGuardiansRequest"
               }
             }
           },
@@ -24912,6 +24959,21 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/CapabilityOverrideDto"
+            }
+          }
+        }
+      },
+      "UpdateUserGuardiansRequest": {
+        "required": [
+          "guardianUserIds"
+        ],
+        "type": "object",
+        "properties": {
+          "guardianUserIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
             }
           }
         }

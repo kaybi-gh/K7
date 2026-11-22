@@ -1,3 +1,4 @@
+using K7.Shared.Dtos.Users;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 
@@ -7,6 +8,7 @@ public partial class LinkDeviceAuthorize
 {
     [Inject] private NavigationManager Navigation { get; set; } = default!;
     [Inject] private IJSRuntime JSRuntime { get; set; } = default!;
+    [Inject] private IUserAdminService UserAdminService { get; set; } = default!;
 
     private ElementReference _formRef;
     private ElementReference _hiddenRef;
@@ -16,12 +18,38 @@ public partial class LinkDeviceAuthorize
     private string? _userCode;
     private string? _error;
     private bool _approved;
+    private List<ManagedAccountDto> _managedAccounts = [];
+    private Guid? _targetUserId;
 
-    protected override void OnInitialized()
+    private ManagedAccountDto? SelectedAccount =>
+        _managedAccounts.FirstOrDefault(account => account.Id == _targetUserId);
+
+    protected override async Task OnInitializedAsync()
     {
         _userCode = GetQueryValue("user_code");
         _error = GetQueryValue("error");
         _approved = GetQueryValue("approved") == "true";
+
+        if (_approved)
+            return;
+
+        try
+        {
+            _managedAccounts = await UserAdminService.GetManagedAccountsAsync();
+        }
+        catch
+        {
+            // Not a guardian, or the list is unavailable: the page links the signed-in user as before.
+            _managedAccounts = [];
+        }
+
+        // After a refused attempt the server sends the choice back, so a retry does not
+        // silently fall back to the signed-in user.
+        if (Guid.TryParse(GetQueryValue("target_user_id"), out var targetUserId)
+            && _managedAccounts.Any(account => account.Id == targetUserId))
+        {
+            _targetUserId = targetUserId;
+        }
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -44,6 +72,21 @@ public partial class LinkDeviceAuthorize
             await module.DisposeAsync();
         }
     }
+
+    private string GetErrorMessage() => _error switch
+    {
+        "invalid_pin" => L["InvalidPin"].Value,
+        "access_denied" => L["AccessDenied"].Value,
+        _ => L["InvalidCode"].Value
+    };
+
+    private static string GetName(ManagedAccountDto account) =>
+        account.DisplayName ?? account.UserName ?? account.Id.ToString();
+
+    private static string GetLetter(string name) =>
+        name.Length > 0 ? name[..1].ToUpperInvariant() : "?";
+
+    private void SelectTarget(Guid? targetUserId) => _targetUserId = targetUserId;
 
     private string? GetQueryValue(string key)
     {

@@ -79,6 +79,65 @@
     color: var(--color-text-secondary);
 }
 
+.link-device__accounts {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    margin: 0;
+    padding: 0;
+    border: 0;
+    min-width: 0;
+}
+
+.link-device__legend {
+    padding: 0;
+    margin-bottom: var(--space-2);
+    font-size: var(--text-sm);
+    color: var(--color-text-secondary);
+}
+
+.link-device__account {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    min-height: 44px;
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md, 8px);
+    background: var(--color-background);
+    color: var(--color-text);
+    cursor: pointer;
+}
+
+.link-device__account:has(input:checked) {
+    border-color: var(--color-primary);
+}
+
+.link-device__account:has(input:focus-visible) {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+.link-device__account input {
+    flex-shrink: 0;
+    accent-color: var(--color-primary);
+}
+
+.link-device__account-name {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: var(--text-base);
+}
+
+.link-device__pin {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
 .link-device__alert {
     width: 100%;
     padding: var(--space-3);

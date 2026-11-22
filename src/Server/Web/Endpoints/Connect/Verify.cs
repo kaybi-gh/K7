@@ -1,4 +1,7 @@
 using System.Security.Claims;
+using K7.Server.Application.Common.Exceptions;
+using K7.Server.Application.Features.Users.Commands.VerifyUserPin;
+using K7.Server.Application.Features.Users.Queries.GetGuardianSessionTarget;
 using K7.Server.Infrastructure.Database.Context.Identity;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Authentication;
@@ -13,6 +16,15 @@ namespace K7.Server.Web.Endpoints.Connect;
 
 public class Verify : IEndpoint
 {
+    /// <summary>Form field: the managed account the session is asked for. Empty for the signed-in user.</summary>
+    public const string TargetUserIdParameter = "target_user_id";
+
+    /// <summary>Form field: the PIN of the managed account, when it has one.</summary>
+    public const string PinParameter = "pin";
+
+    private const string AccessDeniedError = "access_denied";
+    private const string InvalidPinError = "invalid_pin";
+
     public void Map(IEndpointRouteBuilder endpointRouteBuilder)
     {
         var type = GetType();
@@ -21,7 +33,9 @@ public class Verify : IEndpoint
         endpointRouteBuilder.MapMethods("/connect/verify", [HttpMethods.Get, HttpMethods.Post], async (HttpContext context,
             [FromServices] UserManager<ApplicationUser> userManager,
             [FromServices] SignInManager<ApplicationUser> signInManager,
-            [FromServices] IOpenIddictScopeManager scopeManager) =>
+            [FromServices] IOpenIddictScopeManager scopeManager,
+            [FromServices] ISender sender,
+            [FromServices] ILogger<Verify> logger) =>
         {
             var request = context.GetOpenIddictServerRequest() ??
                 throw new InvalidOperationException("The OpenID Connect request cannot be retrieved.");
@@ -62,6 +76,37 @@ public class Verify : IEndpoint
                 return Results.Redirect("/link?error=access_denied");
             }
 
+            // A guardian can ask the session for an account they manage instead of their own.
+            // The signed-in browser user stays the one who authorizes. Only the token subject changes.
+            var targetUserId = (string?)request[TargetUserIdParameter];
+            if (!string.IsNullOrEmpty(targetUserId))
+            {
+                if (!Guid.TryParse(targetUserId, out var managedUserId))
+                {
+                    return Results.Redirect("/link?error=access_denied");
+                }
+
+                var (managedAccount, error) = await ResolveManagedAccountAsync(
+                    user,
+                    managedUserId,
+                    (string?)request[PinParameter],
+                    userManager,
+                    sender,
+                    context.RequestAborted);
+
+                if (managedAccount is null || !await signInManager.CanSignInAsync(managedAccount))
+                {
+                    return Results.Redirect(LinkError(request.UserCode, error ?? AccessDeniedError, managedUserId));
+                }
+
+                logger.LogInformation(
+                    "Guardian {GuardianIdentityUserId} opens a device session for managed account {ManagedIdentityUserId}",
+                    user.Id,
+                    managedAccount.Id);
+
+                user = managedAccount;
+            }
+
             var identity = new ClaimsIdentity(
                 TokenValidationParameters.DefaultAuthenticationType,
                 Claims.Name,
@@ -82,8 +127,52 @@ public class Verify : IEndpoint
                 OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
         })
         .DisableAntiforgery()
+        // The form can carry the PIN of a managed account: same throttle as the PIN check.
+        .RequireRateLimiting(RateLimitingExtensions.PinVerifyPolicy)
         .WithName(type.Name)
         .WithTags(groupName);
+    }
+
+    // The managed account to sign in, or the /link error code when the guardian may not open it.
+    private static async Task<(ApplicationUser? Account, string? Error)> ResolveManagedAccountAsync(
+        ApplicationUser guardian,
+        Guid managedUserId,
+        string? pin,
+        UserManager<ApplicationUser> userManager,
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        GuardianSessionTarget target;
+        try
+        {
+            target = await sender.Send(new GetGuardianSessionTargetQuery(guardian.Id, managedUserId), cancellationToken);
+        }
+        catch (ForbiddenAccessException)
+        {
+            return (null, AccessDeniedError);
+        }
+
+        // The format is checked here so a mistyped PIN never fails validation inside a request:
+        // failing requests are logged whole.
+        if (target.HasPin
+            && (pin is not { Length: 4 }
+                || !pin.All(char.IsAsciiDigit)
+                || !await sender.Send(new VerifyUserPinCommand(target.UserId, pin), cancellationToken)))
+        {
+            return (null, InvalidPinError);
+        }
+
+        return (await userManager.FindByIdAsync(target.IdentityUserId), null);
+    }
+
+    // Keeps the code and the chosen account in the address: the guardian retries without scanning
+    // again, and the retry does not fall back to the guardian's own account.
+    private static string LinkError(string? userCode, string error, Guid managedUserId)
+    {
+        var url = $"/link?error={error}&{TargetUserIdParameter}={managedUserId}";
+        return string.IsNullOrEmpty(userCode)
+            ? url
+            : $"{url}&user_code={Uri.EscapeDataString(userCode)}";
     }
 
     private static IEnumerable<string> GetDestinations(Claim claim)

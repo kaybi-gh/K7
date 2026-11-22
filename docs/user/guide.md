@@ -51,6 +51,18 @@ For password accounts, under **Settings -> Account**: enable 2FA, scan the QR co
 2. Browse from Home, or open **My Space** for playlists, history, and more.
 3. Tune playback and privacy under **Settings**.
 
+### Signing in someone else's account on a device (guardians)
+
+An administrator can make you the guardian of an account, for example a child who has no phone to scan the TV code. You then link a device for that account from your own phone:
+
+1. On the device (TV), open the device-link QR as usual.
+2. Scan it with your phone, signed in with **your own** account.
+3. Under **Who is this session for?**, pick the account instead of **Me**. The choice only appears when you are a guardian of at least one account.
+4. If that account has a PIN, enter it. A wrong PIN keeps the code and the chosen account so you can try again.
+5. Tap **Authorize Device**. The device is signed in as that account, exactly as if its owner had scanned the code.
+
+You never need the password of the account, and your own session on the phone does not change. Only an administrator can add or remove guardians.
+
 ## Clients
 
 Same interface in the browser and in native apps.

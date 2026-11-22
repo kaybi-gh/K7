@@ -24,6 +24,11 @@ public sealed record UserDto
     public DateOnly? DateOfBirth { get; init; }
     public bool AgeRestrictionEnabled { get; init; }
     public bool HideUnratedTitles { get; init; } = true;
+
+    /// <summary>
+    /// Accounts allowed to open a session for this one. Only filled by the admin user list.
+    /// </summary>
+    public IReadOnlyList<Guid> GuardianUserIds { get; init; } = [];
 }
 
 public sealed record CapabilityOverrideDto

@@ -3005,6 +3005,28 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.ToTable("UserCapabilityOverrides");
                 });
 
+            modelBuilder.Entity("K7.Server.Domain.Entities.Users.UserGuardian", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("GuardianUserId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GuardianUserId");
+
+                    b.HasIndex("UserId", "GuardianUserId")
+                        .IsUnique();
+
+                    b.ToTable("UserGuardians", (string)null);
+                });
+
             modelBuilder.Entity("K7.Server.Domain.Entities.Users.UserLibraryExclusion", b =>
                 {
                     b.Property<Guid>("Id")
@@ -5157,6 +5179,25 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("K7.Server.Domain.Entities.Users.UserGuardian", b =>
+                {
+                    b.HasOne("K7.Server.Domain.Entities.Users.User", "GuardianUser")
+                        .WithMany()
+                        .HasForeignKey("GuardianUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("K7.Server.Domain.Entities.Users.User", "User")
+                        .WithMany("Guardians")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("GuardianUser");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("K7.Server.Domain.Entities.Users.UserLibraryExclusion", b =>
                 {
                     b.HasOne("K7.Server.Domain.Entities.Users.User", null)
@@ -5543,6 +5584,8 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
             modelBuilder.Entity("K7.Server.Domain.Entities.Users.User", b =>
                 {
                     b.Navigation("CapabilityOverrides");
+
+                    b.Navigation("Guardians");
 
                     b.Navigation("LibraryExclusions");
 

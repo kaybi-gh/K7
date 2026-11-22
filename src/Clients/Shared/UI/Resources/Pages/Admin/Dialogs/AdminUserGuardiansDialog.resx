@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="Hint" xml:space="preserve"><value>Un tuteur peut ouvrir une session pour ce compte sur un appareil, en se connectant avec son propre compte. Pratique pour un enfant qui n'a pas de téléphone.</value></data>
+  <data name="Managed" xml:space="preserve"><value>Activer le tutorat</value></data>
+  <data name="ManagedHint" xml:space="preserve"><value>Désactiver retire tous les tuteurs. Les sessions déjà ouvertes restent actives.</value></data>
+  <data name="GuardiansTitle" xml:space="preserve"><value>Tuteurs</value></data>
+  <data name="NoCandidates" xml:space="preserve"><value>Aucun autre compte ne peut être tuteur.</value></data>
+  <data name="SearchPlaceholder" xml:space="preserve"><value>Rechercher un compte</value></data>
+  <data name="NoMatch" xml:space="preserve"><value>Aucun compte ne correspond.</value></data>
+  <data name="MoreCandidates" xml:space="preserve"><value>Autres comptes non affichés : {0}. Affinez la recherche.</value></data>
+  <data name="GuardianRequired" xml:space="preserve"><value>Choisissez au moins un tuteur.</value></data>
+  <data name="AdministratorNotManageable" xml:space="preserve"><value>Un compte administrateur ne peut pas être sous tutorat : ses tuteurs obtiendraient les droits d'administration.</value></data>
+</root>

@@ -62,6 +62,7 @@ public interface IApplicationDbContext // How to put this into domain?
     DbSet<ServerSetting> ServerSettings { get; }
     DbSet<UserSetting> UserSettings { get; }
     DbSet<UserCapabilityOverride> UserCapabilityOverrides { get; }
+    DbSet<UserGuardian> UserGuardians { get; }
     DbSet<UserLibraryExclusion> UserLibraryExclusions { get; }
     DbSet<UserMediaExclusion> UserMediaExclusions { get; }
     DbSet<ContentRestrictionProfile> ContentRestrictionProfiles { get; }

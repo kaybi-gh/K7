@@ -46,7 +46,10 @@ public static class UserMappings
             ContentRestrictionProfileId = domain.ContentRestrictionProfileId,
             DateOfBirth = domain.DateOfBirth,
             AgeRestrictionEnabled = domain.AgeRestrictionEnabled,
-            HideUnratedTitles = domain.HideUnratedTitles
+            HideUnratedTitles = domain.HideUnratedTitles,
+            GuardianUserIds = domain.Guardians
+                .Select(g => g.GuardianUserId)
+                .ToList()
         };
 
         public LiteUserDto ToLiteUserDto() => new()

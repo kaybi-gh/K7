@@ -1,0 +1,82 @@
+@using K7.Clients.Shared.UI.Helpers
+@using K7.Shared.Dtos.Users
+@inject IStringLocalizer<AdminUserGuardiansDialog> L
+@inject IStringLocalizer<SharedResource> S
+
+<div class="k7-dialog-content guardians">
+    <p class="guardians__hint">@L["Hint"]</p>
+
+    @if (IsAdministrator)
+    {
+        <K7Alert Severity="K7Severity.Info">@L["AdministratorNotManageable"]</K7Alert>
+    }
+
+    <div>
+        <K7SettingRow Label="@L["Managed"]" Hint="@L["ManagedHint"]">
+            <K7Switch AriaLabel="@L["Managed"]"
+                      Value="_managed"
+                      ValueChanged="OnManagedChanged"
+                      Disabled="IsAdministrator" />
+        </K7SettingRow>
+    </div>
+
+    @if (_managed)
+    {
+        <h6 class="guardians__heading">@L["GuardiansTitle"]</h6>
+
+        @if (_candidates.Count == 0)
+        {
+            <p class="guardians__hint">@L["NoCandidates"]</p>
+        }
+        else
+        {
+            var (visibleCandidates, hiddenCount) = GuardianCandidates.GetVisible(_candidates, _search, _pinnedIds);
+
+            <K7TextField TValue="string"
+                         Value="@_search"
+                         ValueChanged="@(value => _search = value ?? "")"
+                         Immediate="true"
+                         Placeholder="@L["SearchPlaceholder"]"
+                         AdornmentIcon="@Phosphor.MagnifyingGlass" />
+
+            @if (visibleCandidates.Count == 0)
+            {
+                <p class="guardians__hint">@L["NoMatch"]</p>
+            }
+            else
+            {
+                <K7CheckboxList TItem="UserDto"
+                                Items="visibleCandidates"
+                                IsChecked="@(candidate => _guardianIds.Contains(candidate.Id))"
+                                CheckedChanged="@(e => ToggleGuardian(e.Item.Id, e.Checked))">
+                    <ItemTemplate Context="candidate">
+                        <K7Avatar Size="sm" Image="@candidate.AvatarUrl"
+                                  Letter="@GetLetter(candidate)"
+                                  UserId="@candidate.Id" />
+                        <span class="guardians__text">
+                            <span class="guardians__name">@GuardianCandidates.GetName(candidate)</span>
+                            @if (!string.IsNullOrEmpty(candidate.Email))
+                            {
+                                <span class="guardians__secondary">@candidate.Email</span>
+                            }
+                        </span>
+                    </ItemTemplate>
+                </K7CheckboxList>
+            }
+
+            @if (hiddenCount > 0)
+            {
+                <p class="guardians__hint">@string.Format(L["MoreCandidates"], hiddenCount)</p>
+            }
+        }
+
+        @if (_validationError is not null)
+        {
+            <K7Alert Severity="K7Severity.Error">@_validationError</K7Alert>
+        }
+    }
+</div>
+<div class="k7-dialog-actions">
+    <K7Button OnClick="Cancel">@S["Cancel"]</K7Button>
+    <K7Button Color="primary" Variant="filled" OnClick="Submit" Disabled="IsAdministrator">@S["Save"]</K7Button>
+</div>

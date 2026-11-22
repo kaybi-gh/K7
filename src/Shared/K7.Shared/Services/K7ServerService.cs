@@ -1142,6 +1142,18 @@ public partial class K7ServerService : IK7ServerService, IMediaService, ILibrary
         response.EnsureSuccessStatusCode();
     }
 
+    public async Task UpdateUserGuardiansAsync(Guid userId, UpdateUserGuardiansRequest request, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PutAsJsonAsync($"api/users/{userId}/guardians", request, _serializerOptions, cancellationToken);
+        await response.EnsureSuccessWithDetailsAsync(cancellationToken);
+    }
+
+    public async Task<List<ManagedAccountDto>> GetManagedAccountsAsync(CancellationToken cancellationToken = default)
+    {
+        var accounts = await HttpClient.GetFromJsonAsync<List<ManagedAccountDto>>("api/users/me/managed-accounts", _serializerOptions, cancellationToken);
+        return accounts ?? [];
+    }
+
     public async Task UpdateProfileAsync(UpdateProfileRequest request, CancellationToken cancellationToken = default)
     {
         var response = await HttpClient.PutAsJsonAsync("api/users/me/profile", request, _serializerOptions, cancellationToken);

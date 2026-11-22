@@ -2,6 +2,7 @@ using K7.Server.Application.Features.Users.Commands.ChangePassword;
 using K7.Server.Application.Features.Users.Commands.CreateUser;
 using K7.Server.Application.Features.Users.Commands.ResetUserPassword;
 using K7.Server.Application.Features.Users.Commands.SetPassword;
+using K7.Server.Application.Features.Users.Commands.UpdateUserGuardians;
 using K7.Server.Application.Features.Users.Commands.UpdateUserRole;
 using K7.Server.Domain.Constants;
 using K7.Shared.Dtos;
@@ -179,5 +180,36 @@ public class UserCommandValidatorTests
         validator.Validate(new UpdateUserRoleCommand { Id = id, Role = Roles.Guest }).IsValid.Should().BeFalse();
         validator.Validate(new UpdateUserRoleCommand { Id = id, Role = "Moderator" }).IsValid.Should().BeFalse();
         validator.Validate(new UpdateUserRoleCommand { Id = id, Role = Roles.User }).IsValid.Should().BeTrue();
+    }
+
+    [Test]
+    public void UpdateUserGuardians_ShouldRejectSelfDuplicatesAndEmptyIds()
+    {
+        var validator = new UpdateUserGuardiansCommandValidator();
+        var id = Guid.NewGuid();
+        var guardian = Guid.NewGuid();
+
+        validator.Validate(new UpdateUserGuardiansCommand { Id = id, GuardianUserIds = [id] })
+            .IsValid.Should().BeFalse();
+        validator.Validate(new UpdateUserGuardiansCommand { Id = id, GuardianUserIds = [guardian, guardian] })
+            .IsValid.Should().BeFalse();
+        validator.Validate(new UpdateUserGuardiansCommand { Id = id, GuardianUserIds = [Guid.Empty] })
+            .IsValid.Should().BeFalse();
+        validator.Validate(new UpdateUserGuardiansCommand { Id = Guid.Empty, GuardianUserIds = [guardian] })
+            .IsValid.Should().BeFalse();
+        validator.Validate(new UpdateUserGuardiansCommand { Id = id, GuardianUserIds = null! })
+            .IsValid.Should().BeFalse();
+    }
+
+    [Test]
+    public void UpdateUserGuardians_ShouldAcceptGuardiansAndEmptyList()
+    {
+        var validator = new UpdateUserGuardiansCommandValidator();
+        var id = Guid.NewGuid();
+
+        validator.Validate(new UpdateUserGuardiansCommand { Id = id, GuardianUserIds = [Guid.NewGuid(), Guid.NewGuid()] })
+            .IsValid.Should().BeTrue();
+        validator.Validate(new UpdateUserGuardiansCommand { Id = id, GuardianUserIds = [] })
+            .IsValid.Should().BeTrue();
     }
 }

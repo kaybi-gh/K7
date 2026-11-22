@@ -18,7 +18,7 @@
         }
         else if (!string.IsNullOrEmpty(_error))
         {
-            <div class="link-device__alert link-device__alert--error">@L["InvalidCode"]</div>
+            <div class="link-device__alert link-device__alert--error">@GetErrorMessage()</div>
         }
 
         @if (!_approved)
@@ -36,6 +36,44 @@
                         <span class="link-device__separator">-</span>
                         <input @ref="_segment2Ref" type="text" class="code-segment link-device__segment" data-idx="2" maxlength="4" inputmode="numeric" autocomplete="off" aria-label="@L["CodePart3"]" />
                     </div>
+
+                    @* Only guardians see this choice. The radio value is posted as the account the
+                       session is opened for. Empty means the signed-in user. *@
+                    @if (_managedAccounts.Count > 0)
+                    {
+                        <fieldset class="link-device__accounts">
+                            <legend class="link-device__legend">@L["ChooseAccount"]</legend>
+                            <label class="link-device__account">
+                                <input type="radio" name="target_user_id" value=""
+                                       checked="@(_targetUserId is null)"
+                                       @onchange="@(() => SelectTarget(null))" />
+                                <K7Avatar Size="sm" Letter="@GetLetter(L["Myself"].Value)" />
+                                <span class="link-device__account-name">@L["Myself"]</span>
+                            </label>
+                            @foreach (var account in _managedAccounts)
+                            {
+                                <label class="link-device__account" @key="account.Id">
+                                    <input type="radio" name="target_user_id" value="@account.Id"
+                                           checked="@(_targetUserId == account.Id)"
+                                           @onchange="@(() => SelectTarget(account.Id))" />
+                                    <K7Avatar Size="sm" Image="@(account.AvatarUrl ?? "")"
+                                              Letter="@GetLetter(GetName(account))"
+                                              UserId="@account.Id" />
+                                    <span class="link-device__account-name">@GetName(account)</span>
+                                </label>
+                            }
+                        </fieldset>
+
+                        @if (SelectedAccount is { HasPin: true } selected)
+                        {
+                            <div class="link-device__pin">
+                                <label class="link-device__legend" for="link-device-pin">@string.Format(L["PinLabel"], GetName(selected))</label>
+                                <input id="link-device-pin" name="pin" type="password" class="link-device__segment"
+                                       maxlength="4" inputmode="numeric" pattern="[0-9]{4}" autocomplete="off" required />
+                            </div>
+                        }
+                    }
+
                     <K7Button Type="submit" Class="link-device__authorize">@L["AuthorizeDevice"]</K7Button>
                 </div>
             </form>

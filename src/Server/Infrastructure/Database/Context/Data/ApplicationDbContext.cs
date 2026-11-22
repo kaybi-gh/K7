@@ -79,6 +79,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
     public DbSet<ServerSetting> ServerSettings => Set<ServerSetting>();
     public DbSet<UserSetting> UserSettings => Set<UserSetting>();
     public DbSet<UserCapabilityOverride> UserCapabilityOverrides => Set<UserCapabilityOverride>();
+    public DbSet<UserGuardian> UserGuardians => Set<UserGuardian>();
     public DbSet<UserLibraryExclusion> UserLibraryExclusions => Set<UserLibraryExclusion>();
     public DbSet<UserMediaExclusion> UserMediaExclusions => Set<UserMediaExclusion>();
     public DbSet<ContentRestrictionProfile> ContentRestrictionProfiles => Set<ContentRestrictionProfile>();

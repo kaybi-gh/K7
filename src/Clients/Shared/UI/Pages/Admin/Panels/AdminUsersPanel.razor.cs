@@ -176,6 +176,15 @@ public partial class AdminUsersPanel : IAsyncDisposable
         return badges;
     }
 
+    private static bool IsManaged(UserDto user) => user.GuardianUserIds.Count > 0;
+
+    private IReadOnlyList<string> GetGuardianBadges(UserDto user) =>
+        user.GuardianUserIds
+            .Select(guardianUserId => _users.FirstOrDefault(u => u.Id == guardianUserId))
+            .Where(guardian => guardian is not null)
+            .Select(guardian => guardian!.DisplayName ?? guardian.UserName ?? guardian.Email ?? "-")
+            .ToList();
+
     private void NavigateToPlaybackHistory(UserDto user) =>
         NavigationManager.NavigateTo($"/admin/playback-history?userId={user.Id}");
 
@@ -516,6 +525,36 @@ public partial class AdminUsersPanel : IAsyncDisposable
                     HideUnratedTitles = assignment.HideUnratedTitles
                 });
                 Snackbar.Add(L["RestrictionProfileUpdated"], K7Severity.Success);
+                await LoadData();
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), K7Severity.Error);
+            }
+        }
+    }
+
+    private async Task OpenGuardiansDialog(UserDto user)
+    {
+        var parameters = new K7DialogParameters<AdminUserGuardiansDialog>
+        {
+            { x => x.User, user },
+            { x => x.AllUsers, _users }
+        };
+
+        var options = new K7DialogOptions { MaxWidth = K7DialogMaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
+        var dialog = await DialogService.ShowAsync<AdminUserGuardiansDialog>(L["GuardiansTitle"], parameters, options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false, Data: List<Guid> guardianUserIds })
+        {
+            try
+            {
+                await K7ServerService.UpdateUserGuardiansAsync(user.Id, new UpdateUserGuardiansRequest
+                {
+                    GuardianUserIds = guardianUserIds
+                });
+                Snackbar.Add(L["GuardiansUpdated"], K7Severity.Success);
                 await LoadData();
             }
             catch (Exception ex)

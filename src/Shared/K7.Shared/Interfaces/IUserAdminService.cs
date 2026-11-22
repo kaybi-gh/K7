@@ -38,6 +38,12 @@ public interface IUserAdminService
     Task MergeUsersAsync(Guid sourceUserId, Guid targetUserId, MergeStrategy? strategy = null, CancellationToken cancellationToken = default);
     Task ResetUserPasswordAsync(Guid userId, ResetUserPasswordRequest request, CancellationToken cancellationToken = default);
 
+    /// <summary>Replaces the guardians of an account. An empty list makes it unmanaged again.</summary>
+    Task UpdateUserGuardiansAsync(Guid userId, UpdateUserGuardiansRequest request, CancellationToken cancellationToken = default);
+
+    /// <summary>Accounts the current user is a guardian of and can open a device session for.</summary>
+    Task<List<ManagedAccountDto>> GetManagedAccountsAsync(CancellationToken cancellationToken = default);
+
     // Profile & Account
     Task UpdateProfileAsync(UpdateProfileRequest request, CancellationToken cancellationToken = default);
     Task UploadAvatarAsync(Stream stream, string fileName, CancellationToken cancellationToken = default);

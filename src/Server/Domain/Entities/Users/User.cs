@@ -29,6 +29,9 @@ public class User : BaseAuditableEntity
     public IList<UserLibraryExclusion> LibraryExclusions { get; set; } = [];
     public IList<UserMediaExclusion> MediaExclusions { get; set; } = [];
 
+    /// <summary>Accounts allowed to open a session for this one. Empty when the account is not managed.</summary>
+    public IList<UserGuardian> Guardians { get; set; } = [];
+
     [NotMapped] public string? Email { get; set; }
     [NotMapped] public string? UserName { get; set; }
     [NotMapped] public string Role { get; set; } = "Guest";

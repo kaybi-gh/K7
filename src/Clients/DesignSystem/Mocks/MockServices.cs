@@ -746,6 +746,8 @@ public sealed class MockUserAdminService : IUserAdminService
     public Task<UserDto> CreateUserAsync(CreateUserRequest request, CancellationToken cancellationToken = default) => Task.FromResult(new UserDto { Id = Guid.Empty, UserName = null, Role = "Admin", Created = DateTimeOffset.UtcNow, IsActive = true, IsGuest = false, HasPin = false, CapabilityOverrides = [], LibraryExclusions = [], MediaExclusions = [] });
     public Task MergeUsersAsync(Guid sourceUserId, Guid targetUserId, MergeStrategy? strategy = null, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task ResetUserPasswordAsync(Guid userId, ResetUserPasswordRequest request, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task UpdateUserGuardiansAsync(Guid userId, UpdateUserGuardiansRequest request, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task<List<ManagedAccountDto>> GetManagedAccountsAsync(CancellationToken cancellationToken = default) => Task.FromResult(new List<ManagedAccountDto>());
     public Task UpdateProfileAsync(UpdateProfileRequest request, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task UploadAvatarAsync(Stream stream, string fileName, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task RemoveAvatarAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
