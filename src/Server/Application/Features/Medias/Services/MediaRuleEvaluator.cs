@@ -203,52 +203,68 @@ public static class MediaRuleEvaluator
         };
     }
 
-    private static Expression<Func<BaseMedia, bool>> BuildContentRatingPredicate(ConditionRuleItem rule)
-    {
-        var value = rule.Value ?? "";
-        var normalized = MetadataTagNormalizer.NormalizeKey(value);
-        var containsPattern = EfLikeQueryExtensions.ToContainsPattern(value);
-        return rule.Operator switch
-        {
-            RuleOperator.Equals => m => m.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.ContentRating && mt.MetadataTag.NormalizedKey == normalized),
-            RuleOperator.NotEquals => m => !m.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.ContentRating && mt.MetadataTag.NormalizedKey == normalized),
-            RuleOperator.Contains => m => m.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.ContentRating && EfLikeQueryExtensions.ILike(mt.MetadataTag.DisplayName, containsPattern)),
-            RuleOperator.NotContains => m => !m.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.ContentRating && EfLikeQueryExtensions.ILike(mt.MetadataTag.DisplayName, containsPattern)),
-            RuleOperator.IsEmpty => m => !m.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.ContentRating),
-            RuleOperator.IsNotEmpty => m => m.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.ContentRating),
-            _ => _ => true
-        };
-    }
+    private static Expression<Func<BaseMedia, bool>> BuildContentRatingPredicate(ConditionRuleItem rule) =>
+        BuildSerieOwnedTagPredicate(MetadataTagKind.ContentRating, rule);
 
-    private static Expression<Func<BaseMedia, bool>> BuildNetworkPredicate(ConditionRuleItem rule)
-    {
-        var value = rule.Value ?? "";
-        var normalized = MetadataTagNormalizer.NormalizeKey(value);
-        var containsPattern = EfLikeQueryExtensions.ToContainsPattern(value);
-        return rule.Operator switch
-        {
-            RuleOperator.Equals => m => m.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.Network && mt.MetadataTag.NormalizedKey == normalized),
-            RuleOperator.NotEquals => m => !m.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.Network && mt.MetadataTag.NormalizedKey == normalized),
-            RuleOperator.Contains => m => m.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.Network && EfLikeQueryExtensions.ILike(mt.MetadataTag.DisplayName, containsPattern)),
-            RuleOperator.IsEmpty => m => !m.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.Network),
-            RuleOperator.IsNotEmpty => m => m.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.Network),
-            _ => _ => true
-        };
-    }
+    private static Expression<Func<BaseMedia, bool>> BuildNetworkPredicate(ConditionRuleItem rule) =>
+        rule.Operator is RuleOperator.Equals or RuleOperator.NotEquals or RuleOperator.Contains
+            or RuleOperator.IsEmpty or RuleOperator.IsNotEmpty
+            ? BuildSerieOwnedTagPredicate(MetadataTagKind.Network, rule)
+            : _ => true;
 
-    private static Expression<Func<BaseMedia, bool>> BuildStudioPredicate(ConditionRuleItem rule)
+    private static Expression<Func<BaseMedia, bool>> BuildStudioPredicate(ConditionRuleItem rule) =>
+        BuildSerieOwnedTagPredicate(MetadataTagKind.Studio, rule);
+
+    // Seasons and episodes have no content rating, network, or studio of their own. Compare the parent serie.
+    private static Expression<Func<BaseMedia, bool>> BuildSerieOwnedTagPredicate(MetadataTagKind kind, ConditionRuleItem rule)
     {
         var value = rule.Value ?? "";
         var normalized = MetadataTagNormalizer.NormalizeKey(value);
         var containsPattern = EfLikeQueryExtensions.ToContainsPattern(value);
         return rule.Operator switch
         {
-            RuleOperator.Equals => m => m.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.Studio && mt.MetadataTag.NormalizedKey == normalized),
-            RuleOperator.NotEquals => m => !m.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.Studio && mt.MetadataTag.NormalizedKey == normalized),
-            RuleOperator.Contains => m => m.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.Studio && EfLikeQueryExtensions.ILike(mt.MetadataTag.DisplayName, containsPattern)),
-            RuleOperator.NotContains => m => !m.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.Studio && EfLikeQueryExtensions.ILike(mt.MetadataTag.DisplayName, containsPattern)),
-            RuleOperator.IsEmpty => m => !m.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.Studio),
-            RuleOperator.IsNotEmpty => m => m.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.Studio),
+            RuleOperator.Equals => m =>
+                (m.Type == MediaType.SerieSeason
+                    && ((SerieSeason)m).Serie.MetadataTags.Any(mt => mt.MetadataTag.Kind == kind && mt.MetadataTag.NormalizedKey == normalized))
+                || (m.Type == MediaType.SerieEpisode
+                    && ((SerieEpisode)m).Serie.MetadataTags.Any(mt => mt.MetadataTag.Kind == kind && mt.MetadataTag.NormalizedKey == normalized))
+                || (m.Type != MediaType.SerieSeason && m.Type != MediaType.SerieEpisode
+                    && m.MetadataTags.Any(mt => mt.MetadataTag.Kind == kind && mt.MetadataTag.NormalizedKey == normalized)),
+            RuleOperator.NotEquals => m =>
+                (m.Type == MediaType.SerieSeason
+                    && !((SerieSeason)m).Serie.MetadataTags.Any(mt => mt.MetadataTag.Kind == kind && mt.MetadataTag.NormalizedKey == normalized))
+                || (m.Type == MediaType.SerieEpisode
+                    && !((SerieEpisode)m).Serie.MetadataTags.Any(mt => mt.MetadataTag.Kind == kind && mt.MetadataTag.NormalizedKey == normalized))
+                || (m.Type != MediaType.SerieSeason && m.Type != MediaType.SerieEpisode
+                    && !m.MetadataTags.Any(mt => mt.MetadataTag.Kind == kind && mt.MetadataTag.NormalizedKey == normalized)),
+            RuleOperator.Contains => m =>
+                (m.Type == MediaType.SerieSeason
+                    && ((SerieSeason)m).Serie.MetadataTags.Any(mt => mt.MetadataTag.Kind == kind && EfLikeQueryExtensions.ILike(mt.MetadataTag.DisplayName, containsPattern)))
+                || (m.Type == MediaType.SerieEpisode
+                    && ((SerieEpisode)m).Serie.MetadataTags.Any(mt => mt.MetadataTag.Kind == kind && EfLikeQueryExtensions.ILike(mt.MetadataTag.DisplayName, containsPattern)))
+                || (m.Type != MediaType.SerieSeason && m.Type != MediaType.SerieEpisode
+                    && m.MetadataTags.Any(mt => mt.MetadataTag.Kind == kind && EfLikeQueryExtensions.ILike(mt.MetadataTag.DisplayName, containsPattern))),
+            RuleOperator.NotContains => m =>
+                (m.Type == MediaType.SerieSeason
+                    && !((SerieSeason)m).Serie.MetadataTags.Any(mt => mt.MetadataTag.Kind == kind && EfLikeQueryExtensions.ILike(mt.MetadataTag.DisplayName, containsPattern)))
+                || (m.Type == MediaType.SerieEpisode
+                    && !((SerieEpisode)m).Serie.MetadataTags.Any(mt => mt.MetadataTag.Kind == kind && EfLikeQueryExtensions.ILike(mt.MetadataTag.DisplayName, containsPattern)))
+                || (m.Type != MediaType.SerieSeason && m.Type != MediaType.SerieEpisode
+                    && !m.MetadataTags.Any(mt => mt.MetadataTag.Kind == kind && EfLikeQueryExtensions.ILike(mt.MetadataTag.DisplayName, containsPattern))),
+            RuleOperator.IsEmpty => m =>
+                (m.Type == MediaType.SerieSeason
+                    && !((SerieSeason)m).Serie.MetadataTags.Any(mt => mt.MetadataTag.Kind == kind))
+                || (m.Type == MediaType.SerieEpisode
+                    && !((SerieEpisode)m).Serie.MetadataTags.Any(mt => mt.MetadataTag.Kind == kind))
+                || (m.Type != MediaType.SerieSeason && m.Type != MediaType.SerieEpisode
+                    && !m.MetadataTags.Any(mt => mt.MetadataTag.Kind == kind)),
+            RuleOperator.IsNotEmpty => m =>
+                (m.Type == MediaType.SerieSeason
+                    && ((SerieSeason)m).Serie.MetadataTags.Any(mt => mt.MetadataTag.Kind == kind))
+                || (m.Type == MediaType.SerieEpisode
+                    && ((SerieEpisode)m).Serie.MetadataTags.Any(mt => mt.MetadataTag.Kind == kind))
+                || (m.Type != MediaType.SerieSeason && m.Type != MediaType.SerieEpisode
+                    && m.MetadataTags.Any(mt => mt.MetadataTag.Kind == kind)),
             _ => _ => true
         };
     }
