@@ -44,6 +44,7 @@
   <data name="TaskHelp_CreateFileMetadatasCommand" xml:space="preserve"><value>Extrait les metadonnees conteneur (ffprobe) d'un fichier indexe.</value></data>
   <data name="TaskHelp_ExtractChaptersCommand" xml:space="preserve"><value>Extrait les chapitres embarques du fichier vers les metadonnees.</value></data>
   <data name="TaskHelp_ComputeHlsSegmentsCommand" xml:space="preserve"><value>Calcule les segments HLS / keyframes pour le transmux.</value></data>
+  <data name="TaskHelp_PreExtractSubtitlesCommand" xml:space="preserve"><value>Extrait les sous-titres texte du fichier en WebVTT pour qu'ils soient disponibles des le debut de la lecture.</value></data>
   <data name="TaskHelp_DetectMediaSegmentsCommand" xml:space="preserve"><value>Detecte les intros et outros d'une saison (episodes eligibles).</value></data>
   <data name="TaskHelp_ExtractSerieThemeSongCommand" xml:space="preserve"><value>Genere le theme musical d'une serie a partir d'un segment Intro.</value></data>
   <data name="TaskHelp_AnalyzeMusicTrackAudioCommand" xml:space="preserve"><value>Analyse audio d'un morceau (AudioMuse) pour la recherche et les radios.</value></data>

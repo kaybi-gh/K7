@@ -1018,6 +1018,11 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                         .HasColumnType("INTEGER")
                         .HasDefaultValue(true);
 
+                    b.Property<bool>("SubtitlePreExtractionEnabled")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(false);
+
                     b.Property<bool>("ThemeSongGenerationEnabled")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER")

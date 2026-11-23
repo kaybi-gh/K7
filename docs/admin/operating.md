@@ -58,12 +58,18 @@ Administrators create libraries in the admin UI and point each at a root folder 
 
 1. Mount media read-only (recommended), e.g. `/media/movies`, `/media/series`, `/media/music`.
 2. Create a library with a unique `RootPath` and the correct media type.
-3. Optionally tune library processing (intro detection, seekbar thumbnails, chapter extraction, transmuxing/transcoding).
+3. Optionally tune library processing (intro detection, seekbar thumbnails, chapter extraction, subtitle pre-extraction, transmuxing/transcoding).
 4. Run a scan / wait for background library-scan tasks.
 
 **Realtime monitoring** (library setting): watches the root folder for adds/renames/deletes and queues a path-scoped scan after a short debounce. Each library uses one recursive watcher (one Linux inotify instance). It needs a filesystem that supports inotify (Linux) or equivalent (local ext4/xfs, typical Docker bind mounts to local disks). NFS, CIFS/SMB, and some FUSE/remote shares often cannot create watches - scans and auto-scan still work. K7 logs a Warning once with the failure reason, then retries quietly. Turn realtime monitoring off on those libraries and rely on **Auto scan interval**, or mount media the same way as a library that already shows `Started realtime monitor ...`. Huge local trees may still need a higher host `fs.inotify.max_user_watches`.
 
 Access can be restricted per library and per profile beyond social visibility rules.
+
+### Subtitle pre-extraction
+
+For Movie and Serie libraries, **Subtitle pre-extraction** (off by default) reads each video once at scan time and stores its text subtitle tracks as WebVTT at `Metadatas/indexed-files/{id}/subtitles/{track}.vtt`, next to the seekbar thumbnail sheet. Playback then serves that file instead of waiting on ffmpeg. Files already in the library are extracted on their first playback after the setting is turned on, and that copy is kept. Turning the setting on from the library edit dialog asks whether to queue that work for the files already there. Turning the setting off leaves existing extracts in place. They are removed when the file is deleted or its metadata is replaced.
+
+Without the setting, a text track is still extracted on demand into the transcoding cache. While that full read runs, a client that sends its playback position receives the cues around that position. The complete track replaces them when the extraction finishes. The transcoding cache is deleted with stale transcode jobs, so the next playback extracts again.
 
 ### Chapter extraction
 
@@ -440,7 +446,7 @@ drains there is nothing critical left. Creation date as the last key keeps the o
 |---|---|---|
 | `Probe` | 4 | `ffprobe` container reads: file metadata and chapter extraction. IO seek bound, safe to parallelize. |
 | `LibraryScan` | 1 | Filesystem indexing. |
-| `FfmpegPrepare` | 1 | Keyframe extraction for transmuxing, stream preparation. CPU bound. |
+| `FfmpegPrepare` | 1 | Keyframe extraction for transmuxing, subtitle pre-extraction, stream preparation. CPU bound. |
 | `MediaAnalysis` | 1 | Intro/outro detection, audio analysis, theme song extraction. |
 | `ImageExtract` | 1 | Seekbar thumbnails and stills extracted with ffmpeg. |
 | `ImageProcessing` | 2 | Local image variant generation. |
@@ -456,7 +462,7 @@ Setting a lane to `0` pauses that category, which is useful to stop polish durin
 | `CriticalLink` | Media creation and file linking: makes a media visible and navigable. |
 | `CriticalEnrich` | Metadata refresh and main poster: makes a visible media presentable. |
 | `Prepare` | Keyframes and other work that only improves an already playable media. |
-| `Polish` | Thumbnails, intro detection, image variants, content hashing. |
+| `Polish` | Thumbnails, intro detection, subtitle pre-extraction, image variants, content hashing. |
 
 Image variants: posters, covers and portraits get `Small` / `Medium` resized copies, stills `Small` (320 px) / `Medium` (640 px), backdrops `Medium` (1920 px), and user or shared-profile avatars `Small` (160 px) / `Medium` (400 px); the clients request `size=Small` for avatars so the browser never shrinks an uploaded photo itself (WebKitGTK renders that aliased). A picture requested in a size it has no variant for yet is served from the original (not cacheable) and its variants are generated in the background on that first request (ImageProcessing lane, one task per picture per 10 minutes), so avatars uploaded before this rule existed catch up on first display. `POST /api/metadata-pictures/generate-missing-variants` (admin only) still backfills every picture without variants in one go. K7 never writes into a library folder: variants of an image that lives next to your media (for example `cover.jpg`) are stored under the metadata path (`LocalPictures`), and that original is neither converted nor deleted, so read-only libraries work.
 

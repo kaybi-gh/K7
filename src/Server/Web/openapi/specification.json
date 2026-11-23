@@ -6944,6 +6944,30 @@
         }
       }
     },
+    "/api/libraries/{id}/subtitle-pre-extraction": {
+      "post": {
+        "tags": [
+          "Libraries"
+        ],
+        "operationId": "QueueLibrarySubtitlePreExtraction",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/libraries/{id}/refresh-metadata": {
       "post": {
         "tags": [
@@ -8202,6 +8226,18 @@
               ],
               "format": "int32"
             }
+          },
+          {
+            "name": "position",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+              "type": [
+                "number",
+                "string"
+              ],
+              "format": "double"
+            }
           }
         ],
         "responses": {
@@ -8236,6 +8272,18 @@
                 "string"
               ],
               "format": "int32"
+            }
+          },
+          {
+            "name": "position",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+              "type": [
+                "number",
+                "string"
+              ],
+              "format": "double"
             }
           }
         ],
@@ -14126,6 +14174,9 @@
           "chapterExtractionEnabled": {
             "type": "boolean"
           },
+          "subtitlePreExtractionEnabled": {
+            "type": "boolean"
+          },
           "musicAudioAnalysisEnabled": {
             "type": "boolean"
           },
@@ -16132,6 +16183,9 @@
             "type": "boolean"
           },
           "chapterExtractionEnabled": {
+            "type": "boolean"
+          },
+          "subtitlePreExtractionEnabled": {
             "type": "boolean"
           },
           "musicAudioAnalysisEnabled": {
@@ -24256,6 +24310,12 @@
             ]
           },
           "chapterExtractionEnabled": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "subtitlePreExtractionEnabled": {
             "type": [
               "null",
               "boolean"

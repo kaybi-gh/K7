@@ -35,7 +35,7 @@ public class GetHlsSubtitleStreamSegmentQueryHandler : IRequestHandler<GetHlsSub
     private readonly IApplicationDbContext _context;
     private readonly IMediaTranscoder _mediaTranscoder;
     private readonly ILogger<GetHlsSubtitleStreamSegmentQueryHandler> _logger;
-    private readonly string _transcodingPath;
+    private readonly PathsConfiguration _paths;
 
     public GetHlsSubtitleStreamSegmentQueryHandler(
         IApplicationDbContext context,
@@ -46,8 +46,9 @@ public class GetHlsSubtitleStreamSegmentQueryHandler : IRequestHandler<GetHlsSub
         _context = context;
         _mediaTranscoder = mediaTranscoder;
         _logger = logger;
-        _transcodingPath = pathsOptions.Value.Transcoding
-            ?? throw new InvalidOperationException("Transcoding path not configured");
+        _paths = pathsOptions.Value;
+        if (_paths.Transcoding is null)
+            throw new InvalidOperationException("Transcoding path not configured");
     }
 
     public async Task<HttpContentResult> Handle(GetHlsSubtitleStreamSegmentQuery query, CancellationToken cancellationToken)
@@ -64,12 +65,16 @@ public class GetHlsSubtitleStreamSegmentQueryHandler : IRequestHandler<GetHlsSub
         if (!file.Exists)
             return new EmptyHttpContentResult(404);
 
-        var vttCachePath = HlsSubtitleVttExtractor.GetCachePath(
-            _transcodingPath,
-            entity.Id,
-            query.SubtitleTrackIndex);
+        var startTimeSeconds = query.SegmentNumber * SubtitleSegmentDurationSeconds;
+        var endTimeSeconds = startTimeSeconds + SubtitleSegmentDurationSeconds;
 
-        if (!HlsSubtitleVttExtractor.IsReady(vttCachePath))
+        var vttCachePath = HlsSubtitleVttExtractor.FindReadyPath(_paths, entity.Id, query.SubtitleTrackIndex);
+        string? sourceVtt;
+        if (vttCachePath is not null)
+        {
+            sourceVtt = await File.ReadAllTextAsync(vttCachePath, cancellationToken);
+        }
+        else
         {
             _logger.LogDebug(
                 "Subtitle VTT cache miss for track {Track} - extract in background, not blocking A/V",
@@ -78,8 +83,25 @@ public class GetHlsSubtitleStreamSegmentQueryHandler : IRequestHandler<GetHlsSub
                 _mediaTranscoder,
                 entity.Path,
                 query.SubtitleTrackIndex,
-                vttCachePath,
+                await HlsSubtitleVttExtractor.ResolveExtractionPathAsync(
+                    _context, _paths, entity, query.SubtitleTrackIndex, cancellationToken),
                 _logger);
+
+            // The full extraction reads the whole file. The window around this segment is
+            // reached by a seek, so the segment is served long before the track is complete.
+            sourceVtt = await HlsSubtitleVttExtractor.ReadWindowAsync(
+                _mediaTranscoder,
+                entity.Path,
+                _paths.Transcoding,
+                entity.Id,
+                query.SubtitleTrackIndex,
+                HlsSubtitleVttExtractor.GetWindowIndex(startTimeSeconds),
+                _logger,
+                cancellationToken);
+        }
+
+        if (sourceVtt is null)
+        {
             // Do not return empty 200: ExoPlayer caches that and never shows cues.
             return new TextHttpContentResult(
                 "Subtitle extract in progress",
@@ -87,10 +109,7 @@ public class GetHlsSubtitleStreamSegmentQueryHandler : IRequestHandler<GetHlsSub
                 503);
         }
 
-        var fullVtt = await File.ReadAllTextAsync(vttCachePath, cancellationToken);
-        var startTimeSeconds = query.SegmentNumber * SubtitleSegmentDurationSeconds;
-        var endTimeSeconds = startTimeSeconds + SubtitleSegmentDurationSeconds;
-        var segmentVtt = WebVttSegmenter.ExtractSegment(fullVtt, startTimeSeconds, endTimeSeconds);
+        var segmentVtt = WebVttSegmenter.ExtractSegment(sourceVtt, startTimeSeconds, endTimeSeconds);
 
         return new TextHttpContentResult(segmentVtt, "text/vtt; charset=utf-8");
     }

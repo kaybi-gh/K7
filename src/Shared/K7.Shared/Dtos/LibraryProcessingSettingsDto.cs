@@ -8,6 +8,7 @@ public sealed record LibraryProcessingSettingsDto
     public bool ThemeSongGenerationEnabled { get; init; } = true;
     public bool SeekbarThumbnailGenerationEnabled { get; init; } = true;
     public bool ChapterExtractionEnabled { get; init; } = true;
+    public bool SubtitlePreExtractionEnabled { get; init; }
     public bool MusicAudioAnalysisEnabled { get; init; } = true;
     public bool TranscodingEnabled { get; init; } = true;
     public bool TransmuxingEnabled { get; init; } = true;
@@ -24,6 +25,9 @@ public sealed record LibraryProcessingSettingsDto
         mediaType is LibraryMediaType.Movie or LibraryMediaType.Serie;
 
     public static bool ShowChapterExtraction(LibraryMediaType mediaType) =>
+        mediaType is LibraryMediaType.Movie or LibraryMediaType.Serie;
+
+    public static bool ShowSubtitlePreExtraction(LibraryMediaType mediaType) =>
         mediaType is LibraryMediaType.Movie or LibraryMediaType.Serie;
 
     public static bool ShowMusicAudioAnalysis(LibraryMediaType mediaType) =>

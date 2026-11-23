@@ -56,4 +56,10 @@
   <data name="RealtimeMonitorHelper" xml:space="preserve"><value>Automatically scans folders when a file is added, modified, or deleted.</value></data>
   <data name="AutoScanIntervalLabel" xml:space="preserve"><value>Periodic scan (hours)</value></data>
   <data name="AutoScanIntervalHelper" xml:space="preserve"><value>0 = disabled. Recommended on NAS or network shares where real-time monitoring is unreliable.</value></data>
+  <data name="PreExtractionConfirmTitle" xml:space="preserve"><value>Subtitle pre-extraction</value></data>
+  <data name="PreExtractionConfirmMessage" xml:space="preserve"><value>Queue a task to pre-extract subtitles for files already in the library? Each video is read in full once.</value></data>
+  <data name="PreExtractionConfirmYes" xml:space="preserve"><value>Yes</value></data>
+  <data name="PreExtractionConfirmNo" xml:space="preserve"><value>No</value></data>
+  <data name="PreExtractionQueued" xml:space="preserve"><value>Pre-extraction queued for {0} files.</value></data>
+  <data name="PreExtractionNone" xml:space="preserve"><value>No files with text subtitles.</value></data>
 </root>

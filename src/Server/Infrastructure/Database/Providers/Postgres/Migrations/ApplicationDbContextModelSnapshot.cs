@@ -994,6 +994,11 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                         .HasColumnType("boolean")
                         .HasDefaultValue(true);
 
+                    b.Property<bool>("SubtitlePreExtractionEnabled")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
+
                     b.Property<bool>("ThemeSongGenerationEnabled")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")

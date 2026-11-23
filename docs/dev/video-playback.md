@@ -687,6 +687,11 @@ not past mid-GOP. Do not micro-rebase **audio copy** onto `#EXTINF`.
   early 503. Sidecar WebVTT extract must not block `.vtt` HTTP. A cache miss returns 503
   immediately and ffmpeg fills the cache in the background. Do not return empty WEBVTT 200:
   ExoPlayer caches that and never shows cues. Waiting on extract (~10s) stalled A/V prefetch.
+  A request that includes `position` (seconds) gets a partial WebVTT (`NOTE k7-partial`) of
+  the cues already extracted around that time, while the full track is still being read.
+  Clients show that partial track at once and poll until the complete file replaces it.
+  Libraries with subtitle pre-extraction skip this wait: the VTT is written to
+  `Metadatas/indexed-files/{id}/subtitles/` at scan time and is not deleted with the transcoding cache.
 - Web Video.js remembers the selected subtitle slug and re-applies it on `seeked` (and after
   plain `seek()`). VHS often disables EXT-X-MEDIA text tracks after a seek discontinuity
   even when A/V remux continues on the same master.

@@ -11,6 +11,7 @@ public partial class EditLibraryDialog
     [CascadingParameter] private IK7DialogInstance Dialog { get; set; } = default!;
     [Inject] private ILibraryService LibraryService { get; set; } = default!;
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
+    [Inject] private IK7DialogService DialogService { get; set; } = default!;
 
     [Parameter] public Guid LibraryId { get; set; }
     [Parameter] public string Title { get; set; } = "";
@@ -27,6 +28,7 @@ public partial class EditLibraryDialog
     [Parameter] public bool ThemeSongGenerationEnabled { get; set; } = true;
     [Parameter] public bool SeekbarThumbnailGenerationEnabled { get; set; } = true;
     [Parameter] public bool ChapterExtractionEnabled { get; set; } = true;
+    [Parameter] public bool SubtitlePreExtractionEnabled { get; set; }
     [Parameter] public bool MusicAudioAnalysisEnabled { get; set; } = true;
     [Parameter] public bool TranscodingEnabled { get; set; } = true;
     [Parameter] public bool TransmuxingEnabled { get; set; } = true;
@@ -43,6 +45,7 @@ public partial class EditLibraryDialog
     private bool _themeSongGenerationEnabled = true;
     private bool _seekbarThumbnailGenerationEnabled = true;
     private bool _chapterExtractionEnabled = true;
+    private bool _subtitlePreExtractionEnabled;
     private bool _musicAudioAnalysisEnabled = true;
     private bool _transcodingEnabled = true;
     private bool _transmuxingEnabled = true;
@@ -63,6 +66,7 @@ public partial class EditLibraryDialog
         _themeSongGenerationEnabled = ThemeSongGenerationEnabled;
         _seekbarThumbnailGenerationEnabled = SeekbarThumbnailGenerationEnabled;
         _chapterExtractionEnabled = ChapterExtractionEnabled;
+        _subtitlePreExtractionEnabled = SubtitlePreExtractionEnabled;
         _musicAudioAnalysisEnabled = MusicAudioAnalysisEnabled;
         _transcodingEnabled = TranscodingEnabled;
         _transmuxingEnabled = TransmuxingEnabled;
@@ -101,6 +105,7 @@ public partial class EditLibraryDialog
             ThemeSongGenerationEnabled = _themeSongGenerationEnabled,
             SeekbarThumbnailGenerationEnabled = _seekbarThumbnailGenerationEnabled,
             ChapterExtractionEnabled = _chapterExtractionEnabled,
+            SubtitlePreExtractionEnabled = _subtitlePreExtractionEnabled,
             MusicAudioAnalysisEnabled = _musicAudioAnalysisEnabled,
             TranscodingEnabled = _transcodingEnabled,
             TransmuxingEnabled = _transmuxingEnabled,
@@ -108,12 +113,24 @@ public partial class EditLibraryDialog
             AutoScanIntervalHours = _autoScanIntervalHours
         };
 
+        var queueExisting = await ConfirmExistingPreExtractionAsync();
+
         _isSubmitting = true;
         StateHasChanged();
 
         try
         {
             await LibraryService.UpdateLibraryAsync(LibraryId, request);
+            if (queueExisting)
+            {
+                var queued = await LibraryService.QueueSubtitlePreExtractionAsync(LibraryId);
+                Snackbar.Add(
+                    queued > 0
+                        ? L["PreExtractionQueued", queued]
+                        : L["PreExtractionNone"],
+                    queued > 0 ? K7Severity.Success : K7Severity.Info);
+            }
+
             Dialog.Close(K7DialogResult.Ok(true));
         }
         catch (Exception ex)
@@ -124,4 +141,25 @@ public partial class EditLibraryDialog
     }
 
     private void Cancel() => Dialog.Cancel();
+
+    /// <summary>
+    /// Asked only when pre-extraction goes from off to on. Yes queues the files already
+    /// in the library. No still saves the capability, so later files are extracted at scan.
+    /// </summary>
+    private async Task<bool> ConfirmExistingPreExtractionAsync()
+    {
+        if (SubtitlePreExtractionEnabled || !_subtitlePreExtractionEnabled)
+            return false;
+
+        if (!LibraryProcessingSettingsDto.ShowSubtitlePreExtraction(MediaType))
+            return false;
+
+        var parameters = new K7DialogParameters<K7MessageBoxDialog>();
+        parameters.Add(x => x.Message, L["PreExtractionConfirmMessage"].Value);
+        parameters.Add(x => x.YesText, L["PreExtractionConfirmYes"].Value);
+        parameters.Add(x => x.NoText, L["PreExtractionConfirmNo"].Value);
+        var dialog = await DialogService.ShowAsync<K7MessageBoxDialog>(L["PreExtractionConfirmTitle"].Value, parameters);
+        var result = await dialog.Result;
+        return !result.Canceled && result.Data is true;
+    }
 }

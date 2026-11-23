@@ -20,6 +20,7 @@ public record UpdateLibraryCommand : IRequest
     public bool? ThemeSongGenerationEnabled { get; init; }
     public bool? SeekbarThumbnailGenerationEnabled { get; init; }
     public bool? ChapterExtractionEnabled { get; init; }
+    public bool? SubtitlePreExtractionEnabled { get; init; }
     public bool? MusicAudioAnalysisEnabled { get; init; }
     public bool? TranscodingEnabled { get; init; }
     public bool? TransmuxingEnabled { get; init; }
@@ -55,6 +56,8 @@ public class UpdateLibraryCommandHandler(IApplicationDbContext context, ILibrary
             entity.SeekbarThumbnailGenerationEnabled = request.SeekbarThumbnailGenerationEnabled.Value;
         if (request.ChapterExtractionEnabled.HasValue)
             entity.ChapterExtractionEnabled = request.ChapterExtractionEnabled.Value;
+        if (request.SubtitlePreExtractionEnabled.HasValue)
+            entity.SubtitlePreExtractionEnabled = request.SubtitlePreExtractionEnabled.Value;
         if (request.MusicAudioAnalysisEnabled.HasValue)
             entity.MusicAudioAnalysisEnabled = request.MusicAudioAnalysisEnabled.Value;
         if (request.TranscodingEnabled.HasValue)

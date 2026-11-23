@@ -28,6 +28,7 @@ public record CreateLibraryCommand : IRequest<Guid>
     public bool ThemeSongGenerationEnabled { get; init; } = true;
     public bool SeekbarThumbnailGenerationEnabled { get; init; } = true;
     public bool ChapterExtractionEnabled { get; init; } = true;
+    public bool SubtitlePreExtractionEnabled { get; init; }
     public bool MusicAudioAnalysisEnabled { get; init; } = true;
     public bool TranscodingEnabled { get; init; } = true;
     public bool TransmuxingEnabled { get; init; } = true;
@@ -91,6 +92,7 @@ public class CreateLibraryCommandHandler : IRequestHandler<CreateLibraryCommand,
             ThemeSongGenerationEnabled = request.IntroDetectionEnabled && request.ThemeSongGenerationEnabled,
             SeekbarThumbnailGenerationEnabled = request.SeekbarThumbnailGenerationEnabled,
             ChapterExtractionEnabled = request.ChapterExtractionEnabled,
+            SubtitlePreExtractionEnabled = request.SubtitlePreExtractionEnabled,
             MusicAudioAnalysisEnabled = request.MusicAudioAnalysisEnabled,
             TranscodingEnabled = request.TranscodingEnabled,
             TransmuxingEnabled = request.TransmuxingEnabled,

@@ -30,31 +30,38 @@
             @if (LibraryProcessingSettingsDto.ShowSeekbarThumbnails(MediaType))
             {
                 <K7SettingRow Label="@L["SeekbarThumbnails"]">
-                    <K7Switch AriaLabel="@L["SeekbarThumbnails"]" @bind-Value="SeekbarThumbnailGenerationEnabled" Disabled="Disabled" />
+                    <K7Switch AriaLabel="@L["SeekbarThumbnails"]" Value="SeekbarThumbnailGenerationEnabled" ValueChanged="SeekbarThumbnailGenerationEnabledChanged" Disabled="Disabled" />
                 </K7SettingRow>
             }
 
             @if (LibraryProcessingSettingsDto.ShowChapterExtraction(MediaType))
             {
                 <K7SettingRow Label="@L["ChapterExtraction"]" Hint="@L["ChapterExtractionDescription"]">
-                    <K7Switch AriaLabel="@L["ChapterExtraction"]" @bind-Value="ChapterExtractionEnabled" Disabled="Disabled" />
+                    <K7Switch AriaLabel="@L["ChapterExtraction"]" Value="ChapterExtractionEnabled" ValueChanged="ChapterExtractionEnabledChanged" Disabled="Disabled" />
+                </K7SettingRow>
+            }
+
+            @if (LibraryProcessingSettingsDto.ShowSubtitlePreExtraction(MediaType))
+            {
+                <K7SettingRow Label="@L["SubtitlePreExtraction"]" Hint="@L["SubtitlePreExtractionDescription"]">
+                    <K7Switch AriaLabel="@L["SubtitlePreExtraction"]" Value="SubtitlePreExtractionEnabled" ValueChanged="SubtitlePreExtractionEnabledChanged" Disabled="Disabled" />
                 </K7SettingRow>
             }
 
             @if (LibraryProcessingSettingsDto.ShowMusicAudioAnalysis(MediaType))
             {
                 <K7SettingRow Label="@L["MusicAudioAnalysis"]">
-                    <K7Switch AriaLabel="@L["MusicAudioAnalysis"]" @bind-Value="MusicAudioAnalysisEnabled" Disabled="Disabled" />
+                    <K7Switch AriaLabel="@L["MusicAudioAnalysis"]" Value="MusicAudioAnalysisEnabled" ValueChanged="MusicAudioAnalysisEnabledChanged" Disabled="Disabled" />
                 </K7SettingRow>
             }
 
             @if (LibraryProcessingSettingsDto.ShowTranscodeOptions(MediaType))
             {
                 <K7SettingRow Label="@L["Transcoding"]">
-                    <K7Switch AriaLabel="@L["Transcoding"]" @bind-Value="TranscodingEnabled" Disabled="Disabled" />
+                    <K7Switch AriaLabel="@L["Transcoding"]" Value="TranscodingEnabled" ValueChanged="TranscodingEnabledChanged" Disabled="Disabled" />
                 </K7SettingRow>
                 <K7SettingRow Label="@L["Transmuxing"]">
-                    <K7Switch AriaLabel="@L["Transmuxing"]" @bind-Value="TransmuxingEnabled" Disabled="Disabled" />
+                    <K7Switch AriaLabel="@L["Transmuxing"]" Value="TransmuxingEnabled" ValueChanged="TransmuxingEnabledChanged" Disabled="Disabled" />
                 </K7SettingRow>
             }
         </div>

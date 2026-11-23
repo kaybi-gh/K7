@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text;
+using K7.Shared.Constants;
 
 namespace K7.Server.Application.Helpers;
 
@@ -23,8 +24,39 @@ internal static class WebVttSegmenter
     {
         var sb = new StringBuilder();
         AppendHeader(sb);
+        AppendCues(sb, fullVttContent, (cueStart, cueEnd) => cueStart < endTimeSeconds && cueEnd > startTimeSeconds);
 
-        var lines = fullVttContent.Split('\n');
+        return sb.ToString();
+    }
+
+    /// <summary>
+    /// Joins consecutive extraction windows into one VTT flagged as partial. Cue times are
+    /// untouched. Every window also holds the cues that begin shortly before it: the first
+    /// one keeps them, the next ones only add the cues beginning in their own range, so a cue
+    /// is never written twice.
+    /// </summary>
+    public static string MergeWindows(IReadOnlyList<string> windowVttContents, double firstWindowStartSeconds, double windowSeconds)
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine("WEBVTT");
+        sb.AppendLine();
+        sb.AppendLine(SubtitleVttFormat.PartialNote);
+        sb.AppendLine();
+
+        for (var i = 0; i < windowVttContents.Count; i++)
+        {
+            var windowStart = firstWindowStartSeconds + (i * windowSeconds);
+            var minCueStart = i == 0 ? double.NegativeInfinity : windowStart;
+            var maxCueStart = windowStart + windowSeconds;
+            AppendCues(sb, windowVttContents[i], (cueStart, _) => cueStart >= minCueStart && cueStart < maxCueStart);
+        }
+
+        return sb.ToString();
+    }
+
+    private static void AppendCues(StringBuilder sb, string vttContent, Func<double, double, bool> keepCue)
+    {
+        var lines = vttContent.Split('\n');
         var i = 0;
 
         while (i < lines.Length)
@@ -43,7 +75,7 @@ internal static class WebVttSegmenter
             {
                 var (cueStart, cueEnd) = ParseCueTiming(line);
 
-                if (cueStart < endTimeSeconds && cueEnd > startTimeSeconds)
+                if (keepCue(cueStart, cueEnd))
                 {
                     sb.AppendLine(line);
                     i++;
@@ -68,8 +100,6 @@ internal static class WebVttSegmenter
                 i++;
             }
         }
-
-        return sb.ToString();
     }
 
     private static void AppendHeader(StringBuilder sb)

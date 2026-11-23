@@ -56,6 +56,10 @@ try
                 || httpContext.Request.Path.StartsWithSegments(HealthProbePaths.Liveness))
                 return LogEventLevel.Verbose;
 
+            if (ex is null
+                && RequestLogLevels.IsSubtitleExtractionInProgress(httpContext.Request.Path, httpContext.Response.StatusCode))
+                return LogEventLevel.Debug;
+
             if (ex is not null || httpContext.Response.StatusCode > 499)
                 return LogEventLevel.Error;
 

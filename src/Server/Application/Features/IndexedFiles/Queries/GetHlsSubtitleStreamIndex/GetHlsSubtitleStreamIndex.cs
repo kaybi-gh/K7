@@ -39,7 +39,7 @@ public class GetHlsSubtitleStreamIndexQueryHandler : IRequestHandler<GetHlsSubti
     private readonly IApplicationDbContext _context;
     private readonly IMediaTranscoder _mediaTranscoder;
     private readonly ILogger<GetHlsSubtitleStreamIndexQueryHandler> _logger;
-    private readonly string _transcodingPath;
+    private readonly PathsConfiguration _paths;
 
     public GetHlsSubtitleStreamIndexQueryHandler(
         IApplicationDbContext context,
@@ -50,8 +50,9 @@ public class GetHlsSubtitleStreamIndexQueryHandler : IRequestHandler<GetHlsSubti
         _context = context;
         _mediaTranscoder = mediaTranscoder;
         _logger = logger;
-        _transcodingPath = pathsOptions.Value.Transcoding
-            ?? throw new InvalidOperationException("Transcoding path not configured");
+        _paths = pathsOptions.Value;
+        if (_paths.Transcoding is null)
+            throw new InvalidOperationException("Transcoding path not configured");
     }
 
     public async Task<HttpContentResult> Handle(GetHlsSubtitleStreamIndexQuery query, CancellationToken cancellationToken)
@@ -70,16 +71,16 @@ public class GetHlsSubtitleStreamIndexQueryHandler : IRequestHandler<GetHlsSubti
             return new EmptyHttpContentResult(404);
         }
 
-        var vttCachePath = HlsSubtitleVttExtractor.GetCachePath(
-            _transcodingPath,
-            entity.Id,
-            query.SubtitleTrackIndex);
-        HlsSubtitleVttExtractor.StartBackgroundExtract(
-            _mediaTranscoder,
-            entity.Path,
-            query.SubtitleTrackIndex,
-            vttCachePath,
-            _logger);
+        if (HlsSubtitleVttExtractor.FindReadyPath(_paths, entity.Id, query.SubtitleTrackIndex) is null)
+        {
+            HlsSubtitleVttExtractor.StartBackgroundExtract(
+                _mediaTranscoder,
+                entity.Path,
+                query.SubtitleTrackIndex,
+                await HlsSubtitleVttExtractor.ResolveExtractionPathAsync(
+                    _context, _paths, entity, query.SubtitleTrackIndex, cancellationToken),
+                _logger);
+        }
 
         var hlsSegments = entity.FileMetadata.GetHlsSegments();
         var totalDurationMs = hlsSegments is { Count: > 0 } segments

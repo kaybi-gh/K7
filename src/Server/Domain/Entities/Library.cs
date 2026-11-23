@@ -17,6 +17,12 @@ public class Library : BaseAuditableEntity
     public bool ThemeSongGenerationEnabled { get; set; } = true;
     public bool SeekbarThumbnailGenerationEnabled { get; set; } = true;
     public bool ChapterExtractionEnabled { get; set; } = true;
+
+    /// <summary>
+    /// Extracts the text subtitle tracks to WebVTT when a file is scanned and keeps them, so
+    /// playback never waits for an extraction. Off by default: it reads every video file once.
+    /// </summary>
+    public bool SubtitlePreExtractionEnabled { get; set; }
     public bool MusicAudioAnalysisEnabled { get; set; } = true;
     public bool TranscodingEnabled { get; set; } = true;
     public bool TransmuxingEnabled { get; set; } = true;

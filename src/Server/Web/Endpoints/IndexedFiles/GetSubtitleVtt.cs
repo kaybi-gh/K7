@@ -16,9 +16,10 @@ public class GetSubtitleVtt : IEndpoint
             [FromServices] ISender sender,
             [FromRoute] Guid id,
             [FromRoute] int subtitleTrackIndex,
+            [FromQuery(Name = GetIndexedFileSubtitleVttQueryUriBuilder.PositionQueryParameter)] double? position,
             CancellationToken cancellationToken) =>
         {
-            return (await sender.Send(new GetSubtitleVttQuery(id, subtitleTrackIndex), cancellationToken))
+            return (await sender.Send(new GetSubtitleVttQuery(id, subtitleTrackIndex, position), cancellationToken))
                 .ToIResult();
         })
         .RequireAuthorization(Policies.StreamAccess)

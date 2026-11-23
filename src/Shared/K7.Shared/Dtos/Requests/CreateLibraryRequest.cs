@@ -19,6 +19,7 @@ public sealed record CreateLibraryRequest
     public bool? ThemeSongGenerationEnabled { get; init; }
     public bool? SeekbarThumbnailGenerationEnabled { get; init; }
     public bool? ChapterExtractionEnabled { get; init; }
+    public bool? SubtitlePreExtractionEnabled { get; init; }
     public bool? MusicAudioAnalysisEnabled { get; init; }
     public bool? TranscodingEnabled { get; init; }
     public bool? TransmuxingEnabled { get; init; }

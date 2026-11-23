@@ -1225,82 +1225,219 @@ window.loadSidecarSubtitleTrack = async function (id, vttUrl, slug) {
     return true;
 };
 
-async function k7FetchAndInjectSidecarVtt(player, id, vttUrl, intendedSlug, loadToken) {
-    const fetchVttText = async function () {
-        if (player._k7SidecarVttCache
-            && player._k7SidecarVttCache.url === vttUrl
-            && typeof player._k7SidecarVttCache.text === 'string') {
-            return player._k7SidecarVttCache.text;
+// Sidecar VTT polling, kept in step with SubtitleVttRetryPolicy (native clients): the
+// server answers 503 while it extracts the track.
+const K7_SIDECAR_FAST_ATTEMPTS = 15;
+const K7_SIDECAR_FAST_DELAY_MS = 1000;
+const K7_SIDECAR_SLOW_DELAY_MS = 3000;
+const K7_SIDECAR_MAX_WAIT_MS = 10 * 60 * 1000;
+
+// Same marker as SubtitleVttFormat.PartialNote: the body only holds the cues around the
+// position sent with the request, the full track is still being extracted.
+const K7_SIDECAR_PARTIAL_NOTE = 'NOTE k7-partial';
+const K7_SIDECAR_PARTIAL_REFRESH_MS = 5000;
+const K7_SIDECAR_MAX_REFRESH_FAILURES = 5;
+
+function k7IsPartialSidecarVtt(text) {
+    return typeof text === 'string' && text.slice(0, 64).indexOf(K7_SIDECAR_PARTIAL_NOTE) !== -1;
+}
+
+// The position lets the server answer with the cues around it before the whole track is
+// extracted. Cue times stay on the media timeline either way.
+function k7SidecarRequestUrl(player, vttUrl) {
+    let position = 0;
+    try {
+        position = Number(player.currentTime()) || 0;
+    } catch (e) {
+    }
+    if (!isFinite(position) || position < 0)
+        position = 0;
+    return vttUrl + (vttUrl.indexOf('?') === -1 ? '?' : '&') + 'position=' + position.toFixed(1);
+}
+
+function k7DecodeSidecarVttBody(body) {
+    if (typeof body === 'string') {
+        const normalized = k7NormalizeWebVttText(body);
+        if (normalized)
+            return normalized;
+        // Bridge may return base64 for byte[]; decode if it does not look like WEBVTT.
+        try {
+            const binary = atob(body);
+            return k7NormalizeWebVttText(new TextDecoder('utf-8').decode(
+                Uint8Array.from(binary, function (c) { return c.charCodeAt(0); })));
+        } catch (e) {
+            return k7NormalizeWebVttText(body);
+        }
+    }
+
+    if (body instanceof ArrayBuffer)
+        return k7NormalizeWebVttText(new TextDecoder('utf-8').decode(new Uint8Array(body)));
+
+    if (body instanceof Uint8Array)
+        return k7NormalizeWebVttText(new TextDecoder('utf-8').decode(body));
+
+    if (Array.isArray(body))
+        return k7NormalizeWebVttText(new TextDecoder('utf-8').decode(new Uint8Array(body)));
+
+    return null;
+}
+
+// Fetches the sidecar VTT, waiting through 503 (extraction in progress) for up to 10 minutes.
+// Returns the WEBVTT text, or null on failure or when isStale() turns true.
+async function k7FetchSidecarVttText(player, vttUrl, isStale) {
+    const startedAt = Date.now();
+    for (let attempt = 1; ; attempt++) {
+        const requestUrl = k7SidecarRequestUrl(player, vttUrl);
+        let status = 0;
+        let body = null;
+
+        if (window.K7 && K7._windowsStreamFetchRef) {
+            const result = await K7._windowsStreamFetchRef.invokeMethodAsync(
+                'FetchStreamAsync',
+                requestUrl,
+                null);
+            if (result) {
+                status = result.statusCode || 0;
+                body = result.body;
+            }
+        } else {
+            const response = await fetch(requestUrl, { credentials: 'include' });
+            status = response.status;
+            if (status >= 200 && status < 300)
+                body = await response.text();
         }
 
-        const maxAttempts = 12;
-        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-            let status = 0;
-            let body = null;
-
-            if (window.K7 && K7._windowsStreamFetchRef) {
-                const result = await K7._windowsStreamFetchRef.invokeMethodAsync(
-                    'FetchStreamAsync',
-                    vttUrl,
-                    null);
-                if (!result) {
-                    status = 0;
-                } else {
-                    status = result.statusCode || 0;
-                    body = result.body;
-                }
-            } else {
-                const response = await fetch(vttUrl, { credentials: 'include' });
-                status = response.status;
-                if (status >= 200 && status < 300)
-                    body = await response.text();
-            }
-
-            if (player._k7SidecarLoadToken !== loadToken)
-                return null;
-
-            if (status === 503 && attempt < maxAttempts) {
-                const exponent = Math.min(attempt - 1, 4);
-                const delay = Math.min(500 * (1 << exponent), 15_000);
-                await new Promise(function (resolve) { setTimeout(resolve, delay); });
-                continue;
-            }
-
-            if (status < 200 || status >= 300 || body == null)
-                return null;
-
-            if (typeof body === 'string') {
-                const normalized = k7NormalizeWebVttText(body);
-                if (normalized)
-                    return normalized;
-                // Bridge may return base64 for byte[]; decode if it does not look like WEBVTT.
-                try {
-                    const binary = atob(body);
-                    return k7NormalizeWebVttText(new TextDecoder('utf-8').decode(
-                        Uint8Array.from(binary, function (c) { return c.charCodeAt(0); })));
-                } catch (e) {
-                    return k7NormalizeWebVttText(body);
-                }
-            }
-
-            if (body instanceof ArrayBuffer)
-                return k7NormalizeWebVttText(new TextDecoder('utf-8').decode(new Uint8Array(body)));
-
-            if (body instanceof Uint8Array)
-                return k7NormalizeWebVttText(new TextDecoder('utf-8').decode(body));
-
-            if (Array.isArray(body))
-                return k7NormalizeWebVttText(new TextDecoder('utf-8').decode(new Uint8Array(body)));
-
+        if (isStale())
             return null;
+
+        if (status === 503) {
+            if (Date.now() - startedAt >= K7_SIDECAR_MAX_WAIT_MS)
+                return null;
+            const delay = attempt <= K7_SIDECAR_FAST_ATTEMPTS
+                ? K7_SIDECAR_FAST_DELAY_MS
+                : K7_SIDECAR_SLOW_DELAY_MS;
+            await new Promise(function (resolve) { setTimeout(resolve, delay); });
+            if (isStale())
+                return null;
+            continue;
         }
 
+        if (status < 200 || status >= 300 || body == null)
+            return null;
+
+        return k7DecodeSidecarVttBody(body);
+    }
+}
+
+// Adds the cues the track does not hold yet. seen remembers what was added, so a refreshed
+// partial VTT (which repeats the earlier cues) never stacks duplicates.
+function k7AddSidecarCues(track, cues, seen) {
+    const CueType = typeof VTTCue !== 'undefined'
+        ? VTTCue
+        : (typeof TextTrackCue !== 'undefined' ? TextTrackCue : null);
+    if (!CueType) {
+        console.warn('loadSidecarSubtitleTrack: VTTCue unavailable');
+        return false;
+    }
+
+    for (let i = 0; i < cues.length; i++) {
+        const key = cues[i].start + '|' + cues[i].end + '|' + cues[i].text;
+        if (seen.has(key))
+            continue;
+        seen.add(key);
+        try {
+            track.addCue(new CueType(cues[i].start, cues[i].end, cues[i].text));
+        } catch (cueErr) {
+        }
+    }
+
+    return true;
+}
+
+// Creates the showing k7-sidecar-* track and fills it. Returns the track, or null.
+async function k7InjectSidecarTrack(player, id, intendedSlug, loadToken, isStale, cues, seen) {
+    if (!await k7WaitForSidecarHost(player, id, loadToken) || isStale())
         return null;
+
+    // No src: avoid Video.js TextTrack XHR (blob fails with credentials, https can 503 once).
+    // manualCleanup true: quality/encode src swaps must not auto-drop the sidecar before
+    // loadedmetadata can re-apply (we remove k7-sidecar-* ourselves).
+    const handle = player.addRemoteTextTrack({
+        kind: 'subtitles',
+        srclang: 'und',
+        label: intendedSlug,
+        id: 'k7-sidecar-' + intendedSlug,
+        mode: 'showing',
+        default: true
+    }, true);
+
+    if (isStale()) {
+        try {
+            if (handle)
+                player.removeRemoteTextTrack(handle.track || handle);
+        } catch (e) {
+        }
+        return null;
+    }
+
+    const track = handle && (handle.track || handle);
+    if (!track) {
+        console.warn('loadSidecarSubtitleTrack: no text track handle');
+        return null;
+    }
+
+    if (!track.id)
+        track.id = 'k7-sidecar-' + intendedSlug;
+
+    if (!k7AddSidecarCues(track, cues, seen))
+        return null;
+
+    track.mode = 'showing';
+    k7AttachSubtitleStyleHooks(player);
+    k7RefreshSubtitleStylesForAllPlayers();
+    return track;
+}
+
+// Resolves after ms, or as soon as the user seeks: a seek usually lands outside the cues
+// of a partial VTT, so the next request must not wait for the timer.
+function k7WaitForSidecarRefresh(player, ms) {
+    return new Promise(function (resolve) {
+        let done = false;
+        let timer = 0;
+        const finish = function () {
+            if (done)
+                return;
+            done = true;
+            clearTimeout(timer);
+            try {
+                player.off('seeked', finish);
+            } catch (e) {
+            }
+            resolve();
+        };
+        timer = setTimeout(finish, ms);
+        try {
+            player.on('seeked', finish);
+        } catch (e) {
+        }
+    });
+}
+
+async function k7FetchAndInjectSidecarVtt(player, id, vttUrl, intendedSlug, loadToken) {
+    // One loader per player: a later call (re-apply after a seek or a source swap) takes
+    // over from the one still polling.
+    player._k7SidecarRunId = (player._k7SidecarRunId || 0) + 1;
+    const runId = player._k7SidecarRunId;
+    const isStale = function () {
+        return player._k7SidecarLoadToken !== loadToken || player._k7SidecarRunId !== runId;
     };
 
     try {
-        const text = await fetchVttText();
-        if (player._k7SidecarLoadToken !== loadToken)
+        const cached = player._k7SidecarVttCache;
+        let text = cached && cached.url === vttUrl && typeof cached.text === 'string'
+            ? cached.text
+            : await k7FetchSidecarVttText(player, vttUrl, isStale);
+        if (isStale())
             return false;
 
         if (!text) {
@@ -1308,65 +1445,67 @@ async function k7FetchAndInjectSidecarVtt(player, id, vttUrl, intendedSlug, load
             return false;
         }
 
-        player._k7SidecarVttCache = { url: vttUrl, text: text };
+        let partial = k7IsPartialSidecarVtt(text);
+        // Only the complete track is reusable as is after a seek or a source swap.
+        if (!partial)
+            player._k7SidecarVttCache = { url: vttUrl, text: text };
 
-        const cues = k7ParseWebVttCues(text);
-        if (cues.length === 0) {
+        let cues = k7ParseWebVttCues(text);
+        // A partial VTT may hold no cue yet (no dialogue around the position): the track is
+        // still created so the cues of the next answers have a place to go.
+        if (cues.length === 0 && !partial) {
             console.warn('loadSidecarSubtitleTrack: zero cues for', vttUrl);
             return false;
         }
 
-        if (!await k7WaitForSidecarHost(player, id, loadToken))
+        let seen = new Set();
+        let track = await k7InjectSidecarTrack(player, id, intendedSlug, loadToken, isStale, cues, seen);
+        if (!track)
             return false;
 
-        // No src: avoid Video.js TextTrack XHR (blob fails with credentials, https can 503 once).
-        // manualCleanup true: quality/encode src swaps must not auto-drop the sidecar before
-        // loadedmetadata can re-apply (we remove k7-sidecar-* ourselves).
-        const handle = player.addRemoteTextTrack({
-            kind: 'subtitles',
-            srclang: 'und',
-            label: intendedSlug,
-            id: 'k7-sidecar-' + intendedSlug,
-            mode: 'showing',
-            default: true
-        }, true);
+        // Partial answer: ask again with the current position until the server returns the
+        // complete track, adding the new cues as playback moves on.
+        let failures = 0;
+        while (partial) {
+            await k7WaitForSidecarRefresh(player, K7_SIDECAR_PARTIAL_REFRESH_MS);
+            if (isStale() || !k7SidecarPlayerIsLive(player, id))
+                return false;
 
-        if (player._k7SidecarLoadToken !== loadToken) {
-            try {
-                if (handle)
-                    player.removeRemoteTextTrack(handle.track || handle);
-            } catch (e) {
+            const next = await k7FetchSidecarVttText(player, vttUrl, isStale);
+            if (isStale())
+                return false;
+
+            if (!next) {
+                failures++;
+                if (failures >= K7_SIDECAR_MAX_REFRESH_FAILURES)
+                    return true;
+                continue;
             }
-            return false;
-        }
 
-        const track = handle && (handle.track || handle);
-        if (!track) {
-            console.warn('loadSidecarSubtitleTrack: no text track handle');
-            return false;
-        }
+            failures = 0;
+            if (next === text)
+                continue;
 
-        if (!track.id)
-            track.id = 'k7-sidecar-' + intendedSlug;
-
-        const CueType = typeof VTTCue !== 'undefined'
-            ? VTTCue
-            : (typeof TextTrackCue !== 'undefined' ? TextTrackCue : null);
-        if (!CueType) {
-            console.warn('loadSidecarSubtitleTrack: VTTCue unavailable');
-            return false;
-        }
-
-        for (let i = 0; i < cues.length; i++) {
-            try {
-                track.addCue(new CueType(cues[i].start, cues[i].end, cues[i].text));
-            } catch (cueErr) {
+            text = next;
+            cues = k7ParseWebVttCues(text);
+            partial = k7IsPartialSidecarVtt(text);
+            if (partial) {
+                k7AddSidecarCues(track, cues, seen);
+                continue;
             }
+
+            // Complete track: rebuild the text track from it, as a load without partial
+            // answers would have done.
+            player._k7SidecarVttCache = { url: vttUrl, text: text };
+            if (cues.length === 0)
+                return true;
+            k7RemoveSidecarRemoteTracks(player);
+            seen = new Set();
+            track = await k7InjectSidecarTrack(player, id, intendedSlug, loadToken, isStale, cues, seen);
+            if (!track)
+                return false;
         }
 
-        track.mode = 'showing';
-        k7AttachSubtitleStyleHooks(player);
-        k7RefreshSubtitleStylesForAllPlayers();
         return true;
     } catch (err) {
         console.warn('loadSidecarSubtitleTrack failed', err);

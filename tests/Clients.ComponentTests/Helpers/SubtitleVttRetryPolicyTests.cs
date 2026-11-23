@@ -33,4 +33,21 @@ public class SubtitleVttRetryPolicyTests
         SubtitleVttRetryPolicy.ShouldGiveUp(SubtitleVttRetryPolicy.MaxTotalWait).Should().BeTrue();
         SubtitleVttRetryPolicy.ShouldGiveUp(TimeSpan.FromMinutes(11)).Should().BeTrue();
     }
+
+    [Test]
+    public void ShouldRefreshPartial_ShouldWaitForTheInterval_WhenPlaybackJustMovesOn()
+    {
+        // 4 s later at double speed: 8 s further, still the cues of the last answer.
+        SubtitleVttRetryPolicy.ShouldRefreshPartial(600, 608, TimeSpan.FromSeconds(4)).Should().BeFalse();
+        SubtitleVttRetryPolicy.ShouldRefreshPartial(600, 605, SubtitleVttRetryPolicy.PartialRefreshInterval)
+            .Should().BeTrue();
+    }
+
+    [TestCase(600, 3600)]
+    [TestCase(3600, 600)]
+    public void ShouldRefreshPartial_ShouldAskAtOnce_AfterASeek(double requestedPosition, double currentPosition)
+    {
+        SubtitleVttRetryPolicy.ShouldRefreshPartial(requestedPosition, currentPosition, TimeSpan.FromMilliseconds(500))
+            .Should().BeTrue();
+    }
 }

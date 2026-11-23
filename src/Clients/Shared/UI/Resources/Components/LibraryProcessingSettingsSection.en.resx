@@ -29,5 +29,7 @@
   <data name="SeekbarThumbnails" xml:space="preserve"><value>Seekbar thumbnail generation</value></data>
   <data name="ChapterExtraction" xml:space="preserve"><value>Chapter extraction</value></data>
   <data name="ChapterExtractionDescription" xml:space="preserve"><value>Extract embedded chapters (MKV, etc.) to show markers on the seekbar.</value></data>
+  <data name="SubtitlePreExtraction" xml:space="preserve"><value>Subtitle pre-extraction at scan</value></data>
+  <data name="SubtitlePreExtractionDescription" xml:space="preserve"><value>Extracts the text subtitles of each video during the scan and keeps them, so they show as soon as playback starts. Reads each file in full once: scans take longer and some disk space is used. Files already indexed are handled on their first playback.</value></data>
   <data name="MusicAudioAnalysis" xml:space="preserve"><value>Music audio analysis</value></data>
 </root>

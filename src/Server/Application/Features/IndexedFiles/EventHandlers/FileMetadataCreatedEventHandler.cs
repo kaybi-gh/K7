@@ -1,7 +1,9 @@
+using K7.Server.Application.Common.Configuration;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
 using K7.Server.Application.Features.IndexedFiles.Commands.ComputeHlsSegments;
 using K7.Server.Application.Features.IndexedFiles.Commands.GenerateThumbnails;
+using K7.Server.Application.Features.IndexedFiles.Commands.PreExtractSubtitles;
 using K7.Server.Application.Features.Medias.Commands.DetectMediaSegments;
 using K7.Server.Application.Helpers;
 using K7.Server.Domain.Entities;
@@ -9,13 +11,15 @@ using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Enums;
 using K7.Server.Domain.Events;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace K7.Server.Application.Features.IndexedFiles.EventHandlers;
 
 public class FileMetadataCreatedEventHandler(
     ILogger<FileMetadataCreatedEventHandler> logger,
     ISender sender,
-    IApplicationDbContext context) : INotificationHandler<FileMetadataCreatedEvent>
+    IApplicationDbContext context,
+    IOptions<PathsConfiguration> pathsOptions) : INotificationHandler<FileMetadataCreatedEvent>
 {
     public async Task Handle(FileMetadataCreatedEvent notification, CancellationToken cancellationToken)
     {
@@ -61,6 +65,33 @@ public class FileMetadataCreatedEventHandler(
                 TriggeredBy = BackgroundTaskTriggeredBy.System,
                 MaxAttempts = 1
             }, cancellationToken);
+        }
+
+        if (notification.FileType == FileType.Video)
+        {
+            // New metadata means a new or changed file: subtitles kept from a previous
+            // version of it no longer match.
+            HlsSubtitleVttExtractor.DeletePersistentCache(pathsOptions.Value, notification.IndexedFile.Id, logger);
+
+            if (library.SubtitlePreExtractionEnabled)
+            {
+                await sender.Send(new CreateBackgroundTaskCommand()
+                {
+                    Request = new PreExtractSubtitlesCommand()
+                    {
+                        Id = notification.IndexedFile.Id
+                    },
+                    TargetEntityId = notification.IndexedFile.Id,
+                    TargetEntityTypeName = nameof(IndexedFile),
+                    // Reads the whole file, like the keyframe scan of the same lane.
+                    Lane = BackgroundTaskLane.FfmpegPrepare,
+                    WorkClass = BackgroundTaskWorkClass.Polish,
+                    TriggeredBy = BackgroundTaskTriggeredBy.System,
+                    MaxAttempts = 1,
+                    // The default (5 min) is shorter than a full read of a large file on slow storage.
+                    TimeoutSeconds = PreExtractSubtitlesCommand.TimeoutSeconds
+                }, cancellationToken);
+            }
         }
 
         if (notification.FileType == FileType.Video && library.IntroDetectionEnabled)

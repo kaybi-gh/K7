@@ -14,6 +14,8 @@ public partial class LibraryProcessingSettingsSection
     [Parameter] public EventCallback<bool> SeekbarThumbnailGenerationEnabledChanged { get; set; }
     [Parameter] public bool ChapterExtractionEnabled { get; set; } = true;
     [Parameter] public EventCallback<bool> ChapterExtractionEnabledChanged { get; set; }
+    [Parameter] public bool SubtitlePreExtractionEnabled { get; set; }
+    [Parameter] public EventCallback<bool> SubtitlePreExtractionEnabledChanged { get; set; }
     [Parameter] public bool MusicAudioAnalysisEnabled { get; set; } = true;
     [Parameter] public EventCallback<bool> MusicAudioAnalysisEnabledChanged { get; set; }
     [Parameter] public bool TranscodingEnabled { get; set; } = true;
@@ -29,6 +31,7 @@ public partial class LibraryProcessingSettingsSection
         || LibraryProcessingSettingsDto.ShowThemeSongGeneration(MediaType)
         || LibraryProcessingSettingsDto.ShowSeekbarThumbnails(MediaType)
         || LibraryProcessingSettingsDto.ShowChapterExtraction(MediaType)
+        || LibraryProcessingSettingsDto.ShowSubtitlePreExtraction(MediaType)
         || LibraryProcessingSettingsDto.ShowMusicAudioAnalysis(MediaType)
         || LibraryProcessingSettingsDto.ShowTranscodeOptions(MediaType);
 

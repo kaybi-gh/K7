@@ -2201,28 +2201,32 @@ public partial class BlazorPage
         string slug,
         CancellationTokenSource cts)
     {
-        var relative = GetIndexedFileSubtitleVttQueryUriBuilder.Build(fileId, trackIndex);
-        var uri = _k7ServerService.GetAbsoluteUri(relative);
-        if (uri is null)
-            return;
-
         // 503 means ffmpeg is still extracting the VTT from the whole file (minutes on a large
         // remux). Poll on the shared schedule, bounded by elapsed time, and retry transient
         // network errors the same way: a fixed 40 attempts used to give up silently and left
         // the selected track off until the user toggled it.
+        // The playback position goes with each poll: the server then answers 200 as soon as
+        // the cues around it are extracted, and serves the HLS subtitle segments of that
+        // range, well before the whole track is ready.
         var started = System.Diagnostics.Stopwatch.StartNew();
         try
         {
             for (var attempt = 0; ; attempt++)
             {
                 cts.Token.ThrowIfCancellationRequested();
+                var uri = _k7ServerService.GetAbsoluteUri(
+                    GetIndexedFileSubtitleVttQueryUriBuilder.Build(fileId, trackIndex, _playerService.CurrentTime));
+                if (uri is null)
+                    return;
+
                 try
                 {
                     using var response = await _k7ServerService.HttpClient.GetAsync(uri, cts.Token);
                     var status = (int)response.StatusCode;
                     if (response.IsSuccessStatusCode)
                     {
-                        // VTT ready: enabling the rendition now loads 200 segments.
+                        // VTT ready (complete, or partial around the position): enabling the
+                        // rendition now loads 200 segments.
                         MainThread.BeginInvokeOnMainThread(() =>
                         {
                             if (!ReferenceEquals(_androidSubtitleWarmCts, cts))

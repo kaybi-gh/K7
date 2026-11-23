@@ -531,6 +531,13 @@ public partial class K7ServerService : IK7ServerService, IMediaService, ILibrary
         response.EnsureSuccessStatusCode();
     }
 
+    public async Task<int> QueueSubtitlePreExtractionAsync(Guid libraryId, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PostAsync($"api/libraries/{libraryId}/subtitle-pre-extraction", null, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<int>(_serializerOptions, cancellationToken);
+    }
+
     public async Task RematchLibraryMediaAsync(Guid libraryId, CancellationToken cancellationToken = default)
     {
         var response = await HttpClient.PostAsync($"api/libraries/{libraryId}/rematch-media", null, cancellationToken);

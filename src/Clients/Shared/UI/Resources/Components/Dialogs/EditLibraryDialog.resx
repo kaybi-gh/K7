@@ -56,4 +56,10 @@
   <data name="RealtimeMonitorHelper" xml:space="preserve"><value>Scanne automatiquement les dossiers dès qu'un fichier est ajouté, modifié ou supprimé.</value></data>
   <data name="AutoScanIntervalLabel" xml:space="preserve"><value>Scan périodique (heures)</value></data>
   <data name="AutoScanIntervalHelper" xml:space="preserve"><value>0 = désactivé. Recommandé sur NAS ou partages réseau où la surveillance temps réel est peu fiable.</value></data>
+  <data name="PreExtractionConfirmTitle" xml:space="preserve"><value>Pré-extraction des sous-titres</value></data>
+  <data name="PreExtractionConfirmMessage" xml:space="preserve"><value>Lancer une tâche pour pré-extraire les sous-titres des fichiers déjà indexés ? Chaque vidéo est lue en entier une fois.</value></data>
+  <data name="PreExtractionConfirmYes" xml:space="preserve"><value>Oui</value></data>
+  <data name="PreExtractionConfirmNo" xml:space="preserve"><value>Non</value></data>
+  <data name="PreExtractionQueued" xml:space="preserve"><value>Pré-extraction lancée pour {0} fichiers.</value></data>
+  <data name="PreExtractionNone" xml:space="preserve"><value>Aucun fichier avec des sous-titres texte.</value></data>
 </root>

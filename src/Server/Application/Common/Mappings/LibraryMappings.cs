@@ -29,6 +29,7 @@ public static class LibraryMappings
             ThemeSongGenerationEnabled = domain.ThemeSongGenerationEnabled,
             SeekbarThumbnailGenerationEnabled = domain.SeekbarThumbnailGenerationEnabled,
             ChapterExtractionEnabled = domain.ChapterExtractionEnabled,
+            SubtitlePreExtractionEnabled = domain.SubtitlePreExtractionEnabled,
             MusicAudioAnalysisEnabled = domain.MusicAudioAnalysisEnabled,
             TranscodingEnabled = domain.TranscodingEnabled,
             TransmuxingEnabled = domain.TransmuxingEnabled,

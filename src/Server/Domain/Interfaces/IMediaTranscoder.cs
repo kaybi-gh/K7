@@ -64,6 +64,29 @@ public interface IMediaTranscoder
         CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Extracts several text subtitle tracks to WebVTT in a single read of the input file.
+    /// Keys are stream indexes, values the output paths.
+    /// </summary>
+    Task ExtractSubtitlesAsVttAsync(
+        string inputFilePath,
+        IReadOnlyDictionary<int, string> outputVttPathsByStreamIndex,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Extracts the cues of a text subtitle track between <paramref name="start"/> and
+    /// <paramref name="end"/> to WebVTT. ffmpeg seeks to the start through the container
+    /// index, so a window far into a large file does not read it from the beginning. Cue
+    /// times stay on the media timeline: they equal those of a full extraction.
+    /// </summary>
+    Task ExtractSubtitleWindowAsVttAsync(
+        string inputFilePath,
+        int subtitleStreamIndex,
+        TimeSpan start,
+        TimeSpan end,
+        string outputVttPath,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Copies a window of an embedded PGS subtitle track to <paramref name="output"/> as a
     /// lossless .sup stream. Timestamps stay on the media timeline, so a window that starts
     /// at 50s carries display sets stamped from 50s. Written as ffmpeg reads the file.

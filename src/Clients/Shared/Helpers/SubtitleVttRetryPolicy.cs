@@ -15,6 +15,15 @@ public static class SubtitleVttRetryPolicy
     /// <summary>Longest a client keeps polling one track before it logs and gives up.</summary>
     public static readonly TimeSpan MaxTotalWait = TimeSpan.FromMinutes(10);
 
+    /// <summary>Delay between two requests while the server only has a partial VTT.</summary>
+    public static readonly TimeSpan PartialRefreshInterval = TimeSpan.FromSeconds(5);
+
+    /// <summary>
+    /// Position change, since the last request, that normal playback cannot produce within
+    /// <see cref="PartialRefreshInterval"/> at any speed: a seek.
+    /// </summary>
+    private const double PartialSeekThresholdSeconds = 30;
+
     private const int FastAttempts = 15;
     private static readonly TimeSpan FastDelay = TimeSpan.FromSeconds(1);
     private static readonly TimeSpan SlowDelay = TimeSpan.FromSeconds(3);
@@ -28,4 +37,17 @@ public static class SubtitleVttRetryPolicy
     public static TimeSpan DelayBeforeRetry(int attempt) => attempt < FastAttempts ? FastDelay : SlowDelay;
 
     public static bool ShouldGiveUp(TimeSpan elapsed) => elapsed >= MaxTotalWait;
+
+    /// <summary>
+    /// When to ask again after a partial answer (cues around the position sent with the
+    /// request, see <c>SubtitleVttFormat.PartialNote</c>): at a regular interval, so the cues
+    /// follow playback and the complete track replaces them once extracted, and at once after
+    /// a seek, which usually lands outside the cues the client holds.
+    /// </summary>
+    public static bool ShouldRefreshPartial(
+        double requestedPositionSeconds,
+        double currentPositionSeconds,
+        TimeSpan sinceRequest) =>
+        sinceRequest >= PartialRefreshInterval
+        || Math.Abs(currentPositionSeconds - requestedPositionSeconds) > PartialSeekThresholdSeconds;
 }

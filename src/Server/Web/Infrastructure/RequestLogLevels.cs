@@ -17,8 +17,20 @@ public static class RequestLogLevels
         "/api/metadata-pictures/",
         "/rest/getCoverArt",
         "/rest/stream",
-        "/rest/download"
+        "/rest/download",
+        // Sidecar subtitles: clients poll while a track is being extracted.
+        "/subtitles/"
     ];
+
+    /// <summary>
+    /// A 503 on a WebVTT path means "extraction in progress, ask again", which clients do
+    /// every second. It is the normal flow, not a server error: a slow extraction is reported
+    /// once by the extractor itself.
+    /// </summary>
+    public static bool IsSubtitleExtractionInProgress(PathString path, int statusCode) =>
+        statusCode == StatusCodes.Status503ServiceUnavailable
+        && path.Value is { } value
+        && value.EndsWith(".vtt", StringComparison.OrdinalIgnoreCase);
 
     public static bool IsHighVolumePath(PathString path)
     {

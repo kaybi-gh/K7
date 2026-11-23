@@ -17,6 +17,7 @@ public partial class BackgroundTasksHelpDialog
         "CreateFileMetadatasCommand",
         "ExtractChaptersCommand",
         "ComputeHlsSegmentsCommand",
+        "PreExtractSubtitlesCommand",
         "DetectMediaSegmentsCommand",
         "ExtractSerieThemeSongCommand",
         "AnalyzeMusicTrackAudioCommand"

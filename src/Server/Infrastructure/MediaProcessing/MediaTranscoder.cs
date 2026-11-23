@@ -988,37 +988,90 @@ public class MediaTranscoder : IMediaTranscoder
         string outputVttPath,
         CancellationToken cancellationToken = default)
     {
-        var outputDir = Path.GetDirectoryName(outputVttPath)!;
-        Directory.CreateDirectory(outputDir);
-
         _logger.LogInformation(
             "Extracting subtitle stream {StreamIndex} from {Input} to {Output}",
             subtitleStreamIndex, inputFilePath, outputVttPath);
 
-        var stderrLines = new List<string>();
-
-        var result = await FFMpegArguments
-            .FromFileInput(inputFilePath, verifyExists: true)
-            .OutputToFile(outputVttPath, overwrite: true, options =>
-            {
-                options.WithCustomArgument($"-map 0:{subtitleStreamIndex}");
-                options.WithCustomArgument("-c:s webvtt");
-            })
-            .NotifyOnOutput((output) => _logger.LogDebug("FFmpeg subtitle stdout: {Output}", output))
-            .NotifyOnError((error) => stderrLines.Add(error))
-            .CancellableThrough(cancellationToken)
-            .ProcessAsynchronously(throwOnError: false);
-
-        if (!result || !File.Exists(outputVttPath))
-        {
-            var stderr = string.Join(Environment.NewLine, stderrLines);
-            _logger.LogError(
-                "Failed to extract subtitle stream {StreamIndex} from {Input}. FFmpeg stderr: {Stderr}",
-                subtitleStreamIndex, inputFilePath, stderr);
-            throw new InvalidOperationException($"FFmpeg failed to extract subtitle stream {subtitleStreamIndex}");
-        }
+        await RunSubtitleVttExtractionAsync(
+            inputFilePath,
+            [new KeyValuePair<int, string>(subtitleStreamIndex, outputVttPath)],
+            window: null,
+            cancellationToken);
 
         _logger.LogInformation("Subtitle extraction completed: {Output}", outputVttPath);
+    }
+
+    public async Task ExtractSubtitlesAsVttAsync(
+        string inputFilePath,
+        IReadOnlyDictionary<int, string> outputVttPathsByStreamIndex,
+        CancellationToken cancellationToken = default)
+    {
+        if (outputVttPathsByStreamIndex.Count == 0)
+            return;
+
+        var streamIndexes = string.Join(",", outputVttPathsByStreamIndex.Keys);
+        _logger.LogInformation(
+            "Extracting subtitle streams {StreamIndexes} from {Input} in one pass",
+            streamIndexes, inputFilePath);
+
+        await RunSubtitleVttExtractionAsync(
+            inputFilePath,
+            [.. outputVttPathsByStreamIndex],
+            window: null,
+            cancellationToken);
+
+        _logger.LogInformation(
+            "Subtitle extraction completed for streams {StreamIndexes} of {Input}",
+            streamIndexes, inputFilePath);
+    }
+
+    public async Task ExtractSubtitleWindowAsVttAsync(
+        string inputFilePath,
+        int subtitleStreamIndex,
+        TimeSpan start,
+        TimeSpan end,
+        string outputVttPath,
+        CancellationToken cancellationToken = default)
+    {
+        _logger.LogDebug(
+            "Extracting subtitle stream {StreamIndex} from {Input} between {Start} and {End}",
+            subtitleStreamIndex, inputFilePath, start, end);
+
+        await RunSubtitleVttExtractionAsync(
+            inputFilePath,
+            [new KeyValuePair<int, string>(subtitleStreamIndex, outputVttPath)],
+            (start, end),
+            cancellationToken);
+    }
+
+    private async Task RunSubtitleVttExtractionAsync(
+        string inputFilePath,
+        IReadOnlyList<KeyValuePair<int, string>> outputs,
+        (TimeSpan Start, TimeSpan End)? window,
+        CancellationToken cancellationToken)
+    {
+        if (!File.Exists(inputFilePath))
+            throw new FileNotFoundException("Input file not found.", inputFilePath);
+
+        foreach (var output in outputs)
+            Directory.CreateDirectory(Path.GetDirectoryName(output.Value)!);
+
+        var stderrLines = new List<string>();
+        var exitCode = await SafeProcessRunner.RunAsync(
+            GlobalFFOptions.GetFFMpegBinaryPath(),
+            FfmpegSubtitleVttArgs.Build(inputFilePath, outputs, window),
+            onStderr: line => stderrLines.Add(line),
+            cancellationToken: cancellationToken);
+
+        if (exitCode != 0 || outputs.Any(output => !File.Exists(output.Value)))
+        {
+            var streamIndexes = string.Join(",", outputs.Select(output => output.Key));
+            var stderr = string.Join(Environment.NewLine, stderrLines);
+            _logger.LogError(
+                "Failed to extract subtitle streams {StreamIndexes} from {Input}. FFmpeg stderr: {Stderr}",
+                streamIndexes, inputFilePath, stderr);
+            throw new InvalidOperationException($"FFmpeg failed to extract subtitle stream {streamIndexes}");
+        }
     }
 
     public async Task ExtractPgsSubtitleWindowAsync(

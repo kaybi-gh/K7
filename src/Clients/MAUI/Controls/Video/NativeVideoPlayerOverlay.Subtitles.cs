@@ -1,5 +1,6 @@
 using K7.Clients.MAUI.Playback;
 using K7.Clients.Shared.Helpers;
+using K7.Shared.Constants;
 using K7.Shared.Dtos;
 using K7.Shared.Dtos.Entities.Metadatas.Files.Tracks;
 using K7.Shared.Enums;
@@ -12,6 +13,9 @@ public sealed partial class NativeVideoPlayerOverlay
     private readonly Label _sidecarSubtitleLabel = new();
     private IReadOnlyList<WebVttCue> _sidecarCues = [];
 #if WINDOWS || LINUX
+    // How often the position is checked between two requests of a partial VTT (seek detection).
+    private static readonly TimeSpan PartialSidecarPollInterval = TimeSpan.FromMilliseconds(500);
+
     private Guid? _sidecarFileId;
     private int? _sidecarTrackIndex;
 #endif
@@ -236,49 +240,82 @@ public sealed partial class NativeVideoPlayerOverlay
         if (_server is null)
             return;
 
-        var relative = GetIndexedFileSubtitleVttQueryUriBuilder.Build(fileId, track.Index);
-        var uri = _server.GetAbsoluteUri(relative);
-        if (uri is null)
-            return;
+        var server = _server;
 
         // 503 means ffmpeg is still extracting the VTT from the whole file (minutes on a large
         // remux). Poll on the shared schedule, bounded by elapsed time, and retry transient
         // network errors the same way: 8 polls used to give up silently and left the selected
         // track off until the user toggled it.
+        // The position sent with each request lets the server answer early with a partial VTT
+        // (the cues around that position). Those are shown at once, and the request is
+        // repeated until the complete track comes back.
         var started = System.Diagnostics.Stopwatch.StartNew();
+        string? shownVtt = null;
         try
         {
             for (var attempt = 0; ; attempt++)
             {
                 cts.Token.ThrowIfCancellationRequested();
+                var requestedPosition = _player.CurrentTime;
+                var uri = server.GetAbsoluteUri(
+                    GetIndexedFileSubtitleVttQueryUriBuilder.Build(fileId, track.Index, requestedPosition));
+                if (uri is null)
+                    return;
+
                 try
                 {
-                    using var response = await _server.HttpClient.GetAsync(uri, cts.Token);
+                    using var response = await server.HttpClient.GetAsync(uri, cts.Token);
                     if (response.IsSuccessStatusCode)
                     {
                         var vtt = await response.Content.ReadAsStringAsync(cts.Token);
                         if (!ReferenceEquals(_sidecarLoadCts, cts))
                             return;
 
-                        _sidecarCues = WebVttCueParser.Parse(vtt);
-                        VlcPlayerLog.Info(
-                            "sidecar vtt cues=" + _sidecarCues.Count + " track=" + track.Index);
-                        MainThread.BeginInvokeOnMainThread(() =>
+                        var partial = SubtitleVttFormat.IsPartial(vtt);
+                        if (!string.Equals(vtt, shownVtt, StringComparison.Ordinal))
                         {
-                            if (!ReferenceEquals(_sidecarLoadCts, cts))
-                                return;
-                            ApplySidecarSubtitleStyle();
-                            UpdateSidecarCue(_player.CurrentTime);
-                            NotifySidecarTextReady(_sidecarCues.Count > 0);
-                        });
-                        return;
+                            var firstAnswer = shownVtt is null;
+                            shownVtt = vtt;
+                            _sidecarCues = WebVttCueParser.Parse(vtt);
+                            VlcPlayerLog.Info(
+                                "sidecar vtt cues=" + _sidecarCues.Count + " track=" + track.Index
+                                + (partial ? " partial" : string.Empty));
+                            MainThread.BeginInvokeOnMainThread(() =>
+                            {
+                                if (!ReferenceEquals(_sidecarLoadCts, cts))
+                                    return;
+                                if (firstAnswer)
+                                    ApplySidecarSubtitleStyle();
+                                UpdateSidecarCue(_player.CurrentTime);
+                                // A partial answer may hold no cue yet (no dialogue around
+                                // the position): the track is live all the same.
+                                if (firstAnswer || !partial)
+                                    NotifySidecarTextReady(partial || _sidecarCues.Count > 0);
+                            });
+                        }
+
+                        if (!partial)
+                            return;
+
+                        var sinceRequest = System.Diagnostics.Stopwatch.StartNew();
+                        while (!SubtitleVttRetryPolicy.ShouldRefreshPartial(
+                            requestedPosition, _player.CurrentTime, sinceRequest.Elapsed))
+                        {
+                            await Task.Delay(PartialSidecarPollInterval, cts.Token);
+                        }
+
+                        // A new request: the 503 wait budget starts over.
+                        started.Restart();
+                        attempt = -1;
+                        continue;
                     }
 
                     if (!SubtitleVttRetryPolicy.IsExtractionInProgress((int)response.StatusCode))
                     {
                         VlcPlayerLog.Warn(
                             "sidecar vtt fail status=" + (int)response.StatusCode + " track=" + track.Index);
-                        MainThread.BeginInvokeOnMainThread(() => NotifySidecarTextReady(false));
+                        if (shownVtt is null)
+                            MainThread.BeginInvokeOnMainThread(() => NotifySidecarTextReady(false));
                         return;
                     }
                 }
@@ -293,7 +330,8 @@ public sealed partial class NativeVideoPlayerOverlay
                     VlcPlayerLog.Warn(
                         "sidecar vtt gave up track=" + track.Index
                         + " after " + started.Elapsed.TotalSeconds.ToString("F0") + "s");
-                    MainThread.BeginInvokeOnMainThread(() => NotifySidecarTextReady(false));
+                    if (shownVtt is null)
+                        MainThread.BeginInvokeOnMainThread(() => NotifySidecarTextReady(false));
                     return;
                 }
 

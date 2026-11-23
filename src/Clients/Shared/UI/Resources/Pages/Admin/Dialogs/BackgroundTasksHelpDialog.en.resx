@@ -44,6 +44,7 @@
   <data name="TaskHelp_CreateFileMetadatasCommand" xml:space="preserve"><value>Extracts container metadata (ffprobe) for an indexed file.</value></data>
   <data name="TaskHelp_ExtractChaptersCommand" xml:space="preserve"><value>Extracts embedded file chapters into metadata.</value></data>
   <data name="TaskHelp_ComputeHlsSegmentsCommand" xml:space="preserve"><value>Computes HLS / keyframe segments for transmuxing.</value></data>
+  <data name="TaskHelp_PreExtractSubtitlesCommand" xml:space="preserve"><value>Extracts the text subtitles of the file to WebVTT so they are available as soon as playback starts.</value></data>
   <data name="TaskHelp_DetectMediaSegmentsCommand" xml:space="preserve"><value>Detects intros and outros for a season (eligible episodes).</value></data>
   <data name="TaskHelp_ExtractSerieThemeSongCommand" xml:space="preserve"><value>Generates a serie theme song from an Intro segment.</value></data>
   <data name="TaskHelp_AnalyzeMusicTrackAudioCommand" xml:space="preserve"><value>Runs audio analysis (AudioMuse) on a music track for search and radios.</value></data>

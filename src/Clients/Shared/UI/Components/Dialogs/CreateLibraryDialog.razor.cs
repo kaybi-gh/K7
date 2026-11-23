@@ -38,6 +38,7 @@ public partial class CreateLibraryDialog
     private bool _themeSongGenerationEnabled = true;
     private bool _seekbarThumbnailGenerationEnabled = true;
     private bool _chapterExtractionEnabled = true;
+    private bool _subtitlePreExtractionEnabled;
     private bool _musicAudioAnalysisEnabled = true;
     private bool _transcodingEnabled = true;
     private bool _transmuxingEnabled = true;
@@ -200,6 +201,7 @@ public partial class CreateLibraryDialog
             ThemeSongGenerationEnabled = _themeSongGenerationEnabled,
             SeekbarThumbnailGenerationEnabled = _seekbarThumbnailGenerationEnabled,
             ChapterExtractionEnabled = _chapterExtractionEnabled,
+            SubtitlePreExtractionEnabled = _subtitlePreExtractionEnabled,
             MusicAudioAnalysisEnabled = _musicAudioAnalysisEnabled,
             TranscodingEnabled = _transcodingEnabled,
             TransmuxingEnabled = _transmuxingEnabled,

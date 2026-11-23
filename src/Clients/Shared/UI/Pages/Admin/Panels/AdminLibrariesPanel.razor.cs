@@ -365,6 +365,7 @@ public partial class AdminLibrariesPanel : IDisposable
             { x => x.ThemeSongGenerationEnabled, library.ThemeSongGenerationEnabled },
             { x => x.SeekbarThumbnailGenerationEnabled, library.SeekbarThumbnailGenerationEnabled },
             { x => x.ChapterExtractionEnabled, library.ChapterExtractionEnabled },
+            { x => x.SubtitlePreExtractionEnabled, library.SubtitlePreExtractionEnabled },
             { x => x.MusicAudioAnalysisEnabled, library.MusicAudioAnalysisEnabled },
             { x => x.TranscodingEnabled, library.TranscodingEnabled },
             { x => x.TransmuxingEnabled, library.TransmuxingEnabled },

@@ -97,6 +97,7 @@
   <data name="TaskType_DetectMediaSegmentsCommand" xml:space="preserve"><value>Détection d'intros/outros</value></data>
   <data name="TaskType_ExtractSerieThemeSongCommand" xml:space="preserve"><value>Génération de thème musical</value></data>
   <data name="TaskType_ExtractChaptersCommand" xml:space="preserve"><value>Extraction des chapitres</value></data>
+  <data name="TaskType_PreExtractSubtitlesCommand" xml:space="preserve"><value>Pré-extraction des sous-titres</value></data>
   <data name="TaskType_RematchLibraryMediaCommand" xml:space="preserve"><value>Rematch de bibliothèque</value></data>
   <data name="TaskType_RefreshPersonMetadataCommand" xml:space="preserve"><value>Rafraîchissement des métadonnées d'artiste</value></data>
   <data name="TaskType_MergeDuplicateExternalIdsCommand" xml:space="preserve"><value>Fusion des doublons</value></data>

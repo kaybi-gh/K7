@@ -12,7 +12,14 @@ using Microsoft.Extensions.Options;
 
 namespace K7.Server.Application.Features.IndexedFiles.Queries.GetSubtitleVtt;
 
-public record GetSubtitleVttQuery(Guid Id, int SubtitleTrackIndex) : IRequest<HttpContentResult>;
+/// <param name="Id">Indexed file.</param>
+/// <param name="SubtitleTrackIndex">Stream index of a text subtitle track.</param>
+/// <param name="PositionSeconds">
+/// Playback position of the caller. When set and the track is not fully extracted yet, the
+/// answer may be a partial VTT (see <see cref="K7.Shared.Constants.SubtitleVttFormat"/>) with
+/// the cues around that position. Without it the answer is the complete track or a 503.
+/// </param>
+public record GetSubtitleVttQuery(Guid Id, int SubtitleTrackIndex, double? PositionSeconds = null) : IRequest<HttpContentResult>;
 
 public class GetSubtitleVttQueryHandler : IRequestHandler<GetSubtitleVttQuery, HttpContentResult>
 {
@@ -22,7 +29,7 @@ public class GetSubtitleVttQueryHandler : IRequestHandler<GetSubtitleVttQuery, H
     private readonly ILogger<GetSubtitleVttQueryHandler> _logger;
     private readonly IPeerAuthorizationService _peerAuthorization;
     private readonly IPeerClient _peerClient;
-    private readonly string _transcodingPath;
+    private readonly PathsConfiguration _paths;
 
     public GetSubtitleVttQueryHandler(
         IApplicationDbContext context,
@@ -39,8 +46,9 @@ public class GetSubtitleVttQueryHandler : IRequestHandler<GetSubtitleVttQuery, H
         _logger = logger;
         _peerAuthorization = peerAuthorization;
         _peerClient = peerClient;
-        _transcodingPath = pathsOptions.Value.Transcoding
-            ?? throw new InvalidOperationException("Transcoding path not configured");
+        _paths = pathsOptions.Value;
+        if (_paths.Transcoding is null)
+            throw new InvalidOperationException("Transcoding path not configured");
     }
 
     public async Task<HttpContentResult> Handle(GetSubtitleVttQuery query, CancellationToken cancellationToken)
@@ -69,12 +77,8 @@ public class GetSubtitleVttQueryHandler : IRequestHandler<GetSubtitleVttQuery, H
         if (!file.Exists)
             return new EmptyHttpContentResult(404);
 
-        var vttCachePath = HlsSubtitleVttExtractor.GetCachePath(
-            _transcodingPath,
-            entity.Id,
-            query.SubtitleTrackIndex);
-
-        if (!HlsSubtitleVttExtractor.IsReady(vttCachePath))
+        var vttCachePath = HlsSubtitleVttExtractor.FindReadyPath(_paths, entity.Id, query.SubtitleTrackIndex);
+        if (vttCachePath is null)
         {
             // Never block: extract in the background and let the client poll. Blocking here
             // makes Android/web wait on ffmpeg before playback and stalls the request thread.
@@ -86,8 +90,27 @@ public class GetSubtitleVttQueryHandler : IRequestHandler<GetSubtitleVttQuery, H
                 _mediaTranscoder,
                 entity.Path,
                 query.SubtitleTrackIndex,
-                vttCachePath,
+                await HlsSubtitleVttExtractor.ResolveExtractionPathAsync(
+                    _context, _paths, entity, query.SubtitleTrackIndex, cancellationToken),
                 _logger);
+
+            // The full extraction reads the whole file. A client that tells where playback is
+            // gets the cues around that position as soon as their window is extracted.
+            if (query.PositionSeconds is double positionSeconds)
+            {
+                var partialVtt = await HlsSubtitleVttExtractor.ReadPartialAsync(
+                    _mediaTranscoder,
+                    entity.Path,
+                    _paths.Transcoding,
+                    entity.Id,
+                    query.SubtitleTrackIndex,
+                    positionSeconds,
+                    _logger,
+                    cancellationToken);
+                if (partialVtt is not null)
+                    return new TextHttpContentResult(partialVtt, "text/vtt; charset=utf-8");
+            }
+
             return new TextHttpContentResult(
                 "Subtitle extract in progress",
                 "text/plain",
