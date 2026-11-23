@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/sdk:10.0-noble@sha256:212fe4cb74627d5adf9817a4088906ae3edff1bd853bb27565d4b46731efe61e AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0-noble@sha256:2b1e13a22e46b55117f9cdb4b38e73172de08a30370166c8227d06cdaff82473 AS build
 WORKDIR /src
 
 COPY Directory.Build.props Directory.Packages.props global.json ./
@@ -18,7 +18,7 @@ RUN dotnet publish "tools/K7.Import/K7.Import.csproj" \
     -p:Version=${APP_VERSION}
 
 
-FROM mcr.microsoft.com/dotnet/runtime:10.0-noble@sha256:4f1f30cf0bb4ab0c8b2daa84613051683456f8df4a9bf7c812e20d74962992ac AS final
+FROM mcr.microsoft.com/dotnet/runtime:10.0-noble@sha256:21bf94ddcec8efebe4ffa64a6bfd30fc270ee87f54277aa08210e4a1d5a0c560 AS final
 WORKDIR /app
 COPY --from=build /publish .
 LABEL org.opencontainers.image.source="https://github.com/kaybi-gh/K7"

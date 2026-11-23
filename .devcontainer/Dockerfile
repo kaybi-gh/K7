@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/sdk:10.0-noble@sha256:212fe4cb74627d5adf9817a4088906ae3edff1bd853bb27565d4b46731efe61e
+FROM mcr.microsoft.com/dotnet/sdk:10.0-noble@sha256:2b1e13a22e46b55117f9cdb4b38e73172de08a30370166c8227d06cdaff82473
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends ffmpeg curl git ca-certificates \
