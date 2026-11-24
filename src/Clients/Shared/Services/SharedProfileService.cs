@@ -11,7 +11,8 @@ namespace K7.Clients.Shared.Services;
 public class SharedProfileService(
     ISharedProfileApi api,
     ISharedProfileLocalCache cache,
-    ISharedProfileSessionService? session = null) : ISharedProfileService
+    ISharedProfileSessionService? session = null,
+    ISharedProfileDevicePinService? pins = null) : ISharedProfileService
 {
     public async Task<IReadOnlyList<SharedProfileDto>> GetSharedProfilesAsync(CancellationToken cancellationToken = default)
     {
@@ -39,9 +40,7 @@ public class SharedProfileService(
     public async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
     {
         await api.DeleteSharedProfileAsync(id, cancellationToken);
-        if (session?.ActiveGroupId == id)
-            session.ClearActiveGroup();
-
+        ForgetLocal(id);
         await cache.RefreshAsync(cancellationToken);
     }
 
@@ -54,9 +53,7 @@ public class SharedProfileService(
     public async Task LeaveAsync(Guid id, Guid? newHostUserId = null, CancellationToken cancellationToken = default)
     {
         await api.LeaveSharedProfileAsync(id, new LeaveSharedProfileRequest { NewHostUserId = newHostUserId }, cancellationToken);
-        if (session?.ActiveGroupId == id)
-            session.ClearActiveGroup();
-
+        ForgetLocal(id);
         await cache.RefreshAsync(cancellationToken);
     }
 
@@ -75,6 +72,9 @@ public class SharedProfileService(
             return group.PinHash is not null && PinVerifier.Verify(group.PinHash, pin);
         }
     }
+
+    public Task<bool?> ProfileExistsAsync(Guid id, CancellationToken cancellationToken = default) =>
+        api.SharedProfileExistsAsync(id, cancellationToken);
 
     public Task<VideoPlaybackPolicySettingsDto> GetVideoPlaybackPolicyAsync(Guid id, CancellationToken cancellationToken = default) =>
         api.GetSharedProfileVideoPlaybackPolicyAsync(id, cancellationToken);
@@ -130,6 +130,15 @@ public class SharedProfileService(
         await api.RemoveSharedProfileAvatarAsync(id, cancellationToken);
         await cache.RefreshAsync(cancellationToken);
         RefreshActiveSession(id);
+    }
+
+    private void ForgetLocal(Guid id)
+    {
+        if (session?.ActiveGroupId == id)
+            session.ClearActiveGroup();
+
+        cache.Remove(id);
+        pins?.SetPinned(id, false);
     }
 
     private void RefreshActiveSession(Guid id)

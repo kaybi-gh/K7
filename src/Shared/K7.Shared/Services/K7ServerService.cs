@@ -628,6 +628,29 @@ public partial class K7ServerService : IK7ServerService, IMediaService, ILibrary
         return response.IsSuccessStatusCode;
     }
 
+    public async Task<bool?> SharedProfileExistsAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var response = await HttpClient.GetAsync($"api/shared-profiles/{id}/exists", cancellationToken);
+            if (response.StatusCode == System.Net.HttpStatusCode.NoContent)
+                return true;
+
+            if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+                return false;
+
+            return null;
+        }
+        catch (HttpRequestException)
+        {
+            return null;
+        }
+        catch (TaskCanceledException)
+        {
+            return null;
+        }
+    }
+
     public async Task LeaveSharedProfileAsync(Guid id, LeaveSharedProfileRequest request, CancellationToken cancellationToken = default)
     {
         var response = await HttpClient.PostAsJsonAsync($"api/shared-profiles/{id}/leave", request, _serializerOptions, cancellationToken);

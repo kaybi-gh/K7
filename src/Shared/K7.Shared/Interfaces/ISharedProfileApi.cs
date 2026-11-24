@@ -15,6 +15,11 @@ public interface ISharedProfileApi
     Task DeleteSharedProfileAsync(Guid id, CancellationToken cancellationToken = default);
     Task SetSharedProfilePinAsync(Guid id, SetSharedProfilePinRequest request, CancellationToken cancellationToken = default);
     Task<bool> VerifySharedProfilePinAsync(Guid id, string pin, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// True when the profile still exists, false when it does not, null when the server cannot be asked.
+    /// </summary>
+    Task<bool?> SharedProfileExistsAsync(Guid id, CancellationToken cancellationToken = default);
     Task LeaveSharedProfileAsync(Guid id, LeaveSharedProfileRequest request, CancellationToken cancellationToken = default);
     Task<VideoPlaybackPolicySettingsDto> GetSharedProfileVideoPlaybackPolicyAsync(Guid id, CancellationToken cancellationToken = default);
     Task UpdateSharedProfileVideoPlaybackPolicyAsync(Guid id, VideoPlaybackPolicySettingsDto settings, CancellationToken cancellationToken = default);

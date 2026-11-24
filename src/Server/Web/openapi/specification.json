@@ -3059,6 +3059,30 @@
         }
       }
     },
+    "/api/shared-profiles/{id}/exists": {
+      "get": {
+        "tags": [
+          "SharedProfiles"
+        ],
+        "operationId": "SharedProfileExistsEndpoint",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/shared-profiles/{id}/video-playback-policy": {
       "get": {
         "tags": [

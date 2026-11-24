@@ -1,10 +1,13 @@
 using System.Net.Http;
+using System.Text.Json;
 using K7.Clients.Shared.Helpers;
+using K7.Clients.Shared.UI;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Clients.Shared.Services;
 using K7.Clients.Shared.UI.Components;
 using K7.Clients.Shared.UI.Components.Dialogs;
+using K7.Clients.Shared.UI.Helpers;
 using K7.Clients.Shared.UI.Extensions;
 using K7.Server.Domain.Enums;
 using K7.Shared;
@@ -15,7 +18,7 @@ using Microsoft.AspNetCore.Components.Authorization;
 
 namespace K7.Clients.Shared.UI.Pages;
 
-public partial class SelectProfile
+public partial class SelectProfile : IAsyncDisposable
 {
     private const string ProfileSelectKindUser = "user";
     private const string ProfileSelectKindGroup = "group";
@@ -34,9 +37,16 @@ public partial class SelectProfile
     [Inject] private IUserAdminService UserAdminService { get; set; } = default!;
     [Inject] private IDeviceStorageService Storage { get; set; } = default!;
     [Inject] private ISpatialNavService SpatialNav { get; set; } = default!;
+    [Inject] private IStringLocalizer<SharedResource> S { get; set; } = default!;
+
+    private readonly record struct PickerEntry(string Token, LocalUser? User, SharedProfileDto? Group);
 
     private List<LocalUser> _users = [];
     private List<SharedProfileDto> _pinnedGroups = [];
+    private List<PickerEntry> _entries = [];
+    private List<PickerEntry>? _editBaseline;
+    private bool _editing;
+    private SelectionModeKeyboardBinder? _editBackBinder;
     private bool _singleUserMode;
     private bool _loading;
     private bool _isTv;
@@ -75,7 +85,7 @@ public partial class SelectProfile
             return;
         }
 
-        _users = LocalUserService.GetAll();
+        ReloadLocalUsers();
         _singleUserMode = LocalUserService.IsSingleUserMode;
         // Same path as local users: device storage only, before the first await,
         // so a pinned shared profile is in the first paint.
@@ -137,6 +147,50 @@ public partial class SelectProfile
         _pinnedGroups = SharedProfileCache.GetCached()
             .Where(g => pinnedIds.Contains(g.Id))
             .ToList();
+        RebuildEntries();
+    }
+
+    private void ReloadLocalUsers()
+    {
+        _users = LocalUserService.GetAll();
+        RebuildEntries();
+    }
+
+    private void RebuildEntries()
+    {
+        if (_editing)
+            return;
+
+        var raw = new List<PickerEntry>(_users.Count + _pinnedGroups.Count);
+        foreach (var user in _users)
+            raw.Add(new PickerEntry(ProfilePickerOrder.User(user.IdentityUserId), user, null));
+
+        foreach (var group in _pinnedGroups)
+            raw.Add(new PickerEntry(ProfilePickerOrder.Group(group.Id), null, group));
+
+        _entries = ProfilePickerOrder.Arrange(raw, entry => entry.Token, ReadOrder());
+    }
+
+    private List<string> ReadOrder()
+    {
+        var json = Storage.Get(PreferenceKeys.PROFILE_PICKER_ORDER);
+        if (string.IsNullOrEmpty(json))
+            return [];
+
+        try
+        {
+            return JsonSerializer.Deserialize<List<string>>(json) ?? [];
+        }
+        catch
+        {
+            return [];
+        }
+    }
+
+    private void SaveOrder()
+    {
+        var tokens = _entries.Select(entry => entry.Token).ToList();
+        Storage.Set(PreferenceKeys.PROFILE_PICKER_ORDER, JsonSerializer.Serialize(tokens));
     }
 
     private void ComputeInitialFocusTarget()
@@ -162,18 +216,18 @@ public partial class SelectProfile
 
         if (kind == ProfileSelectKindGroup && Guid.TryParse(id, out var groupId))
         {
-            var groupIndex = _pinnedGroups.FindIndex(g => g.Id == groupId);
+            var groupIndex = _entries.FindIndex(entry => entry.Group?.Id == groupId);
             if (groupIndex < 0)
                 return false;
 
             _initialFocusGroupId = groupId;
-            _initialFocusCarouselIndex = _users.Count + groupIndex;
+            _initialFocusCarouselIndex = groupIndex;
             return true;
         }
 
         if (kind == ProfileSelectKindUser)
         {
-            var userIndex = _users.FindIndex(u => u.IdentityUserId == id);
+            var userIndex = _entries.FindIndex(entry => entry.User?.IdentityUserId == id);
             if (userIndex < 0)
                 return false;
 
@@ -187,15 +241,14 @@ public partial class SelectProfile
 
     private void FocusFirstCarouselItem()
     {
-        if (_users.Count > 0)
+        if (_entries.Count > 0)
         {
-            _initialFocusUserId = _users[0].IdentityUserId;
-            return;
-        }
+            var first = _entries[0];
+            if (first.User is not null)
+                _initialFocusUserId = first.User.IdentityUserId;
+            else if (first.Group is not null)
+                _initialFocusGroupId = first.Group.Id;
 
-        if (_pinnedGroups.Count > 0)
-        {
-            _initialFocusGroupId = _pinnedGroups[0].Id;
             return;
         }
 
@@ -224,7 +277,8 @@ public partial class SelectProfile
 
             if (_initialFocusCarouselIndex > 0)
             {
-                var itemCount = _users.Count + _pinnedGroups.Count + 1;
+                var trailing = _editing ? 2 : _entries.Count > 0 ? 2 : 1;
+                var itemCount = _entries.Count + trailing;
                 if (_initialFocusCarouselIndex < itemCount)
                     await _carousel.ScrollToIndexAsync(_initialFocusCarouselIndex);
             }
@@ -263,6 +317,9 @@ public partial class SelectProfile
 
     private async Task SelectUserAsync(LocalUser user)
     {
+        if (_editing)
+            return;
+
         if (_selecting)
         {
             PerfTrace.Note("select-user ignored: a selection is already running");
@@ -300,7 +357,7 @@ public partial class SelectProfile
 
     private async Task SelectGroupAsync(SharedProfileDto group)
     {
-        if (_selecting)
+        if (_editing || _selecting)
             return;
 
         _selecting = true;
@@ -368,7 +425,7 @@ public partial class SelectProfile
                 // TV: stay on the picker with a reconnect badge. Click again (or +) to link.
                 if (_isTv)
                 {
-                    _users = LocalUserService.GetAll();
+                    ReloadLocalUsers();
                     ShowCarousel();
                 }
                 else
@@ -437,7 +494,7 @@ public partial class SelectProfile
                     await ReconnectExpiredProfileAsync(user);
                 else
                 {
-                    _users = LocalUserService.GetAll();
+                    ReloadLocalUsers();
                     ShowCarousel();
                 }
             }
@@ -602,7 +659,7 @@ public partial class SelectProfile
             else
             {
                 ShowCarousel();
-                _users = LocalUserService.GetAll();
+                ReloadLocalUsers();
                 StateHasChanged();
             }
         }
@@ -634,7 +691,7 @@ public partial class SelectProfile
             await AuthService.LoginAsync();
 
             var authState = await ((AuthenticationStateProvider)AuthService).GetAuthenticationStateAsync();
-            _users = LocalUserService.GetAll();
+            ReloadLocalUsers();
 
             if (authState.User.Identity?.IsAuthenticated != true)
             {
@@ -671,7 +728,7 @@ public partial class SelectProfile
         catch (Exception ex)
         {
             Snackbar.Add(ex.Message, K7Severity.Error);
-            _users = LocalUserService.GetAll();
+            ReloadLocalUsers();
             ShowCarousel();
         }
     }
@@ -724,15 +781,192 @@ public partial class SelectProfile
     private static bool NeedsReconnect(LocalUser user) =>
         string.IsNullOrEmpty(user.RefreshToken);
 
-    private static string GetProfileCardClass(bool needsReconnect, bool isGroup = false)
+    private static string GetProfileCardClass(bool needsReconnect, bool isGroup = false, bool editing = false)
     {
         var classes = isGroup
-            ? "select-profile-card select-profile-card--group focusable my-2"
-            : "select-profile-card focusable my-2";
+            ? "select-profile-card select-profile-card--group my-2"
+            : "select-profile-card my-2";
 
-        return needsReconnect
-            ? $"{classes} select-profile-card--expired"
-            : classes;
+        if (!editing)
+            classes += " focusable";
+
+        if (needsReconnect)
+            classes += " select-profile-card--expired";
+
+        if (editing)
+            classes += " select-profile-card--editing";
+
+        return classes;
+    }
+
+    private async Task BeginEditAsync()
+    {
+        if (_editing || _entries.Count == 0)
+            return;
+
+        _editBaseline = [.. _entries];
+        _editing = true;
+        await BindEditBackAsync(true);
+        await RefreshEditChromeAsync();
+    }
+
+    private async Task CancelEditAsync()
+    {
+        if (!_editing)
+            return;
+
+        if (_editBaseline is not null)
+            _entries = [.. _editBaseline];
+
+        _editBaseline = null;
+        _editing = false;
+        await BindEditBackAsync(false);
+        await RefreshEditChromeAsync();
+    }
+
+    private async Task ApplyEditAsync()
+    {
+        if (!_editing)
+            return;
+
+        var baseline = _editBaseline ?? [];
+        _editBaseline = null;
+        _editing = false;
+
+        var kept = _entries.Select(entry => entry.Token).ToHashSet(StringComparer.Ordinal);
+        SaveOrder();
+
+        foreach (var entry in baseline)
+        {
+            if (kept.Contains(entry.Token))
+                continue;
+
+            if (entry.User is { } user)
+            {
+                LocalUserService.Remove(user.IdentityUserId);
+            }
+            else if (entry.Group is { } group)
+            {
+                SharedProfileDevicePin.SetPinned(group.Id, false);
+                SharedProfileCache.Remove(group.Id);
+                if (SharedProfileSession.ActiveGroupId == group.Id)
+                    SharedProfileSession.ClearActiveGroup();
+            }
+        }
+
+        await BindEditBackAsync(false);
+        _users = LocalUserService.GetAll();
+        ReloadPinnedGroups();
+        await RefreshEditChromeAsync();
+    }
+
+    private async Task RefreshEditChromeAsync()
+    {
+        StateHasChanged();
+        if (!_isTv)
+            return;
+
+        await Task.Yield();
+        await SpatialNav.RefreshAsync();
+    }
+
+    private async Task BindEditBackAsync(bool enabled)
+    {
+        _editBackBinder ??= new SelectionModeKeyboardBinder(SpatialNav, CancelEditFromBack, static () => { });
+        await _editBackBinder.SetEnabledAsync(enabled);
+    }
+
+    private void CancelEditFromBack() => _ = InvokeAsync(CancelEditAsync);
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_editBackBinder is not null)
+            await _editBackBinder.DisposeAsync();
+    }
+
+    private void MoveEntry(int index, int delta)
+    {
+        var target = index + delta;
+        if ((uint)index >= (uint)_entries.Count || target < 0 || target >= _entries.Count)
+            return;
+
+        (_entries[index], _entries[target]) = (_entries[target], _entries[index]);
+    }
+
+    private async Task<bool> AllowUserRemovalAsync(LocalUser user)
+    {
+        if (!user.HasPin)
+            return true;
+
+        var canVerify = (Connectivity.IsOnline && user.UserId is not null) || user.PinHash is not null;
+        if (!canVerify)
+        {
+            Snackbar.Add(L["PinRequiredOnline"], K7Severity.Error);
+            return false;
+        }
+
+        return await PromptPinAsync(user);
+    }
+
+    /// <summary>
+    /// A live shared profile keeps its PIN. A profile the server no longer has can be
+    /// removed without that PIN, so a forgotten code does not trap the leftover card.
+    /// </summary>
+    private async Task<bool> AllowSharedProfileRemovalAsync(SharedProfileDto group)
+    {
+        if (!group.HasPin)
+            return true;
+
+        bool? exists = null;
+        if (Connectivity.IsOnline)
+            exists = await SharedProfileService.ProfileExistsAsync(group.Id);
+
+        if (exists == false)
+            return true;
+
+        var canVerify = exists == true || group.PinHash is not null;
+        if (!canVerify)
+        {
+            Snackbar.Add(L["PinRequiredOnline"], K7Severity.Error);
+            return false;
+        }
+
+        return await PromptGroupPinAsync(group);
+    }
+
+    private async Task RemoveEntryAsync(PickerEntry entry)
+    {
+        if (entry.User is { } user)
+        {
+            if (!await AllowUserRemovalAsync(user))
+                return;
+
+            var name = user.DisplayName ?? user.UserName;
+            var confirmed = await DialogService.ShowMessageBoxAsync(
+                L["RemoveUserTitle"],
+                string.Format(L["RemoveUserConfirm"], name),
+                yesText: L["RemoveProfile"],
+                cancelText: S["Cancel"]);
+            if (confirmed != true)
+                return;
+
+            _entries.RemoveAll(item => item.Token == entry.Token);
+        }
+        else if (entry.Group is { } group)
+        {
+            if (!await AllowSharedProfileRemovalAsync(group))
+                return;
+
+            var confirmed = await DialogService.ShowMessageBoxAsync(
+                L["RemoveGroupTitle"],
+                string.Format(L["RemoveGroupConfirm"], group.Name),
+                yesText: L["RemoveProfile"],
+                cancelText: S["Cancel"]);
+            if (confirmed != true)
+                return;
+
+            _entries.RemoveAll(item => item.Token == entry.Token);
+        }
     }
 
     private bool GroupHostNeedsReconnect(SharedProfileDto group)

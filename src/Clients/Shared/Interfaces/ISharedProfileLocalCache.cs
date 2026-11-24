@@ -14,4 +14,9 @@ public interface ISharedProfileLocalCache
     /// shared profile stays on the profile picker after another local user signs in.
     /// </summary>
     void UpdateCache(IReadOnlyList<SharedProfileDto> groups);
+
+    /// <summary>
+    /// Drops one group from the device cache. The pin list is left unchanged.
+    /// </summary>
+    void Remove(Guid id);
 }

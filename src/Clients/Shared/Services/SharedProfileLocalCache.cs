@@ -52,7 +52,18 @@ public class SharedProfileLocalCache(
         foreach (var group in groups)
             byId[group.Id] = group;
 
-        var json = JsonSerializer.Serialize(byId.Values.ToList());
+        Persist(byId.Values);
+    }
+
+    public void Remove(Guid id)
+    {
+        var groups = GetCached().Where(g => g.Id != id).ToList();
+        Persist(groups);
+    }
+
+    private void Persist(IEnumerable<SharedProfileDto> groups)
+    {
+        var json = JsonSerializer.Serialize(groups.ToList());
         storage.Set(PreferenceKeys.SHARED_PROFILES_CACHE, json);
     }
 }

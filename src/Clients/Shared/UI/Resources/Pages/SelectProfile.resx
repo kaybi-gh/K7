@@ -31,4 +31,15 @@
   <data name="EnterGroupPin" xml:space="preserve"><value>PIN du profil partagé</value></data>
   <data name="HostNotOnDevice" xml:space="preserve"><value>Ajoutez le compte hôte de ce profil partagé sur cet appareil.</value></data>
   <data name="NeedsReconnect" xml:space="preserve"><value>Session expirée - reconnectez-vous</value></data>
+  <data name="ManageProfiles" xml:space="preserve"><value>Gérer les profils</value></data>
+  <data name="Edit" xml:space="preserve"><value>Modifier</value></data>
+  <data name="Apply" xml:space="preserve"><value>Appliquer</value></data>
+  <data name="MoveEarlier" xml:space="preserve"><value>Déplacer vers la gauche</value></data>
+  <data name="MoveLater" xml:space="preserve"><value>Déplacer vers la droite</value></data>
+  <data name="RemoveProfile" xml:space="preserve"><value>Retirer</value></data>
+  <data name="RemoveUserTitle" xml:space="preserve"><value>Retirer de cet appareil</value></data>
+  <data name="RemoveUserConfirm" xml:space="preserve"><value>{0} sera retiré de cet appareil si vous appliquez. Le compte reste sur le serveur.</value></data>
+  <data name="RemoveGroupTitle" xml:space="preserve"><value>Retirer de cet appareil</value></data>
+  <data name="RemoveGroupConfirm" xml:space="preserve"><value>{0} sera retiré de cet appareil si vous appliquez. Le profil partagé reste sur le serveur s'il existe encore.</value></data>
+  <data name="PinRequiredOnline" xml:space="preserve"><value>Connectez cet appareil pour confirmer le PIN avant de retirer ce profil.</value></data>
 </root>

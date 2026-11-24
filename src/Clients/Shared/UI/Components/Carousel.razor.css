@@ -75,6 +75,15 @@
     --carousel-slide-width: 140px;
 }
 
+.carousel-container:has(.select-profile-card--editing) {
+    --carousel-slide-width: 13rem;
+}
+
+.carousel-viewport:has(.select-profile-card--editing) {
+    padding-block: var(--space-2);
+    margin-block: calc(-1 * var(--space-2));
+}
+
 .carousel-container:has(.custom-nav-feed-card) {
     --carousel-slide-width: 240px;
 }
@@ -129,6 +138,10 @@
 
     .carousel-container:has(.select-profile-card) {
         --carousel-slide-width: 140px;
+    }
+
+    .carousel-container:has(.select-profile-card--editing) {
+        --carousel-slide-width: 13rem;
     }
 
     .carousel-container:has(.custom-nav-feed-card) {

@@ -81,6 +81,19 @@ public class SharedProfileLocalCacheTests
     }
 
     [Test]
+    public void Remove_ShouldDropOnlyTheRequestedGroup()
+    {
+        var familyId = Guid.NewGuid();
+        var otherId = Guid.NewGuid();
+        _sut.UpdateCache([CreateGroup(familyId, "Family"), CreateGroup(otherId, "Other")]);
+
+        _sut.Remove(familyId);
+
+        _sut.FindById(familyId).Should().BeNull();
+        _sut.FindById(otherId)!.Name.Should().Be("Other");
+    }
+
+    [Test]
     public async Task RefreshAsync_ShouldNotCallApi_WhenOffline()
     {
         _connectivity.IsOnline.Returns(false);

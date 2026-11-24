@@ -19,6 +19,7 @@ using K7.Server.Application.Features.SharedProfiles.Queries.GetSharedProfileHome
 using K7.Server.Application.Features.SharedProfiles.Queries.GetSharedProfileMemberCandidates;
 using K7.Server.Application.Features.SharedProfiles.Queries.GetSharedProfilePlaylistIds;
 using K7.Server.Application.Features.SharedProfiles.Queries.GetSharedProfiles;
+using K7.Server.Application.Features.SharedProfiles.Queries.SharedProfileExists;
 using K7.Server.Application.Features.SharedProfiles.Queries.GetSharedProfileVideoPlaybackPolicy;
 using K7.Server.Domain.Constants;
 using K7.Server.Web.Infrastructure;
@@ -205,6 +206,28 @@ public class VerifySharedProfilePinEndpoint : IEndpoint
 }
 
 public sealed record VerifySharedProfilePinRequest(string Pin);
+
+public class SharedProfileExistsEndpoint : IEndpoint
+{
+    public void Map(IEndpointRouteBuilder endpointRouteBuilder)
+    {
+        var type = GetType();
+        var groupName = type.Namespace!.Split('.').Last();
+
+        endpointRouteBuilder.MapGet("/api/shared-profiles/{id:guid}/exists", async (
+            [FromServices] ISender sender,
+            Guid id,
+            CancellationToken cancellationToken) =>
+        {
+            var exists = await sender.Send(new SharedProfileExistsQuery(id), cancellationToken);
+            return exists ? Results.NoContent() : Results.NotFound();
+        })
+        .AllowAnonymous()
+        .RequireRateLimiting(RateLimitingExtensions.PinVerifyPolicy)
+        .WithName(type.Name)
+        .WithTags(groupName);
+    }
+}
 
 public sealed record AssignSharedProfileContentRestrictionRequest(Guid? ContentRestrictionProfileId);
 

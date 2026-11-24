@@ -89,9 +89,21 @@ public class K7ServerManagerService : IServerConnectionService
         Preferences.Remove(PreferenceKeys.K7_SERVER_URL);
         _deviceStorageService.Remove(SharedPreferenceKeys.ACCESS_TOKEN);
         _deviceStorageService.Remove(SharedPreferenceKeys.REFRESH_TOKEN);
+        _deviceStorageService.Remove(SharedPreferenceKeys.ACCESS_TOKEN_EXPIRES_AT);
+        _deviceStorageService.Remove(SharedPreferenceKeys.SESSION_CLAIMS);
         _deviceStorageService.Remove(SharedPreferenceKeys.SERVER_INFO);
         _deviceStorageService.Remove(SharedPreferenceKeys.DEVICE_ATTACHED_USER_ID);
         _deviceStorageService.Remove(SharedPreferenceKeys.LAST_ACTIVE_USER_ID);
+        _deviceStorageService.Remove(SharedPreferenceKeys.SINGLE_USER_MODE);
+        _deviceStorageService.Remove(SharedPreferenceKeys.SINGLE_USER_UNLOCKED_USER_ID);
+        _deviceStorageService.Remove(SharedPreferenceKeys.ACTIVE_SHARED_PROFILE_ID);
+        _deviceStorageService.Remove(SharedPreferenceKeys.LAST_ACTIVE_SHARED_PROFILE_ID);
+        _deviceStorageService.Remove(SharedPreferenceKeys.LAST_PROFILE_SELECT_KIND);
+        _deviceStorageService.Remove(SharedPreferenceKeys.LAST_PROFILE_SELECT_ID);
+        _deviceStorageService.Remove(SharedPreferenceKeys.LAST_PROFILE_SELECT_AT);
+        _deviceStorageService.Remove(SharedPreferenceKeys.SHARED_PROFILES_CACHE);
+        _deviceStorageService.Remove(SharedPreferenceKeys.PINNED_SHARED_PROFILE_IDS);
+        _deviceStorageService.Remove(SharedPreferenceKeys.PROFILE_PICKER_ORDER);
 
         // Clear local users
         foreach (var user in _localUserService.GetAll())

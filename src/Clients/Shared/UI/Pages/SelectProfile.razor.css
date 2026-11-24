@@ -140,6 +140,35 @@
     }
 }
 
+.select-profile-page ::deep .select-profile-card-wrap {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: max-content;
+    max-width: none;
+    overflow: visible;
+}
+
+.select-profile-page ::deep .select-profile-edit-actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    padding: var(--space-2);
+    overflow: visible;
+}
+
+.select-profile-page ::deep .select-profile-edit-actions .k7-icon-btn {
+    width: 2.5rem;
+    height: 2.5rem;
+    flex: 0 0 2.5rem;
+}
+
+.select-profile-page ::deep .select-profile-card--editing {
+    cursor: default;
+}
+
 .select-profile-switch {
     display: flex;
     align-items: center;

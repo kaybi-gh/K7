@@ -1084,6 +1084,9 @@ public sealed class MockSharedProfileService : ISharedProfileService
     public Task<bool> VerifyGroupPinAsync(SharedProfileDto group, string pin, CancellationToken cancellationToken = default) =>
         Task.FromResult(true);
 
+    public Task<bool?> ProfileExistsAsync(Guid id, CancellationToken cancellationToken = default) =>
+        Task.FromResult<bool?>(true);
+
     public Task<VideoPlaybackPolicySettingsDto> GetVideoPlaybackPolicyAsync(Guid id, CancellationToken cancellationToken = default) =>
         Task.FromResult(new VideoPlaybackPolicySettingsDto());
 
@@ -1145,6 +1148,7 @@ public sealed class MockSharedProfileLocalCache : ISharedProfileLocalCache
     public SharedProfileDto? FindById(Guid id) => null;
     public Task RefreshAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
     public void UpdateCache(IReadOnlyList<SharedProfileDto> groups) { }
+    public void Remove(Guid id) { }
 }
 
 public sealed class MockSharedProfileDevicePinService : ISharedProfileDevicePinService

@@ -12,6 +12,7 @@ public class SharedProfileServiceTests
 {
     private ISharedProfileApi _api = null!;
     private ISharedProfileLocalCache _cache = null!;
+    private ISharedProfileDevicePinService _pins = null!;
     private SharedProfileService _sut = null!;
 
     [SetUp]
@@ -19,7 +20,8 @@ public class SharedProfileServiceTests
     {
         _api = Substitute.For<ISharedProfileApi>();
         _cache = Substitute.For<ISharedProfileLocalCache>();
-        _sut = new SharedProfileService(_api, _cache);
+        _pins = Substitute.For<ISharedProfileDevicePinService>();
+        _sut = new SharedProfileService(_api, _cache, pins: _pins);
     }
 
     [Test]
@@ -56,6 +58,18 @@ public class SharedProfileServiceTests
         var result = await _sut.VerifyGroupPinAsync(group, "4242");
 
         result.Should().BeTrue();
+    }
+
+    [Test]
+    public async Task LeaveAsync_ShouldDropLocalCard_WhenServerAccepts()
+    {
+        var id = Guid.NewGuid();
+
+        await _sut.LeaveAsync(id);
+
+        _cache.Received().Remove(id);
+        _pins.Received().SetPinned(id, false);
+        await _cache.Received().RefreshAsync(Arg.Any<CancellationToken>());
     }
 
     private static SharedProfileDto CreateGroup() => new()
