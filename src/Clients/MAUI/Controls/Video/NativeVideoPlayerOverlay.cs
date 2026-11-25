@@ -172,6 +172,7 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
     private static readonly TimeSpan DpadHoldInterval = TimeSpan.FromMilliseconds(110);
     private IReadOnlyList<MediaSegmentDto>? _segments;
     private SkipSegmentPresenter.State _skipState;
+    private double _acceptedSkipTime;
     private VideoPlayerSettingsDto? _videoSettings;
     private readonly InactivityPromptTracker _inactivityTracker;
     private bool _showChapterTicks = true;
@@ -1762,7 +1763,18 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
             HideSeekSpinner();
     }
 
-    private void OnSourceChanged(PlayerSource source) =>
+    private void OnSourceChanged(PlayerSource source)
+    {
+        // Arm before the queued refresh. A click in that gap must not apply the
+        // previous outro to the successor (duration is already the new file).
+        if (source.MediaId != _segmentsMediaId)
+        {
+            if (MainThread.IsMainThread)
+                ArmSkipHoldForMediaChange();
+            else
+                MainThread.BeginInvokeOnMainThread(ArmSkipHoldForMediaChange);
+        }
+
         MainThread.BeginInvokeOnMainThread(() =>
         {
             // PlayIndexedFileAsync clears Source then binds the real one. Only drop the
@@ -1783,6 +1795,7 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
             RefreshSidecarSubtitles();
             WarmSeekThumbnails();
         });
+    }
 
     private void OnSeekDragChanged(object? sender, bool dragging)
     {
@@ -2762,9 +2775,9 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
         var mediaChanged = mediaId != _segmentsMediaId;
         if (mediaChanged)
         {
-            ResetSkipSession();
             // Drop the previous episode's windows immediately so AutoSkip cannot seek
             // to a stale intro/outro end while the new list is in flight.
+            ArmSkipHoldForMediaChange();
             _segments = null;
             _segmentsMediaId = null;
         }
@@ -2789,6 +2802,18 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
     private void ResetSkipSession()
     {
         _skipState = default;
+        SetSkipSegmentVisible(false);
+    }
+
+    /// <summary>
+    /// Keep the last playhead that belonged to the previous item and hide skip until
+    /// the engine clock actually leaves it. Does not clear <see cref="_acceptedSkipTime"/>.
+    /// </summary>
+    private void ArmSkipHoldForMediaChange()
+    {
+        if (!_skipState.ClockHeld)
+            _skipState = SkipSegmentPresenter.HoldForMediaChange(_acceptedSkipTime);
+
         SetSkipSegmentVisible(false);
     }
 
@@ -2817,6 +2842,23 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
     /// <summary>Mirrors SkipSegmentOverlay via <see cref="SkipSegmentPresenter"/>.</summary>
     private void UpdateSkipSegment(double time)
     {
+        var mediaId = _player.Source?.MediaId;
+        // PlayIndexedFileAsync publishes an empty source and a synthetic 0 before the
+        // real item. Accepting that 0 would forget the previous outro position.
+        if (mediaId is null)
+        {
+            SetSkipSegmentVisible(false);
+            return;
+        }
+
+        if (_segmentsMediaId is not null && mediaId != _segmentsMediaId)
+        {
+            ArmSkipHoldForMediaChange();
+            _segments = null;
+            _segmentsMediaId = null;
+            return;
+        }
+
         var result = SkipSegmentPresenter.Tick(
             _skipState,
             _segments,
@@ -2825,6 +2867,8 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
             IsChromeVisible,
             DateTime.UtcNow);
         _skipState = result.State;
+        if (!_skipState.ClockHeld)
+            _acceptedSkipTime = time;
 
         if (result.Action == SkipSegmentPresenter.ActionKind.AutoSkip
             && result.State.ActiveSegment is { } autoSegment)
@@ -2875,8 +2919,16 @@ public sealed partial class NativeVideoPlayerOverlay : Grid
 
     private void SkipActiveSegment(MediaSegmentDto? segment = null)
     {
+        if (_skipState.ClockHeld || _player.Source?.MediaId != _segmentsMediaId)
+            return;
+
         segment ??= _skipState.ActiveSegment;
-        if (segment is null)
+        if (segment is null || _segments is null)
+            return;
+
+        // The visible label can still be the previous episode's outro. Only act when
+        // this playhead is inside a segment loaded for the current media.
+        if (SkipSegmentPresenter.FindActive(_segments, _player.CurrentTime) != segment)
             return;
 
         var segmentType = segment.Type;

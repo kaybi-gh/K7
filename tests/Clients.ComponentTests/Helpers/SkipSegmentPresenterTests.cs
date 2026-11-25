@@ -304,4 +304,85 @@ public class SkipSegmentPresenterTests
         nextEpisode.State.Dismissed.Should().BeFalse();
         nextEpisode.State.ActiveSegment.Should().Be(Intro);
     }
+
+    [Test]
+    public void Tick_ShouldHideSkip_WhenClockStillAtPreviousOutro()
+    {
+        var held = SkipSegmentPresenter.HoldForMediaChange(1205);
+        var stale = SkipSegmentPresenter.Tick(
+            held, [Intro, Outro], Settings(outro: IntroSkipBehavior.AutoSkip), 1205, chromeVisible: false, T0);
+
+        stale.State.Visible.Should().BeFalse();
+        stale.State.ClockHeld.Should().BeTrue();
+        stale.State.ActiveSegment.Should().BeNull();
+        stale.Action.Should().Be(SkipSegmentPresenter.ActionKind.None);
+    }
+
+    [Test]
+    public void Tick_ShouldKeepHold_WhenSyntheticStartBouncesBackToPreviousOutro()
+    {
+        var held = SkipSegmentPresenter.HoldForMediaChange(1205);
+        var syntheticStart = SkipSegmentPresenter.Tick(
+            held, [Intro, Outro], Settings(), 0, chromeVisible: false, T0);
+        var bounced = SkipSegmentPresenter.Tick(
+            syntheticStart.State, [Intro, Outro], Settings(outro: IntroSkipBehavior.AutoSkip), 1206,
+            chromeVisible: false, T0.AddSeconds(1));
+
+        syntheticStart.State.Visible.Should().BeFalse();
+        syntheticStart.State.ClockHoldPending.Should().BeTrue();
+        bounced.State.Visible.Should().BeFalse();
+        bounced.State.ClockHeld.Should().BeTrue();
+        bounced.Action.Should().Be(SkipSegmentPresenter.ActionKind.None);
+    }
+
+    [Test]
+    public void Tick_ShouldShowIntro_WhenNewEpisodeClockIsConfirmed()
+    {
+        var held = SkipSegmentPresenter.HoldForMediaChange(1205);
+        var first = SkipSegmentPresenter.Tick(
+            held, [Intro, Outro], Settings(), 0.2, chromeVisible: false, T0);
+        var confirmed = SkipSegmentPresenter.Tick(
+            first.State, [Intro, Outro], Settings(), 0.8, chromeVisible: false, T0.AddSeconds(1));
+
+        first.State.Visible.Should().BeFalse();
+        confirmed.State.Visible.Should().BeTrue();
+        confirmed.State.ClockHeld.Should().BeFalse();
+        confirmed.State.ActiveSegment.Should().Be(Intro);
+    }
+
+    [Test]
+    public void Tick_ShouldRehold_WhenStaleOutroReturnsAfterConfirm()
+    {
+        var held = SkipSegmentPresenter.HoldForMediaChange(1205);
+        var first = SkipSegmentPresenter.Tick(
+            held, [Intro, Outro], Settings(), 0.2, chromeVisible: false, T0);
+        var confirmed = SkipSegmentPresenter.Tick(
+            first.State, [Intro, Outro], Settings(), 0.8, chromeVisible: false, T0.AddSeconds(1));
+        var stale = SkipSegmentPresenter.Tick(
+            confirmed.State, [Intro, Outro], Settings(outro: IntroSkipBehavior.AutoSkip), 1205,
+            chromeVisible: false, T0.AddSeconds(2));
+
+        confirmed.State.ActiveSegment.Should().Be(Intro);
+        stale.State.Visible.Should().BeFalse();
+        stale.State.ClockHeld.Should().BeTrue();
+        stale.Action.Should().Be(SkipSegmentPresenter.ActionKind.None);
+    }
+
+    [Test]
+    public void Tick_ShouldShowOutro_WhenSeekingThereAfterNewClockSettles()
+    {
+        var held = SkipSegmentPresenter.HoldForMediaChange(1205);
+        var first = SkipSegmentPresenter.Tick(
+            held, [Intro, Outro], Settings(), 1, chromeVisible: false, T0);
+        var confirmed = SkipSegmentPresenter.Tick(
+            first.State, [Intro, Outro], Settings(), 1.5, chromeVisible: false, T0.AddSeconds(1));
+        var settled = SkipSegmentPresenter.Tick(
+            confirmed.State, [Intro, Outro], Settings(), 2, chromeVisible: false, T0.AddSeconds(2));
+        var outro = SkipSegmentPresenter.Tick(
+            settled.State, [Intro, Outro], Settings(), 1205, chromeVisible: false, T0.AddSeconds(3));
+
+        settled.State.ClockHoldAnchorSeconds.Should().Be(0);
+        outro.State.Visible.Should().BeTrue();
+        outro.State.ActiveSegment.Should().Be(Outro);
+    }
 }

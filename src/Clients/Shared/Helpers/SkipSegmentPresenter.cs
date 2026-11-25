@@ -11,11 +11,26 @@ namespace K7.Clients.Shared.Helpers;
 /// <see cref="DisplayDuration"/>, then the same button stays available while chrome is visible
 /// for the rest of the chapter. Auto-skip seeks to the segment end (or ends playback when
 /// the outro reaches the file end). Disabled does nothing.
+/// After a media change the engine can keep reporting the previous item's playhead.
+/// <see cref="HoldForMediaChange"/> hides skip offers until that clock has left the old
+/// position for two samples, so a stale outro cannot end the successor episode.
 /// </summary>
 public static class SkipSegmentPresenter
 {
     public static readonly TimeSpan DisplayDuration = TimeSpan.FromSeconds(5);
     public static readonly TimeSpan Cooldown = TimeSpan.FromSeconds(3);
+
+    /// <summary>
+    /// How far the playhead must move from the previous item before a skip offer can
+    /// belong to the new one. A few seconds of jitter around the old outro must not count.
+    /// </summary>
+    public const double MediaChangeClockGapSeconds = 15;
+
+    /// <summary>
+    /// A position this close to the start counts as having left the previous item.
+    /// Source swaps also publish a synthetic 0, so one such sample is not confirmation.
+    /// </summary>
+    public const double MediaChangeStartSeconds = 2;
 
     /// <summary>
     /// What may be left after an outro for skipping it to still end the episode. Detected credits
@@ -37,7 +52,10 @@ public static class SkipSegmentPresenter
         bool Dismissed,
         bool ChromeVisible,
         DateTime ShowTimeUtc,
-        DateTime LastSkipUtc);
+        DateTime LastSkipUtc,
+        bool ClockHeld,
+        double ClockHoldAnchorSeconds,
+        bool ClockHoldPending);
 
     public readonly record struct Result(State State, ActionKind Action);
 
@@ -71,6 +89,22 @@ public static class SkipSegmentPresenter
             && NativeVideoPlaybackEnd.IsAtMediaEnd(segment.EndMs / 1000.0, durationSeconds, OutroEndToleranceSeconds);
     }
 
+    /// <summary>
+    /// Call when the playing media id changes, with the last playhead accepted for the
+    /// previous item. A position still near the start does not need a hold.
+    /// </summary>
+    public static State HoldForMediaChange(double previousTimeSeconds)
+    {
+        if (previousTimeSeconds <= MediaChangeStartSeconds)
+            return default;
+
+        return new State
+        {
+            ClockHeld = true,
+            ClockHoldAnchorSeconds = previousTimeSeconds
+        };
+    }
+
     public static Result Tick(
         State previous,
         IReadOnlyList<MediaSegmentDto>? segments,
@@ -79,6 +113,63 @@ public static class SkipSegmentPresenter
         bool chromeVisible,
         DateTime utcNow)
     {
+        if (previous.ClockHoldAnchorSeconds > MediaChangeStartSeconds)
+        {
+            var away = IsClockAwayFromPreviousItem(previous.ClockHoldAnchorSeconds, timeSeconds);
+            if (!away)
+            {
+                // Still the previous item, or the engine bounced back to it after a
+                // synthetic 0. Do not arm skip on the successor.
+                return new Result(
+                    previous with
+                    {
+                        ActiveSegment = null,
+                        Visible = false,
+                        ClockHeld = true,
+                        ClockHoldPending = false,
+                        ChromeVisible = chromeVisible
+                    },
+                    ActionKind.None);
+            }
+
+            if (!previous.ClockHoldPending)
+            {
+                return new Result(
+                    previous with
+                    {
+                        ActiveSegment = null,
+                        Visible = false,
+                        ClockHeld = true,
+                        ClockHoldPending = true,
+                        ChromeVisible = chromeVisible
+                    },
+                    ActionKind.None);
+            }
+
+            if (previous.ClockHeld)
+            {
+                // Second sample on the new item. Allow skip, but remember the anchor
+                // so one late stale position can put the hold back.
+                previous = default(State) with
+                {
+                    ChromeVisible = chromeVisible,
+                    ClockHoldAnchorSeconds = previous.ClockHoldAnchorSeconds,
+                    ClockHoldPending = true
+                };
+            }
+            else if (segments is not null && segments.Count > 0 && settings is not null)
+            {
+                // Forget the previous item only once this sample can be matched
+                // against the new list. Clearing earlier lets a stale Apply use the
+                // old outro against the successor.
+                previous = previous with
+                {
+                    ClockHoldAnchorSeconds = 0,
+                    ClockHoldPending = false
+                };
+            }
+        }
+
         if (segments is null || segments.Count == 0 || settings is null)
         {
             return new Result(
@@ -203,4 +294,8 @@ public static class SkipSegmentPresenter
             },
             ActionKind.None);
     }
+
+    private static bool IsClockAwayFromPreviousItem(double anchorSeconds, double timeSeconds) =>
+        timeSeconds <= MediaChangeStartSeconds
+        || Math.Abs(timeSeconds - anchorSeconds) >= MediaChangeClockGapSeconds;
 }

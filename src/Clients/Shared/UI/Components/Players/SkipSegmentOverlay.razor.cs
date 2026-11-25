@@ -24,6 +24,7 @@ public partial class SkipSegmentOverlay : IDisposable
     private MediaSegmentDto? _activeSegment;
     private VideoPlayerSettingsDto? _settings;
     private SkipSegmentPresenter.State _skipState;
+    private double _acceptedSkipTime;
     private bool _visible;
     private bool _showSkippedNotification;
     private K7.Shared.Enums.MediaSegmentType _skippedSegmentType;
@@ -76,7 +77,8 @@ public partial class SkipSegmentOverlay : IDisposable
         var generation = _loadGeneration;
         _loadedMediaId = mediaId;
         _segments = null;
-        ResetSkipSession();
+        ArmMediaChangeHold();
+        await InvokeAsync(StateHasChanged);
 
         try
         {
@@ -107,13 +109,54 @@ public partial class SkipSegmentOverlay : IDisposable
         _showSkippedNotification = false;
     }
 
+    /// <summary>
+    /// Hide skip until the playhead leaves the previous item. Keeps
+    /// <see cref="_acceptedSkipTime"/> so a transient empty source cannot forget it.
+    /// </summary>
+    private void ArmMediaChangeHold()
+    {
+        if (!_skipState.ClockHeld)
+            _skipState = SkipSegmentPresenter.HoldForMediaChange(_acceptedSkipTime);
+
+        _activeSegment = null;
+        _visible = false;
+    }
+
     private void OnTimeChanged(double currentTimeSeconds) => ApplyTime(currentTimeSeconds, render: true);
 
     private void ApplyCurrentTime(bool render) => ApplyTime(PlayerService.CurrentTime, render);
 
     private void ApplyTime(double currentTimeSeconds, bool render)
     {
-        if (_segments is null)
+        // Parameter MediaId can still be the previous episode while Source is the
+        // transient empty source. Only the player source identifies the clock.
+        var mediaId = PlayerService.Source?.MediaId;
+        // PlayIndexedFileAsync publishes an empty source and a synthetic 0 first.
+        // Accepting that sample would forget the previous outro position.
+        if (mediaId is null)
+        {
+            if (_visible || _activeSegment is not null)
+            {
+                _activeSegment = null;
+                _visible = false;
+                if (render)
+                    _ = InvokeAsync(StateHasChanged);
+            }
+
+            return;
+        }
+
+        if (_loadedMediaId is not null && mediaId != _loadedMediaId)
+        {
+            ArmMediaChangeHold();
+            _segments = null;
+            _loadedMediaId = null;
+            if (render)
+                _ = InvokeAsync(StateHasChanged);
+            return;
+        }
+
+        if (_segments is null && !_skipState.ClockHeld)
         {
             if (_visible || _activeSegment is not null)
             {
@@ -133,9 +176,12 @@ public partial class SkipSegmentOverlay : IDisposable
             ControlsVisible,
             DateTime.UtcNow);
 
+        var visibleChanged = _visible != result.State.Visible || _activeSegment != result.State.ActiveSegment;
         _skipState = result.State;
         _activeSegment = result.State.ActiveSegment;
         _visible = result.State.Visible;
+        if (!result.State.ClockHeld)
+            _acceptedSkipTime = currentTimeSeconds;
 
         if (result.Action == SkipSegmentPresenter.ActionKind.AutoSkip
             && result.State.ActiveSegment is { } segment)
@@ -143,13 +189,20 @@ public partial class SkipSegmentOverlay : IDisposable
             ApplySkip(segment);
         }
 
-        if (render)
+        if (render && (visibleChanged || result.Action != SkipSegmentPresenter.ActionKind.None))
             _ = InvokeAsync(StateHasChanged);
     }
 
     public void SkipSegment()
     {
-        if (_skipState.ActiveSegment is null)
+        if (_skipState.ClockHeld || _skipState.ActiveSegment is null)
+            return;
+
+        var mediaId = PlayerService.Source?.MediaId;
+        if (mediaId is null || mediaId != _loadedMediaId || _segments is null)
+            return;
+
+        if (SkipSegmentPresenter.FindActive(_segments, PlayerService.CurrentTime) != _skipState.ActiveSegment)
             return;
 
         ApplySkip(_skipState.ActiveSegment);
