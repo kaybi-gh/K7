@@ -29,7 +29,7 @@
   <data name="IncorrectPin" xml:space="preserve"><value>Incorrect PIN.</value></data>
   <data name="ContinueOffline" xml:space="preserve"><value>Continue offline</value></data>
   <data name="EnterGroupPin" xml:space="preserve"><value>Shared profile PIN</value></data>
-  <data name="HostNotOnDevice" xml:space="preserve"><value>Add this shared profile's host account on this device.</value></data>
+  <data name="HostNotOnDevice" xml:space="preserve"><value>Add a member of this shared profile on this device.</value></data>
   <data name="NeedsReconnect" xml:space="preserve"><value>Session expired - sign in again</value></data>
   <data name="ManageProfiles" xml:space="preserve"><value>Manage profiles</value></data>
   <data name="Edit" xml:space="preserve"><value>Edit</value></data>
@@ -37,6 +37,8 @@
   <data name="MoveEarlier" xml:space="preserve"><value>Move earlier</value></data>
   <data name="MoveLater" xml:space="preserve"><value>Move later</value></data>
   <data name="RemoveProfile" xml:space="preserve"><value>Remove</value></data>
+  <data name="HideProfile" xml:space="preserve"><value>Hide</value></data>
+  <data name="ShowProfile" xml:space="preserve"><value>Show</value></data>
   <data name="RemoveUserTitle" xml:space="preserve"><value>Remove from this device</value></data>
   <data name="RemoveUserConfirm" xml:space="preserve"><value>{0} will be removed from this device if you apply. The account stays on the server.</value></data>
   <data name="RemoveGroupTitle" xml:space="preserve"><value>Remove from this device</value></data>

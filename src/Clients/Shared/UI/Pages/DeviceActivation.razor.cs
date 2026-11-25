@@ -1,3 +1,4 @@
+using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using Microsoft.AspNetCore.Components;
@@ -12,6 +13,9 @@ public partial class DeviceActivation : IDisposable
     [Inject] private NavigationManager Navigation { get; set; } = default!;
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
     [Inject] private ILocalUserService LocalUserService { get; set; } = default!;
+    [Inject] private ISharedProfileDevicePinService SharedProfileDevicePin { get; set; } = default!;
+    [Inject] private ISharedProfileLocalCache SharedProfileCache { get; set; } = default!;
+    [Inject] private IDeviceStorageService Storage { get; set; } = default!;
 
     private bool _loading = true;
     private DeviceCodeInfo? _deviceCode;
@@ -92,7 +96,10 @@ public partial class DeviceActivation : IDisposable
             if (!IsCurrentFlow(generation))
                 return;
 
-            await InvokeAsync(() => Navigation.NavigateTo("/"));
+            var cards = ProfilePickerHiddenUsers.VisibleCardCount(
+                LocalUserService, SharedProfileDevicePin, SharedProfileCache, Storage);
+            var destination = cards > 1 ? "/select-profile" : "/";
+            await InvokeAsync(() => Navigation.NavigateTo(destination));
         }
         catch (OperationCanceledException) when (!IsCurrentFlow(generation))
         {

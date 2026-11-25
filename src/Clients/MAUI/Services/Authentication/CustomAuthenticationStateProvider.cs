@@ -491,8 +491,51 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
         PersistSessionClaims();
         await SaveLocalUserFromCurrentUserAsync(cancellationToken);
         await TryAttachCurrentUserToDeviceAsync(cancellationToken);
+        await PinLinkedSharedProfilesAsync(result.AccessToken, cancellationToken);
 
         NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
+    }
+
+    private async Task PinLinkedSharedProfilesAsync(string? accessToken, CancellationToken cancellationToken)
+    {
+        var ids = ReadLinkedSharedProfileIds(accessToken);
+        if (ids.Count == 0 || _viewingGroupCache is null)
+            return;
+
+        var api = _services.GetService<ISharedProfileApi>();
+        var pins = _services.GetService<ISharedProfileDevicePinService>();
+        if (api is null || pins is null)
+            return;
+
+        try
+        {
+            var groups = await api.GetSharedProfilesAsync(cancellationToken);
+            _viewingGroupCache.UpdateCache(groups);
+            foreach (var id in ids)
+            {
+                if (groups.Any(group => group.Id == id))
+                    pins.SetPinned(id, true);
+            }
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+        {
+            _logger.LogWarning(ex, "Could not pin shared profiles chosen while linking this device");
+        }
+    }
+
+    private static IReadOnlyList<Guid> ReadLinkedSharedProfileIds(string? accessToken)
+    {
+        var raw = JwtAccessToken.ReadClaims(accessToken)
+            .FirstOrDefault(claim => claim.Type == DeviceLinkClaims.SharedProfileIds)?.Value;
+        if (string.IsNullOrEmpty(raw))
+            return [];
+
+        return raw.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(value => Guid.TryParse(value, out var id) ? id : (Guid?)null)
+            .Where(id => id is not null)
+            .Select(id => id!.Value)
+            .Distinct()
+            .ToList();
     }
 
     public Task EndSessionAsync(CancellationToken cancellationToken = default)

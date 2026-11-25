@@ -60,6 +60,10 @@ public static class PreferenceKeys
     /// JSON list of profile-picker tokens (user:identityId, group:guid) for card order.
     /// </summary>
     public static readonly PreferenceKey<string> PROFILE_PICKER_ORDER = new("ProfilePickerOrder");
+    /// <summary>
+    /// JSON list of identity user ids hidden on the profile picker. The account stays on the device.
+    /// </summary>
+    public static readonly PreferenceKey<string> HIDDEN_PROFILE_PICKER_USER_IDS = new("HiddenProfilePickerUserIds");
     public static readonly PreferenceKey<long> MAX_DOWNLOAD_STORAGE_BYTES = new("MaxDownloadStorageBytes");
     public static readonly PreferenceKey<long> MAX_CACHE_STORAGE_BYTES = new("MaxCacheStorageBytes");
     public static readonly PreferenceKey<bool> DOWNLOAD_ALLOW_MOBILE_DATA = new("DownloadAllowMobileData");

@@ -2878,6 +2878,39 @@
         }
       }
     },
+    "/api/shared-profiles/device-link": {
+      "get": {
+        "tags": [
+          "SharedProfiles"
+        ],
+        "operationId": "GetDeviceLinkSharedProfiles",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DeviceLinkSharedProfileDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/shared-profiles/member-candidates": {
       "get": {
         "tags": [
@@ -15041,6 +15074,32 @@
           "lastSeen": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "DeviceLinkSharedProfileDto": {
+        "required": [
+          "id",
+          "name",
+          "hasPin"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "hasPin": {
+            "type": "boolean"
+          },
+          "avatarUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },

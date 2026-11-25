@@ -1063,6 +1063,9 @@ public sealed class MockSharedProfileService : ISharedProfileService
     public Task<IReadOnlyList<SharedProfileDto>> GetSharedProfilesAsync(CancellationToken cancellationToken = default) =>
         Task.FromResult<IReadOnlyList<SharedProfileDto>>([]);
 
+    public Task<IReadOnlyList<DeviceLinkSharedProfileDto>> GetDeviceLinkSharedProfilesAsync(Guid? userId, CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<DeviceLinkSharedProfileDto>>([]);
+
     public Task<IReadOnlyList<SharedProfileMemberCandidateDto>> GetMemberCandidatesAsync(CancellationToken cancellationToken = default) =>
         Task.FromResult<IReadOnlyList<SharedProfileMemberCandidateDto>>([]);
 

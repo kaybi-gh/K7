@@ -9,6 +9,11 @@ namespace K7.Clients.Shared.Interfaces;
 public interface ISharedProfileService
 {
     Task<IReadOnlyList<SharedProfileDto>> GetSharedProfilesAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Profiles that can be pinned from the device link page. Does not touch the device cache.
+    /// </summary>
+    Task<IReadOnlyList<DeviceLinkSharedProfileDto>> GetDeviceLinkSharedProfilesAsync(Guid? userId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<SharedProfileMemberCandidateDto>> GetMemberCandidatesAsync(CancellationToken cancellationToken = default);
     Task<Guid> CreateAsync(CreateSharedProfileRequest request, CancellationToken cancellationToken = default);
     Task UpdateAsync(Guid id, UpdateSharedProfileRequest request, CancellationToken cancellationToken = default);

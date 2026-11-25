@@ -1,3 +1,4 @@
+using K7.Shared.Dtos.SharedProfiles;
 using K7.Shared.Dtos.Users;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
@@ -9,6 +10,7 @@ public partial class LinkDeviceAuthorize
     [Inject] private NavigationManager Navigation { get; set; } = default!;
     [Inject] private IJSRuntime JSRuntime { get; set; } = default!;
     [Inject] private IUserAdminService UserAdminService { get; set; } = default!;
+    [Inject] private ISharedProfileService SharedProfileService { get; set; } = default!;
 
     private ElementReference _formRef;
     private ElementReference _hiddenRef;
@@ -20,6 +22,9 @@ public partial class LinkDeviceAuthorize
     private bool _approved;
     private List<ManagedAccountDto> _managedAccounts = [];
     private Guid? _targetUserId;
+    private List<DeviceLinkSharedProfileDto> _linkProfiles = [];
+    private readonly HashSet<Guid> _selectedProfileIds = [];
+    private int _profileLoad;
 
     private ManagedAccountDto? SelectedAccount =>
         _managedAccounts.FirstOrDefault(account => account.Id == _targetUserId);
@@ -50,6 +55,8 @@ public partial class LinkDeviceAuthorize
         {
             _targetUserId = targetUserId;
         }
+
+        await LoadProfilesAsync();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -86,7 +93,45 @@ public partial class LinkDeviceAuthorize
     private static string GetLetter(string name) =>
         name.Length > 0 ? name[..1].ToUpperInvariant() : "?";
 
-    private void SelectTarget(Guid? targetUserId) => _targetUserId = targetUserId;
+    private async Task SelectTarget(Guid? targetUserId)
+    {
+        if (_targetUserId == targetUserId)
+            return;
+
+        _targetUserId = targetUserId;
+        _selectedProfileIds.Clear();
+        await LoadProfilesAsync();
+    }
+
+    private async Task LoadProfilesAsync()
+    {
+        var generation = ++_profileLoad;
+        try
+        {
+            var profiles = await SharedProfileService.GetDeviceLinkSharedProfilesAsync(_targetUserId);
+            if (generation != _profileLoad)
+                return;
+
+            _linkProfiles = profiles.ToList();
+        }
+        catch
+        {
+            if (generation == _profileLoad)
+                _linkProfiles = [];
+        }
+    }
+
+    private void ToggleProfile(Guid id, ChangeEventArgs args)
+    {
+        var selected = args.Value is bool on
+            ? on
+            : bool.TryParse(args.Value?.ToString(), out var parsed) && parsed;
+
+        if (selected)
+            _selectedProfileIds.Add(id);
+        else
+            _selectedProfileIds.Remove(id);
+    }
 
     private string? GetQueryValue(string key)
     {

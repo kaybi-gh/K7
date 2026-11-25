@@ -74,6 +74,32 @@
                         }
                     }
 
+                    @if (_linkProfiles.Count > 0)
+                    {
+                        <fieldset class="link-device__accounts">
+                            <legend class="link-device__legend">@L["SharedProfiles"]</legend>
+                            <p class="link-device__hint">@L["SharedProfilesHint"]</p>
+                            @foreach (var profile in _linkProfiles)
+                            {
+                                <label class="link-device__account" @key="profile.Id">
+                                    <input type="checkbox"
+                                           name="shared_profile_id"
+                                           value="@profile.Id"
+                                           checked="@_selectedProfileIds.Contains(profile.Id)"
+                                           @onchange="args => ToggleProfile(profile.Id, args)" />
+                                    <K7Avatar Size="sm"
+                                              Image="@(profile.AvatarUrl ?? "")"
+                                              Letter="@GetLetter(profile.Name)" />
+                                    <span class="link-device__account-name">@profile.Name</span>
+                                    @if (profile.HasPin)
+                                    {
+                                        <K7Icon Icon="@Phosphor.Lock" IconSize="@K7IconSize.Sm" Color="secondary" />
+                                    }
+                                </label>
+                            }
+                        </fieldset>
+                    }
+
                     <K7Button Type="submit" Class="link-device__authorize">@L["AuthorizeDevice"]</K7Button>
                 </div>
             </form>

@@ -40,7 +40,7 @@
                             @if (entry.User is { } user)
                             {
                                 <button type="button"
-                                        class="@GetProfileCardClass(NeedsReconnect(user), editing: _editing)"
+                                        class="@GetProfileCardClass(NeedsReconnect(user), editing: _editing, hidden: IsUserHidden(user))"
                                         tabindex="@(_editing ? -1 : 0)"
                                         @attributes="GetInitialFocusAttributes(!_editing && user.IdentityUserId == _initialFocusUserId)"
                                         @onclick="() => SelectUserAsync(user)">
@@ -71,7 +71,7 @@
                             else if (entry.Group is { } group)
                             {
                                 <button type="button"
-                                        class="@GetProfileCardClass(GroupHostNeedsReconnect(group), isGroup: true, editing: _editing)"
+                                        class="@GetProfileCardClass(GroupNeedsReconnect(group), isGroup: true, editing: _editing)"
                                         tabindex="@(_editing ? -1 : 0)"
                                         @attributes="GetInitialFocusAttributes(!_editing && group.Id == _initialFocusGroupId)"
                                         @onclick="() => SelectGroupAsync(group)">
@@ -82,7 +82,7 @@
                                                       Image="@group.AvatarUrl"
                                                       Letter="@(string.IsNullOrEmpty(group.Name) ? "?" : group.Name[..1].ToUpperInvariant())"
                                                       Alt="@group.Name">
-                                                @if (GroupHostNeedsReconnect(group))
+                                                @if (GroupNeedsReconnect(group))
                                                 {
                                                     <span class="select-profile-reconnect-badge"
                                                           title="@L["NeedsReconnect"]"
@@ -97,7 +97,7 @@
                                             <span class="select-profile-group-avatars-wrap">
                                                 <K7AvatarGroup Class="ma-2" Size="xl"
                                                                Members="@(group.Members.Select(ToAvatarGroupItem).ToList())" />
-                                                @if (GroupHostNeedsReconnect(group))
+                                                @if (GroupNeedsReconnect(group))
                                                 {
                                                     <span class="select-profile-reconnect-badge"
                                                           title="@L["NeedsReconnect"]"
@@ -127,6 +127,13 @@
                                                   Disabled="@(entryIndex == 0)"
                                                   Focusable="@(entryIndex > 0)"
                                                   OnClick="@(() => MoveEntry(entryIndex, -1))" />
+                                    @if (entry.User is { } editableUser)
+                                    {
+                                        var hidden = IsUserHidden(editableUser);
+                                        <K7IconButton Icon="@(hidden ? Phosphor.EyeSlash : Phosphor.Eye)"
+                                                      AriaLabel="@(hidden ? L["ShowProfile"] : L["HideProfile"])"
+                                                      OnClick="@(() => ToggleHidden(editableUser))" />
+                                    }
                                     <K7IconButton Icon="@Phosphor.Trash"
                                                   Color="error"
                                                   AriaLabel="@L["RemoveProfile"]"

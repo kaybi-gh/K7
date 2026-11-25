@@ -76,7 +76,7 @@
 }
 
 .carousel-container:has(.select-profile-card--editing) {
-    --carousel-slide-width: 13rem;
+    --carousel-slide-width: 16rem;
 }
 
 .carousel-viewport:has(.select-profile-card--editing) {
@@ -141,7 +141,7 @@
     }
 
     .carousel-container:has(.select-profile-card--editing) {
-        --carousel-slide-width: 13rem;
+        --carousel-slide-width: 16rem;
     }
 
     .carousel-container:has(.custom-nav-feed-card) {

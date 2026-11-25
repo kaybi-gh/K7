@@ -21,6 +21,9 @@ public class SharedProfileService(
         return groups;
     }
 
+    public Task<IReadOnlyList<DeviceLinkSharedProfileDto>> GetDeviceLinkSharedProfilesAsync(Guid? userId, CancellationToken cancellationToken = default) =>
+        api.GetDeviceLinkSharedProfilesAsync(userId, cancellationToken);
+
     public Task<IReadOnlyList<SharedProfileMemberCandidateDto>> GetMemberCandidatesAsync(CancellationToken cancellationToken = default) =>
         api.GetSharedProfileMemberCandidatesAsync(cancellationToken);
 

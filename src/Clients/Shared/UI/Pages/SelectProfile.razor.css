@@ -199,6 +199,10 @@
     margin: 0;
 }
 
+.select-profile-page ::deep .select-profile-card--hidden {
+    opacity: 0.45;
+}
+
 .select-profile-page ::deep .select-profile-card--expired {
     opacity: 0.55;
 }

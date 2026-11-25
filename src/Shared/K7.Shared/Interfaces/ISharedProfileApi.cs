@@ -9,6 +9,12 @@ namespace K7.Shared.Interfaces;
 public interface ISharedProfileApi
 {
     Task<IReadOnlyList<SharedProfileDto>> GetSharedProfilesAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Shared profiles the signed-in user can pin while linking a device.
+    /// <paramref name="userId"/> is a managed account. Null lists the signed-in user.
+    /// </summary>
+    Task<IReadOnlyList<DeviceLinkSharedProfileDto>> GetDeviceLinkSharedProfilesAsync(Guid? userId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<SharedProfileMemberCandidateDto>> GetSharedProfileMemberCandidatesAsync(CancellationToken cancellationToken = default);
     Task<Guid> CreateSharedProfileAsync(CreateSharedProfileRequest request, CancellationToken cancellationToken = default);
     Task UpdateSharedProfileAsync(Guid id, UpdateSharedProfileRequest request, CancellationToken cancellationToken = default);

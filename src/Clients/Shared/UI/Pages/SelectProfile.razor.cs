@@ -45,6 +45,8 @@ public partial class SelectProfile : IAsyncDisposable
     private List<SharedProfileDto> _pinnedGroups = [];
     private List<PickerEntry> _entries = [];
     private List<PickerEntry>? _editBaseline;
+    private HashSet<string> _hiddenUserIds = new(StringComparer.Ordinal);
+    private HashSet<string>? _hiddenBaseline;
     private bool _editing;
     private SelectionModeKeyboardBinder? _editBackBinder;
     private bool _singleUserMode;
@@ -153,6 +155,9 @@ public partial class SelectProfile : IAsyncDisposable
     private void ReloadLocalUsers()
     {
         _users = LocalUserService.GetAll();
+        if (!_editing)
+            _hiddenUserIds = ProfilePickerHiddenUsers.Read(Storage);
+
         RebuildEntries();
     }
 
@@ -161,14 +166,32 @@ public partial class SelectProfile : IAsyncDisposable
         if (_editing)
             return;
 
+        _entries = BuildEntries(includeHidden: false);
+    }
+
+    private List<PickerEntry> BuildEntries(bool includeHidden)
+    {
         var raw = new List<PickerEntry>(_users.Count + _pinnedGroups.Count);
         foreach (var user in _users)
+        {
+            if (!includeHidden && _hiddenUserIds.Contains(user.IdentityUserId))
+                continue;
+
             raw.Add(new PickerEntry(ProfilePickerOrder.User(user.IdentityUserId), user, null));
+        }
 
         foreach (var group in _pinnedGroups)
             raw.Add(new PickerEntry(ProfilePickerOrder.Group(group.Id), null, group));
 
-        _entries = ProfilePickerOrder.Arrange(raw, entry => entry.Token, ReadOrder());
+        return ProfilePickerOrder.Arrange(raw, entry => entry.Token, ReadOrder());
+    }
+
+    private bool IsUserHidden(LocalUser user) => _hiddenUserIds.Contains(user.IdentityUserId);
+
+    private void ToggleHidden(LocalUser user)
+    {
+        if (!_hiddenUserIds.Remove(user.IdentityUserId))
+            _hiddenUserIds.Add(user.IdentityUserId);
     }
 
     private List<string> ReadOrder()
@@ -373,22 +396,16 @@ public partial class SelectProfile : IAsyncDisposable
 
     private async Task SelectGroupCoreAsync(SharedProfileDto group)
     {
-        if (string.IsNullOrEmpty(group.HostIdentityUserId))
+        var member = FindLocalMember(group);
+        if (member is null)
         {
             Snackbar.Add(L["HostNotOnDevice"], K7Severity.Error);
             return;
         }
 
-        var host = _users.FirstOrDefault(u => u.IdentityUserId == group.HostIdentityUserId);
-        if (host is null)
+        if (NeedsReconnect(member))
         {
-            Snackbar.Add(L["HostNotOnDevice"], K7Severity.Error);
-            return;
-        }
-
-        if (NeedsReconnect(host))
-        {
-            await ReconnectExpiredProfileAsync(host, group);
+            await ReconnectExpiredProfileAsync(member, group);
             return;
         }
 
@@ -404,24 +421,24 @@ public partial class SelectProfile : IAsyncDisposable
 
         _loading = true;
         _showOfflineButton = false;
-        _pendingUser = host;
+        _pendingUser = member;
         StateHasChanged();
         StartOfflineTimer();
 
         try
         {
-            var success = await AuthService.SwitchToUserAsync(host.IdentityUserId);
+            var success = await AuthService.SwitchToUserAsync(member.IdentityUserId);
             CancelOfflineTimer();
             if (success)
             {
                 SharedProfileSession.SetActiveGroup(group);
-                LocalUserService.SetLastActiveId(host.IdentityUserId);
+                LocalUserService.SetLastActiveId(member.IdentityUserId);
                 RecordSharedProfileSelection(group.Id);
                 Navigation.NavigateTo("/");
             }
             else
             {
-                Snackbar.Add(string.Format(L["SessionExpired"], host.UserName), K7Severity.Error);
+                Snackbar.Add(string.Format(L["SessionExpired"], member.UserName), K7Severity.Error);
                 // TV: stay on the picker with a reconnect badge. Click again (or +) to link.
                 if (_isTv)
                 {
@@ -430,16 +447,16 @@ public partial class SelectProfile : IAsyncDisposable
                 }
                 else
                 {
-                    await ReconnectExpiredProfileAsync(host, group);
+                    await ReconnectExpiredProfileAsync(member, group);
                 }
             }
         }
         catch (HttpRequestException)
         {
             CancelOfflineTimer();
-            AuthService.SignInOffline(host);
+            AuthService.SignInOffline(member);
             SharedProfileSession.SetActiveGroup(group);
-            LocalUserService.SetLastActiveId(host.IdentityUserId);
+            LocalUserService.SetLastActiveId(member.IdentityUserId);
             RecordSharedProfileSelection(group.Id);
             Snackbar.Add(L["ServerUnreachable"], K7Severity.Warning);
             Navigation.NavigateTo("/");
@@ -447,9 +464,9 @@ public partial class SelectProfile : IAsyncDisposable
         catch (TaskCanceledException)
         {
             CancelOfflineTimer();
-            AuthService.SignInOffline(host);
+            AuthService.SignInOffline(member);
             SharedProfileSession.SetActiveGroup(group);
-            LocalUserService.SetLastActiveId(host.IdentityUserId);
+            LocalUserService.SetLastActiveId(member.IdentityUserId);
             RecordSharedProfileSelection(group.Id);
             Snackbar.Add(L["ServerUnreachable"], K7Severity.Warning);
             Navigation.NavigateTo("/");
@@ -713,7 +730,7 @@ public partial class SelectProfile : IAsyncDisposable
 
             if (group is not null
                 && !string.IsNullOrEmpty(subject)
-                && string.Equals(subject, group.HostIdentityUserId, StringComparison.Ordinal))
+                && IsGroupMember(group, subject))
             {
                 SharedProfileSession.SetActiveGroup(group);
                 RecordSharedProfileSelection(group.Id);
@@ -781,7 +798,7 @@ public partial class SelectProfile : IAsyncDisposable
     private static bool NeedsReconnect(LocalUser user) =>
         string.IsNullOrEmpty(user.RefreshToken);
 
-    private static string GetProfileCardClass(bool needsReconnect, bool isGroup = false, bool editing = false)
+    private static string GetProfileCardClass(bool needsReconnect, bool isGroup = false, bool editing = false, bool hidden = false)
     {
         var classes = isGroup
             ? "select-profile-card select-profile-card--group my-2"
@@ -793,6 +810,9 @@ public partial class SelectProfile : IAsyncDisposable
         if (needsReconnect)
             classes += " select-profile-card--expired";
 
+        if (hidden)
+            classes += " select-profile-card--hidden";
+
         if (editing)
             classes += " select-profile-card--editing";
 
@@ -801,7 +821,12 @@ public partial class SelectProfile : IAsyncDisposable
 
     private async Task BeginEditAsync()
     {
-        if (_editing || _entries.Count == 0)
+        if (_editing || (_users.Count == 0 && _pinnedGroups.Count == 0))
+            return;
+
+        _hiddenBaseline = new HashSet<string>(_hiddenUserIds, StringComparer.Ordinal);
+        _entries = BuildEntries(includeHidden: true);
+        if (_entries.Count == 0)
             return;
 
         _editBaseline = [.. _entries];
@@ -815,11 +840,13 @@ public partial class SelectProfile : IAsyncDisposable
         if (!_editing)
             return;
 
-        if (_editBaseline is not null)
-            _entries = [.. _editBaseline];
+        if (_hiddenBaseline is not null)
+            _hiddenUserIds = new HashSet<string>(_hiddenBaseline, StringComparer.Ordinal);
 
+        _hiddenBaseline = null;
         _editBaseline = null;
         _editing = false;
+        RebuildEntries();
         await BindEditBackAsync(false);
         await RefreshEditChromeAsync();
     }
@@ -843,6 +870,7 @@ public partial class SelectProfile : IAsyncDisposable
 
             if (entry.User is { } user)
             {
+                _hiddenUserIds.Remove(user.IdentityUserId);
                 LocalUserService.Remove(user.IdentityUserId);
             }
             else if (entry.Group is { } group)
@@ -853,6 +881,9 @@ public partial class SelectProfile : IAsyncDisposable
                     SharedProfileSession.ClearActiveGroup();
             }
         }
+
+        _hiddenBaseline = null;
+        ProfilePickerHiddenUsers.Write(Storage, _hiddenUserIds);
 
         await BindEditBackAsync(false);
         _users = LocalUserService.GetAll();
@@ -969,14 +1000,28 @@ public partial class SelectProfile : IAsyncDisposable
         }
     }
 
-    private bool GroupHostNeedsReconnect(SharedProfileDto group)
+    private LocalUser? FindLocalMember(SharedProfileDto group)
     {
-        if (string.IsNullOrEmpty(group.HostIdentityUserId))
+        var candidates = _users.Where(user => IsGroupMember(group, user.IdentityUserId)).ToList();
+        return candidates.FirstOrDefault(user => !NeedsReconnect(user)) ?? candidates.FirstOrDefault();
+    }
+
+    private static bool IsGroupMember(SharedProfileDto group, string? identityUserId)
+    {
+        if (string.IsNullOrEmpty(identityUserId))
             return false;
 
-        var host = _users.FirstOrDefault(u =>
-            string.Equals(u.IdentityUserId, group.HostIdentityUserId, StringComparison.Ordinal));
-        return host is not null && NeedsReconnect(host);
+        if (string.Equals(group.HostIdentityUserId, identityUserId, StringComparison.Ordinal))
+            return true;
+
+        return group.Members.Any(member =>
+            string.Equals(member.IdentityUserId, identityUserId, StringComparison.Ordinal));
+    }
+
+    private bool GroupNeedsReconnect(SharedProfileDto group)
+    {
+        var member = FindLocalMember(group);
+        return member is not null && NeedsReconnect(member);
     }
 
     private static string GetMemberInitial(SharedProfileMemberDto member)

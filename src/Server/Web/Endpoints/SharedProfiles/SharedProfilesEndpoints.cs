@@ -18,6 +18,7 @@ using K7.Server.Application.Features.SharedProfiles.Queries.GetSharedProfileAudi
 using K7.Server.Application.Features.SharedProfiles.Queries.GetSharedProfileHomeLayout;
 using K7.Server.Application.Features.SharedProfiles.Queries.GetSharedProfileMemberCandidates;
 using K7.Server.Application.Features.SharedProfiles.Queries.GetSharedProfilePlaylistIds;
+using K7.Server.Application.Features.SharedProfiles.Queries.GetDeviceLinkSharedProfiles;
 using K7.Server.Application.Features.SharedProfiles.Queries.GetSharedProfiles;
 using K7.Server.Application.Features.SharedProfiles.Queries.SharedProfileExists;
 using K7.Server.Application.Features.SharedProfiles.Queries.GetSharedProfileVideoPlaybackPolicy;
@@ -41,6 +42,24 @@ public class GetSharedProfiles : IEndpoint
 
         endpointRouteBuilder.MapGet("/api/shared-profiles", async ([FromServices] ISender sender, CancellationToken cancellationToken) =>
             await sender.Send(new GetSharedProfilesQuery(), cancellationToken))
+        .RequireAuthorization(Policies.UserOrAbove)
+        .WithName(type.Name)
+        .WithTags(groupName);
+    }
+}
+
+public class GetDeviceLinkSharedProfiles : IEndpoint
+{
+    public void Map(IEndpointRouteBuilder endpointRouteBuilder)
+    {
+        var type = GetType();
+        var groupName = type.Namespace!.Split('.').Last();
+
+        endpointRouteBuilder.MapGet("/api/shared-profiles/device-link", async (
+            Guid? userId,
+            [FromServices] ISender sender,
+            CancellationToken cancellationToken) =>
+            await sender.Send(new GetDeviceLinkSharedProfilesQuery(userId), cancellationToken))
         .RequireAuthorization(Policies.UserOrAbove)
         .WithName(type.Name)
         .WithTags(groupName);

@@ -591,6 +591,15 @@ public partial class K7ServerService : IK7ServerService, IMediaService, ILibrary
         return groups ?? [];
     }
 
+    public async Task<IReadOnlyList<DeviceLinkSharedProfileDto>> GetDeviceLinkSharedProfilesAsync(Guid? userId, CancellationToken cancellationToken = default)
+    {
+        var url = userId is null
+            ? "api/shared-profiles/device-link"
+            : $"api/shared-profiles/device-link?userId={userId:D}";
+        var groups = await HttpClient.GetFromJsonAsync<List<DeviceLinkSharedProfileDto>>(url, _serializerOptions, cancellationToken);
+        return groups ?? [];
+    }
+
     public async Task<IReadOnlyList<SharedProfileMemberCandidateDto>> GetSharedProfileMemberCandidatesAsync(CancellationToken cancellationToken = default)
     {
         var candidates = await HttpClient.GetFromJsonAsync<List<SharedProfileMemberCandidateDto>>("api/shared-profiles/member-candidates", _serializerOptions, cancellationToken);

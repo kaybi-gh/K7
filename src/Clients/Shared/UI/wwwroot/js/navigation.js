@@ -632,6 +632,21 @@ var SpatialNav = (function () {
         var currentIdx = allItems.indexOf(currentItem);
         if (currentIdx === -1) return false;
 
+        // Edit actions sit in one slide (move, hide, remove). Left and right
+        // must visit each button before the carousel jumps to the next card.
+        var actionRow = active.closest('.select-profile-edit-actions');
+        if (actionRow && currentItem.contains(actionRow)) {
+            var buttons = editActionButtons(actionRow);
+            var buttonIdx = buttons.indexOf(active);
+            if (buttonIdx >= 0) {
+                var step = direction === 'ArrowRight' ? buttonIdx + 1 : buttonIdx - 1;
+                if (step >= 0 && step < buttons.length) {
+                    buttons[step].focus({ preventScroll: true });
+                    return true;
+                }
+            }
+        }
+
         var targetIdx = direction === 'ArrowRight' ? currentIdx + 1 : currentIdx - 1;
         // At horizontal edges, stay on the current tile (do not let spatial nav escape
         // to hero controls like the back button).
@@ -639,6 +654,15 @@ var SpatialNav = (function () {
 
         var targetItem = allItems[targetIdx];
         var target = targetItem.matches(FOCUSABLE) ? targetItem : targetItem.querySelector(FOCUSABLE);
+        if (actionRow) {
+            var targetRow = targetItem.querySelector('.select-profile-edit-actions');
+            var targetButtons = targetRow ? editActionButtons(targetRow) : [];
+            if (targetButtons.length) {
+                target = direction === 'ArrowRight'
+                    ? targetButtons[0]
+                    : targetButtons[targetButtons.length - 1];
+            }
+        }
         if (!target) return false;
 
         if (carousel.__embla) {
@@ -656,6 +680,12 @@ var SpatialNav = (function () {
             setTimeout(function () { _carouselNavHandled = false; }, 50);
         }, 10);
         return true;
+    }
+
+    function editActionButtons(row) {
+        return Array.from(row.querySelectorAll(FOCUSABLE)).filter(function (el) {
+            return !el.disabled;
+        });
     }
 
     // Editing Mode

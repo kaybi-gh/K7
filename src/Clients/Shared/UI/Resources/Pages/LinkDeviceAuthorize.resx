@@ -33,4 +33,6 @@
   <data name="PinLabel" xml:space="preserve"><value>PIN de {0}</value></data>
   <data name="InvalidPin" xml:space="preserve"><value>PIN incorrect. Veuillez réessayer.</value></data>
   <data name="AccessDenied" xml:space="preserve"><value>Vous ne pouvez pas ouvrir cette session.</value></data>
+  <data name="SharedProfiles" xml:space="preserve"><value>Profils partagés</value></data>
+  <data name="SharedProfilesHint" xml:space="preserve"><value>Ils s'afficheront sur cet appareil avec le compte.</value></data>
 </root>

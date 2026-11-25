@@ -1,7 +1,9 @@
 using System.Security.Claims;
 using K7.Server.Application.Common.Exceptions;
+using K7.Server.Application.Features.SharedProfiles.Queries.FilterDeviceLinkSharedProfileIds;
 using K7.Server.Application.Features.Users.Commands.VerifyUserPin;
 using K7.Server.Application.Features.Users.Queries.GetGuardianSessionTarget;
+using K7.Shared;
 using K7.Server.Infrastructure.Database.Context.Identity;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Authentication;
@@ -21,6 +23,9 @@ public class Verify : IEndpoint
 
     /// <summary>Form field: the PIN of the managed account, when it has one.</summary>
     public const string PinParameter = "pin";
+
+    /// <summary>Form field: shared profiles of the linked account to show on that device.</summary>
+    public const string SharedProfileIdParameter = "shared_profile_id";
 
     private const string AccessDeniedError = "access_denied";
     private const string InvalidPinError = "invalid_pin";
@@ -120,6 +125,11 @@ public class Verify : IEndpoint
 
             identity.SetScopes(oidcResult.Principal.GetScopes());
             identity.SetResources(await scopeManager.ListResourcesAsync(identity.GetScopes()).ToListAsync());
+
+            var pinnedProfiles = await FilterPinnedProfilesAsync(context, sender, user.Id);
+            if (pinnedProfiles.Count > 0)
+                identity.SetClaim(DeviceLinkClaims.SharedProfileIds, string.Join(',', pinnedProfiles));
+
             identity.SetDestinations(GetDestinations);
 
             return Results.SignIn(new ClaimsPrincipal(identity),
@@ -163,6 +173,30 @@ public class Verify : IEndpoint
         }
 
         return (await userManager.FindByIdAsync(target.IdentityUserId), null);
+    }
+
+    private static async Task<IReadOnlyList<Guid>> FilterPinnedProfilesAsync(
+        HttpContext context,
+        ISender sender,
+        string identityUserId)
+    {
+        if (!context.Request.HasFormContentType)
+            return [];
+
+        var requested = context.Request.Form[SharedProfileIdParameter]
+            .Select(value => Guid.TryParse(value, out var id) ? id : (Guid?)null)
+            .Where(id => id is not null)
+            .Select(id => id!.Value)
+            .Distinct()
+            .Take(FilterDeviceLinkSharedProfileIdsQueryHandler.MaxIds)
+            .ToList();
+
+        if (requested.Count == 0)
+            return [];
+
+        return await sender.Send(
+            new FilterDeviceLinkSharedProfileIdsQuery(identityUserId, requested),
+            context.RequestAborted);
     }
 
     // Keeps the code and the chosen account in the address: the guardian retries without scanning
