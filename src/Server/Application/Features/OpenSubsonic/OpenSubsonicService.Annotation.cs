@@ -547,17 +547,28 @@ public sealed partial class OpenSubsonicService
 
     private async Task<OpenSubsonicActionResult> GetNowPlayingAsync(CancellationToken cancellationToken)
     {
+        var userId = await RequireUserIdAsync(cancellationToken);
+        if (userId is null)
+            return OpenSubsonicActionResult.Fail(OpenSubsonicConstants.ErrorNotAuthenticated, "Not authenticated.");
+
         var streams = activeStreamTracker.GetActiveStreams()
             .Where(s => string.Equals(s.MediaType, nameof(MediaType.MusicTrack), StringComparison.OrdinalIgnoreCase)
                         || string.Equals(s.MediaType, "MusicTrack", StringComparison.OrdinalIgnoreCase)
                         || string.Equals(s.MediaType, "music", StringComparison.OrdinalIgnoreCase))
             .ToList();
 
+        var accessibleMediaIds = new HashSet<Guid>();
+        foreach (var mediaId in streams.Select(s => s.MediaId).OfType<Guid>().Distinct())
+        {
+            if (await accessGuard.CanAccessAsync(mediaId, userId.Value, cancellationToken))
+                accessibleMediaIds.Add(mediaId);
+        }
+
         var entries = new List<OpenSubsonicNowPlayingEntry>();
         var playerId = 0;
         foreach (var stream in streams)
         {
-            if (stream.MediaId is null)
+            if (stream.MediaId is null || !accessibleMediaIds.Contains(stream.MediaId.Value))
                 continue;
 
             string? reportState = null;

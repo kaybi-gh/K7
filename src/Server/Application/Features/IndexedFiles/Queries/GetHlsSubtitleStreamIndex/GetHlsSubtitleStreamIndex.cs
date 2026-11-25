@@ -5,6 +5,7 @@ using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Models;
 using K7.Server.Application.Features.IndexedFiles.Queries.GetHlsSubtitleStreamSegment;
 using K7.Server.Application.Helpers;
+using K7.Server.Application.Services;
 using K7.Server.Domain.Entities.Metadatas.Files;
 using K7.Server.Domain.Extensions;
 using K7.Server.Domain.Interfaces;
@@ -37,17 +38,20 @@ public record GetHlsSubtitleStreamIndexQuery(
 public class GetHlsSubtitleStreamIndexQueryHandler : IRequestHandler<GetHlsSubtitleStreamIndexQuery, HttpContentResult>
 {
     private readonly IApplicationDbContext _context;
+    private readonly IMediaAccessGuard _accessGuard;
     private readonly IMediaTranscoder _mediaTranscoder;
     private readonly ILogger<GetHlsSubtitleStreamIndexQueryHandler> _logger;
     private readonly PathsConfiguration _paths;
 
     public GetHlsSubtitleStreamIndexQueryHandler(
         IApplicationDbContext context,
+        IMediaAccessGuard accessGuard,
         IMediaTranscoder mediaTranscoder,
         ILogger<GetHlsSubtitleStreamIndexQueryHandler> logger,
         IOptions<PathsConfiguration> pathsOptions)
     {
         _context = context;
+        _accessGuard = accessGuard;
         _mediaTranscoder = mediaTranscoder;
         _logger = logger;
         _paths = pathsOptions.Value;
@@ -57,6 +61,8 @@ public class GetHlsSubtitleStreamIndexQueryHandler : IRequestHandler<GetHlsSubti
 
     public async Task<HttpContentResult> Handle(GetHlsSubtitleStreamIndexQuery query, CancellationToken cancellationToken)
     {
+        await _accessGuard.EnsureAccessByIndexedFileAsync(query.Id, cancellationToken);
+
         var entity = await _context.IndexedFiles
             .Include(x => x.FileMetadata)
             .FirstOrDefaultAsync(x => x.Id == query.Id, cancellationToken);

@@ -96,6 +96,31 @@ public sealed partial class OpenSubsonicService
             .AsSplitQuery()
             .FirstOrDefaultAsync(t => t.Id == id, cancellationToken);
 
+    private async Task<bool> CallerCanReadCoverAsync(Guid id, Guid userId, CancellationToken cancellationToken)
+    {
+        var ownsPlaylist = await context.Playlists
+            .AsNoTracking()
+            .AnyAsync(p => p.Id == id && p.UserId == userId, cancellationToken);
+        if (ownsPlaylist)
+            return true;
+
+        var isMedia = await context.Medias
+            .AsNoTracking()
+            .AnyAsync(m => m.Id == id, cancellationToken);
+        if (!isMedia)
+            return false;
+
+        try
+        {
+            await accessGuard.EnsureAccessAsync(id, cancellationToken);
+            return true;
+        }
+        catch (NotFoundException)
+        {
+            return false;
+        }
+    }
+
     private async Task<string?> ResolveCoverPathAsync(Guid id, CancellationToken cancellationToken)
     {
         var direct = await context.MetadataPictures

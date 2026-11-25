@@ -3,6 +3,7 @@ using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Models;
 using K7.Server.Application.Features.IndexedFiles.Queries.GetHlsAudioStreamSegment;
 using K7.Server.Application.Helpers;
+using K7.Server.Application.Services;
 using K7.Server.Domain.Entities.Metadatas.Files;
 
 namespace K7.Server.Application.Features.IndexedFiles.Queries.GetHlsAudioStreamIndex;
@@ -34,14 +35,18 @@ public record GetHlsAudioStreamIndexQuery(
 public class GetHlsAudioStreamIndexQueryHandler : IRequestHandler<GetHlsAudioStreamIndexQuery, HttpContentResult>
 {
     private readonly IApplicationDbContext _context;
+    private readonly IMediaAccessGuard _accessGuard;
 
-    public GetHlsAudioStreamIndexQueryHandler(IApplicationDbContext context)
+    public GetHlsAudioStreamIndexQueryHandler(IApplicationDbContext context, IMediaAccessGuard accessGuard)
     {
         _context = context;
+        _accessGuard = accessGuard;
     }
 
     public async Task<HttpContentResult> Handle(GetHlsAudioStreamIndexQuery query, CancellationToken cancellationToken)
     {
+        await _accessGuard.EnsureAccessByIndexedFileAsync(query.Id, cancellationToken);
+
         var entity = await _context.IndexedFiles
             .Include(x => x.FileMetadata)
             .FirstOrDefaultAsync(x => x.Id == query.Id, cancellationToken);

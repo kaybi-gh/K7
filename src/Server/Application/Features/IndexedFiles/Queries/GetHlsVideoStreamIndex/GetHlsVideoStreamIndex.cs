@@ -3,6 +3,7 @@ using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Models;
 using K7.Server.Application.Features.IndexedFiles.Queries.GetHlsVideoStreamSegment;
 using K7.Server.Application.Helpers;
+using K7.Server.Application.Services;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities.Metadatas.Files;
 using Microsoft.Extensions.Logging;
@@ -37,21 +38,26 @@ public record GetHlsVideoStreamIndexQuery(
 public class GetHlsVideoStreamIndexQueryHandler : IRequestHandler<GetHlsVideoStreamIndexQuery, HttpContentResult>
 {
     private readonly IApplicationDbContext _context;
+    private readonly IMediaAccessGuard _accessGuard;
     private readonly ISender _sender;
     private readonly ILogger<GetHlsVideoStreamIndexQueryHandler> _logger;
 
     public GetHlsVideoStreamIndexQueryHandler(
         IApplicationDbContext context,
+        IMediaAccessGuard accessGuard,
         ISender sender,
         ILogger<GetHlsVideoStreamIndexQueryHandler> logger)
     {
         _context = context;
+        _accessGuard = accessGuard;
         _sender = sender;
         _logger = logger;
     }
 
     public async Task<HttpContentResult> Handle(GetHlsVideoStreamIndexQuery query, CancellationToken cancellationToken)
     {
+        await _accessGuard.EnsureAccessByIndexedFileAsync(query.Id, cancellationToken);
+
         if (query.VideoResolutionIdentifier != "original")
         {
             var quality = Constants.VideoQualities.FirstOrDefault(kvp => kvp.Value.Name == query.VideoResolutionIdentifier);

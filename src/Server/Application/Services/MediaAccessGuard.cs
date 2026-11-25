@@ -1,9 +1,11 @@
+using K7.Server.Application.Common.Extensions;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.QueryExtensions;
 using K7.Server.Application.Common.Services;
 using K7.Server.Application.Features.Restrictions.Services;
 using K7.Server.Domain.Entities.Medias;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace K7.Server.Application.Services;
 
@@ -24,9 +26,15 @@ public class MediaAccessGuard(
     IApplicationDbContext context,
     IUser currentUser,
     MediaAccessFilter mediaAccessFilter,
-    IShareVisitorAccess shareVisitorAccess)
+    IShareVisitorAccess shareVisitorAccess,
+    IShareVisitorContext shareVisitorContext,
+    IShareAccessInvalidator shareAccessInvalidator,
+    IBoundedMemoryCache cache)
     : IMediaAccessGuard
 {
+    // One decision covers the manifest and the following segments. Players ask for
+    // many segments a minute, and the library check is several queries.
+    private static readonly TimeSpan IndexedFileAccessCacheDuration = TimeSpan.FromSeconds(30);
     public Task EnsureAccessAsync(Guid mediaId, CancellationToken cancellationToken = default) =>
         EnsureAccessCoreAsync(mediaId, ignoreMediaExclusion: false, cancellationToken);
 
@@ -137,18 +145,13 @@ public class MediaAccessGuard(
     {
         if (shareVisitorAccess.IsShareVisitor)
         {
-            var fileMediaId = await context.IndexedFiles
-                .AsNoTracking()
-                .Where(f => f.Id == indexedFileId)
-                .Select(f => f.MediaId)
-                .FirstOrDefaultAsync(cancellationToken);
-
-            // A file without a media is in no share: deny instead of the lenient user rule.
-            if (fileMediaId is not { } sharedMediaId
-                || !await CanShareVisitorAccessAsync(sharedMediaId, cancellationToken))
-            {
+            var sessions = string.Join(',', shareVisitorContext.Grants.Select(g => g.SessionId.ToString("N")).Order());
+            var allowed = await RememberIndexedFileAccessAsync(
+                $"file-access:share:{shareAccessInvalidator.Version}:{sessions}:{indexedFileId:N}",
+                ct => ShareVisitorCanAccessFileAsync(indexedFileId, ct),
+                cancellationToken);
+            if (!allowed)
                 throw new NotFoundException(indexedFileId.ToString(), "IndexedFile");
-            }
 
             return;
         }
@@ -156,6 +159,45 @@ public class MediaAccessGuard(
         if (currentUser.Id is not { } userId)
             return;
 
+        var profile = currentUser.SharedProfileId?.ToString("N") ?? "none";
+        var allowedForUser = await RememberIndexedFileAccessAsync(
+            $"file-access:{userId:N}:{profile}:{indexedFileId:N}",
+            ct => UserCanAccessFileAsync(indexedFileId, userId, ct),
+            cancellationToken);
+        if (!allowedForUser)
+            throw new NotFoundException(indexedFileId.ToString(), "IndexedFile");
+    }
+
+    private async Task<bool> RememberIndexedFileAccessAsync(
+        string key,
+        Func<CancellationToken, Task<bool>> check,
+        CancellationToken cancellationToken)
+    {
+        var allowed = await cache.GetOrCreateAsync(key, async entry =>
+        {
+            entry.AbsoluteExpirationRelativeToNow = IndexedFileAccessCacheDuration;
+            entry.Size = MemoryCacheExtensions.EntrySize;
+            return await check(cancellationToken);
+        });
+
+        return allowed == true;
+    }
+
+    private async Task<bool> ShareVisitorCanAccessFileAsync(Guid indexedFileId, CancellationToken cancellationToken)
+    {
+        var fileMediaId = await context.IndexedFiles
+            .AsNoTracking()
+            .Where(f => f.Id == indexedFileId)
+            .Select(f => f.MediaId)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        // A file without a media is in no share: deny instead of the lenient user rule.
+        return fileMediaId is { } sharedMediaId
+            && await CanShareVisitorAccessAsync(sharedMediaId, cancellationToken);
+    }
+
+    private async Task<bool> UserCanAccessFileAsync(Guid indexedFileId, Guid userId, CancellationToken cancellationToken)
+    {
         var check = await context.IndexedFiles
             .AsNoTracking()
             .Where(f => f.Id == indexedFileId)
@@ -170,18 +212,14 @@ public class MediaAccessGuard(
             .FirstOrDefaultAsync(cancellationToken);
 
         if (check is null)
-            return;
+            return true;
 
-        if (check.IsLibraryExcluded)
-            throw new NotFoundException(indexedFileId.ToString(), "IndexedFile");
-
-        if (check.IsMediaExcluded)
-            throw new NotFoundException(indexedFileId.ToString(), "IndexedFile");
+        if (check.IsLibraryExcluded || check.IsMediaExcluded)
+            return false;
 
         if (check.MediaId is not { } mediaId)
-            return;
+            return true;
 
-        if (!await CanAccessAsync(mediaId, userId, cancellationToken))
-            throw new NotFoundException(indexedFileId.ToString(), "IndexedFile");
+        return await CanAccessAsync(mediaId, userId, cancellationToken);
     }
 }

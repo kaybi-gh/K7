@@ -87,7 +87,14 @@ public class MediaAccessGuardTests
             _context,
             new NoShareVisitorContext(),
             new ShareScopeResolver(_context));
-        _guard = new MediaAccessGuard(_context, _currentUser, _filter, shareVisitorAccess);
+        _guard = new MediaAccessGuard(
+            _context,
+            _currentUser,
+            _filter,
+            shareVisitorAccess,
+            new NoShareVisitorContext(),
+            new ShareAccessInvalidator(),
+            new BoundedMemoryCache());
     }
 
     [TearDown]
@@ -353,6 +360,28 @@ public class MediaAccessGuardTests
         (await _guard.CanAccessAsync(serieId, _userId)).Should().BeFalse();
         (await _guard.CanAccessAsync(seasonId, _userId)).Should().BeFalse();
         (await _guard.CanAccessAsync(episodeId, _userId)).Should().BeFalse();
+    }
+
+    [Test]
+    public async Task EnsureAccessByIndexedFileAsync_ShouldKeepTheDecision_UntilTheCacheExpires()
+    {
+        var file = CreateFile(_libraryId, _accessibleMediaId, "/ok.mkv");
+        _context.IndexedFiles.Add(file);
+        await _context.SaveChangesAsync();
+
+        await _guard.EnsureAccessByIndexedFileAsync(file.Id);
+
+        _context.UserLibraryExclusions.Add(new UserLibraryExclusion
+        {
+            UserId = _userId,
+            LibraryId = _libraryId,
+            IsAdminExcluded = true
+        });
+        await _context.SaveChangesAsync();
+
+        var act = () => _guard.EnsureAccessByIndexedFileAsync(file.Id);
+
+        await act.Should().NotThrowAsync();
     }
 
     [Test]

@@ -44,7 +44,10 @@ public class MediaAccessGuardShareVisitorTests
             _database.Context,
             _currentUser,
             new MediaAccessFilter(_database.Context),
-            shareVisitorAccess);
+            shareVisitorAccess,
+            _visitorContext,
+            new ShareAccessInvalidator(),
+            new BoundedMemoryCache());
     }
 
     [TearDown]

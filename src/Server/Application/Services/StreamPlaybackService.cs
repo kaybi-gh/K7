@@ -179,6 +179,8 @@ public sealed class StreamPlaybackService(
         GetHlsVideoStreamSegmentQuery query,
         CancellationToken cancellationToken = default)
     {
+        await accessGuard.EnsureAccessByIndexedFileAsync(query.Id, cancellationToken);
+
         var quality = DisplayEncodeCap.ResolveJobQuality(
             query.Quality,
             activeStreamTracker.GetStreamInfo(query.StreamSessionId)?.StreamDecision);
@@ -255,6 +257,8 @@ public sealed class StreamPlaybackService(
         GetHlsAudioStreamSegmentQuery query,
         CancellationToken cancellationToken = default)
     {
+        await accessGuard.EnsureAccessByIndexedFileAsync(query.Id, cancellationToken);
+
         var entity = await context.IndexedFiles.AsNoTracking().Include(x => x.FileMetadata)
             .FirstOrDefaultAsync(x => x.Id == query.Id, cancellationToken);
         Guard.Against.NotFound(query.Id, entity);

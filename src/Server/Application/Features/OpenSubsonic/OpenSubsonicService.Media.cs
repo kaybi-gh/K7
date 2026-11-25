@@ -139,6 +139,13 @@ public sealed partial class OpenSubsonicService
         if (id is null)
             return OpenSubsonicActionResult.Fail(OpenSubsonicConstants.ErrorRequiredParam, "Missing id.");
 
+        var userId = await RequireUserIdAsync(cancellationToken);
+        if (userId is null)
+            return OpenSubsonicActionResult.Fail(OpenSubsonicConstants.ErrorNotAuthenticated, "Not authenticated.");
+
+        if (!await CallerCanReadCoverAsync(id.Value, userId.Value, cancellationToken))
+            return OpenSubsonicActionResult.Fail(OpenSubsonicConstants.ErrorNotFound, "Cover art not found.");
+
         var path = await ResolveCoverPathAsync(id.Value, cancellationToken);
         if (path is null || !System.IO.File.Exists(path))
             return OpenSubsonicActionResult.Fail(OpenSubsonicConstants.ErrorNotFound, "Cover art not found.");
