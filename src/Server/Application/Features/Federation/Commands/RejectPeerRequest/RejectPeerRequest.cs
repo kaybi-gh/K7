@@ -38,7 +38,7 @@ public class RejectPeerRequestCommandHandler(
         {
             try
             {
-                await peerClient.SendPeerRejectAsync(peerRequest.RequesterUrl, providerUrl, cancellationToken);
+                await peerClient.SendPeerRejectAsync(peerRequest.RequesterUrl, providerUrl, peerRequest.Token, cancellationToken);
             }
             catch (Exception ex)
             {

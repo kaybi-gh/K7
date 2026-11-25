@@ -11,7 +11,7 @@ public interface IPeerClient
 {
     Task SendPeerRequestAsync(string remoteUrl, string localServerName, string localServerUrl, string token, CancellationToken cancellationToken = default);
     Task SendPeerConfirmAsync(string remoteUrl, string token, string clientId, string clientSecret, string? federationAssertionSecret = null, CancellationToken cancellationToken = default);
-    Task SendPeerRejectAsync(string requesterUrl, string providerUrl, CancellationToken cancellationToken = default);
+    Task SendPeerRejectAsync(string requesterUrl, string providerUrl, string peeringToken, CancellationToken cancellationToken = default);
     Task<string?> GetAccessTokenAsync(string baseUrl, string clientId, string clientSecret, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<PeerLibraryDto>> GetRemoteLibrariesAsync(string baseUrl, string accessToken, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<PeerMediaDto>> GetRemoteMediaAsync(string baseUrl, string accessToken, Guid libraryId, CancellationToken cancellationToken = default);
@@ -23,7 +23,7 @@ public interface IPeerClient
     Task<IReadOnlyList<HlsSegmentDto>> GetRemoteHlsSegmentsAsync(string baseUrl, string accessToken, Guid sessionId, CancellationToken cancellationToken = default);
     Task NotifyMediaAsync(string baseUrl, string accessToken, Guid libraryId, Guid mediaId, PeerMediaNotificationType type, CancellationToken cancellationToken = default);
     Task NotifyRevocationAsync(string baseUrl, string accessToken, CancellationToken cancellationToken = default);
-    Task NotifyProviderRevocationAsync(string requesterUrl, string providerUrl, CancellationToken cancellationToken = default);
+    Task NotifyProviderRevocationAsync(string requesterUrl, string providerUrl, string assertionSecret, CancellationToken cancellationToken = default);
     Task NotifyShareUpdateAsync(string baseUrl, string accessToken, IReadOnlyList<Guid> sharedLibraryIds, CancellationToken cancellationToken = default);
     Task<bool> PingAsync(string baseUrl, string accessToken, CancellationToken cancellationToken = default);
     Task<bool> IsReachableAsync(string baseUrl, CancellationToken cancellationToken = default);

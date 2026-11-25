@@ -2,9 +2,9 @@ using K7.Server.Domain.Enums;
 
 namespace K7.Shared.Dtos.Requests;
 
-public sealed record PeerRejectRequest(string ProviderUrl);
+public sealed record PeerRejectRequest(string ProviderUrl, string Token);
 
-public sealed record ProviderRevokeRequest(string ProviderUrl);
+public sealed record ProviderRevokeRequest(string ProviderUrl, long Expires, string Signature);
 
 public sealed record FederationSessionRequest
 {

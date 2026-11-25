@@ -5,5 +5,11 @@ public class ReceiveProviderRevocationCommandValidator : AbstractValidator<Recei
     public ReceiveProviderRevocationCommandValidator()
     {
         RuleFor(x => x.Request).NotNull();
+        When(x => x.Request is not null, () =>
+        {
+            RuleFor(x => x.Request.ProviderUrl).NotEmpty();
+            RuleFor(x => x.Request.Signature).NotEmpty();
+            RuleFor(x => x.Request.Expires).GreaterThan(0);
+        });
     }
 }

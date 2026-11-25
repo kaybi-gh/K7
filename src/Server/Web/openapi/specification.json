@@ -21536,11 +21536,15 @@
       },
       "PeerRejectRequest": {
         "required": [
-          "providerUrl"
+          "providerUrl",
+          "token"
         ],
         "type": "object",
         "properties": {
           "providerUrl": {
+            "type": "string"
+          },
+          "token": {
             "type": "string"
           }
         }
@@ -22419,11 +22423,24 @@
       },
       "ProviderRevokeRequest": {
         "required": [
-          "providerUrl"
+          "providerUrl",
+          "expires",
+          "signature"
         ],
         "type": "object",
         "properties": {
           "providerUrl": {
+            "type": "string"
+          },
+          "expires": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "signature": {
             "type": "string"
           }
         }

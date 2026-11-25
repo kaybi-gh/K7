@@ -45,18 +45,26 @@ public class RevokePeerCommandHandler(
         }
         else
         {
-            // Provider side: no outbound credentials, notify via unauthenticated endpoint
+            // Provider side has no outbound credentials. Prove the callback with the shared assertion secret.
             var providerUrl = configuration.GetValue<string>("BaseUrl") ?? "";
-            if (!string.IsNullOrEmpty(providerUrl))
+            if (!string.IsNullOrEmpty(providerUrl) && !string.IsNullOrWhiteSpace(peer.FederationAssertionSecret))
             {
                 try
                 {
-                    await peerClient.NotifyProviderRevocationAsync(peer.BaseUrl, providerUrl, cancellationToken);
+                    await peerClient.NotifyProviderRevocationAsync(
+                        peer.BaseUrl,
+                        providerUrl,
+                        peer.FederationAssertionSecret,
+                        cancellationToken);
                 }
                 catch (Exception ex)
                 {
                     logger.LogWarning(ex, "Failed to notify requester {PeerName} of provider revocation (best-effort)", peer.Name);
                 }
+            }
+            else if (!string.IsNullOrEmpty(providerUrl))
+            {
+                logger.LogWarning("Skipping provider revocation notify for {PeerName}: no assertion secret", peer.Name);
             }
         }
 

@@ -5,5 +5,9 @@ public class ReceivePeerRejectCommandValidator : AbstractValidator<ReceivePeerRe
     public ReceivePeerRejectCommandValidator()
     {
         RuleFor(x => x.Request).NotNull();
+        When(x => x.Request is not null, () =>
+        {
+            RuleFor(x => x.Request.Token).NotEmpty();
+        });
     }
 }

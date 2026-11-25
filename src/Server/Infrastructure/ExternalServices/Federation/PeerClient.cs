@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using K7.Server.Application.Common.Exceptions;
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Features.Federation.Services;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos;
 using K7.Shared.Dtos.Entities;
@@ -43,11 +44,11 @@ public class PeerClient(
         await PostHandshakeAsync(url, payload, cancellationToken);
     }
 
-    public async Task SendPeerRejectAsync(string requesterUrl, string providerUrl, CancellationToken cancellationToken = default)
+    public async Task SendPeerRejectAsync(string requesterUrl, string providerUrl, string peeringToken, CancellationToken cancellationToken = default)
     {
         peerUrlGuard.EnsureAllowedOutgoingUrl(requesterUrl);
         var url = $"{requesterUrl.TrimEnd('/')}/api/federation/peer-reject";
-        var payload = new { ProviderUrl = providerUrl };
+        var payload = new PeerRejectRequest(providerUrl, peeringToken);
         await PostHandshakeAsync(url, payload, cancellationToken);
     }
 
@@ -268,12 +269,16 @@ public class PeerClient(
         response.EnsureSuccessStatusCode();
     }
 
-    public async Task NotifyProviderRevocationAsync(string requesterUrl, string providerUrl, CancellationToken cancellationToken = default)
+    public async Task NotifyProviderRevocationAsync(
+        string requesterUrl,
+        string providerUrl,
+        string assertionSecret,
+        CancellationToken cancellationToken = default)
     {
+        peerUrlGuard.EnsureAllowedOutgoingUrl(requesterUrl);
         var url = $"{requesterUrl.TrimEnd('/')}/api/federation/provider-revoke-notify";
-        var payload = new { ProviderUrl = providerUrl };
-        var response = await httpClient.PostAsJsonAsync(url, payload, cancellationToken);
-        response.EnsureSuccessStatusCode();
+        var payload = FederationCallbackProof.CreateProviderRevoke(providerUrl, assertionSecret);
+        await PostHandshakeAsync(url, payload, cancellationToken);
     }
 
     public async Task NotifyShareUpdateAsync(string baseUrl, string accessToken, IReadOnlyList<Guid> sharedLibraryIds, CancellationToken cancellationToken = default)
