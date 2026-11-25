@@ -61,6 +61,19 @@ if [ ! -f "$PUBLISH_DIR/wwwroot/_content/K7.Clients.Shared.UI/dist/video.js/vide
   exit 1
 fi
 
+# Release fingerprints the scoped bundle. index.html requests the stable styles.css name.
+# Without the alias the nav and cards lose their layout while app.css (theme) still loads.
+SCOPED_CSS="$PUBLISH_DIR/wwwroot/_content/K7.Clients.Shared.UI/K7.Clients.Shared.UI.styles.css"
+if [ ! -f "$SCOPED_CSS" ]; then
+  echo "build-flatpak: missing $SCOPED_CSS (scoped layout CSS was not aliased from the fingerprinted bundle)" >&2
+  exit 1
+fi
+SCOPED_CSS_BYTES="$(wc -c < "$SCOPED_CSS" | tr -d ' ')"
+if [ "$SCOPED_CSS_BYTES" -lt 50000 ]; then
+  echo "build-flatpak: $SCOPED_CSS is only ${SCOPED_CSS_BYTES} bytes" >&2
+  exit 1
+fi
+
 VLC_DIR="$PUBLISH_DIR/libvlc/linux-x64"
 if [ ! -f "$VLC_DIR/libvlc.so.12" ]; then
   if [ "${K7_FLATPAK_ALLOW_NO_VLC:-0}" = "1" ]; then

@@ -321,6 +321,7 @@
                                Condition="$([System.String]::new('%(TargetPath)').Contains('Blazor-ApexCharts')) And $([System.String]::new('%(TargetPath)').EndsWith('.js'))" />
     </ItemGroup>
     <K7StripModuleVersionQuery Files="@(_K7LinuxVersionedModule)" />
+    <K7AliasLinuxScopedCss WwwRoot="$(OutDir)wwwroot" />
   </Target>
 
   <UsingTask TaskName="K7StripModuleVersionQuery"
@@ -348,6 +349,70 @@
     </Task>
   </UsingTask>
 
+  <!-- Release fingerprints the RCL scoped bundle to Name.hash.bundle.scp.css.
+       index.html still requests Name.styles.css. The GTK host serves files by path,
+       so a missing alias drops AppNav layout (items overlap, bar not fixed). -->
+  <UsingTask TaskName="K7AliasLinuxScopedCss"
+             TaskFactory="RoslynCodeTaskFactory"
+             AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
+    <ParameterGroup>
+      <WwwRoot ParameterType="System.String" Required="true" />
+    </ParameterGroup>
+    <Task>
+      <Using Namespace="System.Collections.Generic" />
+      <Using Namespace="System.IO" />
+      <Using Namespace="System.Text.RegularExpressions" />
+      <Code Type="Fragment" Language="cs"><![CDATA[
+        if (string.IsNullOrEmpty(WwwRoot) || !Directory.Exists(WwwRoot))
+            return true;
+
+        // Hash is the SDK fingerprint (lowercase, 8+). A short segment like "UI" is part of the assembly name.
+        var fingerprinted = new Regex(
+            @"^(?<name>.+)\.[a-z0-9]{8,}\.bundle\.scp\.css$",
+            RegexOptions.CultureInvariant);
+        var plain = new Regex(
+            @"^(?<name>.+)\.bundle\.scp\.css$",
+            RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
+        var bestPath = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var bestTime = new Dictionary<string, DateTime>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var bundle in Directory.EnumerateFiles(WwwRoot, "*.bundle.scp.css", SearchOption.AllDirectories))
+        {
+            if (bundle.EndsWith(".br", StringComparison.OrdinalIgnoreCase)
+                || bundle.EndsWith(".gz", StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            var fileName = Path.GetFileName(bundle);
+            var match = fingerprinted.Match(fileName);
+            if (!match.Success)
+                match = plain.Match(fileName);
+            if (!match.Success)
+                continue;
+
+            var directory = Path.GetDirectoryName(bundle);
+            var destination = Path.Combine(directory, match.Groups["name"].Value + ".styles.css");
+            var time = File.GetLastWriteTimeUtc(bundle);
+            DateTime known;
+            if (!bestTime.TryGetValue(destination, out known) || time >= known)
+            {
+                bestTime[destination] = time;
+                bestPath[destination] = bundle;
+            }
+        }
+
+        foreach (var pair in bestPath)
+        {
+            if (string.Equals(Path.GetFullPath(pair.Key), Path.GetFullPath(pair.Value), StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            File.Copy(pair.Value, pair.Key, true);
+        }
+
+        return true;
+      ]]></Code>
+    </Task>
+  </UsingTask>
+
   <Target Name="K7PublishStaticWebAssetsLinux"
           AfterTargets="Publish"
           BeforeTargets="_PrepareDebStagingDir;_PrepareAppImageDir"
@@ -360,6 +425,7 @@
                                       Condition="$([System.String]::new('%(TargetPath)').Contains('Blazor-ApexCharts')) And $([System.String]::new('%(TargetPath)').EndsWith('.js'))" />
     </ItemGroup>
     <K7StripModuleVersionQuery Files="@(_K7LinuxVersionedPublishModule)" />
+    <K7AliasLinuxScopedCss WwwRoot="$(PublishDir)wwwroot" />
   </Target>
 
 </Project>
