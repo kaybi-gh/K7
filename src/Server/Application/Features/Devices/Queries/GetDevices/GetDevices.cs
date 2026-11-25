@@ -1,6 +1,7 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Mappings;
 using K7.Server.Application.Common.Models;
+using K7.Server.Application.Features.Devices;
 using K7.Server.Domain.Entities.Devices;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Requests;
@@ -23,10 +24,14 @@ public sealed record GetDevicesQuery : IRequest<PaginatedList<Device>>
 public class GetDevicesQueryHandler : IRequestHandler<GetDevicesQuery, PaginatedList<Device>>
 {
     private readonly IApplicationDbContext _context;
+    private readonly IUser _user;
+    private readonly IIdentityService _identityService;
 
-    public GetDevicesQueryHandler(IApplicationDbContext context)
+    public GetDevicesQueryHandler(IApplicationDbContext context, IUser user, IIdentityService identityService)
     {
         _context = context;
+        _user = user;
+        _identityService = identityService;
     }
 
     public async Task<PaginatedList<Device>> Handle(GetDevicesQuery request, CancellationToken cancellationToken)
@@ -37,6 +42,16 @@ public class GetDevicesQueryHandler : IRequestHandler<GetDevicesQuery, Paginated
             .AsQueryable();
 
         query = ApplyFilters(request, query);
+
+        if (!await DeviceCallerAccess.CallerIsAdministratorAsync(_user, _identityService, cancellationToken))
+        {
+            var userId = await _user.GetIdAsync(cancellationToken);
+            if (userId is null)
+                return new PaginatedList<Device>([], 0, request.PageNumber, request.PageSize);
+
+            query = query.Where(d => d.Users.Any(u => u.Id == userId.Value));
+        }
+
         var orderedQuery = ApplyOrdering(request.OrderBy, query);
         return await orderedQuery.PaginatedListAsync(request.PageNumber, request.PageSize);
     }

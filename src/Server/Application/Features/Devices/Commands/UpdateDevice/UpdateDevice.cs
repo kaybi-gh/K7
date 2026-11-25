@@ -1,4 +1,5 @@
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Features.Devices;
 using K7.Server.Application.Services;
 using K7.Server.Domain.Common;
 using K7.Server.Domain.Entities.Devices;
@@ -15,10 +16,15 @@ public record UpdateDeviceCommand : IRequest
 
 public class UpdateDeviceCommandHandler(
     IApplicationDbContext context,
-    IHubPresenceTracker presenceTracker) : IRequestHandler<UpdateDeviceCommand>
+    IHubPresenceTracker presenceTracker,
+    IUser user,
+    IIdentityService identityService) : IRequestHandler<UpdateDeviceCommand>
 {
     public async Task Handle(UpdateDeviceCommand request, CancellationToken cancellationToken)
     {
+        await DeviceCallerAccess.EnsureCallerCanAccessAsync(
+            context, user, identityService, request.Id, cancellationToken);
+
         var entity = await context.Devices
             .FindAsync([request.Id], cancellationToken);
 
