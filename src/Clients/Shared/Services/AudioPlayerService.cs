@@ -1080,12 +1080,14 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
 
         if (_crossfadeTriggered)
         {
-            // Finish deferred UI handoff even if the audible blend never completed.
+            // Outgoing element ended before JS promoted the incoming one. Promote
+            // bumps the element generation and swallows this event, so reaching
+            // here means the blend is not the audible player. The index already
+            // points at the next track and the UI follows it. Start that track.
+            // A still-audible blend does not get here: JS ignores ended while the
+            // incoming element is actually playing.
             NotifyCrossfadeCompleted();
-            // OnCrossfadeNeeded already advanced CurrentIndex. If the handoff never
-            // reached a playable state (slow HLS resolve, failed promote), recover.
-            if (PlaybackState is not (PlaybackState.Playing or PlaybackState.Buffering or PlaybackState.Paused))
-                await LoadAndPlayCurrentAsync(cancellationToken);
+            await LoadAndPlayCurrentAsync(cancellationToken);
             return;
         }
 

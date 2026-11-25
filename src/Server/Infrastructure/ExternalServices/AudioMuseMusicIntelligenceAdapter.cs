@@ -27,12 +27,13 @@ public class AudioMuseMusicIntelligenceAdapter(
     {
         try
         {
-            if (draftSettings is not null)
-                ApplyClientSettings(draftSettings, requireEnabled: false);
-            else
-                await ConfigureClientAsync(cancellationToken, requireEnabled: false);
+            // Draft probes must not touch the shared client. A typed HttpClient rejects
+            // BaseAddress changes after the first send, and discovery runs these calls in parallel.
+            var endpoint = draftSettings is not null
+                ? CreateEndpoint(draftSettings, requireEnabled: false)
+                : await ResolveEndpointAsync(cancellationToken, requireEnabled: false);
 
-            var response = await httpClient.GetAsync("api/health", cancellationToken);
+            var response = await SendAsync(HttpMethod.Get, "api/health", endpoint, content: null, cancellationToken);
 
             if (!response.IsSuccessStatusCode)
                 return new MusicIntelligenceConnectionResult(false, Error: $"HTTP {(int)response.StatusCode}");
@@ -56,17 +57,23 @@ public class AudioMuseMusicIntelligenceAdapter(
         string? artist,
         CancellationToken cancellationToken)
     {
-        await ConfigureClientAsync(cancellationToken);
-        var response = await httpClient.GetAsync(
+        var endpoint = await ResolveEndpointAsync(cancellationToken);
+        var response = await SendAsync(
+            HttpMethod.Get,
             $"api/similar_tracks?item_id={trackId}&n={count}&eliminate_duplicates=true",
+            endpoint,
+            content: null,
             cancellationToken);
 
         if (!response.IsSuccessStatusCode
             && !string.IsNullOrWhiteSpace(title)
             && !string.IsNullOrWhiteSpace(artist))
         {
-            response = await httpClient.GetAsync(
+            response = await SendAsync(
+                HttpMethod.Get,
                 $"api/similar_tracks?title={Uri.EscapeDataString(title)}&artist={Uri.EscapeDataString(artist)}&n={count}&eliminate_duplicates=true",
+                endpoint,
+                content: null,
                 cancellationToken);
         }
 
@@ -91,9 +98,12 @@ public class AudioMuseMusicIntelligenceAdapter(
             resolvedCentroidIndex = legacy.CentroidIndex;
         }
 
-        await ConfigureClientAsync(cancellationToken);
-        var response = await httpClient.GetAsync(
+        var endpoint = await ResolveEndpointAsync(cancellationToken);
+        var response = await SendAsync(
+            HttpMethod.Get,
             $"api/similar_tracks?mood={Uri.EscapeDataString(resolvedMoodKey)}&centroid_index={resolvedCentroidIndex}&n={count}&eliminate_duplicates=true",
+            endpoint,
+            content: null,
             cancellationToken);
         if (!response.IsSuccessStatusCode)
         {
@@ -108,8 +118,13 @@ public class AudioMuseMusicIntelligenceAdapter(
 
     public async Task<List<Guid>> GetDiscoveryTracksAsync(int count, CancellationToken cancellationToken)
     {
-        await ConfigureClientAsync(cancellationToken);
-        var response = await httpClient.GetAsync($"api/sonic_fingerprint/generate?n={count}", cancellationToken);
+        var endpoint = await ResolveEndpointAsync(cancellationToken);
+        var response = await SendAsync(
+            HttpMethod.Get,
+            $"api/sonic_fingerprint/generate?n={count}",
+            endpoint,
+            content: null,
+            cancellationToken);
         if (!response.IsSuccessStatusCode)
         {
             logger.LogWarning(
@@ -123,13 +138,16 @@ public class AudioMuseMusicIntelligenceAdapter(
 
     public async Task<List<Guid>> GetSonicPathAsync(Guid fromId, Guid toId, CancellationToken cancellationToken)
     {
-        await ConfigureClientAsync(cancellationToken);
+        var endpoint = await ResolveEndpointAsync(cancellationToken);
 
         for (var attempt = 0; attempt < 2; attempt++)
         {
             // Match AudioMuse UI default (PATH_DEFAULT_LENGTH / max_steps=25).
-            var response = await httpClient.GetAsync(
+            var response = await SendAsync(
+                HttpMethod.Get,
                 $"api/find_path?start_song_id={fromId}&end_song_id={toId}&max_steps=25",
+                endpoint,
+                content: null,
                 cancellationToken);
 
             if (!response.IsSuccessStatusCode)
@@ -172,9 +190,14 @@ public class AudioMuseMusicIntelligenceAdapter(
 
     public async Task<List<Guid>> CreatePlaylistFromPromptAsync(string prompt, int count, CancellationToken cancellationToken)
     {
-        await ConfigureClientAsync(cancellationToken);
+        var endpoint = await ResolveEndpointAsync(cancellationToken);
         var request = new { userInput = $"{prompt}. Return up to {count} tracks." };
-        var response = await httpClient.PostAsJsonAsync("api/chatPlaylist", request, cancellationToken);
+        var response = await SendAsync(
+            HttpMethod.Post,
+            "api/chatPlaylist",
+            endpoint,
+            JsonContent.Create(request),
+            cancellationToken);
         response.EnsureSuccessStatusCode();
 
         var content = await response.Content.ReadFromJsonAsync<JsonElement>(cancellationToken);
@@ -194,16 +217,22 @@ public class AudioMuseMusicIntelligenceAdapter(
         int count,
         CancellationToken cancellationToken)
     {
-        await ConfigureClientAsync(cancellationToken);
+        var endpoint = await ResolveEndpointAsync(cancellationToken);
 
-        var response = await httpClient.GetAsync(
+        var response = await SendAsync(
+            HttpMethod.Get,
             $"api/similar_artists?artist_id={artistId}&n={count}",
+            endpoint,
+            content: null,
             cancellationToken);
 
         if (!response.IsSuccessStatusCode && !string.IsNullOrWhiteSpace(artistName))
         {
-            response = await httpClient.GetAsync(
+            response = await SendAsync(
+                HttpMethod.Get,
                 $"api/similar_artists?artist={Uri.EscapeDataString(artistName)}&n={count}",
+                endpoint,
+                content: null,
                 cancellationToken);
         }
 
@@ -245,18 +274,22 @@ public class AudioMuseMusicIntelligenceAdapter(
 
     public async Task<List<Guid>> SearchTracksBySonicTextAsync(string query, int count, CancellationToken cancellationToken)
     {
-        await ConfigureClientAsync(cancellationToken);
-        await EnsureClapWarmAsync(cancellationToken);
+        var endpoint = await ResolveEndpointAsync(cancellationToken);
+        await EnsureClapWarmAsync(endpoint, cancellationToken);
 
         for (var attempt = 0; attempt < 3; attempt++)
         {
-            var request = new { query, limit = count };
-            var response = await httpClient.PostAsJsonAsync("api/clap/search", request, cancellationToken);
+            var response = await SendAsync(
+                HttpMethod.Post,
+                "api/clap/search",
+                endpoint,
+                JsonContent.Create(new { query, limit = count }),
+                cancellationToken);
 
             if (response.StatusCode == System.Net.HttpStatusCode.ServiceUnavailable)
             {
                 logger.LogDebug("CLAP search unavailable (attempt {Attempt}), warming up again", attempt + 1);
-                await EnsureClapWarmAsync(cancellationToken);
+                await EnsureClapWarmAsync(endpoint, cancellationToken);
                 await Task.Delay(TimeSpan.FromSeconds(1 + attempt), cancellationToken);
                 continue;
             }
@@ -275,7 +308,7 @@ public class AudioMuseMusicIntelligenceAdapter(
                 return ids;
 
             // Empty result on a cold index: warm again and retry before giving up.
-            await EnsureClapWarmAsync(cancellationToken);
+            await EnsureClapWarmAsync(endpoint, cancellationToken);
             await Task.Delay(TimeSpan.FromSeconds(1 + attempt), cancellationToken);
         }
 
@@ -284,12 +317,16 @@ public class AudioMuseMusicIntelligenceAdapter(
 
     public async Task<List<Guid>> SearchTracksByLyricsAsync(string query, int count, CancellationToken cancellationToken)
     {
-        await ConfigureClientAsync(cancellationToken);
+        var endpoint = await ResolveEndpointAsync(cancellationToken);
 
         for (var attempt = 0; attempt < 3; attempt++)
         {
-            var request = new { query, limit = count };
-            var response = await httpClient.PostAsJsonAsync("api/lyrics/search/text", request, cancellationToken);
+            var response = await SendAsync(
+                HttpMethod.Post,
+                "api/lyrics/search/text",
+                endpoint,
+                JsonContent.Create(new { query, limit = count }),
+                cancellationToken);
 
             if (response.StatusCode is System.Net.HttpStatusCode.ServiceUnavailable
                 or System.Net.HttpStatusCode.GatewayTimeout
@@ -336,9 +373,9 @@ public class AudioMuseMusicIntelligenceAdapter(
 
     public async Task StartServerAlignAsync(CancellationToken cancellationToken = default)
     {
-        await ConfigureClientAsync(cancellationToken);
+        var endpoint = await ResolveEndpointAsync(cancellationToken);
 
-        using var response = await httpClient.PostAsync("api/servers/align", content: null, cancellationToken);
+        using var response = await SendAsync(HttpMethod.Post, "api/servers/align", endpoint, content: null, cancellationToken);
         if (response.IsSuccessStatusCode)
         {
             logger.LogInformation("AudioMuse server align enqueued ({StatusCode})", (int)response.StatusCode);
@@ -354,11 +391,13 @@ public class AudioMuseMusicIntelligenceAdapter(
 
     public async Task StartCleaningAsync(bool cleanCatalogue = true, CancellationToken cancellationToken = default)
     {
-        await ConfigureClientAsync(cancellationToken);
+        var endpoint = await ResolveEndpointAsync(cancellationToken);
 
-        using var response = await httpClient.PostAsJsonAsync(
+        using var response = await SendAsync(
+            HttpMethod.Post,
             "api/cleaning/start",
-            new { clean_catalogue = cleanCatalogue },
+            endpoint,
+            JsonContent.Create(new { clean_catalogue = cleanCatalogue }),
             cancellationToken);
 
         if (response.IsSuccessStatusCode)
@@ -377,15 +416,17 @@ public class AudioMuseMusicIntelligenceAdapter(
             body);
     }
 
-    private async Task ConfigureClientAsync(CancellationToken cancellationToken, bool requireEnabled = true)
+    private readonly record struct AudioMuseEndpoint(Uri BaseUri, string? ApiKey);
+
+    private async Task<AudioMuseEndpoint> ResolveEndpointAsync(CancellationToken cancellationToken, bool requireEnabled = true)
     {
         var settings = await ReadSettingsAsync(cancellationToken)
             ?? throw new InvalidOperationException("Music intelligence is not configured.");
 
-        ApplyClientSettings(settings, requireEnabled);
+        return CreateEndpoint(settings, requireEnabled);
     }
 
-    private void ApplyClientSettings(MusicIntelligenceSettingsDto settings, bool requireEnabled)
+    private static AudioMuseEndpoint CreateEndpoint(MusicIntelligenceSettingsDto settings, bool requireEnabled)
     {
         if (requireEnabled && !settings.Enabled)
             throw new InvalidOperationException("Music intelligence is disabled.");
@@ -393,18 +434,36 @@ public class AudioMuseMusicIntelligenceAdapter(
         if (string.IsNullOrWhiteSpace(settings.BaseUrl))
             throw new InvalidOperationException("Music intelligence base URL is not configured.");
 
-        httpClient.BaseAddress = new Uri(settings.BaseUrl.TrimEnd('/') + "/");
-
-        httpClient.DefaultRequestHeaders.Remove("X-Api-Key");
-        if (!string.IsNullOrWhiteSpace(settings.ApiKey))
-            httpClient.DefaultRequestHeaders.Add("X-Api-Key", settings.ApiKey);
+        var baseUri = new Uri(settings.BaseUrl.TrimEnd('/') + "/", UriKind.Absolute);
+        var apiKey = string.IsNullOrWhiteSpace(settings.ApiKey) ? null : settings.ApiKey;
+        return new AudioMuseEndpoint(baseUri, apiKey);
     }
 
-    private async Task EnsureClapWarmAsync(CancellationToken cancellationToken)
+    private async Task<HttpResponseMessage> SendAsync(
+        HttpMethod method,
+        string relativePath,
+        AudioMuseEndpoint endpoint,
+        HttpContent? content,
+        CancellationToken cancellationToken)
+    {
+        using var request = new HttpRequestMessage(method, new Uri(endpoint.BaseUri, relativePath))
+        {
+            Content = content
+        };
+
+        if (endpoint.ApiKey is not null)
+            request.Headers.TryAddWithoutValidation("X-Api-Key", endpoint.ApiKey);
+
+        // ResponseContentRead buffers the body before this returns, so disposing the
+        // request afterwards does not drop the response the caller still has to read.
+        return await httpClient.SendAsync(request, cancellationToken);
+    }
+
+    private async Task EnsureClapWarmAsync(AudioMuseEndpoint endpoint, CancellationToken cancellationToken)
     {
         try
         {
-            using var response = await httpClient.PostAsync("api/clap/warmup", content: null, cancellationToken);
+            using var response = await SendAsync(HttpMethod.Post, "api/clap/warmup", endpoint, content: null, cancellationToken);
             if (!response.IsSuccessStatusCode)
             {
                 logger.LogDebug("CLAP warmup returned {StatusCode}", (int)response.StatusCode);

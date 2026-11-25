@@ -1,6 +1,7 @@
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Clients.Shared.Services;
+using K7.Server.Domain.Enums;
 using K7.Shared;
 
 namespace K7.Clients.ComponentTests.Services;
@@ -80,6 +81,26 @@ public class AudioPlayerServiceCrossfadeSkipTests
         _sut.CurrentPlayingTrack!.MediaId.Should().Be(tracks[1].MediaId);
         _sut.CurrentDisplayedTrack!.MediaId.Should().Be(tracks[0].MediaId);
         _sut.CurrentTrack!.MediaId.Should().Be(tracks[1].MediaId);
+    }
+
+    [Test]
+    public async Task OnTrackEndedAsync_ShouldStartIncomingTrack_WhenCrossfadeNeverBecameAudible()
+    {
+        var tracks = CreateTracks(2);
+        await _sut.PlayTracksAsync(tracks, 0);
+        _sut.CurrentTime = 170;
+        await _sut.OnCrossfadeNeededAsync();
+        _sut.PlaybackState = PlaybackState.Playing;
+
+        PlayerSource? started = null;
+        _sut.SourceChanged += source => started = source;
+
+        await _sut.OnTrackEndedAsync();
+
+        started.Should().NotBeNull();
+        started!.MediaId.Should().Be(tracks[1].MediaId);
+        _sut.CurrentDisplayedTrack!.MediaId.Should().Be(tracks[1].MediaId);
+        _sut.PlaybackState.Should().Be(PlaybackState.Buffering);
     }
 
     [Test]

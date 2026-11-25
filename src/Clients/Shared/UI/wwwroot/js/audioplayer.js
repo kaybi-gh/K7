@@ -40,8 +40,33 @@ let audioState = {
     // User pause while a dual-stream crossfade is armed/running
     playbackPaused: false,
     crossfadeFade: null,
-    _resumeWaiters: []
+    _resumeWaiters: [],
+    // Bumped when a source change or a new crossfade supersedes an in-flight blend.
+    handoffEpoch: 0
 };
+
+function bumpHandoff() {
+    audioState.handoffEpoch += 1;
+    return audioState.handoffEpoch;
+}
+
+function incomingCrossfadeIsAudible() {
+    const next = audioState.crossfadeElement;
+    if (!next || next.paused || next.ended)
+        return false;
+    if (!audioState.crossfadeActive && !audioState.crossfadePending)
+        return false;
+    // Volume 0 means the blend has not started. Treat that as silence so the
+    // natural end of the outgoing track can hard-cut instead of staying mute.
+    return next.volume > 0.02;
+}
+
+function notifyTrackEnded(dotNetRef) {
+    if (!dotNetRef || incomingCrossfadeIsAudible())
+        return;
+    dotNetRef.invokeMethodAsync('OnTrackEnded')
+        .catch(e => console.error('OnTrackEnded failed', e));
+}
 
 function trackObjectUrl(url) {
     if (url && url.indexOf('blob:') === 0)
@@ -513,8 +538,7 @@ window.initAudioPlayer = function (dotNetRef) {
 
     el.addEventListener('ended', () => {
         if (initGen !== audioState.generation) return;
-        dotNetRef.invokeMethodAsync('OnTrackEnded')
-            .catch(e => console.error('OnTrackEnded failed', e));
+        notifyTrackEnded(dotNetRef);
     });
 
     el.addEventListener('error', () => {
@@ -610,6 +634,7 @@ window.audioPause = function () {
 
 window.audioStop = function () {
     audioState.playbackPaused = true;
+    bumpHandoff();
     cancelCrossfadeFade();
     const el = audioState.element;
     if (el) {
@@ -661,6 +686,7 @@ window.audioChangeSource = async function (src, mimeType, pendingSeek) {
     const el = audioState.element;
     if (!el) return;
 
+    bumpHandoff();
     audioState.pendingSeek = typeof pendingSeek === 'number' && pendingSeek > 1 ? pendingSeek : null;
 
     resumeAudioContext();
@@ -712,18 +738,27 @@ window.audioChangeSource = async function (src, mimeType, pendingSeek) {
     }
 
     const previousSrc = el.currentSrc || el.src;
-    el.src = playableSrc;
-    el.load();
-    if (previousSrc && previousSrc !== playableSrc)
-        revokeObjectUrls(playableSrc);
-
-    el.addEventListener('canplay', function () {
+    let started = false;
+    const startPlayback = () => {
+        if (started) return;
+        started = true;
         if (typeof audioState.pendingSeek === 'number') {
             try { el.currentTime = audioState.pendingSeek; } catch { /* ignore */ }
             audioState.pendingSeek = null;
         }
-        el.play().catch(() => {});
-    }, { once: true });
+        const promise = el.play();
+        if (promise)
+            promise.catch(() => {});
+    };
+    // Listen before load(). A cached file can fire canplay during load(), and a
+    // listener attached afterwards never runs, so the next track stays silent.
+    el.addEventListener('canplay', startPlayback, { once: true });
+    el.src = playableSrc;
+    el.load();
+    if (previousSrc && previousSrc !== playableSrc)
+        revokeObjectUrls(playableSrc);
+    if (el.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA)
+        startPlayback();
 };
 
 window.audioSetCrossfadeDuration = function (seconds) {
@@ -1075,6 +1110,8 @@ window.audioGaplessSwitch = function () {
 };
 
 window.audioStartCrossfade = async function (nextSrc, nextMimeType, fadeDuration) {
+    const epoch = bumpHandoff();
+    const abandoned = () => audioState.handoffEpoch !== epoch;
     const duration = fadeDuration !== undefined && fadeDuration > 0 ? fadeDuration : audioState.crossfadeDuration;
     if (duration <= 0 || !audioState.element) {
         // No crossfade - just change source directly
@@ -1174,12 +1211,14 @@ window.audioStartCrossfade = async function (nextSrc, nextMimeType, fadeDuration
     currentEl.addEventListener('timeupdate', outgoingTimeHandler);
 
     const canPlay = await waitForCanPlay(nextEl, 20000);
+    if (abandoned()) return;
     if (!canPlay) {
         await abortToHardCut('Crossfade next track failed to buffer; falling back to hard cut');
         return;
     }
 
     await waitUntilNotPaused();
+    if (abandoned()) return;
 
     try {
         if (nextEl.currentTime > 0.05)
@@ -1192,6 +1231,7 @@ window.audioStartCrossfade = async function (nextSrc, nextMimeType, fadeDuration
 
     if (!audioState.playbackPaused) {
         const ready = await waitForMediaPlaying(nextEl, 5000);
+        if (abandoned()) return;
         if (!ready || nextEl.paused) {
             await abortToHardCut('Crossfade next track not playing; falling back to hard cut');
             return;
@@ -1199,11 +1239,14 @@ window.audioStartCrossfade = async function (nextSrc, nextMimeType, fadeDuration
     }
 
     await waitUntilNotPaused();
+    if (abandoned()) return;
 
     // If we armed early, wait until the real overlap window so the fade lasts
     // the full configured duration instead of a rushed 1-2s cut.
     const remainingAtReady = await waitUntilRemaining(currentEl, duration, 30000);
+    if (abandoned()) return;
     await waitUntilNotPaused();
+    if (abandoned()) return;
 
     let effectiveDuration = duration;
     if (remainingAtReady > 0)
@@ -1223,8 +1266,8 @@ window.audioStartCrossfade = async function (nextSrc, nextMimeType, fadeDuration
     await waitUntilNotPaused();
     const fadeCompleted = await scheduleEqualPowerFade(
         audioState.fadeGainNode, nextEl, effectiveDuration, masterVolume);
-    if (!fadeCompleted) {
-        // Cancelled by pause/stop/source change; cleanup already done by caller.
+    if (abandoned() || !fadeCompleted) {
+        // Cancelled by pause/stop/source change, or a newer handoff took over.
         return;
     }
 
@@ -1370,8 +1413,7 @@ function attachEventsToElement(el, dotNetRef) {
 
     el.addEventListener('ended', () => {
         if (gen !== audioState.generation) return;
-        dotNetRef.invokeMethodAsync('OnTrackEnded')
-            .catch(e => console.error('OnTrackEnded failed', e));
+        notifyTrackEnded(dotNetRef);
     });
 
     el.addEventListener('error', () => {
