@@ -147,6 +147,7 @@ public partial class BlazorPage : ContentPage
         if (AndroidStartupLottieOverlay.IsShown)
             SplashLogo.IsVisible = false;
 #elif LINUX
+        // No MediaElement: GTK has no toolkit handler. Direct Play is LibVLC, HLS is Video.js.
         // Skottie -> Gdk.MemoryTexture (splash.json MauiAsset next to the exe).
         var linuxSplashLottie = new Platforms.Linux.LinuxLottieView
         {
@@ -785,6 +786,10 @@ public partial class BlazorPage : ContentPage
     {
 #if ANDROID
         // MediaElement stays detached until first play (see EnsureNativeVideoPlayerReady).
+#elif LINUX
+        // NativePlayer is never created. Wiring it here throws during BlazorPage construction
+        // and GetStartPage shows "Unable to start K7".
+        InitializePlayerPlatform();
 #else
         WireNativeVideoPlayerEvents();
         InitializePlayerPlatform();
@@ -849,6 +854,7 @@ public partial class BlazorPage : ContentPage
                 return;
             }
 #endif
+#if !LINUX
 #if ANDROID
             EnsureNativeVideoPlayerReady();
             if (TrySetAndroidVideoPlayWhenReady(true))
@@ -866,6 +872,7 @@ public partial class BlazorPage : ContentPage
             }
 
             NativePlayer.Play();
+#endif
         });
     }
 
@@ -883,6 +890,7 @@ public partial class BlazorPage : ContentPage
                 return;
             }
 #endif
+#if !LINUX
 #if ANDROID
             if (!_nativeVideoPlayerAttached)
                 return;
@@ -890,6 +898,7 @@ public partial class BlazorPage : ContentPage
                 return;
 #endif
             NativePlayer.Pause();
+#endif
         });
         return Task.CompletedTask;
     }
@@ -904,11 +913,13 @@ public partial class BlazorPage : ContentPage
             if (IsDesktopWebVideoActive)
                 return;
 #endif
+#if !LINUX
 #if ANDROID
             if (!_nativeVideoPlayerAttached)
                 return;
 #endif
             NativePlayer.ShouldMute = true;
+#endif
         });
         return Task.CompletedTask;
     }
@@ -923,11 +934,13 @@ public partial class BlazorPage : ContentPage
             if (IsDesktopWebVideoActive)
                 return;
 #endif
+#if !LINUX
 #if ANDROID
             if (!_nativeVideoPlayerAttached)
                 return;
 #endif
             NativePlayer.ShouldMute = false;
+#endif
         });
         return Task.CompletedTask;
     }
@@ -942,11 +955,13 @@ public partial class BlazorPage : ContentPage
             if (IsDesktopWebVideoActive)
                 return;
 #endif
+#if !LINUX
 #if ANDROID
             if (!_nativeVideoPlayerAttached)
                 return;
 #endif
             NativePlayer.Volume = volume;
+#endif
         });
         return Task.CompletedTask;
     }
@@ -961,6 +976,7 @@ public partial class BlazorPage : ContentPage
             if (IsDesktopWebVideoActive)
                 return;
 #endif
+#if !LINUX
 #if ANDROID
             if (!_nativeVideoPlayerAttached)
                 return;
@@ -968,6 +984,7 @@ public partial class BlazorPage : ContentPage
                 return;
 #endif
             NativePlayer.Speed = rate;
+#endif
         });
         return Task.CompletedTask;
     }
@@ -982,6 +999,7 @@ public partial class BlazorPage : ContentPage
             if (IsDesktopWebVideoActive)
                 return;
 #endif
+#if !LINUX
 #if ANDROID
             if (!_nativeVideoPlayerAttached)
                 return;
@@ -989,6 +1007,7 @@ public partial class BlazorPage : ContentPage
                 return;
 #endif
             NativePlayer.Stop();
+#endif
         });
         return Task.CompletedTask;
     }
@@ -1394,7 +1413,9 @@ public partial class BlazorPage : ContentPage
         MainThread.BeginInvokeOnMainThread(() =>
         {
 #if WINDOWS || LINUX
+#if WINDOWS
             NativePlayer.IsVisible = false;
+#endif
             ConfigureDesktopVideoPlayerLayout();
             OnNativeVideoVisibilityChanged(_playerService.IsVisible);
             try
@@ -1493,12 +1514,14 @@ public partial class BlazorPage : ContentPage
             if (TryHandleDesktopVlcAspect(mode))
                 return;
 #endif
+#if !LINUX
             NativePlayer.Aspect = mode switch
             {
                 AspectRatioMode.Fill => Aspect.AspectFill,
                 AspectRatioMode.Stretch => Aspect.Fill,
                 _ => Aspect.AspectFit,
             };
+#endif
         });
     }
 
@@ -2671,7 +2694,7 @@ public partial class BlazorPage : ContentPage
         if (IsAndroidExoHostActive())
             return AndroidExoPlayerHasError();
 #endif
-        return NativePlayer.CurrentState is MediaElementState.Failed;
+        return _nativePlayer?.CurrentState is MediaElementState.Failed;
     }
 
     private double CaptureNativeVideoResumePosition()

@@ -244,7 +244,6 @@ public partial class BlazorPage
 
     partial void ConfigureDesktopVideoPlayerLayout()
     {
-        NativePlayer.IsVisible = false;
         NativePlayerCloseButton.IsVisible = false;
 
         if (_playerService.IsVisible)

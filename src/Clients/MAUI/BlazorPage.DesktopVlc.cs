@@ -83,6 +83,8 @@ public partial class BlazorPage
             "try{if(window.blankK7VideoSurfaces)blankK7VideoSurfaces();"
             + "if(window.K7&&K7.setNativePlayerActive)K7.setNativePlayerActive(true,false);}catch(e){}");
         HideBlazorWebViewForNativeVideo();
+#if !LINUX
+        // Windows keeps a hidden MediaElement. Linux has none.
         NativePlayer.IsVisible = false;
         try
         {
@@ -92,6 +94,7 @@ public partial class BlazorPage
         catch
         {
         }
+#endif
 
         _vlcPlayer ??= CreateDesktopVlcPlayer();
         HookDesktopVlcOnce();
