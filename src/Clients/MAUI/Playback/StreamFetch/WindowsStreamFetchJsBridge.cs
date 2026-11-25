@@ -17,7 +17,7 @@ public sealed class WindowsStreamFetchJsBridge(IK7ServerService serverService, I
     private int _tracedFetches;
 #if LINUX
     private const int MaxLocalProxies = 4;
-    private readonly List<KeyValuePair<string, VlcAuthProxy>> _localProxies = new();
+    private readonly List<KeyValuePair<string, HeldLocalProxy>> _localProxies = new();
 #endif
 
     public async Task RegisterAsync(IJSRuntime js)
@@ -122,12 +122,13 @@ public sealed class WindowsStreamFetchJsBridge(IK7ServerService serverService, I
 
 #if LINUX
     /// <summary>
-    /// GTK: WebKit's GStreamer backend chokes on blob: audio (zero-size parse frames, "Internal
-    /// data stream error"), so music streams straight from a loopback proxy that injects the
-    /// bearer and forwards Range requests (same <see cref="VlcAuthProxy"/> as LibVLC).
+    /// GTK: WebKit's GStreamer backend chokes on blob: audio ("Internal data stream error") and
+    /// treats a progressive upstream body with no finite length as live, so <c>currentTime</c>
+    /// seeks are ignored. Download the track, then serve the bytes from a loopback range server.
+    /// A failed download falls back to <see cref="VlcAuthProxy"/> so playback still starts.
     /// </summary>
     [JSInvokable]
-    public Task<string?> GetLocalStreamUrlAsync(string url)
+    public async Task<string?> GetLocalStreamUrlAsync(string url)
     {
         var httpClient = serverService.HttpClient;
         if (httpClient.BaseAddress is not Uri serverBaseUri
@@ -135,17 +136,100 @@ public sealed class WindowsStreamFetchJsBridge(IK7ServerService serverService, I
             || !requestUri.AbsoluteUri.StartsWith(serverBaseUri.AbsoluteUri, StringComparison.OrdinalIgnoreCase)
             || !HlsStreamUrlHelper.IsK7StreamResource(requestUri.AbsoluteUri))
         {
-            return Task.FromResult<string?>(null);
+            return null;
         }
 
         var authorization = ResolveAuthorizationHeader();
+        if (TryReuseLocalProxy(url, authorization) is { } reused)
+            return reused;
+
+        try
+        {
+            using var response = await httpClient
+                .GetAsync(requestUri, HttpCompletionOption.ResponseHeadersRead)
+                .ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode)
+            {
+                VlcPlayerLog.Warn(
+                    "audio buffer "
+                    + ((int)response.StatusCode).ToString(System.Globalization.CultureInfo.InvariantCulture)
+                    + " "
+                    + VlcPlayerLog.SummarizeUrl(url));
+                return StartStreamingProxy(url, authorization);
+            }
+
+            var contentType = response.Content.Headers.ContentType?.MediaType ?? "application/octet-stream";
+            var bytes = await response.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
+            if (bytes.Length == 0)
+            {
+                VlcPlayerLog.Warn("audio buffer empty " + VlcPlayerLog.SummarizeUrl(url));
+                return StartStreamingProxy(url, authorization);
+            }
+
+            var proxy = new BufferedAudioProxy(bytes, contentType);
+            if (!proxy.TryStart() || proxy.LocalUrl is null)
+            {
+                proxy.Dispose();
+                return StartStreamingProxy(url, authorization);
+            }
+
+            var local = RememberLocalProxy(url, proxy, proxy.LocalUrl, refreshAuthorization: null);
+            VlcPlayerLog.Info(
+                "audio local buffer "
+                + local
+                + " "
+                + bytes.Length.ToString(System.Globalization.CultureInfo.InvariantCulture)
+                + "B -> "
+                + VlcPlayerLog.SummarizeUrl(url));
+            return local;
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or IOException)
+        {
+            VlcPlayerLog.Warn("audio buffer " + ex.GetType().Name + " " + VlcPlayerLog.SummarizeUrl(url));
+            return StartStreamingProxy(url, authorization);
+        }
+    }
+
+    private string? TryReuseLocalProxy(string url, string? authorization)
+    {
         lock (_localProxies)
         {
             var index = _localProxies.FindIndex(p => string.Equals(p.Key, url, StringComparison.Ordinal));
-            if (index >= 0 && _localProxies[index].Value.LocalUrl is { } reuse)
+            if (index < 0)
+                return null;
+
+            _localProxies[index].Value.RefreshAuthorization(authorization);
+            return _localProxies[index].Value.LocalUrl;
+        }
+    }
+
+    private string? StartStreamingProxy(string url, string? authorization)
+    {
+        var proxy = new VlcAuthProxy(authorization) { LogRequests = true };
+        if (!proxy.TryStart(url) || proxy.LocalUrl is null)
+        {
+            proxy.Dispose();
+            return null;
+        }
+
+        var local = RememberLocalProxy(url, proxy, proxy.LocalUrl, proxy.SetAuthorization);
+        VlcPlayerLog.Info("audio local proxy " + local + " -> " + VlcPlayerLog.SummarizeUrl(url));
+        return local;
+    }
+
+    private string RememberLocalProxy(
+        string url,
+        IDisposable proxy,
+        string localUrl,
+        Action<string?>? refreshAuthorization)
+    {
+        lock (_localProxies)
+        {
+            var index = _localProxies.FindIndex(p => string.Equals(p.Key, url, StringComparison.Ordinal));
+            if (index >= 0)
             {
-                _localProxies[index].Value.SetAuthorization(authorization);
-                return Task.FromResult<string?>(reuse);
+                proxy.Dispose();
+                return _localProxies[index].Value.LocalUrl;
             }
 
             while (_localProxies.Count >= MaxLocalProxies)
@@ -154,16 +238,10 @@ public sealed class WindowsStreamFetchJsBridge(IK7ServerService serverService, I
                 _localProxies.RemoveAt(0);
             }
 
-            var proxy = new VlcAuthProxy(authorization) { LogRequests = true };
-            if (!proxy.TryStart(url) || proxy.LocalUrl is null)
-            {
-                proxy.Dispose();
-                return Task.FromResult<string?>(null);
-            }
-
-            _localProxies.Add(new KeyValuePair<string, VlcAuthProxy>(url, proxy));
-            VlcPlayerLog.Info("audio local proxy " + proxy.LocalUrl + " -> " + VlcPlayerLog.SummarizeUrl(url));
-            return Task.FromResult<string?>(proxy.LocalUrl);
+            _localProxies.Add(new KeyValuePair<string, HeldLocalProxy>(
+                url,
+                new HeldLocalProxy(proxy, localUrl, refreshAuthorization)));
+            return localUrl;
         }
     }
 
@@ -194,6 +272,17 @@ public sealed class WindowsStreamFetchJsBridge(IK7ServerService serverService, I
         }
 #endif
     }
+
+#if LINUX
+    private sealed class HeldLocalProxy(IDisposable disposable, string localUrl, Action<string?>? refreshAuthorization) : IDisposable
+    {
+        public string LocalUrl { get; } = localUrl;
+
+        public void RefreshAuthorization(string? authorization) => refreshAuthorization?.Invoke(authorization);
+
+        public void Dispose() => disposable.Dispose();
+    }
+#endif
 
     public sealed class StreamFetchResponse(int statusCode, string contentType, byte[] body)
     {

@@ -654,12 +654,56 @@ window.audioStop = function () {
         audioState.fadeGainNode.gain.value = 1.0;
 };
 
+function linuxSeekableEnd(el) {
+    try {
+        const ranges = el.seekable;
+        if (!ranges || ranges.length === 0)
+            return 0;
+        return ranges.end(ranges.length - 1);
+    } catch {
+        return 0;
+    }
+}
+
+function applyLinuxAudioSeek(el, seconds) {
+    const target = Math.max(0, seconds);
+    const generation = (audioState.linuxSeekGeneration || 0) + 1;
+    audioState.linuxSeekGeneration = generation;
+    const apply = (force) => {
+        if (audioState.element !== el || audioState.linuxSeekGeneration !== generation)
+            return;
+        if (!force && Math.abs((el.currentTime || 0) - target) < 0.5)
+            return;
+        try { el.currentTime = target; } catch { /* ignore */ }
+    };
+    apply(true);
+    // GStreamer drops currentTime until the resource reports a seekable range.
+    if (linuxSeekableEnd(el) + 0.25 >= target)
+        return;
+
+    let pending = true;
+    const onReady = () => {
+        if (!pending)
+            return;
+        pending = false;
+        el.removeEventListener('loadedmetadata', onReady);
+        el.removeEventListener('progress', onReady);
+        apply(false);
+    };
+    el.addEventListener('loadedmetadata', onReady);
+    el.addEventListener('progress', onReady);
+    setTimeout(onReady, 2000);
+}
+
 window.audioSeek = function (seconds) {
     const el = audioState.element;
     if (el && isFinite(seconds)) {
         audioState.lastSeekTime = Date.now();
         audioState.crossfadePending = false;
-        el.currentTime = seconds;
+        if (window.K7_LINUX_GTK)
+            applyLinuxAudioSeek(el, seconds);
+        else
+            el.currentTime = seconds;
     }
 };
 
@@ -743,8 +787,13 @@ window.audioChangeSource = async function (src, mimeType, pendingSeek) {
         if (started) return;
         started = true;
         if (typeof audioState.pendingSeek === 'number') {
-            try { el.currentTime = audioState.pendingSeek; } catch { /* ignore */ }
+            const seekTo = audioState.pendingSeek;
             audioState.pendingSeek = null;
+            if (window.K7_LINUX_GTK)
+                applyLinuxAudioSeek(el, seekTo);
+            else {
+                try { el.currentTime = seekTo; } catch { /* ignore */ }
+            }
         }
         const promise = el.play();
         if (promise)

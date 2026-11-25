@@ -409,9 +409,11 @@ Same split as Windows, driven by the shared desktop glue
   bridge failure looks like "no request ever reaches the server"; the bridge traces its first
   fetches and every failure as `stream fetch ...` lines. HLS on Linux renders the
   Blazor `<video>` element under the native overlay (same split as Windows HLS, not the Web HUD).
-  Music: WebKitGTK's GStreamer backend fails on `blob:` audio, so `windowsStreamFetch.js` asks
-  the bridge (`GetLocalStreamUrlAsync`) for a loopback `VlcAuthProxy` URL when the page carries
-  `window.K7_LINUX_GTK` (user script injected by `BlazorPage.Linux`). Admin charts: the labs
+  Music: WebKitGTK's GStreamer backend fails on `blob:` audio and treats a progressive upstream
+  body with no finite length as live, so `currentTime` seeks are ignored. `windowsStreamFetch.js`
+  asks the bridge (`GetLocalStreamUrlAsync`) to download the track and serve those bytes from a
+  loopback range server when the page carries `window.K7_LINUX_GTK` (user script injected by
+  `BlazorPage.Linux`). Admin charts: the labs
   WebView handler does not strip query strings, so `ApexChartAssets.Prepare` points the charts
   at the unversioned Blazor-ApexCharts module on the GTK host, and the GTK host marker script
   strips the query of `app://` URLs in `URL.prototype.toString` (the path Blazor's `import`
