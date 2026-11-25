@@ -17,6 +17,11 @@ public partial class Welcome : IDisposable
     [Inject] private IDeviceService DeviceService { get; set; } = default!;
     [Inject] private NavigationManager Navigation { get; set; } = default!;
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
+    [Inject] private ILocalUserService LocalUserService { get; set; } = default!;
+    [Inject] private ISharedProfileDevicePinService SharedProfileDevicePin { get; set; } = default!;
+    [Inject] private ISharedProfileLocalCache SharedProfileCache { get; set; } = default!;
+
+    private bool _interactiveLogin;
 
     private bool _loading;
     private bool _guestEnabled;
@@ -86,6 +91,7 @@ public partial class Welcome : IDisposable
         }
 
         _loading = true;
+        _interactiveLogin = true;
         StateHasChanged();
 
         try
@@ -130,7 +136,7 @@ public partial class Welcome : IDisposable
         var authState = await ((AuthenticationStateProvider)AuthService).GetAuthenticationStateAsync();
         if (authState.User.Identity?.IsAuthenticated == true)
         {
-            Navigation.NavigateTo(ReturnUrl ?? "/");
+            Navigation.NavigateTo(DestinationAfterAuth());
         }
         else
         {
@@ -145,8 +151,18 @@ public partial class Welcome : IDisposable
         var authState = await task;
         if (authState.User.Identity?.IsAuthenticated == true)
         {
-            await InvokeAsync(() => Navigation.NavigateTo(ReturnUrl ?? "/"));
+            await InvokeAsync(() => Navigation.NavigateTo(DestinationAfterAuth()));
         }
+    }
+
+    private string DestinationAfterAuth()
+    {
+        if (!_interactiveLogin)
+            return ReturnUrl ?? "/";
+
+        var cards = ProfilePickerHiddenUsers.VisibleCardCount(
+            LocalUserService, SharedProfileDevicePin, SharedProfileCache, DeviceStorage);
+        return cards > 1 ? "/select-profile" : ReturnUrl ?? "/";
     }
 
     public void Dispose()

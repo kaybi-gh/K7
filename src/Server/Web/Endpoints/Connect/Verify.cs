@@ -1,8 +1,4 @@
 using System.Security.Claims;
-using K7.Server.Application.Common.Exceptions;
-using K7.Server.Application.Features.SharedProfiles.Queries.FilterDeviceLinkSharedProfileIds;
-using K7.Server.Application.Features.Users.Commands.VerifyUserPin;
-using K7.Server.Application.Features.Users.Queries.GetGuardianSessionTarget;
 using K7.Shared;
 using K7.Server.Infrastructure.Database.Context.Identity;
 using Microsoft.AspNetCore;
@@ -19,16 +15,16 @@ namespace K7.Server.Web.Endpoints.Connect;
 public class Verify : IEndpoint
 {
     /// <summary>Form field: the managed account the session is asked for. Empty for the signed-in user.</summary>
-    public const string TargetUserIdParameter = "target_user_id";
+    public const string TargetUserIdParameter = DeviceLinkSessionChoice.TargetUserIdParameter;
 
     /// <summary>Form field: the PIN of the managed account, when it has one.</summary>
-    public const string PinParameter = "pin";
+    public const string PinParameter = DeviceLinkSessionChoice.PinParameter;
 
     /// <summary>Form field: shared profiles of the linked account to show on that device.</summary>
-    public const string SharedProfileIdParameter = "shared_profile_id";
+    public const string SharedProfileIdParameter = DeviceLinkSessionChoice.SharedProfileIdParameter;
 
-    private const string AccessDeniedError = "access_denied";
-    private const string InvalidPinError = "invalid_pin";
+    private const string AccessDeniedError = DeviceLinkSessionChoice.AccessDeniedError;
+    private const string InvalidPinError = DeviceLinkSessionChoice.InvalidPinError;
 
     public void Map(IEndpointRouteBuilder endpointRouteBuilder)
     {
@@ -91,7 +87,7 @@ public class Verify : IEndpoint
                     return Results.Redirect("/link?error=access_denied");
                 }
 
-                var (managedAccount, error) = await ResolveManagedAccountAsync(
+                var (managedAccount, error) = await DeviceLinkSessionChoice.ResolveManagedAccountAsync(
                     user,
                     managedUserId,
                     (string?)request[PinParameter],
@@ -126,7 +122,7 @@ public class Verify : IEndpoint
             identity.SetScopes(oidcResult.Principal.GetScopes());
             identity.SetResources(await scopeManager.ListResourcesAsync(identity.GetScopes()).ToListAsync());
 
-            var pinnedProfiles = await FilterPinnedProfilesAsync(context, sender, user.Id);
+            var pinnedProfiles = await DeviceLinkSessionChoice.FilterPinnedProfilesAsync(context, sender, user.Id);
             if (pinnedProfiles.Count > 0)
                 identity.SetClaim(DeviceLinkClaims.SharedProfileIds, string.Join(',', pinnedProfiles));
 
@@ -141,62 +137,6 @@ public class Verify : IEndpoint
         .RequireRateLimiting(RateLimitingExtensions.PinVerifyPolicy)
         .WithName(type.Name)
         .WithTags(groupName);
-    }
-
-    // The managed account to sign in, or the /link error code when the guardian may not open it.
-    private static async Task<(ApplicationUser? Account, string? Error)> ResolveManagedAccountAsync(
-        ApplicationUser guardian,
-        Guid managedUserId,
-        string? pin,
-        UserManager<ApplicationUser> userManager,
-        ISender sender,
-        CancellationToken cancellationToken)
-    {
-        GuardianSessionTarget target;
-        try
-        {
-            target = await sender.Send(new GetGuardianSessionTargetQuery(guardian.Id, managedUserId), cancellationToken);
-        }
-        catch (ForbiddenAccessException)
-        {
-            return (null, AccessDeniedError);
-        }
-
-        // The format is checked here so a mistyped PIN never fails validation inside a request:
-        // failing requests are logged whole.
-        if (target.HasPin
-            && (pin is not { Length: 4 }
-                || !pin.All(char.IsAsciiDigit)
-                || !await sender.Send(new VerifyUserPinCommand(target.UserId, pin), cancellationToken)))
-        {
-            return (null, InvalidPinError);
-        }
-
-        return (await userManager.FindByIdAsync(target.IdentityUserId), null);
-    }
-
-    private static async Task<IReadOnlyList<Guid>> FilterPinnedProfilesAsync(
-        HttpContext context,
-        ISender sender,
-        string identityUserId)
-    {
-        if (!context.Request.HasFormContentType)
-            return [];
-
-        var requested = context.Request.Form[SharedProfileIdParameter]
-            .Select(value => Guid.TryParse(value, out var id) ? id : (Guid?)null)
-            .Where(id => id is not null)
-            .Select(id => id!.Value)
-            .Distinct()
-            .Take(FilterDeviceLinkSharedProfileIdsQueryHandler.MaxIds)
-            .ToList();
-
-        if (requested.Count == 0)
-            return [];
-
-        return await sender.Send(
-            new FilterDeviceLinkSharedProfileIdsQuery(identityUserId, requested),
-            context.RequestAborted);
     }
 
     // Keeps the code and the chosen account in the address: the guardian retries without scanning

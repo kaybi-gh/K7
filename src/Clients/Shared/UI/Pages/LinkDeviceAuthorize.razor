@@ -1,4 +1,5 @@
 @page "/link"
+@page "/link-app"
 @layout EmptyLayout
 @attribute [Microsoft.AspNetCore.Authorization.Authorize]
 @inject IStringLocalizer<LinkDeviceAuthorize> L
@@ -8,8 +9,8 @@
 <div class="link-device">
     <div class="link-device__card">
         <div class="link-device__header">
-            <i class="ph ph-devices link-device__icon"></i>
-            <h2 class="link-device__title">@L["Title"]</h2>
+            <i class="@(_appLink ? "ph ph-user-circle" : "ph ph-devices") link-device__icon"></i>
+            <h2 class="link-device__title">@(_appLink ? L["AppTitle"] : L["Title"])</h2>
         </div>
 
         @if (_approved)
@@ -23,12 +24,25 @@
 
         @if (!_approved)
         {
-            <p class="link-device__hint">@L["EnterCode"]</p>
+            <p class="link-device__hint">@(_appLink ? L["AppHint"] : L["EnterCode"])</p>
             <hr class="k7-divider" />
 
-            <form @ref="_formRef" method="post" action="/connect/verify" id="link-form" data-enhance="false">
-                <input @ref="_hiddenRef" type="hidden" name="user_code" id="user-code-hidden" value="@_userCode" />
+            <form @ref="_formRef" method="post" action="@(_appLink ? "/connect/authorize" : "/connect/verify")" id="link-form" data-enhance="false">
+                @if (_appLink)
+                {
+                    <input type="hidden" name="k7_choice" value="1" />
+                    @foreach (var field in _authorizeFields)
+                    {
+                        <input type="hidden" name="@field.Key" value="@field.Value" />
+                    }
+                }
+                else
+                {
+                    <input @ref="_hiddenRef" type="hidden" name="user_code" id="user-code-hidden" value="@_userCode" />
+                }
                 <div class="link-device__form">
+                    @if (!_appLink)
+                    {
                     <div class="link-device__code-row">
                         <input @ref="_segment0Ref" type="text" class="code-segment link-device__segment" data-idx="0" maxlength="4" inputmode="numeric" autocomplete="off" aria-label="@L["CodePart1"]" />
                         <span class="link-device__separator">-</span>
@@ -36,6 +50,7 @@
                         <span class="link-device__separator">-</span>
                         <input @ref="_segment2Ref" type="text" class="code-segment link-device__segment" data-idx="2" maxlength="4" inputmode="numeric" autocomplete="off" aria-label="@L["CodePart3"]" />
                     </div>
+                    }
 
                     @* Only guardians see this choice. The radio value is posted as the account the
                        session is opened for. Empty means the signed-in user. *@
@@ -100,7 +115,7 @@
                         </fieldset>
                     }
 
-                    <K7Button Type="submit" Class="link-device__authorize">@L["AuthorizeDevice"]</K7Button>
+                    <K7Button Type="submit" Class="link-device__authorize">@(_appLink ? L["Continue"] : L["AuthorizeDevice"])</K7Button>
                 </div>
             </form>
         }

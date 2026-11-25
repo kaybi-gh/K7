@@ -1,6 +1,7 @@
 ﻿using System.Security.Claims;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Infrastructure.Database.Context.Identity;
+using K7.Shared;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
@@ -26,7 +27,9 @@ public class Authorize : IEndpoint
             [FromServices] IOpenIddictScopeManager scopeManager,
             [FromServices] SignInManager<ApplicationUser> signInManager,
             [FromServices] UserManager<ApplicationUser> userManager,
-            [FromServices] IApplicationDbContext dbContext) =>
+            [FromServices] IApplicationDbContext dbContext,
+            [FromServices] ISender sender,
+            [FromServices] ILogger<Authorize> logger) =>
         {
             var request = httpContext.GetOpenIddictServerRequest() ??
                 throw new InvalidOperationException("The OpenID Connect request cannot be retrieved.");
@@ -61,17 +64,53 @@ public class Authorize : IEndpoint
             var user = await userManager.GetUserAsync(result.Principal) ??
                 throw new InvalidOperationException("The user details cannot be retrieved.");
 
-            var domainUser = await dbContext.Users
-                .AsNoTracking()
-                .FirstOrDefaultAsync(u => u.IdentityUserId == user.Id, httpContext.RequestAborted);
-
-            if (domainUser is not null && !domainUser.IsActive)
+            if (await IsDeactivatedAsync(dbContext, user.Id, httpContext.RequestAborted))
             {
-                return Results.Forbid(new AuthenticationProperties(new Dictionary<string, string?>
+                return ForbidDeactivated();
+            }
+
+            // Browser sign-in (desktop and phone). The device-code page already asks this.
+            // Skip the page when the account has neither a managed account nor a shared profile.
+            if (DeviceLinkSessionChoice.IsChoiceSubmitted(httpContext))
+            {
+                var targetUserId = (string?)request[DeviceLinkSessionChoice.TargetUserIdParameter];
+                if (!string.IsNullOrEmpty(targetUserId))
                 {
-                    [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.AccessDenied,
-                    [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] = "The user account has been deactivated."
-                }), [OpenIddictServerAspNetCoreDefaults.AuthenticationScheme]);
+                    if (!Guid.TryParse(targetUserId, out var managedUserId))
+                    {
+                        return Results.Redirect(DeviceLinkSessionChoice.ChoicePageUrl(
+                            request, DeviceLinkSessionChoice.AccessDeniedError, null));
+                    }
+
+                    var (managedAccount, error) = await DeviceLinkSessionChoice.ResolveManagedAccountAsync(
+                        user,
+                        managedUserId,
+                        (string?)request[DeviceLinkSessionChoice.PinParameter],
+                        userManager,
+                        sender,
+                        httpContext.RequestAborted);
+
+                    if (managedAccount is null || !await signInManager.CanSignInAsync(managedAccount))
+                    {
+                        return Results.Redirect(DeviceLinkSessionChoice.ChoicePageUrl(
+                            request, error ?? DeviceLinkSessionChoice.AccessDeniedError, managedUserId));
+                    }
+
+                    logger.LogInformation(
+                        "Guardian {GuardianIdentityUserId} opens an app session for managed account {ManagedIdentityUserId}",
+                        user.Id,
+                        managedAccount.Id);
+
+                    user = managedAccount;
+
+                    if (await IsDeactivatedAsync(dbContext, user.Id, httpContext.RequestAborted))
+                        return ForbidDeactivated();
+                }
+            }
+            else if (HttpMethods.IsGet(httpContext.Request.Method)
+                && await DeviceLinkSessionChoice.HasChoiceAsync(dbContext, user.Id, httpContext.RequestAborted))
+            {
+                return Results.Redirect(DeviceLinkSessionChoice.ChoicePageUrl(request, null, null));
             }
 
             var application = await applicationManager.FindByClientIdAsync(request.ClientId!) ??
@@ -93,6 +132,10 @@ public class Authorize : IEndpoint
 
             identity.SetScopes(request.GetScopes());
             identity.SetResources(await scopeManager.ListResourcesAsync(identity.GetScopes()).ToListAsync());
+
+            var pinnedProfiles = await DeviceLinkSessionChoice.FilterPinnedProfilesAsync(httpContext, sender, user.Id);
+            if (pinnedProfiles.Count > 0)
+                identity.SetClaim(DeviceLinkClaims.SharedProfileIds, string.Join(',', pinnedProfiles));
 
             identity.SetDestinations(claim => claim.Type switch
             {
@@ -121,9 +164,32 @@ public class Authorize : IEndpoint
 
             return Results.SignIn(new ClaimsPrincipal(identity), authenticationScheme: OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
         })
+        .DisableAntiforgery()
+        .RequireRateLimiting(RateLimitingExtensions.PinVerifyPolicy)
         .WithName(type.Name)
         .WithTags(groupName);
     }
+
+    private static async Task<bool> IsDeactivatedAsync(
+        IApplicationDbContext dbContext,
+        string identityUserId,
+        CancellationToken cancellationToken)
+    {
+        var active = await dbContext.Users
+            .AsNoTracking()
+            .Where(user => user.IdentityUserId == identityUserId)
+            .Select(user => (bool?)user.IsActive)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        return active == false;
+    }
+
+    private static IResult ForbidDeactivated() =>
+        Results.Forbid(new AuthenticationProperties(new Dictionary<string, string?>
+        {
+            [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.AccessDenied,
+            [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] = "The user account has been deactivated."
+        }), [OpenIddictServerAspNetCoreDefaults.AuthenticationScheme]);
 }
 
 public static class AsyncEnumerableExtensions

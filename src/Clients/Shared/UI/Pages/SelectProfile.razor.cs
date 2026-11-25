@@ -665,7 +665,22 @@ public partial class SelectProfile : IAsyncDisposable
             var authState = await ((AuthenticationStateProvider)AuthService).GetAuthenticationStateAsync();
             if (authState.User.Identity?.IsAuthenticated == true)
             {
-                Navigation.NavigateTo("/");
+                var cards = ProfilePickerHiddenUsers.VisibleCardCount(
+                    LocalUserService, SharedProfileDevicePin, SharedProfileCache, Storage);
+                // Already on this page: navigating here again does not remount it, so the
+                // spinner started above would stay up even though the cards were saved.
+                if (cards > 1)
+                {
+                    ReloadLocalUsers();
+                    ReloadPinnedGroups();
+                    ShowCarousel();
+                    StateHasChanged();
+                }
+                else
+                {
+                    Navigation.NavigateTo("/");
+                }
+
                 if (LocalUserService.IsSingleUserMode)
                 {
                     var last = LocalUserService.GetLastActive();

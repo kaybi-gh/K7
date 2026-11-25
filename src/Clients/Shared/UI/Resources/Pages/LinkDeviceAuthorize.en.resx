@@ -35,4 +35,7 @@
   <data name="AccessDenied" xml:space="preserve"><value>You cannot open this session.</value></data>
   <data name="SharedProfiles" xml:space="preserve"><value>Shared profiles</value></data>
   <data name="SharedProfilesHint" xml:space="preserve"><value>They will show on this device along with the account.</value></data>
+  <data name="AppTitle" xml:space="preserve"><value>Open a session</value></data>
+  <data name="AppHint" xml:space="preserve"><value>Choose the account and the shared profiles for this device.</value></data>
+  <data name="Continue" xml:space="preserve"><value>Continue</value></data>
 </root>

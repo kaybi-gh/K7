@@ -25,12 +25,19 @@ public partial class LinkDeviceAuthorize
     private List<DeviceLinkSharedProfileDto> _linkProfiles = [];
     private readonly HashSet<Guid> _selectedProfileIds = [];
     private int _profileLoad;
+    private bool _appLink;
+    private List<KeyValuePair<string, string>> _authorizeFields = [];
 
     private ManagedAccountDto? SelectedAccount =>
         _managedAccounts.FirstOrDefault(account => account.Id == _targetUserId);
 
     protected override async Task OnInitializedAsync()
     {
+        var path = Navigation.ToAbsoluteUri(Navigation.Uri).AbsolutePath;
+        _appLink = path.EndsWith("/link-app", StringComparison.OrdinalIgnoreCase);
+        if (_appLink)
+            _authorizeFields = ReadAuthorizeFields();
+
         _userCode = GetQueryValue("user_code");
         _error = GetQueryValue("error");
         _approved = GetQueryValue("approved") == "true";
@@ -61,7 +68,7 @@ public partial class LinkDeviceAuthorize
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (!firstRender || _approved)
+        if (!firstRender || _approved || _appLink)
             return;
 
         var module = await JSRuntime.InvokeAsync<IJSObjectReference>(
@@ -131,6 +138,38 @@ public partial class LinkDeviceAuthorize
             _selectedProfileIds.Add(id);
         else
             _selectedProfileIds.Remove(id);
+    }
+
+    private List<KeyValuePair<string, string>> ReadAuthorizeFields()
+    {
+        var skip = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "error",
+            "target_user_id",
+            "pin",
+            "shared_profile_id",
+            "k7_choice",
+            "prompt",
+            "user_code"
+        };
+
+        var fields = new List<KeyValuePair<string, string>>();
+        var query = Navigation.ToAbsoluteUri(Navigation.Uri).Query;
+        if (string.IsNullOrEmpty(query))
+            return fields;
+
+        foreach (var part in query.TrimStart('?').Split('&', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var separator = part.IndexOf('=');
+            var name = Uri.UnescapeDataString(separator < 0 ? part : part[..separator]);
+            if (skip.Contains(name))
+                continue;
+
+            var value = separator < 0 ? "" : Uri.UnescapeDataString(part[(separator + 1)..]);
+            fields.Add(new KeyValuePair<string, string>(name, value));
+        }
+
+        return fields;
     }
 
     private string? GetQueryValue(string key)

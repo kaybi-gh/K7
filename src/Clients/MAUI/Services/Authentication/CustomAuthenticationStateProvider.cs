@@ -353,6 +353,7 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
                     PersistSessionClaims();
                     await SaveLocalUserFromCurrentUserAsync(timeout.Token).ConfigureAwait(false);
                     await TryAttachCurrentUserToDeviceAsync(timeout.Token).ConfigureAwait(false);
+                    await PinLinkedSharedProfilesAsync(accessToken, timeout.Token).ConfigureAwait(false);
                 }
             }
 
