@@ -210,6 +210,12 @@ Logs: `Realtime monitor for library ... created no watches at /media/...`.
 - Compare with a library that starts successfully (`Started realtime monitor ...`): use the same mount style when possible.
 - For huge **local** trees only: raise host `fs.inotify.max_user_watches` if the recursive watcher fails. That does not fix zero watches on NFS.
 
+### App reports HTTP 521 on Windows or Android TV
+
+521 means a proxy (usually Cloudflare) accepted the connection and could not reach K7. It is not a status K7 returns. The phone app can still work when it already has the LAN URL saved, or when that phone has no working IPv6 route and therefore uses the VPN address.
+
+Native apps try a private or VPN address for the hostname before a public one. If the message stays 521, that hostname has no address that reaches K7. Enter the VPN or LAN URL with the port, for example `http://10.0.0.2:7080`.
+
 ### Health endpoint
 
 `GET /alive` is liveness: the process is accepting HTTP (allowed during first-run). Docker
