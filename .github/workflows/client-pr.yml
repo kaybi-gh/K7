@@ -1,0 +1,946 @@
+name: PR client builds
+
+# On-demand clients for a pull request. Not part of the PR checks.
+# Publish flags match client-release.yml. Update both when those flags change.
+# Mac Catalyst is not built (untested, not a release asset).
+
+on:
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: 'Pull request number'
+        required: true
+        type: string
+      android:
+        description: 'Android APK'
+        required: false
+        type: boolean
+        default: false
+      windows:
+        description: 'Windows zip (win-x64)'
+        required: false
+        type: boolean
+        default: false
+      linux:
+        description: 'Linux Flatpak (x64)'
+        required: false
+        type: boolean
+        default: false
+      ios:
+        description: 'iOS sideload IPA'
+        required: false
+        type: boolean
+        default: false
+  issue_comment:
+    types: [created]
+
+run-name: PR ${{ github.event.issue.number || inputs.pr }} client builds
+
+concurrency:
+  group: client-pr-${{ github.event.issue.number || inputs.pr }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  MAUI_PROJECT: src/Clients/MAUI/K7.Clients.MAUI.csproj
+
+jobs:
+  prepare:
+    name: Resolve
+    # Comments only count when a writer starts the first line with /build-clients.
+    # Untrusted PR code is built later with a read-only token and no signing secrets.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (
+        github.event_name == 'issue_comment' &&
+        github.event.issue.pull_request &&
+        startsWith(github.event.comment.body, '/build-clients') &&
+        contains(fromJson('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)
+      )
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+      actions: read
+    outputs:
+      pr: ${{ steps.meta.outputs.pr }}
+      sha: ${{ steps.meta.outputs.sha }}
+      short: ${{ steps.meta.outputs.short }}
+      label: ${{ steps.meta.outputs.label }}
+      android: ${{ steps.meta.outputs.android }}
+      android_offset: ${{ steps.meta.outputs.android_offset }}
+      windows: ${{ steps.meta.outputs.windows }}
+      linux: ${{ steps.meta.outputs.linux }}
+      ios: ${{ steps.meta.outputs.ios }}
+    steps:
+      - name: Resolve PR and clients
+        id: meta
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_PR: ${{ inputs.pr }}
+          INPUT_ANDROID: ${{ inputs.android }}
+          INPUT_WINDOWS: ${{ inputs.windows }}
+          INPUT_LINUX: ${{ inputs.linux }}
+          INPUT_IOS: ${{ inputs.ios }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
+        run: |
+          set -euo pipefail
+          is_true() {
+            case "$1" in
+              true|True|TRUE) return 0 ;;
+              *) return 1 ;;
+            esac
+          }
+
+          ANDROID=false
+          WINDOWS=false
+          LINUX=false
+          IOS=false
+
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            PR="$INPUT_PR"
+            is_true "$INPUT_ANDROID" && ANDROID=true
+            is_true "$INPUT_WINDOWS" && WINDOWS=true
+            is_true "$INPUT_LINUX" && LINUX=true
+            is_true "$INPUT_IOS" && IOS=true
+          else
+            PR="$ISSUE_NUMBER"
+            line=$(printf '%s\n' "$COMMENT_BODY" | head -n 1)
+            line=${line%$'\r'}
+            read -r -a tokens <<< "$line"
+            if [ "${tokens[0]:-}" != "/build-clients" ]; then
+              echo "::error::The command must be the first word of the comment."
+              exit 1
+            fi
+            if [ "${#tokens[@]}" -lt 2 ]; then
+              echo "::error::Name at least one client. Example: /build-clients android windows"
+              exit 1
+            fi
+            for raw in "${tokens[@]:1}"; do
+              token=$(printf '%s' "$raw" | tr '[:upper:]' '[:lower:]')
+              case "$token" in
+                all)
+                  ANDROID=true
+                  WINDOWS=true
+                  LINUX=true
+                  IOS=true
+                  ;;
+                android) ANDROID=true ;;
+                windows) WINDOWS=true ;;
+                linux) LINUX=true ;;
+                ios) IOS=true ;;
+                mac)
+                  echo "::error::No Mac desktop package is published (Mac Catalyst is untested). Use ios for the sideload IPA."
+                  exit 1
+                  ;;
+                *)
+                  echo "::error::Unknown client '$token'. Use android, windows, linux, ios, or all."
+                  exit 1
+                  ;;
+              esac
+            done
+          fi
+
+          PR="${PR#\#}"
+          case "$PR" in
+            ''|*[!0-9]*)
+              echo "::error::PR number must be digits."
+              exit 1
+              ;;
+          esac
+
+          if [ "$ANDROID" != true ] && [ "$WINDOWS" != true ] && [ "$LINUX" != true ] && [ "$IOS" != true ]; then
+            echo "::error::Pick at least one client: android, windows, linux, ios."
+            exit 1
+          fi
+
+          meta=$(gh pr view "$PR" --repo "$GITHUB_REPOSITORY" --json state,headRefOid --jq '"\(.state) \(.headRefOid)"')
+          STATE=${meta%% *}
+          SHA=${meta#* }
+          if [ "$STATE" != "OPEN" ]; then
+            echo "::error::PR ${PR} is ${STATE}. Client builds run only for an open pull request."
+            exit 1
+          fi
+          case "$SHA" in
+            ''|*[!0-9a-f]*)
+              echo "::error::PR ${PR} has no commit SHA."
+              exit 1
+              ;;
+          esac
+          SHORT=${SHA:0:7}
+
+          # 1..99, counted from earlier Android jobs of this PR. Release offset is 0.
+          # The next patch is 100 above that release, so it still installs over these APKs.
+          OFFSET=0
+          if [ "$ANDROID" = true ]; then
+            title="PR ${PR} client builds"
+            ids=$(gh api --paginate "/repos/${GITHUB_REPOSITORY}/actions/workflows/client-pr.yml/runs?per_page=100" \
+              --jq "select(.workflow_runs != null) | .workflow_runs[] | select(.display_title == \"${title}\" and (.id | tostring) != \"${GITHUB_RUN_ID}\") | .id")
+            count=0
+            if [ -n "${ids}" ]; then
+              while IFS= read -r id; do
+                [ -z "$id" ] && continue
+                conclusion=$(gh api "/repos/${GITHUB_REPOSITORY}/actions/runs/${id}/jobs?filter=latest" \
+                  --jq '[.jobs[] | select(.name == "Android")] | if length == 0 then "missing" else (.[0].conclusion // "in_progress") end')
+                case "$conclusion" in
+                  skipped|missing) ;;
+                  *) count=$((count + 1)) ;;
+                esac
+              done <<< "$ids"
+            fi
+            OFFSET=$((count + 1))
+            if [ "$OFFSET" -gt 99 ]; then
+              echo "::error::This PR already has 99 Android builds in this version slot. Stop so the next patch release stays installable over them."
+              exit 1
+            fi
+            echo "Android versionCode offset ${OFFSET}"
+          fi
+
+          {
+            echo "pr=${PR}"
+            echo "sha=${SHA}"
+            echo "short=${SHORT}"
+            echo "label=pr${PR}-${SHORT}"
+            echo "android=${ANDROID}"
+            echo "android_offset=${OFFSET}"
+            echo "windows=${WINDOWS}"
+            echo "linux=${LINUX}"
+            echo "ios=${IOS}"
+          } >> "$GITHUB_OUTPUT"
+          echo "PR ${PR} @ ${SHORT} android=${ANDROID} windows=${WINDOWS} linux=${LINUX} ios=${IOS}"
+
+  android:
+    name: Android
+    needs: prepare
+    if: needs.prepare.outputs.android == 'true'
+    runs-on: windows-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          ref: refs/pull/${{ needs.prepare.outputs.pr }}/head
+          persist-credentials: false
+
+      - name: Require the resolved commit
+        id: commit
+        env:
+          EXPECTED: ${{ needs.prepare.outputs.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          actual=$(git rev-parse HEAD)
+          if [ "$actual" != "$EXPECTED" ]; then
+            echo "::error::PR head changed while the run was starting (wanted ${EXPECTED}, got ${actual}). Re-run so every client builds the same commit."
+            exit 1
+          fi
+          echo "sha=${actual}" >> "$GITHUB_OUTPUT"
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
+        with:
+          global-json-file: global.json
+
+      - name: Cache NuGet packages
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/Directory.Packages.props', '**/Directory.Build.props', '**/*.csproj', 'global.json') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: Setup Java
+        uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      # Pin the workload set to the SDK in use. --skip-manifest-update falls back to the
+      # .NET 10 GA manifests on runner images without a VS-managed SDK, and those ask for
+      # the unpublished Microsoft.NETCore.App.Runtime.Mono.win-x64 pack (NU1102).
+      - name: Install MAUI Android workload
+        run: dotnet workload install maui-android --version $(dotnet --version)
+
+      # wwwroot/dist is gitignored; restore before publish so static web assets include Embla/video.js/etc.
+      - name: Restore LibMan libraries
+        working-directory: src/Clients/Shared/UI
+        run: |
+          dotnet tool restore
+          dotnet tool run libman -- restore
+
+      # Ephemeral key so publish can finish. The sign job re-signs with the release
+      # keystore. This job does not receive those secrets.
+      - name: Prepare ephemeral Android keystore
+        id: keystore
+        shell: bash
+        run: |
+          set -euo pipefail
+          store="${{ runner.temp }}/k7-pr.keystore"
+          envfile="${{ runner.temp }}/android-signing.env"
+          keytool -genkeypair -v \
+            -keystore "${store}" \
+            -alias k7ci \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass k7-ci-store \
+            -keypass k7-ci-key \
+            -dname "CN=K7 CI, OU=K7, O=K7, L=Internet, ST=NA, C=FR"
+          {
+            echo "KEY_ALIAS=k7ci"
+            echo "STORE_PASS=k7-ci-store"
+            echo "KEY_PASS=k7-ci-key"
+          } > "${envfile}"
+          echo "path=${store}" >> "${GITHUB_OUTPUT}"
+          echo "envfile=${envfile}" >> "${GITHUB_OUTPUT}"
+
+      - name: Publish Android APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          # shellcheck disable=SC1090
+          source "${{ steps.keystore.outputs.envfile }}"
+          # K7PublishPlatform=android: single TFM in MAUI csproj (avoids NETSDK1178 for ios
+          # without global -p:TargetFrameworks=, which breaks ProjectReference restore).
+          # Version comes from Directory.Build.props on this commit.
+          dotnet publish "${{ env.MAUI_PROJECT }}" \
+            -f net10.0-android \
+            -c Release \
+            -p:K7PublishPlatform=android \
+            -p:K7VersionCodeOffset="${{ needs.prepare.outputs.android_offset }}" \
+            -p:AndroidKeyStore=true \
+            -p:AndroidSigningKeyStore="${{ steps.keystore.outputs.path }}" \
+            -p:AndroidSigningStorePass="${STORE_PASS}" \
+            -p:AndroidSigningKeyAlias="${KEY_ALIAS}" \
+            -p:AndroidSigningKeyPass="${KEY_PASS}" \
+            -o "${{ runner.temp }}/android-publish"
+
+      - name: Stage APK
+        id: apk
+        shell: bash
+        run: |
+          set -euo pipefail
+          apk=$(find "${{ runner.temp }}/android-publish" -type f \( -name '*.apk' \) | head -n 1)
+          if [ -z "${apk}" ]; then
+            echo "::error::No APK produced under android-publish"
+            find "${{ runner.temp }}/android-publish" -type f | head -n 50
+            exit 1
+          fi
+          file="K7-${{ needs.prepare.outputs.label }}-android.apk"
+          out="${{ runner.temp }}/${file}"
+          cp "${apk}" "${out}"
+          echo "path=${out}" >> "${GITHUB_OUTPUT}"
+          echo "file=${file}" >> "${GITHUB_OUTPUT}"
+          echo "Staged ${file} from ${apk}"
+
+      - name: Upload APK for signing
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: K7-${{ needs.prepare.outputs.label }}-android-presign
+          path: ${{ steps.apk.outputs.path }}
+          if-no-files-found: error
+          retention-days: 1
+          compression-level: 0
+
+  # Separate job so the release keystore is never in the environment that builds PR code.
+  # apksigner replaces the ephemeral signature. Android matches updates on the certificate.
+  sign-android:
+    name: Sign Android
+    needs: [prepare, android]
+    if: needs.prepare.outputs.android == 'true' && needs.android.result == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      url: ${{ steps.upload.outputs.artifact-url }}
+      file: ${{ steps.sign.outputs.file }}
+      version_code: ${{ steps.sign.outputs.version_code }}
+    steps:
+      - name: Setup Java
+        uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Download presigned APK
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: K7-${{ needs.prepare.outputs.label }}-android-presign
+          path: presign
+
+      - name: Sign with the release keystore
+        id: sign
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          LABEL: ${{ needs.prepare.outputs.label }}
+        run: |
+          set -euo pipefail
+          if [ -z "${ANDROID_KEYSTORE_BASE64:-}" ] || [ -z "${ANDROID_KEYSTORE_PASSWORD:-}" ] || [ -z "${ANDROID_KEY_ALIAS:-}" ]; then
+            echo "::error::ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD and ANDROID_KEY_ALIAS must be set. PR APKs use the release key so they can update an existing install."
+            exit 1
+          fi
+          if [ -n "${ANDROID_SDK_ROOT:-}" ] && [ -d "${ANDROID_SDK_ROOT}/build-tools" ]; then
+            sdk="${ANDROID_SDK_ROOT}"
+          elif [ -d /usr/local/lib/android/sdk/build-tools ]; then
+            sdk=/usr/local/lib/android/sdk
+          else
+            echo "::error::Android SDK build-tools not found on the runner"
+            exit 1
+          fi
+          apksigner=$(find "$sdk/build-tools" -type f -name apksigner | sort -V | tail -n 1)
+          if [ -z "${apksigner}" ]; then
+            echo "::error::apksigner not found under ${sdk}/build-tools"
+            exit 1
+          fi
+          echo "Using ${apksigner}"
+          store="${RUNNER_TEMP}/k7-release.keystore"
+          echo "${ANDROID_KEYSTORE_BASE64}" | base64 -d > "${store}"
+          src=$(find presign -type f -name '*.apk' | head -n 1)
+          if [ -z "${src}" ]; then
+            echo "::error::No APK in the presign artifact"
+            find presign -type f | head -n 20
+            exit 1
+          fi
+          file="K7-${LABEL}-android.apk"
+          out="${RUNNER_TEMP}/${file}"
+          export KEY_PASS="${ANDROID_KEY_PASSWORD:-$ANDROID_KEYSTORE_PASSWORD}"
+          "${apksigner}" sign \
+            --ks "${store}" \
+            --ks-key-alias "${ANDROID_KEY_ALIAS}" \
+            --ks-pass env:ANDROID_KEYSTORE_PASSWORD \
+            --key-pass env:KEY_PASS \
+            --v1-signing-enabled true \
+            --v2-signing-enabled true \
+            --v3-signing-enabled true \
+            --out "${out}" \
+            "${src}"
+          "${apksigner}" verify "${out}"
+          rm -f "${store}"
+          aapt="$(dirname "${apksigner}")/aapt"
+          version_code=$("${aapt}" dump badging "${out}" | sed -n "s/.*versionCode='\([0-9]*\)'.*/\1/p" | head -n 1)
+          if [ -z "${version_code}" ]; then
+            echo "::error::Could not read versionCode from the signed APK"
+            exit 1
+          fi
+          echo "versionCode ${version_code}"
+          echo "path=${out}" >> "${GITHUB_OUTPUT}"
+          echo "file=${file}" >> "${GITHUB_OUTPUT}"
+          echo "version_code=${version_code}" >> "${GITHUB_OUTPUT}"
+
+      - name: Upload signed APK
+        id: upload
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: ${{ steps.sign.outputs.file }}
+          path: ${{ steps.sign.outputs.path }}
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 0
+
+  windows:
+    name: Windows
+    needs: prepare
+    if: needs.prepare.outputs.windows == 'true'
+    runs-on: windows-latest
+    permissions:
+      contents: read
+    outputs:
+      url: ${{ steps.upload.outputs.artifact-url }}
+      file: ${{ steps.win.outputs.file }}
+      sha: ${{ steps.commit.outputs.sha }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          ref: refs/pull/${{ needs.prepare.outputs.pr }}/head
+          persist-credentials: false
+
+      - name: Require the resolved commit
+        id: commit
+        env:
+          EXPECTED: ${{ needs.prepare.outputs.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          actual=$(git rev-parse HEAD)
+          if [ "$actual" != "$EXPECTED" ]; then
+            echo "::error::PR head changed while the run was starting (wanted ${EXPECTED}, got ${actual}). Re-run so every client builds the same commit."
+            exit 1
+          fi
+          echo "sha=${actual}" >> "$GITHUB_OUTPUT"
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
+        with:
+          global-json-file: global.json
+
+      - name: Cache NuGet packages
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/Directory.Packages.props', '**/Directory.Build.props', '**/*.csproj', 'global.json') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: Install MAUI Windows workload
+        run: dotnet workload install maui-windows --version $(dotnet --version)
+
+      # wwwroot/dist is gitignored; restore before publish so static web assets include Embla/video.js/etc.
+      - name: Restore LibMan libraries
+        working-directory: src/Clients/Shared/UI
+        run: |
+          dotnet tool restore
+          dotnet tool run libman -- restore
+
+      - name: Publish Windows (self-contained unpackaged)
+        id: win
+        shell: pwsh
+        env:
+          LABEL: ${{ needs.prepare.outputs.label }}
+        run: |
+          $out = Join-Path $env:RUNNER_TEMP "win-publish"
+          # K7PublishPlatform=windows: single TFM in MAUI csproj only (not global TargetFrameworks).
+          # UseMonoRuntime=false: avoid Microsoft.NETCore.App.Runtime.Mono.win-x64 (NU1102).
+          # Version comes from Directory.Build.props on this commit.
+          dotnet publish $env:MAUI_PROJECT `
+            -f net10.0-windows10.0.19041.0 `
+            -c Release `
+            -r win-x64 `
+            --self-contained true `
+            -p:K7PublishPlatform=windows `
+            -p:UseMonoRuntime=false `
+            -p:WindowsPackageType=None `
+            -p:PublishSingleFile=false `
+            -o $out
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+          $exe = Get-ChildItem -Path $out -Filter "K7.Clients.MAUI.exe" -Recurse -File | Select-Object -First 1
+          if (-not $exe) {
+            Write-Error "K7.Clients.MAUI.exe not found under $out"
+            Get-ChildItem -Path $out -Recurse -File | Select-Object -First 50 FullName
+            exit 1
+          }
+
+          # Friendly launcher name. WinUI unpackaged loads {exeBasename}.pri next to the
+          # process; copying only the exe (without K7.pri) crashes in Microsoft.UI.Xaml.dll
+          # (0xc000027b). AssemblyName=K7 is not used: NuGet reports ambiguous project name K7.
+          $pri = Join-Path $exe.DirectoryName "K7.Clients.MAUI.pri"
+          if (-not (Test-Path $pri)) {
+            Write-Error "K7.Clients.MAUI.pri not found next to $($exe.FullName)"
+            exit 1
+          }
+          Copy-Item $exe.FullName (Join-Path $out "K7.exe") -Force
+          Copy-Item $pri (Join-Path $out "K7.pri") -Force
+          $file = "K7-$env:LABEL-win-x64.zip"
+          $zip = Join-Path $env:RUNNER_TEMP $file
+          if (Test-Path $zip) { Remove-Item $zip -Force }
+          Compress-Archive -Path (Join-Path $out '*') -DestinationPath $zip -Force
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "path=$zip"
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "file=$file"
+
+      - name: Upload Windows zip
+        id: upload
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: ${{ steps.win.outputs.file }}
+          path: ${{ steps.win.outputs.path }}
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 0
+
+  # Ubuntu 24.04 runner on purpose: the bundled libvlc 4 (VideoLAN snap, base core24) and
+  # the ffmpeg libraries copied next to it target glibc 2.39, the floor of the GNOME 49
+  # runtime. Produces the Flatpak bundle (GNOME Platform, libvlc 4 inside), the only Linux
+  # package: the .deb and the tarball depended on the host GTK4 / WebKitGTK / GStreamer
+  # versions (Ubuntu 24.04 in practice) and were dropped.
+  linux:
+    name: Linux
+    needs: prepare
+    if: needs.prepare.outputs.linux == 'true'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    outputs:
+      url: ${{ steps.upload.outputs.artifact-url }}
+      file: ${{ steps.linux.outputs.file }}
+      sha: ${{ steps.commit.outputs.sha }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          ref: refs/pull/${{ needs.prepare.outputs.pr }}/head
+          persist-credentials: false
+
+      - name: Require the resolved commit
+        id: commit
+        env:
+          EXPECTED: ${{ needs.prepare.outputs.sha }}
+        run: |
+          set -euo pipefail
+          actual=$(git rev-parse HEAD)
+          if [ "$actual" != "$EXPECTED" ]; then
+            echo "::error::PR head changed while the run was starting (wanted ${EXPECTED}, got ${actual}). Re-run so every client builds the same commit."
+            exit 1
+          fi
+          echo "sha=${actual}" >> "$GITHUB_OUTPUT"
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
+        with:
+          global-json-file: global.json
+
+      - name: Cache NuGet packages
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/Directory.Packages.props', '**/Directory.Build.props', '**/*.csproj', 'global.json') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      # vlc-plugin-base / vlc-plugin-video-output (distro VLC 3) only bring the shared
+      # libraries the VLC 4 plugins link against (ffmpeg 6.1, dav1d, matroska, ...), which
+      # bundle-libvlc.sh copies through ldd. flatpak-builder packs the .flatpak bundle.
+      - name: Install packaging tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            squashfs-tools vlc-plugin-base vlc-plugin-video-output \
+            flatpak flatpak-builder elfutils
+
+      - name: Bundle libvlc 4
+        run: bash tools/linux/bundle-libvlc.sh
+
+      # wwwroot/dist is gitignored; restore before publish so static web assets include Embla/video.js/etc.
+      - name: Restore LibMan libraries
+        working-directory: src/Clients/Shared/UI
+        run: |
+          dotnet tool restore
+          dotnet tool run libman -- restore
+
+      - name: Publish Linux (flatpak)
+        id: linux
+        env:
+          LABEL: ${{ needs.prepare.outputs.label }}
+        run: |
+          set -euo pipefail
+          VERSION=$(sed -n 's:.*<Version>\([^<]*\)</Version>.*:\1:p' Directory.Build.props | head -n 1)
+          VERSION=${VERSION%%-*}
+          if [ -z "${VERSION}" ]; then
+            echo "::error::Could not read Version from Directory.Build.props"
+            exit 1
+          fi
+          NAME="K7-${LABEL}-linux-x64"
+          OUT="${RUNNER_TEMP}/${NAME}"
+          # K7PublishPlatform=linux: plain net10.0 TFM (labs GTK4 backend, no MAUI workload).
+          dotnet publish "${MAUI_PROJECT}" \
+            -f net10.0 \
+            -c Release \
+            -r linux-x64 \
+            --self-contained true \
+            -p:K7PublishPlatform=linux \
+            -o "${OUT}"
+          test -f "${OUT}/K7.Clients.MAUI"
+          test -f "${OUT}/libvlc/linux-x64/libvlc.so.12"
+          chmod +x "${OUT}/K7.Clients.MAUI"
+          bash tools/linux/build-flatpak.sh "${OUT}" "${VERSION}" "${RUNNER_TEMP}/${NAME}.flatpak"
+          test -f "${RUNNER_TEMP}/${NAME}.flatpak"
+          echo "path=${RUNNER_TEMP}/${NAME}.flatpak" >> "${GITHUB_OUTPUT}"
+          echo "file=${NAME}.flatpak" >> "${GITHUB_OUTPUT}"
+
+      - name: Upload Linux Flatpak
+        id: upload
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: ${{ steps.linux.outputs.file }}
+          path: ${{ steps.linux.outputs.path }}
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 0
+
+  # macOS runner: iOS builds need Xcode. Produces an ad-hoc-signed .ipa for
+  # sideloading (AltStore / SideStore / Sideloadly re-sign it with the user's own
+  # free Apple ID at install). No AltStore source: apps.json on a release is what
+  # /releases/latest/download/ tracks, and a PR build must not replace it.
+  ios:
+    name: iOS
+    needs: prepare
+    if: needs.prepare.outputs.ios == 'true'
+    runs-on: macos-15
+    permissions:
+      contents: read
+    outputs:
+      url: ${{ steps.upload.outputs.artifact-url }}
+      file: ${{ steps.pack.outputs.file }}
+      sha: ${{ steps.commit.outputs.sha }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          ref: refs/pull/${{ needs.prepare.outputs.pr }}/head
+          persist-credentials: false
+
+      - name: Require the resolved commit
+        id: commit
+        env:
+          EXPECTED: ${{ needs.prepare.outputs.sha }}
+        run: |
+          set -euo pipefail
+          actual=$(git rev-parse HEAD)
+          if [ "$actual" != "$EXPECTED" ]; then
+            echo "::error::PR head changed while the run was starting (wanted ${EXPECTED}, got ${actual}). Re-run so every client builds the same commit."
+            exit 1
+          fi
+          echo "sha=${actual}" >> "$GITHUB_OUTPUT"
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
+        with:
+          global-json-file: global.json
+
+      - name: Cache NuGet packages
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/Directory.Packages.props', '**/Directory.Build.props', '**/*.csproj', 'global.json') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      # .NET for iOS pins to an EXACT Xcode version. The workload bundled with the
+      # SDK (Microsoft.iOS 26.0.x) needs Xcode 26.0. Use it if present; otherwise
+      # select the newest Xcode and update the workload to match it.
+      - name: Select matching Xcode
+        run: |
+          set -euo pipefail
+          echo "Installed Xcodes:"
+          ls -d /Applications/Xcode*.app
+          if ls -d /Applications/Xcode_26.0*.app >/dev/null 2>&1; then
+            target=$(ls -d /Applications/Xcode_26.0*.app | sort -V | tail -n 1)
+          else
+            echo "::warning::Xcode 26.0 not installed; using newest and updating workload"
+            target=$(ls -d /Applications/Xcode*.app | sort -V | tail -n 1)
+            echo "NEED_WORKLOAD_UPDATE=1" >> "$GITHUB_ENV"
+          fi
+          echo "Selecting ${target}"
+          sudo xcode-select -s "${target}/Contents/Developer"
+          xcodebuild -version
+
+      - name: Install MAUI iOS workload
+        run: |
+          set -euo pipefail
+          if [ "${NEED_WORKLOAD_UPDATE:-0}" = "1" ]; then
+            dotnet workload install maui-ios
+            dotnet workload update
+          else
+            dotnet workload install maui-ios --skip-manifest-update
+          fi
+          dotnet workload list
+
+      # wwwroot/dist is gitignored; restore before build so static web assets are
+      # embedded, same as the Android/Windows jobs.
+      - name: Restore LibMan libraries
+        working-directory: src/Clients/Shared/UI
+        run: |
+          dotnet tool restore
+          dotnet tool run libman -- restore
+
+      # Build the device .app WITHOUT code signing (the sideloader supplies the
+      # signature). Sideload-specific build choices live here, not in the csproj,
+      # so the app's normal iOS build is unaffected:
+      #   - UseInterpreter: full AOT produces a ~104MB main binary that some
+      #     re-signers (isign) fail to process. The Mono interpreter (allowed on
+      #     iOS, no JIT) yields a small runtime that re-signs cleanly and builds
+      #     in minutes instead of ~30.
+      #   - -no_fixup_chains: .NET 10 + Xcode 26 emit LC_DYLD_CHAINED_FIXUPS by
+      #     default; older Mach-O parsers in some sideloaders cannot read it. Force
+      #     the classic LC_DYLD_INFO fixup format for broad sideloader compat.
+      #     Quote the value for MSBuild (`'"..."'`): `-p:` splits on commas, so
+      #     `-Wl,-no_fixup_chains` is otherwise parsed as a second switch.
+      #   - MtouchLink=None: this app is heavily reflection-based (EF Core,
+      #     OpenIddict, Blazor Hybrid) and iOS was never trim-tested upstream, so
+      #     keep every assembly rather than risk a trimmer removing reflected code.
+      #   - TreatWarningsAsErrors=false: iOS-only analyzers (CA1422, ...) were
+      #     never exercised and would otherwise fail the build.
+      - name: Build unsigned iOS .app
+        run: |
+          set -euo pipefail
+          dotnet build "${MAUI_PROJECT}" \
+            -c Release \
+            -f net10.0-ios \
+            -p:K7PublishPlatform=ios \
+            -p:RuntimeIdentifier=ios-arm64 \
+            -p:RunAOTCompilation=false \
+            -p:UseInterpreter=true \
+            -p:MtouchLink=None \
+            -p:MtouchExtraArgs='"-gcc_flags -Wl,-no_fixup_chains"' \
+            -p:TreatWarningsAsErrors=false \
+            -p:EnableCodeSigning=false \
+            -p:_RequireCodeSigning=false \
+            -p:CodesignKey= \
+            -p:DisableCodesignVerification=true
+
+      # Package the .app into an ad-hoc-signed .ipa (a zip with the .app under a
+      # top-level Payload/). Two bundle tweaks are applied to the packaged copy
+      # only (the repo's Info.plist is untouched):
+      #   - CFBundleName = K7: the App ID name a sideloader sends to Apple is the
+      #     CFBundleName. MAUI derives it from the assembly name (K7.Clients.MAUI),
+      #     and Apple rejects App ID names containing dots (error 9416). A clean
+      #     name is required for free-Apple-ID signing.
+      #   - remove UIApplicationSceneManifest: it only declares the CarPlay scene,
+      #     whose restricted entitlement a free Apple ID cannot provision. Dropping
+      #     it from the sideload build keeps free-tier install/re-sign clean; the
+      #     repo keeps CarPlay for proper signed builds.
+      # Ad-hoc signing (`--sign -`, no cert) gives the binaries the LC_CODE_SIGNATURE
+      # slot that re-signers expect; nested Mach-O are signed first, the app last.
+      - name: Package ad-hoc-signed .ipa
+        id: pack
+        env:
+          LABEL: ${{ needs.prepare.outputs.label }}
+        run: |
+          set -euo pipefail
+          app=$(find src/Clients/MAUI/bin/Release/net10.0-ios -maxdepth 3 -type d -name '*.app' | head -n 1)
+          if [ -z "${app}" ]; then
+            echo "::error::No .app bundle produced"
+            find src/Clients/MAUI/bin/Release/net10.0-ios -maxdepth 3 | head -n 100
+            exit 1
+          fi
+          echo "Found app bundle: ${app}"
+          workdir="${RUNNER_TEMP}/ipa"
+          rm -rf "${workdir}"
+          mkdir -p "${workdir}/Payload"
+          cp -R "${app}" "${workdir}/Payload/"
+          appcopy="${workdir}/Payload/$(basename "${app}")"
+          plist="${appcopy}/Info.plist"
+          plutil -replace CFBundleName -string "K7" "${plist}" \
+            || plutil -insert CFBundleName -string "K7" "${plist}"
+          plutil -remove UIApplicationSceneManifest "${plist}" 2>/dev/null || true
+
+          find "${appcopy}" -type d -name '*.framework' -exec \
+            codesign --force --sign - --timestamp=none {} \;
+          find "${appcopy}" -type f -name '*.dylib' -exec \
+            codesign --force --sign - --timestamp=none {} \;
+          codesign --force --sign - --timestamp=none "${appcopy}"
+          codesign -dvvv "${appcopy}" 2>&1 | grep -iE 'Signature=|flags=' || true
+
+          file="K7-${LABEL}-ios-sideload.ipa"
+          ipa="${RUNNER_TEMP}/${file}"
+          (cd "${workdir}" && zip -qr "${ipa}" Payload)
+          ls -lh "${ipa}"
+          echo "path=${ipa}" >> "$GITHUB_OUTPUT"
+          echo "file=${file}" >> "$GITHUB_OUTPUT"
+
+      # Fail fast if -no_fixup_chains did not take effect: a chained-fixups binary
+      # is rejected by older sideloader Mach-O parsers ("Guru Meditation ...
+      # Invalid file"). Better to catch it here than at install time.
+      - name: Verify classic fixups
+        run: |
+          set -euo pipefail
+          app=$(find src/Clients/MAUI/bin/Release/net10.0-ios -maxdepth 3 -type d -name '*.app' | head -n 1)
+          bin="${app}/$(basename "${app}" .app)"
+          if otool -l "${bin}" | grep -q LC_DYLD_CHAINED_FIXUPS; then
+            echo "::error::Binary still uses LC_DYLD_CHAINED_FIXUPS; -no_fixup_chains did not take effect"
+            exit 1
+          fi
+          echo "OK: classic LC_DYLD_INFO fixups in use"
+
+      - name: Upload iOS IPA
+        id: upload
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: ${{ steps.pack.outputs.file }}
+          path: ${{ steps.pack.outputs.path }}
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 0
+
+  comment:
+    name: Comment on PR
+    needs: [prepare, android, sign-android, windows, linux, ios]
+    if: always() && needs.prepare.result == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Post download links
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ needs.prepare.outputs.pr }}
+          SHA: ${{ needs.prepare.outputs.sha }}
+          SHORT: ${{ needs.prepare.outputs.short }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          ANDROID_REQUESTED: ${{ needs.prepare.outputs.android }}
+          ANDROID_RESULT: ${{ needs.sign-android.result }}
+          ANDROID_URL: ${{ needs.sign-android.outputs.url }}
+          ANDROID_FILE: ${{ needs.sign-android.outputs.file }}
+          ANDROID_VERSION_CODE: ${{ needs.sign-android.outputs.version_code }}
+          WINDOWS_RESULT: ${{ needs.windows.result }}
+          WINDOWS_URL: ${{ needs.windows.outputs.url }}
+          WINDOWS_FILE: ${{ needs.windows.outputs.file }}
+          LINUX_RESULT: ${{ needs.linux.result }}
+          LINUX_URL: ${{ needs.linux.outputs.url }}
+          LINUX_FILE: ${{ needs.linux.outputs.file }}
+          IOS_RESULT: ${{ needs.ios.result }}
+          IOS_URL: ${{ needs.ios.outputs.url }}
+          IOS_FILE: ${{ needs.ios.outputs.file }}
+        run: |
+          set -euo pipefail
+          body=$(mktemp)
+          {
+            echo "### PR client builds"
+            echo
+            echo "Commit \`${SHORT}\` (\`${SHA}\`)."
+            echo
+            echo "| Client | Result |"
+            echo "| --- | --- |"
+          } > "$body"
+
+          row() {
+            local label="$1" result="$2" url="$3" file="$4"
+            if [ "$result" = "skipped" ]; then
+              return
+            fi
+            if [ "$result" = "success" ] && [ -n "$url" ]; then
+              echo "| ${label} | [${file}](${url}) |" >> "$body"
+            else
+              echo "| ${label} | failed |" >> "$body"
+            fi
+          }
+
+          if [ "$ANDROID_REQUESTED" = "true" ]; then
+            if [ "$ANDROID_RESULT" = "success" ] && [ -n "$ANDROID_URL" ]; then
+              echo "| Android APK | [${ANDROID_FILE}](${ANDROID_URL}) |" >> "$body"
+            else
+              echo "| Android APK | failed |" >> "$body"
+            fi
+          fi
+          row "Windows" "$WINDOWS_RESULT" "$WINDOWS_URL" "$WINDOWS_FILE"
+          row "Linux Flatpak" "$LINUX_RESULT" "$LINUX_URL" "$LINUX_FILE"
+          row "iOS sideload IPA" "$IOS_RESULT" "$IOS_URL" "$IOS_FILE"
+
+          {
+            echo
+            echo "GitHub wraps each download in a zip. Artifacts expire after 14 days. A signed-in GitHub account is required."
+            echo
+          } >> "$body"
+
+          if [ "$ANDROID_RESULT" = "success" ]; then
+            echo "Android: signed with the release key. versionCode ${ANDROID_VERSION_CODE} is above the release of this version and above earlier Android builds of this PR. The next patch release stays above it. A phone that already has a higher versionCode still refuses the package." >> "$body"
+            echo >> "$body"
+          fi
+          if [ "$WINDOWS_RESULT" = "success" ]; then
+            echo "Windows: extract the whole zip and run \`K7.exe\` from that folder. The exe needs the files next to it, including \`K7.pri\`." >> "$body"
+            echo >> "$body"
+          fi
+          if [ "$LINUX_RESULT" = "success" ]; then
+            echo "Linux: extract the Flatpak, then \`flatpak install --user ./${LINUX_FILE}\` and \`flatpak run com.k7.maui\`." >> "$body"
+            echo >> "$body"
+          fi
+          if [ "$IOS_RESULT" = "success" ]; then
+            echo "iOS: sideload the IPA with AltStore, SideStore, or Sideloadly. This file does not update the AltStore source." >> "$body"
+            echo >> "$body"
+          fi
+
+          echo "Run: ${RUN_URL}" >> "$body"
+          gh pr comment "$PR" --repo "$GITHUB_REPOSITORY" --body-file "$body"

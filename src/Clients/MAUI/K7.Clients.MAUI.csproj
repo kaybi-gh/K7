@@ -44,7 +44,13 @@
          (no prerelease label). System.Version also rejects labels, so parse the core only. -->
     <_VersionCore>$([System.String]::Copy('$(Version)').Split('-')[0])</_VersionCore>
     <ApplicationDisplayVersion>$(_VersionCore)</ApplicationDisplayVersion>
-    <ApplicationVersion>$([MSBuild]::Add($([MSBuild]::Add($([MSBuild]::Multiply($([System.Version]::Parse('$(_VersionCore)').Major), 10000)), $([MSBuild]::Multiply($([System.Version]::Parse('$(_VersionCore)').Minor), 100)))), $([System.Version]::Parse('$(_VersionCore)').Build)))</ApplicationVersion>
+    <!-- Android versionCode is (major*10000 + minor*100 + patch) * 100 + K7VersionCodeOffset.
+         Offset 0 is a release. PR builds pass 1..99 so they install over that release
+         and stay below the next patch, which lands 100 higher. Other platforms keep the base. -->
+    <_VersionCodeBase>$([MSBuild]::Add($([MSBuild]::Add($([MSBuild]::Multiply($([System.Version]::Parse('$(_VersionCore)').Major), 10000)), $([MSBuild]::Multiply($([System.Version]::Parse('$(_VersionCore)').Minor), 100)))), $([System.Version]::Parse('$(_VersionCore)').Build)))</_VersionCodeBase>
+    <K7VersionCodeOffset Condition="'$(K7VersionCodeOffset)' == ''">0</K7VersionCodeOffset>
+    <ApplicationVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">$([MSBuild]::Add($([MSBuild]::Multiply($(_VersionCodeBase), 100)), $(K7VersionCodeOffset)))</ApplicationVersion>
+    <ApplicationVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) != 'android'">$(_VersionCodeBase)</ApplicationVersion>
 
     <!-- To develop, package, and publish an app to the Microsoft Store, see: https://aka.ms/MauiTemplateUnpackaged -->
     <WindowsPackageType>None</WindowsPackageType>

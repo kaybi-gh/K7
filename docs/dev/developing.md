@@ -234,6 +234,17 @@ Functional/integration tests need **Docker** (Testcontainers.PostgreSQL + Respaw
 
 If branch protection requires status checks, use the names under the **Build** workflow (`build-and-test`, `maui-smoke`, `maui-ios-smoke`, `Integration tests / integration`, `CodeQL / Analyze (csharp)`, `publish-image`). The old standalone **Integration Tests** and **CodeQL** PR checks no longer run on push/PR.
 
+## PR client builds
+
+Pull requests do not build installable clients. Release assets still come from [client-release](releasing.md). To hand someone a build of a PR, run [`.github/workflows/client-pr.yml`](../../.github/workflows/client-pr.yml). It checks out that PR head (forks included) and comments download links on the PR. Pick any of Android, Windows, Linux, and iOS. Mac Catalyst is not built.
+
+Write access is required. Two ways:
+
+- Actions -> **PR client builds** -> Run workflow. Enter the PR number and tick the clients.
+- Comment on the PR, command alone on the first line: `/build-clients android windows` (`linux`, `ios`, or `all`).
+
+The workflow definition used for a comment is the one on the default branch. `workflow_dispatch` can run from a branch that already contains the file, and still checks out the PR you name. A new request for the same PR cancels the previous run. Artifacts expire after 14 days and need a signed-in GitHub account. GitHub wraps each download in a zip. The Android APK is re-signed with the release keystore after the build, in a job that does not run PR code, so it can update an installed K7. Its `versionCode` is the release code for that `Version` plus 1, then 2, and so on for each later Android build of the same PR (max 99). The next patch release is 100 above the release code, so it still installs over those PR builds. Another PR of the same version has its own count. Publish flags match `client-release.yml`. Update both when those flags change.
+
 ## Dependency updates
 
 K7 uses **[Renovate](https://docs.renovatebot.com/)** (self-hosted via GitHub Actions), not Dependabot version updates. Config: [`renovate.json`](../../renovate.json). Workflow: [`.github/workflows/renovate.yml`](../../.github/workflows/renovate.yml) (weekly Monday + `workflow_dispatch`).

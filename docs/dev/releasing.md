@@ -6,7 +6,7 @@
 2. **release-drafter** keeps a draft GitHub Release updated (`.github/workflows/release-drafter.yml`, `.github/release-drafter.yml`).
 3. Maintainers prepare a **draft** GitHub Release with tag name `vX.Y.Z` (target `main`). Saving a draft does **not** create the git tag yet; that is normal.
 4. **client-release** uploads native clients to the draft. If the git tag is missing, the workflow creates it from the release target commitish (usually `main`), then builds:
-   - `K7-{version}-android.apk` - sideload / Android TV
+   - `K7-{version}-android.apk` - sideload / Android TV. `versionCode` is `(major * 10000 + minor * 100 + patch) * 100`, so `1.18.0` is `1180000`. PR builds of that version use `1180001` through `1180099`. The `1.18.1` release is `1180100`.
    - `K7-{version}-win-x64.zip` - self-contained unpackaged Windows. Extract the whole folder and run `K7.exe` (needs matching `K7.pri` sidecars, not a single-file exe). Requires WebView2 Runtime and a recent Windows App Runtime on the machine.
    - `K7-{version}-ios-sideload.ipa` - ad-hoc-signed iOS client for AltStore / SideStore / Sideloadly, plus AltStore source `apps.json`
    - `K7-{version}-linux-x64.flatpak` - Flatpak bundle (`flatpak install --user ./K7-...-linux-x64.flatpak`), the only Linux package. GNOME Platform 49 provides GTK4 / WebKitGTK / GStreamer, libvlc 4 is inside the app (see [Linux libvlc bundle](#linux-libvlc-bundle)). Installs the desktop entry and the `k7://` scheme handler. See [Linux Flatpak](#linux-flatpak).
@@ -27,6 +27,8 @@ gh release edit vX.Y.Z --draft=false
 ```
 
 Manual re-attach: Actions -> Client release -> Run workflow with the tag (creates the git tag if still missing).
+
+Pull requests do not upload these assets. For a one-off build of a PR (Android, Windows, Linux, iOS), run **PR client builds** and let it comment the links. See [developing.md](developing.md#pr-client-builds).
 
 iOS ships as a sideload IPA on that draft. No Apple Developer certificate is required. The sideloader re-signs with the user's Apple ID at install. Users add a stable AltStore/SideStore source:
 

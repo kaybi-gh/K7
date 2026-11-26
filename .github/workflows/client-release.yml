@@ -3,6 +3,7 @@ name: Client release
 on:
   # Draft-first: repo has immutable releases, so assets must be uploaded before publish.
   # Create with `gh release create ... --draft`, then this workflow uploads assets and leaves the draft.
+  # On-demand PR builds of these same clients live in client-pr.yml. Keep publish flags aligned.
   release:
     types: [created]
   workflow_dispatch:
