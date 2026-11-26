@@ -157,9 +157,7 @@ public partial class SetupPage : ContentPage
                 return ProbeResult.Ok(serverInfoJson: null);
             }
 
-            return ProbeResult.Fail(
-                $"HTTP {(int)serverInfoResponse.StatusCode} from /api/server-info"
-                + $" and HTTP {(int)healthResponse.StatusCode} from /health.");
+            return ProbeResult.Fail(FormatHttpFailure(serverInfoResponse, healthResponse));
         }
         catch (OperationCanceledException)
         {
@@ -177,11 +175,32 @@ public partial class SetupPage : ContentPage
     }
 
     private static SocketsHttpHandler CreateSetupHandler() =>
-        new()
+        K7ServerSockets.Create();
+
+    private static string FormatHttpFailure(HttpResponseMessage serverInfo, HttpResponseMessage health)
+    {
+        var message =
+            $"HTTP {(int)serverInfo.StatusCode} from /api/server-info"
+            + $" and HTTP {(int)health.StatusCode} from /health.";
+
+        var server = serverInfo.Headers.Server.ToString();
+        if (string.IsNullOrWhiteSpace(server))
+            server = health.Headers.Server.ToString();
+        if (!string.IsNullOrWhiteSpace(server))
+            message += $" Server: {server}.";
+
+        if (IsProxyOriginFailure((int)serverInfo.StatusCode) || IsProxyOriginFailure((int)health.StatusCode))
         {
-            // Fail fast on unreachable hosts instead of hanging on connect.
-            ConnectTimeout = TimeSpan.FromSeconds(5)
-        };
+            message +=
+                " This address is answered by a proxy that cannot reach K7."
+                + " Use the VPN or LAN address, including the port (for example http://10.0.0.2:7080).";
+        }
+
+        return message;
+    }
+
+    // Cloudflare and similar edges use 520-526 when they cannot reach the origin.
+    private static bool IsProxyOriginFailure(int statusCode) => statusCode is >= 520 and <= 526;
 
     private static bool LooksLikeK7ServerInfo(string json)
     {

@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Net;
 using System.Net.Http.Headers;
 using K7.Clients.MAUI.Playback;
+using K7.Clients.Shared.Helpers;
 using LibVLCSharp;
 
 namespace K7.Clients.MAUI.Platforms.Linux;
@@ -147,6 +148,7 @@ internal sealed class LinuxHttpRangeMediaInput : MediaInput
             ConnectTimeout = TimeSpan.FromSeconds(15),
             PooledConnectionLifetime = TimeSpan.FromMinutes(10)
         };
+        K7ServerSockets.Configure(handler);
         return new HttpClient(handler)
         {
             // Bodies stream for the whole playback; the header wait has its own token.

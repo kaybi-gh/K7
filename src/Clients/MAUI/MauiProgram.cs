@@ -209,10 +209,8 @@ public static partial class MauiProgram
             // Android: HttpURLConnection (AndroidMessageHandler) only allows standard HTTP methods;
             // SocketsHttpHandler supports QUERY and other custom methods. Every socket-based head
             // also asks for and decodes Brotli/gzip API responses (Apple's NSUrlSession does it itself).
-            .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
-            {
-                AutomaticDecompression = System.Net.DecompressionMethods.All
-            })
+            .ConfigurePrimaryHttpMessageHandler(() =>
+                K7ServerSockets.Create(System.Net.DecompressionMethods.All))
 #endif
             ;
         builder.Services.AddSingleton<K7ServerService>(sp =>
