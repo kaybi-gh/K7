@@ -281,17 +281,20 @@ jobs:
           set -euo pipefail
           store="${{ runner.temp }}/k7-pr.keystore"
           envfile="${{ runner.temp }}/android-signing.env"
+          # Same store and key password. JDK keytool writes PKCS12, and apksigner
+          # exits 2 when the key password differs from the store password.
           keytool -genkeypair -v \
             -keystore "${store}" \
+            -storetype PKCS12 \
             -alias k7ci \
             -keyalg RSA -keysize 2048 -validity 10000 \
             -storepass k7-ci-store \
-            -keypass k7-ci-key \
+            -keypass k7-ci-store \
             -dname "CN=K7 CI, OU=K7, O=K7, L=Internet, ST=NA, C=FR"
           {
             echo "KEY_ALIAS=k7ci"
             echo "STORE_PASS=k7-ci-store"
-            echo "KEY_PASS=k7-ci-key"
+            echo "KEY_PASS=k7-ci-store"
           } > "${envfile}"
           echo "path=${store}" >> "${GITHUB_OUTPUT}"
           echo "envfile=${envfile}" >> "${GITHUB_OUTPUT}"
